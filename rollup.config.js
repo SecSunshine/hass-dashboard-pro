@@ -8,7 +8,7 @@ const production = !process.env.ROLLUP_WATCH;
 export default {
   input: 'src/index.ts',
   output: {
-    file: 'dist/hass-dashboard-pro.js',
+    file: 'hass-dashboard-pro.js',
     format: 'es',
     sourcemap: !production,
     inlineDynamicImports: true,

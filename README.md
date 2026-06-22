@@ -53,7 +53,7 @@ Or manually in HACS:
 
 ### Manual
 
-1. Download `dist/hass-dashboard-pro.js` from the [latest release](https://github.com/SecSunshine/hass-dashboard-pro/releases/latest)
+1. Download `hass-dashboard-pro.js` from the [latest release](https://github.com/SecSunshine/hass-dashboard-pro/releases/latest)
 2. Place it in your HA `config/www/` directory
 3. Register the resource:
 
@@ -200,7 +200,7 @@ git clone https://github.com/SecSunshine/hass-dashboard-pro.git
 cd hass-dashboard-pro
 npm install
 
-npm run build        # Production build → dist/hass-dashboard-pro.js
+npm run build        # Production build → hass-dashboard-pro.js
 npm run dev          # Watch mode
 npm run lint         # Type check
 ```
