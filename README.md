@@ -89,7 +89,7 @@ Or manually:
 
 ```yaml
 strategy:
-  type: hass-dashboard-pro
+  type: custom:hass-dashboard-pro
   title: My Home
 ```
 
@@ -103,7 +103,7 @@ All options live inside the top-level `strategy` key:
 
 ```yaml
 strategy:
-  type: hass-dashboard-pro
+  type: custom:hass-dashboard-pro
 
   # General
   title: My Home
@@ -289,7 +289,7 @@ Add the domain name to `hidden_domains`:
 
 ```yaml
 strategy:
-  type: hass-dashboard-pro
+  type: custom:hass-dashboard-pro
   hidden_domains:
     - automation
     - script

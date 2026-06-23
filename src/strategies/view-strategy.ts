@@ -8,7 +8,7 @@
  * through to templates via CSS variables (generateDesignTokenCSS).
  */
 
-import type { Hass, StrategyConfig, StrategyContext, ViewStrategyResult, LovelaceCardConfig } from '../types';
+import type { Hass, StrategyConfig, ViewStrategyResult, LovelaceCardConfig } from '../types';
 import { buildAreaEntityMap } from '../utils/area-entities';
 import { resolveTokens } from '../utils/visual-config';
 import { buildHomeView } from '../templates/home-view';
@@ -16,12 +16,11 @@ import { buildAreaView } from '../templates/area-view';
 import { buildSettingsView } from '../templates/settings-view';
 
 export class HassDashboardProViewStrategy {
-  static async generate(context: StrategyContext): Promise<ViewStrategyResult> {
-    const { config, hass } = context;
+  static async generate(config: StrategyConfig, hass: Hass): Promise<ViewStrategyResult> {
     const tokens = resolveTokens(config);
 
     // Determine which view we're generating
-    const viewPath = getViewPath(context);
+    const viewPath = getViewPath(hass);
 
     // Settings page
     if (viewPath === 'settings' || viewPath === 'hdp-settings') {
@@ -50,8 +49,7 @@ export class HassDashboardProViewStrategy {
   }
 }
 
-function getViewPath(context: StrategyContext): string | null {
-  const { hass } = context;
+function getViewPath(hass: Hass): string | null {
   const anyHass = hass as unknown as Record<string, unknown>;
 
   if (anyHass._viewPath) return anyHass._viewPath as string;

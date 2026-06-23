@@ -21,7 +21,7 @@ import { HassDashboardProViewStrategy } from './strategies/view-strategy';
 // field in the dashboard YAML (e.g. strategy.type: hass-dashboard-pro).
 // Each strategy class must implement generate(config): { views } | { cards }.
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.2';
 const NAME = 'Hass Dashboard Pro';
 
 interface HAWindow {

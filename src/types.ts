@@ -220,11 +220,6 @@ export const THEME_PRESETS: Record<ThemePreset, Omit<Required<VisualConfig>, 'th
   },
 };
 
-export interface StrategyContext {
-  config: StrategyConfig;
-  hass: Hass;
-}
-
 // ─── Lovelace View Types ──────────────────────────────────────────────────
 
 export interface LovelaceViewConfig {
