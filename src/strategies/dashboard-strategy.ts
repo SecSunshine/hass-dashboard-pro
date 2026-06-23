@@ -3,10 +3,15 @@
  *
  * Generates the overview page + one view per HA area + settings page.
  * Uses html-pro-card for card rendering with beautified design tokens.
+ *
+ * The strategy type for generated views is `hass-dashboard-pro-view`,
+ * which maps to custom element `ll-strategy-view-hass-dashboard-pro-view`.
  */
 
 import type { Hass, StrategyConfig, DashboardStrategyResult, LovelaceViewConfig } from '../types';
 import { buildAreaEntityMap, groupAreasByFloor } from '../utils/area-entities';
+
+const VIEW_STRATEGY_TYPE = 'hass-dashboard-pro-view';
 
 export class HassDashboardProStrategy {
   static async generate(config: StrategyConfig, hass: Hass): Promise<DashboardStrategyResult> {
@@ -26,7 +31,7 @@ export class HassDashboardProStrategy {
       return 0;
     });
 
-    for (const [, { floorName, areas }] of floors) {
+    for (const [, { areas }] of floors) {
       for (const areaId of areas) {
         const area = hass.areas[areaId];
         if (!area || hiddenAreas.includes(areaId)) continue;
@@ -44,7 +49,7 @@ export class HassDashboardProStrategy {
           cards: [],
           strategy: {
             ...config,
-            type: 'custom:hass-dashboard-pro-home',
+            type: VIEW_STRATEGY_TYPE,
           } as StrategyConfig,
           subview: false,
         });
@@ -60,7 +65,7 @@ export class HassDashboardProStrategy {
       cards: [],
       strategy: {
         ...config,
-        type: 'custom:hass-dashboard-pro-home',
+        type: VIEW_STRATEGY_TYPE,
       } as StrategyConfig,
       subview: false,
     });
@@ -77,7 +82,7 @@ function buildHomeViewConfig(config: StrategyConfig): LovelaceViewConfig {
     badges: [],
     cards: [],
     strategy: {
-      type: 'custom:hass-dashboard-pro-home',
+      type: VIEW_STRATEGY_TYPE,
     } as StrategyConfig,
     subview: false,
   };

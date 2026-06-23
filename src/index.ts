@@ -8,53 +8,80 @@
  * Specification: html-card-pro Design Guidelines
  *
  * Registration:
- *   Dashboard strategy → customStrategies in raw dashboard YAML
- *   View strategy → auto-registered via dashboard views
+ *   1. customElements.define('ll-strategy-dashboard-hass-dashboard-pro', ...)
+ *   2. customElements.define('ll-strategy-view-hass-dashboard-pro-view', ...)
+ *   3. window.customStrategies array — appears in HA "Add Dashboard" dialog (HA 2026.5+)
  */
 
 import { HassDashboardProStrategy } from './strategies/dashboard-strategy';
 import { HassDashboardProViewStrategy } from './strategies/view-strategy';
 
-// ─── HA Strategy Registration ─────────────────────────────────────────────
-
-// HA loads strategies from window.customStrategies, keyed by the `type`
-// field in the dashboard YAML (e.g. strategy.type: hass-dashboard-pro).
-// Each strategy class must implement generate(config): { views } | { cards }.
-
-const VERSION = '1.1.2';
+const VERSION = '1.2.0';
 const NAME = 'Hass Dashboard Pro';
 
-interface HAWindow {
-  customCards?: Array<{ type: string; name: string; description: string; preview?: boolean }>;
-  customStrategies?: Record<string, unknown>;
+const DASHBOARD_STRATEGY_TYPE = 'hass-dashboard-pro';
+const VIEW_STRATEGY_TYPE = 'hass-dashboard-pro-view';
+const DASHBOARD_STRATEGY_TAG = `ll-strategy-dashboard-${DASHBOARD_STRATEGY_TYPE}`;
+const VIEW_STRATEGY_TAG = `ll-strategy-view-${VIEW_STRATEGY_TYPE}`;
+
+// ─── Safe Element Registration ────────────────────────────────────────────
+
+const safeDefine = (elementName: string, constructor: CustomElementConstructor) => {
+  if (!customElements.get(elementName)) {
+    customElements.define(elementName, constructor);
+    console.info(`%c✓ ${elementName}`, 'color: #16A34A;');
+  }
+};
+
+// ─── Strategy Element Wrappers ────────────────────────────────────────────
+// HA looks for custom elements named `ll-strategy-dashboard-<type>` and
+// `ll-strategy-view-<type>`. Each must have a static generate() method.
+
+const createDashboardStrategyElement = () =>
+  class extends HTMLElement {
+    static async generate(config: any, hass: any) {
+      return HassDashboardProStrategy.generate(config, hass);
+    }
+  };
+
+const createViewStrategyElement = () =>
+  class extends HTMLElement {
+    static async generate(config: any, hass: any) {
+      return HassDashboardProViewStrategy.generate(config, hass);
+    }
+  };
+
+// ─── Register Custom Elements ─────────────────────────────────────────────
+
+safeDefine(DASHBOARD_STRATEGY_TAG, createDashboardStrategyElement());
+safeDefine(VIEW_STRATEGY_TAG, createViewStrategyElement());
+
+// ─── Register in HA "Add Dashboard" Dialog (HA 2026.5+) ──────────────────
+
+declare global {
+  interface Window {
+    customStrategies?: Array<{
+      type: string;
+      strategyType: 'dashboard' | 'view';
+      name: string;
+      description?: string;
+      documentationURL?: string;
+    }>;
+  }
 }
 
-function register(): void {
-  const w = window as unknown as HAWindow;
-
-  // Register for HACS / HA info display
-  if (!w.customCards) w.customCards = [];
-  w.customCards.push({
-    type: 'hass-dashboard-pro',
+window.customStrategies = window.customStrategies || [];
+if (!window.customStrategies.some((s) => s?.type === DASHBOARD_STRATEGY_TYPE)) {
+  window.customStrategies.push({
+    type: DASHBOARD_STRATEGY_TYPE,
+    strategyType: 'dashboard',
     name: NAME,
     description: 'Zero-config Lovelace dashboard with Apple HIG design — powered by html-pro-card',
-    preview: false,
+    documentationURL: 'https://github.com/SecSunshine/hass-dashboard-pro',
   });
-
-  // Register strategies so HA's strategy loader can find them by type name
-  if (!w.customStrategies) w.customStrategies = {};
-  w.customStrategies['hass-dashboard-pro'] = HassDashboardProStrategy;
-  w.customStrategies['hass-dashboard-pro-home'] = HassDashboardProViewStrategy;
-  w.customStrategies['hass-dashboard-pro-area'] = HassDashboardProViewStrategy;
 }
 
-// ─── Strategy Exports ────────────────────────────────────────────────────
-
-export { HassDashboardProStrategy, HassDashboardProViewStrategy };
-
-// ─── Auto-Registration ───────────────────────────────────────────────────
-
-register();
+// ─── Boot Log ─────────────────────────────────────────────────────────────
 
 console.info(
   `%c${NAME} %cv${VERSION} %cloaded`,
