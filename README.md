@@ -1,38 +1,31 @@
 <p align="center">
-  <a href="https://github.com/SecSunshine/hass-dashboard-pro/releases"><img src="https://img.shields.io/github/v/release/SecSunshine/hass-dashboard-pro?style=flat-square&color=%231E40AF" alt="GitHub Release"></a>
-  <a href="https://github.com/SecSunshine/hass-dashboard-pro/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-1E40AF?style=flat-square" alt="MIT License"></a>
-  <a href="https://github.com/hacs/integration"><img src="https://img.shields.io/badge/HACS-plugin-1E40AF?style=flat-square" alt="HACS Plugin"></a>
-  <img src="https://img.shields.io/badge/HA-%E2%89%A52024.8-1E40AF?style=flat-square" alt="Home Assistant 2024.8+">
-  <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=SecSunshine&repository=hass-dashboard-pro&category=plugin"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Add to HACS"></a>
+  <a href="https://github.com/hacs/default"><img src="https://img.shields.io/badge/HACS-Dashboard-%231E40AF?style=flat-square&logo=hacs" alt="HACS Dashboard"></a>
+  <a href="https://github.com/SecSunshine/hass-dashboard-pro/releases"><img src="https://img.shields.io/github/v/release/SecSunshine/hass-dashboard-pro?style=flat-square&color=%231E40AF" alt="Release"></a>
+  <a href="https://github.com/SecSunshine/hass-dashboard-pro/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-%231E40AF?style=flat-square" alt="License"></a>
+  <img src="https://img.shields.io/badge/HA-%E2%89%A52024.8-%231E40AF?style=flat-square" alt="Home Assistant">
+  <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=SecSunshine&repository=hass-dashboard-pro&category=dashboard"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Open your Home Assistant instance and open a repository inside HACS."></a>
 </p>
 
 <h1 align="center">Hass Dashboard Pro</h1>
 
 <p align="center">
-  A <strong>zero-config Lovelace dashboard strategy</strong> for Home Assistant that generates a clean, responsive smart home interface from your existing entities — no card-by-card YAML required.
+  <strong>Zero-config dashboard strategy for Home Assistant Lovelace.</strong><br>
+  Generates a clean, responsive smart home interface from your existing entities — <em>no card-by-card YAML required</em>.
 </p>
 
 <p align="center">
-  Powered by <code>html-pro-card</code> &nbsp;·&nbsp; Apple HIG + Dieter Rams minimalism &nbsp;·&nbsp; Built-in visual theme editor
+  <sub>Powered by <a href="https://github.com/ha-china/html-pro-card">html-pro-card</a> &middot; Apple HIG &amp; Dieter Rams minimalism &middot; Built-in visual theme editor</sub>
 </p>
 
 ---
 
-## Overview
+## Features
 
-Hass Dashboard Pro replaces manual Lovelace card configuration with an automated strategy-based approach. Using Home Assistant's native `customStrategies` API, it introspects your entities and areas to produce:
-
-- **Home View** — time-aware greeting, status summary grid, quick actions, and pinned favorite entities
-- **Area Views** — auto-generated pages per floor/area, with entities sorted into domain-categorized control cards
-- **Visual Settings** — interactive panel for real-time theme customization (colors, spacing, typography, shadows), persisted to `localStorage`
-
-Every view is rendered through `html-pro-card`, enforcing the [html-card-pro design specification](https://github.com/ha-china/html-card-pro):
-- **10px unified border radius** on all cards
-- **16px card padding** with subtle `0 2px 8px rgba(0,0,0,0.06)` shadow
-- **Inter** typeface throughout
-- **SVG-only icons** — no emoji
-
-> The strategy-based architecture was inspired by the pattern pioneered by Dwains Dashboard, re-implemented from scratch with a modern rendering engine and a stricter visual language.
+- **Auto-generated views** — Home dashboard with greeting, status grid, and quick actions; per-area detail pages with domain-categorized control cards
+- **Visual theme editor** — Interactive panel for real-time customization of colors, spacing, typography, and shadows; persisted in `localStorage`
+- **Design-token system** — Centralized CSS variables (`--hdp-*`) for consistent theming across all views
+- **Zero emoji** — All icons are SVG
+- **HACS native** — One-click install, auto-registered as a Lovelace resource
 
 ---
 
@@ -40,20 +33,20 @@ Every view is rendered through `html-pro-card`, enforcing the [html-card-pro des
 
 ### HACS (recommended)
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=SecSunshine&repository=hass-dashboard-pro&category=plugin)
+[![Open your Home Assistant instance and open a repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=SecSunshine&repository=hass-dashboard-pro&category=dashboard)
 
-Or manually in HACS:
+Or manually:
 
 1. Go to **HACS → ⋮ → Custom repositories**
-2. Repository: `https://github.com/SecSunshine/hass-dashboard-pro` &nbsp;·&nbsp; Category: **Dashboard**
-3. Click **Add**, search for <kbd>Hass Dashboard Pro</kbd>, and download
+2. URL: `https://github.com/SecSunshine/hass-dashboard-pro` &middot; Category: **Dashboard**
+3. Click **Add**, search for `Hass Dashboard Pro`, and download
 4. Refresh your browser
 
-> HACS automatically registers the module as a Lovelace resource — no manual YAML configuration is needed.
+> HACS registers the module as a Lovelace resource automatically — no manual YAML needed.
 
 ### Manual
 
-1. Download `hass-dashboard-pro.js` from the [latest release](https://github.com/SecSunshine/hass-dashboard-pro/releases/latest)
+1. Download [`hass-dashboard-pro.js`](https://github.com/SecSunshine/hass-dashboard-pro/releases/latest) from the latest release
 2. Place it in your HA `config/www/` directory
 3. Register the resource:
 
@@ -66,18 +59,18 @@ Or manually in HACS:
          type: module
    ```
 
-### Dependencies
+### Prerequisites
 
-| Dependency | Version | Notes |
-|------------|---------|-------|
-| [Home Assistant](https://www.home-assistant.io/) | ≥ 2024.8 | `customStrategies` API |
-| [html-pro-card](https://github.com/ha-china/html-pro-card) | latest | Rendering engine — install via HACS first |
+| Package | Minimum Version | Notes |
+|---------|:--------------:|-------|
+| [Home Assistant](https://www.home-assistant.io/) | 2024.8 | `customStrategies` API support |
+| [html-pro-card](https://github.com/ha-china/html-pro-card) | latest | Rendering engine (install via HACS first) |
 
 ---
 
 ## Quick Start
 
-Create a new dashboard (**Settings → Dashboards → Add Dashboard**), switch to raw YAML mode:
+Create a new dashboard (**Settings → Dashboards → Add Dashboard**), switch to raw YAML, and enter:
 
 ```yaml
 strategy:
@@ -85,13 +78,13 @@ strategy:
   title: My Home
 ```
 
-Save, open the dashboard, and you will see your entities organized by area automatically.
+Save and open — your entities are organized by area automatically.
 
 ---
 
 ## Configuration
 
-All options live under the `strategy` key in your dashboard YAML:
+All options live inside the `strategy` key:
 
 ```yaml
 strategy:
@@ -132,28 +125,28 @@ strategy:
     animations: true
 ```
 
-### Options Reference
+### Option Reference
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `title` | `string` | `"Home"` | Dashboard title on the home view |
-| `hidden_areas` | `string[]` | `[]` | Area IDs to exclude |
-| `hidden_domains` | `string[]` | `[]` | Domains to hide across all views |
-| `favorite_entities` | `string[]` | `[]` | Entities featured on the home view |
-| `custom_cards` | `object` | `{}` | `{ area_id: [cards...] }` map of extra Lovelace cards |
-| `visual.theme` | `string` | `"light"` | Preset: `light` \| `dark` \| `warm` \| `forest` |
-| `visual.colors.*` | `string` | theme defaults | Any of `primary` / `page_bg` / `card_bg` / `text_primary` / `text_secondary` / `accent` |
-| `visual.border_radius` | `number` | `10` | Card border radius (px) |
-| `visual.card_padding` | `number` | `16` | Card inner padding (px) |
+| `hidden_areas` | `string[]` | `[]` | Area IDs to exclude from the dashboard |
+| `hidden_domains` | `string[]` | `[]` | Entity domains to hide across all views |
+| `favorite_entities` | `string[]` | `[]` | Entity IDs pinned to the home view |
+| `custom_cards` | `object` | `{}` | Map of `{ area_id: [Lovelace cards] }` appended to area views |
+| `visual.theme` | `string` | `"light"` | Theme preset: `light` \| `dark` \| `warm` \| `forest` |
+| `visual.colors.*` | `string` | — | Override `primary` / `page_bg` / `card_bg` / `text_primary` / `text_secondary` / `accent` |
+| `visual.border_radius` | `number` | `10` | Card border radius in pixels |
+| `visual.card_padding` | `number` | `16` | Card inner padding in pixels |
 | `visual.font_family` | `string` | Inter stack | CSS `font-family` value |
-| `visual.shadows` | `boolean` | `true` | Card drop shadows |
-| `visual.animations` | `boolean` | `true` | CSS transitions |
+| `visual.shadows` | `boolean` | `true` | Show card drop shadows |
+| `visual.animations` | `boolean` | `true` | Enable CSS transitions |
 
 ---
 
 ## Visual Customization
 
-Open the **Visual Settings** page from the dashboard sidebar to adjust the appearance interactively. Changes preview instantly and persist across sessions.
+Open the **Visual Settings** page from the dashboard sidebar to adjust the appearance interactively. Changes preview instantly and persist across browser sessions.
 
 ### Resolution Order
 
@@ -161,12 +154,12 @@ Open the **Visual Settings** page from the dashboard sidebar to adjust the appea
 Panel settings (localStorage)  >  YAML visual.*  >  YAML visual.theme  >  Defaults
 ```
 
-Panel tweaks always win — you can experiment without touching your YAML files.
+The visual settings panel always wins — experiment freely without touching YAML files.
 
-### Theme Presets
+### Built-in Theme Presets
 
-| Preset | Primary | Background | Card | Vibe |
-|--------|---------|------------|------|------|
+| Preset | Primary | Background | Card | Style |
+|--------|:-------:|:----------:|:----:|-------|
 | **Light** | `#1E40AF` | `#F8FAFC` | `#FFFFFF` | Clean & professional |
 | **Dark** | `#818CF8` | `#1E293B` | `#334155` | Low-light comfort |
 | **Warm** | `#C2410C` | `#FFF7ED` | `#FFFFFF` | Cozy & inviting |
@@ -176,20 +169,20 @@ Panel tweaks always win — you can experiment without touching your YAML files.
 
 ## Design Tokens
 
-All visual properties are centralized. Runtime overrides are injected as CSS variables:
+Runtime visual overrides are injected as CSS custom properties:
 
-| CSS Variable | Default |
-|-------------|---------|
-| `--hdp-primary` | `#1E40AF` |
-| `--hdp-page-bg` | `#F8FAFC` |
-| `--hdp-card-bg` | `#FFFFFF` |
-| `--hdp-card-shadow` | `0 2px 8px rgba(0,0,0,0.06)` |
-| `--hdp-border-radius` | `10px` |
-| `--hdp-card-padding` | `16px` |
-| `--hdp-text-primary` | `#1E293B` |
-| `--hdp-text-secondary` | `#64748B` |
-| `--hdp-accent` | `#F59E0B` |
-| `--hdp-font-family` | `Inter, -apple-system, ...` |
+| Variable | Default | |
+|----------|---------|---|
+| `--hdp-primary` | `#1E40AF` | Primary accent color |
+| `--hdp-page-bg` | `#F8FAFC` | Page background |
+| `--hdp-card-bg` | `#FFFFFF` | Card surface |
+| `--hdp-card-shadow` | `0 2px 8px rgba(0,0,0,0.06)` | Card drop shadow |
+| `--hdp-border-radius` | `10px` | Card corner radius |
+| `--hdp-card-padding` | `16px` | Card inner spacing |
+| `--hdp-text-primary` | `#1E293B` | Primary text |
+| `--hdp-text-secondary` | `#64748B` | Secondary text |
+| `--hdp-accent` | `#F59E0B` | Accent / highlight |
+| `--hdp-font-family` | `Inter, -apple-system, ...` | Typeface stack |
 
 ---
 
@@ -201,31 +194,38 @@ cd hass-dashboard-pro
 npm install
 
 npm run build        # Production build → hass-dashboard-pro.js
-npm run dev          # Watch mode
-npm run lint         # Type check
+npm run dev          # Watch mode (rebuilds on change)
+npm run lint         # TypeScript type-check
 ```
 
-### Architecture
+### Project Structure
 
 ```
-src/
-├── index.ts                       # Strategy registration
-├── types.ts                       # Interfaces, constants, theme presets
-├── styles/
-│   └── design-tokens.ts           # Token definitions + CSS variable generation
-├── strategies/
-│   ├── dashboard-strategy.ts      # Top-level: generates views list
-│   └── view-strategy.ts           # Per-view: routes to template by path
-├── templates/
-│   ├── home-view.ts               # Home page YAML template
-│   ├── area-view.ts               # Area detail YAML template
-│   └── settings-view.ts           # Visual settings panel template
-└── utils/
-    ├── area-entities.ts           # Entity → area mapping
-    └── visual-config.ts           # Token resolution + localStorage persistence
+hass-dashboard-pro/
+├── src/
+│   ├── index.ts                       # Strategy registration entry point
+│   ├── types.ts                       # Interfaces, constants, theme presets
+│   ├── styles/
+│   │   └── design-tokens.ts           # Token definitions & CSS variable generation
+│   ├── strategies/
+│   │   ├── dashboard-strategy.ts      # Top-level: generates views list
+│   │   └── view-strategy.ts           # Per-view: routes to template by path
+│   ├── templates/
+│   │   ├── home-view.ts               # Home page YAML template
+│   │   ├── area-view.ts               # Area detail YAML template
+│   │   └── settings-view.ts           # Visual settings panel template
+│   └── utils/
+│       ├── area-entities.ts           # Entity-to-area mapping
+│       └── visual-config.ts           # Token resolution + localStorage persistence
+├── hass-dashboard-pro.js              # Built output (HACS entry point)
+├── rollup.config.js                   # Rollup build configuration
+├── tsconfig.json                      # TypeScript configuration
+├── package.json
+├── .hacs.json                         # HACS manifest
+└── LICENSE
 ```
 
-**Build pipeline**: TypeScript → Rollup → single ES module → `dist/hass-dashboard-pro.js`
+**Build pipeline**: TypeScript → Rollup → single ES module → `hass-dashboard-pro.js`
 
 ---
 
@@ -235,7 +235,7 @@ src/
 <summary><strong>How is this different from Dwains Dashboard?</strong></summary><br>
 
 - Renders through `html-pro-card` instead of custom Lit web components
-- Follows a stricter visual language (Apple HIG / 10px radius / Inter / SVG icons)
+- Follows a stricter visual language (Apple HIG / 10 px radius / Inter / SVG icons)
 - Ships an interactive visual settings panel for real-time theme editing
 - TypeScript + Rollup (no webpack), zero emoji, MIT licensed
 
@@ -249,7 +249,7 @@ Yes — `html-pro-card` is the rendering engine. Install it via HACS before enab
 </details>
 
 <details>
-<summary><strong>Can I mix auto-generated cards with manual ones?</strong></summary><br>
+<summary><strong>Can I mix auto-generated and manual cards?</strong></summary><br>
 
 Yes — use `custom_cards` to inject any Lovelace card into specific areas alongside the auto-generated layout.
 
@@ -262,32 +262,24 @@ Use `hidden_domains` to exclude entire categories (e.g. `automation`) or `hidden
 
 </details>
 
-<details>
-<summary><strong>Can I submit a theme or improvement?</strong></summary><br>
-
-Absolutely — see [Contributing](#contributing) below. Bug reports, feature requests, and pull requests are welcome.
-
-</details>
-
 ---
 
 ## Contributing
 
-Contributions are welcome. Please:
+Bug reports and pull requests are welcome on [GitHub](https://github.com/SecSunshine/hass-dashboard-pro). Please:
 
-1. Open an issue to discuss the change before starting work
-2. Target the `main` branch with your pull request
-3. Ensure `npm run lint` passes with no errors
-4. Describe the motivation and scope clearly
+1. Search [existing issues](https://github.com/SecSunshine/hass-dashboard-pro/issues) before opening a new one
+2. Target the `main` branch with pull requests
+3. Ensure `npm run lint` passes before submitting
 
 ---
 
 ## License
 
-[MIT](LICENSE) © 2025 SecSunshine
+[MIT](LICENSE) &copy; 2025 SecSunshine
 
 ---
 
 <p align="center">
-  <sub>Built with TypeScript · Powered by html-pro-card · Designed for Home Assistant</sub>
+  <sub>Built with TypeScript &middot; Powered by html-pro-card &middot; Designed for Home Assistant</sub>
 </p>
