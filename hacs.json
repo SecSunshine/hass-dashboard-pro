@@ -1,7 +1,7 @@
 {
   "name": "Hass Dashboard Pro",
-  "filename": "hass-dashboard-pro.js",
-  "homeassistant": "2024.8.0",
+  "filename": "dist/hass-dashboard-pro.js",
+  "homeassistant": "2026.5.0",
   "hide_default_branch": true,
   "render_readme": true
 }
