@@ -15,45 +15,46 @@
 import { HassDashboardProStrategy } from './strategies/dashboard-strategy';
 import { HassDashboardProViewStrategy } from './strategies/view-strategy';
 
-// ─── HA Custom Card Registration ─────────────────────────────────────────
+// ─── HA Strategy Registration ─────────────────────────────────────────────
 
-// Register the strategies as Home Assistant custom cards
-// This allows them to be used in Lovelace dashboards
+// HA loads strategies from window.customStrategies, keyed by the `type`
+// field in the dashboard YAML (e.g. strategy.type: hass-dashboard-pro).
+// Each strategy class must implement generate(config): { views } | { cards }.
 
 const VERSION = '1.0.0';
 const NAME = 'Hass Dashboard Pro';
 
-interface HACustomCard {
-  type: string;
-  name: string;
-  description: string;
-  preview?: boolean;
-}
-
 interface HAWindow {
-  customCards?: HACustomCard[];
+  customCards?: Array<{ type: string; name: string; description: string; preview?: boolean }>;
+  customStrategies?: Record<string, unknown>;
 }
 
-// Register custom card metadata (for HACS / HA info)
-function registerCustomCard(): void {
+function register(): void {
   const w = window as unknown as HAWindow;
+
+  // Register for HACS / HA info display
   if (!w.customCards) w.customCards = [];
   w.customCards.push({
     type: 'hass-dashboard-pro',
     name: NAME,
-    description: 'Beautified smart home dashboard with html-pro-card rendering — Apple HIG minimalism design',
+    description: 'Zero-config Lovelace dashboard with Apple HIG design — powered by html-pro-card',
     preview: false,
   });
+
+  // Register strategies so HA's strategy loader can find them by type name
+  if (!w.customStrategies) w.customStrategies = {};
+  w.customStrategies['hass-dashboard-pro'] = HassDashboardProStrategy;
+  w.customStrategies['hass-dashboard-pro-home'] = HassDashboardProViewStrategy;
+  w.customStrategies['hass-dashboard-pro-area'] = HassDashboardProViewStrategy;
 }
 
 // ─── Strategy Exports ────────────────────────────────────────────────────
 
-// Export for direct import by HA's strategy loader
 export { HassDashboardProStrategy, HassDashboardProViewStrategy };
 
 // ─── Auto-Registration ───────────────────────────────────────────────────
 
-registerCustomCard();
+register();
 
 console.info(
   `%c${NAME} %cv${VERSION} %cloaded`,
