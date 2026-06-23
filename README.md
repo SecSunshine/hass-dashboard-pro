@@ -1,5 +1,6 @@
 <p align="center">
   <a href="https://github.com/hacs/integration"><img src="https://img.shields.io/badge/HACS-Dashboard-%231E40AF?style=flat-square&logo=hacs" alt="HACS Dashboard"></a>
+  <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=SecSunshine&amp;repository=hass-dashboard-pro&amp;category=dashboard"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Open your Home Assistant instance and open a repository inside the Home Assistant Community Store."></a>
   <a href="https://github.com/SecSunshine/hass-dashboard-pro/releases"><img src="https://img.shields.io/github/v/release/SecSunshine/hass-dashboard-pro?style=flat-square&color=%231E40AF" alt="Release"></a>
   <a href="https://github.com/SecSunshine/hass-dashboard-pro/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-%231E40AF?style=flat-square" alt="License"></a>
   <img src="https://img.shields.io/badge/HA-%E2%89%A52024.8-%231E40AF?style=flat-square" alt="Home Assistant ≥ 2024.8">
