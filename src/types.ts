@@ -103,7 +103,7 @@ export interface VisualConfig {
 }
 
 export interface StrategyConfig {
-  type: 'strategy';
+  type: string;
   // User-configurable options
   title?: string;
   sidebar_title?: string;

@@ -45,7 +45,7 @@ export class HassDashboardProStrategy {
           cards: [],
           strategy: {
             ...config,
-            type: 'strategy',
+            type: 'hass-dashboard-pro-home',
           } as StrategyConfig,
           subview: false,
         });
@@ -61,7 +61,7 @@ export class HassDashboardProStrategy {
       cards: [],
       strategy: {
         ...config,
-        type: 'strategy',
+        type: 'hass-dashboard-pro-home',
       } as StrategyConfig,
       subview: false,
     });
@@ -78,7 +78,7 @@ function buildHomeViewConfig(config: StrategyConfig): LovelaceViewConfig {
     badges: [],
     cards: [],
     strategy: {
-      type: 'strategy',
+      type: 'hass-dashboard-pro-home',
     } as StrategyConfig,
     subview: false,
   };
