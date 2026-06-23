@@ -1,7 +1,0 @@
-{
-  "name": "Hass Dashboard Pro",
-  "content_in_root": true,
-  "filename": "hass-dashboard-pro.js",
-  "homeassistant": "2024.8.0",
-  "hacs": "2.0.0"
-}
