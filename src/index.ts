@@ -16,7 +16,7 @@
 import { HassDashboardProStrategy } from './strategies/dashboard-strategy';
 import { HassDashboardProViewStrategy } from './strategies/view-strategy';
 
-const VERSION = '1.3.3';
+const VERSION = '1.3.1';
 const NAME = 'Hass Dashboard Pro';
 
 const DASHBOARD_STRATEGY_TYPE = 'hass-dashboard-pro';
