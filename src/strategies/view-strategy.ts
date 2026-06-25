@@ -2,7 +2,8 @@
  * View Strategy — Per-View Content Generator
  *
  * Generates the card list for each view (home page, area page, settings).
- * Uses the template layer to produce html-pro-card renderable content.
+ * The dashboard strategy injects `view_path` and `area_id` into each view's
+ * strategy config, since HA does not pass view metadata to generate().
  *
  * All visual tokens are resolved from config + localStorage and passed
  * through to templates via CSS variables (generateDesignTokenCSS).
@@ -19,8 +20,9 @@ export class HassDashboardProViewStrategy {
   static async generate(config: StrategyConfig, hass: Hass): Promise<ViewStrategyResult> {
     const tokens = resolveTokens(config);
 
-    // Determine which view we're generating
-    const viewPath = getViewPath(hass);
+    // Read view path from config (injected by dashboard strategy)
+    const viewPath = config.view_path || null;
+    const areaId = config.area_id || null;
 
     // Settings page
     if (viewPath === 'settings' || viewPath === 'hdp-settings') {
@@ -32,14 +34,29 @@ export class HassDashboardProViewStrategy {
       return { cards: buildHomeView(hass, config, tokens) };
     }
 
-    // Area view
+    // Area view — use area_id directly (most reliable)
     const hiddenAreas = config.hidden_areas || [];
-    const areaEntityMap = buildAreaEntityMap(hass, hiddenAreas);
-
-    for (const [areaId, area] of Object.entries(hass.areas)) {
-      if (hiddenAreas.includes(areaId)) continue;
-      if (sanitizePath(area.name) === viewPath || areaId === viewPath) {
+    if (areaId && !hiddenAreas.includes(areaId)) {
+      const area = hass.areas[areaId];
+      if (area) {
+        const areaEntityMap = buildAreaEntityMap(hass, hiddenAreas);
         const entities = areaEntityMap.get(areaId) || [];
+        return { cards: buildAreaView(area.name, entities, hass, tokens) };
+      }
+    }
+
+    // Area view — fallback: match by view path
+    const areaEntityMap = buildAreaEntityMap(hass, hiddenAreas);
+    for (const [id, area] of Object.entries(hass.areas)) {
+      if (hiddenAreas.includes(id)) continue;
+      const path = area.name
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+      if (path === viewPath || id === viewPath) {
+        const entities = areaEntityMap.get(id) || [];
         return { cards: buildAreaView(area.name, entities, hass, tokens) };
       }
     }
@@ -47,30 +64,4 @@ export class HassDashboardProViewStrategy {
     // Fallback
     return { cards: [] };
   }
-}
-
-function getViewPath(hass: Hass): string | null {
-  const anyHass = hass as unknown as Record<string, unknown>;
-
-  if (anyHass._viewPath) return anyHass._viewPath as string;
-  if ((anyHass.panel as Record<string, unknown>)?.path) return (anyHass.panel as Record<string, unknown>).path as string;
-
-  try {
-    const url = (anyHass._currentUrl as string) || '';
-    const match = url.match(/\/([^/?]+)/);
-    if (match && match[1] && match[1] !== 'lovelace') return match[1];
-  } catch {
-    // ignore
-  }
-
-  return null;
-}
-
-function sanitizePath(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
 }

@@ -113,6 +113,11 @@ export interface VisualConfig {
 
 export interface StrategyConfig {
   type: string;
+  // View routing (injected by dashboard strategy)
+  /** Current view path identifier (set by dashboard strategy) */
+  view_path?: string;
+  /** Area ID for area views (set by dashboard strategy) */
+  area_id?: string;
   // User-configurable options
   title?: string;
   sidebar_title?: string;

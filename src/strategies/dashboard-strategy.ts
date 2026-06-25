@@ -51,6 +51,8 @@ export class HassDashboardProStrategy {
           strategy: {
             ...config,
             type: VIEW_STRATEGY_TYPE,
+            view_path: path,
+            area_id: areaId,
           } as StrategyConfig,
           subview: false,
         });
@@ -67,6 +69,7 @@ export class HassDashboardProStrategy {
       strategy: {
         ...config,
         type: VIEW_STRATEGY_TYPE,
+        view_path: 'hdp-settings',
       } as StrategyConfig,
       subview: false,
     });
@@ -83,7 +86,9 @@ function buildHomeViewConfig(config: StrategyConfig): LovelaceViewConfig {
     badges: [],
     cards: [],
     strategy: {
+      ...config,
       type: VIEW_STRATEGY_TYPE,
+      view_path: 'home',
     } as StrategyConfig,
     subview: false,
   };
