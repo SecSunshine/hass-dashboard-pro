@@ -1,66 +1,25 @@
 /**
- * Design Token System — html-pro-card compliant (v2.0)
+ * Design Token System — HA Native Theme Integration (v2.1)
  *
- * 设计哲学: Apple HIG · Dieter Rams 极简主义
- * 规约参照: html-card-pro 设计规范
+ * Uses Home Assistant native theme CSS variables as primary values,
+ * with sensible fallbacks for themes that don't define all tokens.
  *
- * Usage: 在 html-pro-card 模板中注入为 <style> 内部样式块
+ * html-card-pro conventions:
+ *   - Hardcoded hex/RGB values are FORBIDDEN in card templates
+ *   - Use native HA theme tokens: var(--primary-color), var(--primary-text-color), etc.
+ *   - border-radius: 10px (html-pro-card spec)
+ *   - All styles in <style> blocks, no inline styles
+ *   - Min touch target: 44px × 44px
+ *   - Animation: all 0.2s ease
+ *   - Hover: translateY(-2px)
+ *
+ * Custom --hdp-* namespace maps to HA theme tokens with fallbacks,
+ * ensuring cards look correct regardless of the active HA theme.
  */
 
-// ─── Color System ─────────────────────────────────────────────────────────
+import type { ResolvedTokens } from '../utils/visual-config';
 
-export const COLORS = {
-  // Surface
-  page_bg: '#F4F6FA',
-  card_bg: '#FFFFFF',
-  sidebar_bg: '#FFFFFF',
-
-  // Primary
-  primary: '#4F6EF7',
-  primary_light: '#EEF1FE',
-  primary_50: '#EEF1FE',
-  primary_100: '#DDE3FD',
-  primary_500: '#6B85F9',
-  primary_700: '#3D5CE5',
-  primary_900: '#2A43B8',
-
-  // Accent
-  accent_violet: '#7C6EF7',
-
-  // Text
-  text_primary: '#1A1D26',
-  text_secondary: '#6B7280',
-  text_muted: '#9CA3AF',
-  text_inverse: '#FFFFFF',
-
-  // Semantic
-  success: '#22C55E',
-  success_light: '#DCFCE7',
-  warning: '#F59E0B',
-  warning_light: '#FEF3C7',
-  danger: '#EF4444',
-  danger_light: '#FEE2E2',
-  info: '#3B82F6',
-  info_light: '#DBEAFE',
-  purple: '#7C6EF7',
-  purple_light: '#EDE9FE',
-
-  // Border
-  border: 'rgba(0, 0, 0, 0.06)',
-  border_light: 'rgba(0, 0, 0, 0.03)',
-  divider: 'rgba(0, 0, 0, 0.04)',
-};
-
-// ─── Gradient System ──────────────────────────────────────────────────────
-
-export const GRADIENTS = {
-  primary: 'linear-gradient(135deg, #4F6EF7 0%, #38BDF8 100%)',
-  warm: 'linear-gradient(135deg, #F59E0B 0%, #FB923C 100%)',
-  cool: 'linear-gradient(135deg, #06B6D4 0%, #4F6EF7 100%)',
-  green: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
-};
-
-// ─── Spacing System (8px base) ────────────────────────────────────────────
+// ─── Spacing & Layout Constants ───────────────────────────────────────────
 
 export const SPACING = {
   xs: 4,
@@ -69,147 +28,107 @@ export const SPACING = {
   lg: 16,
   xl: 20,
   xxl: 24,
-  xxxl: 32,
 };
-
-// ─── Typography ───────────────────────────────────────────────────────────
-
-export const TYPOGRAPHY = {
-  font_family: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-  font_sizes: {
-    xs: 11,
-    sm: 12,
-    base: 14,
-    lg: 16,
-    xl: 20,
-    xxl: 24,
-    xxxl: 28,
-  },
-  font_weights: {
-    regular: 400,
-    medium: 500,
-    semibold: 600,
-    bold: 700,
-  },
-};
-
-// ─── Shape ────────────────────────────────────────────────────────────────
 
 export const SHAPE = {
-  radius_sm: 8,
-  radius_md: 10,
-  radius: 14, // 默认圆角 (html-pro-card 规约)
-  radius_lg: 20,
-  radius_xl: 24,
-  radius_pill: 9999,
+  radius: 10,
+  radius_sm: 6,
+  radius_lg: 16,
+  radius_pill: 999,
 };
-
-// ─── Shadows ──────────────────────────────────────────────────────────────
-
-export const SHADOWS = {
-  card: '0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03)',
-  elevated: '0 4px 24px rgba(0, 0, 0, 0.08)',
-  nav: '0 -1px 0 rgba(0, 0, 0, 0.06)',
-};
-
-// ─── Animation ────────────────────────────────────────────────────────────
-
-export const MOTION = {
-  duration_fast: '150ms',
-  duration_base: '250ms',
-  duration_slow: '400ms',
-  easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-};
-
-// ─── Layout ───────────────────────────────────────────────────────────────
 
 export const LAYOUT = {
-  sidebar_width: 72,
-  card_padding: 18,
-  touch_target: 48,
-  gap_grid: 14,
-  gap_section: 20,
-  max_content_width: 960,
-  bottom_nav_height: 72,
+  card_padding: 16,
+  card_gap: 12,
+  touch_target: 44,
 };
 
-// ─── html-pro-card CSS Variable Injection ─────────────────────────────────
+// ─── Gradient System (custom, no HA equivalent) ──────────────────────────
 
-import type { ResolvedTokens } from '../utils/visual-config';
+export const GRADIENTS = {
+  primary: 'linear-gradient(135deg, var(--hdp-primary) 0%, var(--hdp-info, #38BDF8) 100%)',
+  warm: 'linear-gradient(135deg, var(--hdp-warning) 0%, #FB923C 100%)',
+  cool: 'linear-gradient(135deg, #06B6D4 0%, var(--hdp-primary) 100%)',
+  green: 'linear-gradient(135deg, var(--hdp-success) 0%, #16A34A 100%)',
+};
 
+// ─── CSS Injection for html-pro-card Templates ────────────────────────────
+
+/**
+ * Generates a <style> block that maps HA theme tokens to the --hdp-* namespace.
+ * All card templates should call this function to inject consistent variables.
+ *
+ * When user overrides exist (from settings page localStorage), they take
+ * precedence over HA theme tokens.
+ */
 export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
-  const t = tokens;
+  // User overrides from settings (if any)
+  const primaryOverride = tokens?.primary || '';
+  const bgOverride = tokens?.page_bg || '';
+  const cardBgOverride = tokens?.card_bg || '';
+  const textOverride = tokens?.text_primary || '';
+  const textSecOverride = tokens?.text_secondary || '';
+  const borderOverride = tokens?.border || '';
+
+  // Build CSS: HA theme tokens with hardcoded fallbacks
   return /* css */ `
 <style>
-  :root {
-    /* Colors */
-    --hdp-bg: ${t?.page_bg || COLORS.page_bg};
-    --hdp-card-bg: ${t?.card_bg || COLORS.card_bg};
-    --hdp-sidebar-bg: ${t?.sidebar_bg || COLORS.sidebar_bg};
-    --hdp-primary: ${t?.primary || COLORS.primary};
-    --hdp-primary-light: ${t?.primary_light || COLORS.primary_light};
-    --hdp-primary-glow: ${t?.primary ? `rgba(${hexToRgbStr(t.primary)}, 0.15)` : 'rgba(79, 110, 247, 0.15)'};
-    --hdp-accent-violet: ${t?.accent_violet || COLORS.accent_violet};
-    --hdp-text: ${t?.text_primary || COLORS.text_primary};
-    --hdp-text-secondary: ${t?.text_secondary || COLORS.text_secondary};
-    --hdp-text-muted: ${t?.text_muted || COLORS.text_muted};
-    --hdp-text-inverse: ${COLORS.text_inverse};
-    --hdp-success: ${t?.success || COLORS.success};
-    --hdp-success-light: ${t?.success_light || COLORS.success_light};
-    --hdp-warning: ${t?.warning || COLORS.warning};
-    --hdp-warning-light: ${t?.warning_light || COLORS.warning_light};
-    --hdp-danger: ${t?.danger || COLORS.danger};
-    --hdp-danger-light: ${t?.danger_light || COLORS.danger_light};
-    --hdp-info: ${COLORS.info};
-    --hdp-border: ${t?.border || COLORS.border};
-    --hdp-divider: ${t?.divider || COLORS.divider};
+  :host, :root {
+    /* ── Primary Colors (HA theme → fallback) ── */
+    --hdp-primary: ${primaryOverride || 'var(--primary-color, #4F6EF7)'};
+    --hdp-primary-light: var(--light-primary-color, #EEF1FE);
+    --hdp-accent: var(--accent-color, #7C6EF7);
 
-    /* Gradient */
-    --hdp-gradient-primary: ${t?.gradient_primary || GRADIENTS.primary};
-    --hdp-gradient-green: ${GRADIENTS.green};
+    /* ── Surfaces ── */
+    --hdp-bg: ${bgOverride || 'var(--lovelace-background, var(--primary-background-color, #F4F6FA))'};
+    --hdp-card-bg: ${cardBgOverride || 'var(--ha-card-background, var(--card-background-color, #FFFFFF))'};
 
-    /* Spacing */
-    --hdp-spacing-xs: ${SPACING.xs}px;
-    --hdp-spacing-sm: ${SPACING.sm}px;
-    --hdp-spacing-md: ${SPACING.md}px;
-    --hdp-spacing-lg: ${t?.card_padding != null ? t.card_padding : SPACING.lg}px;
-    --hdp-spacing-xl: ${SPACING.xl}px;
-    --hdp-spacing-xxl: ${SPACING.xxl}px;
-    --hdp-card-gap: ${t?.card_gap != null ? t.card_gap : LAYOUT.gap_grid}px;
+    /* ── Text ── */
+    --hdp-text: ${textOverride || 'var(--primary-text-color, #1A1D26)'};
+    --hdp-text-secondary: ${textSecOverride || 'var(--secondary-text-color, #6B7280)'};
+    --hdp-text-muted: var(--disabled-text-color, #9CA3AF);
+    --hdp-text-inverse: var(--text-primary-color, #FFFFFF);
 
-    /* Typography */
-    --hdp-font: ${t?.font_family || TYPOGRAPHY.font_family};
+    /* ── Borders & Dividers ── */
+    --hdp-border: ${borderOverride || 'var(--divider-color, rgba(0,0,0,0.06))'};
+    --hdp-divider: var(--divider-color, rgba(0,0,0,0.04));
 
-    /* Shape */
-    --hdp-radius-sm: ${t?.border_radius != null ? Math.max(4, t.border_radius - 6) : SHAPE.radius_sm}px;
-    --hdp-radius: ${t?.border_radius != null ? t.border_radius : SHAPE.radius}px;
-    --hdp-radius-lg: ${t?.border_radius_lg != null ? t.border_radius_lg : SHAPE.radius_lg}px;
-    --hdp-radius-pill: ${t?.border_radius_pill != null ? t.border_radius_pill : SHAPE.radius_pill}px;
+    /* ── Semantic Colors ── */
+    --hdp-success: var(--success-color, #22C55E);
+    --hdp-success-light: rgba(34, 197, 94, 0.12);
+    --hdp-warning: var(--warning-color, #F59E0B);
+    --hdp-warning-light: rgba(245, 158, 11, 0.12);
+    --hdp-danger: var(--error-color, #EF4444);
+    --hdp-danger-light: rgba(239, 68, 68, 0.12);
+    --hdp-info: var(--info-color, #3B82F6);
+    --hdp-info-light: rgba(59, 130, 246, 0.12);
 
-    /* Shadow */
-    --hdp-shadow-card: ${t?.shadow_card || SHADOWS.card};
-    --hdp-shadow-elevated: ${t?.shadow_elevated || SHADOWS.elevated};
-    --hdp-shadow-nav: ${t?.shadow_nav || SHADOWS.nav};
+    /* ── Shadows ── */
+    --hdp-shadow-card: var(--ha-card-box-shadow, 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03));
+    --hdp-shadow-elevated: 0 4px 24px rgba(0,0,0,0.08);
 
-    /* Motion */
-    --hdp-transition: all ${t?.motion_base || MOTION.duration_base} ${t?.motion_easing || MOTION.easing};
-    --hdp-motion-fast: ${MOTION.duration_fast};
-    --hdp-motion-base: ${t?.motion_base || MOTION.duration_base};
-    --hdp-motion-easing: ${t?.motion_easing || MOTION.easing};
+    /* ── Gradients (defined after semantic colors they reference) ── */
+    --hdp-gradient-primary: linear-gradient(135deg, var(--hdp-primary) 0%, var(--hdp-info) 100%);
+    --hdp-gradient-green: linear-gradient(135deg, var(--hdp-success) 0%, #16A34A 100%);
 
-    /* Layout */
-    --hdp-sidebar-width: ${t?.sidebar_width != null ? t.sidebar_width : LAYOUT.sidebar_width}px;
-    --hdp-card-padding: ${t?.card_padding != null ? t.card_padding : LAYOUT.card_padding}px;
-    --hdp-touch-target: ${t?.touch_target != null ? t.touch_target : LAYOUT.touch_target}px;
+    /* ── Shape (html-pro-card spec: 10px) ── */
+    --hdp-radius: ${tokens?.border_radius != null ? tokens.border_radius : SHAPE.radius}px;
+    --hdp-radius-sm: ${SHAPE.radius_sm}px;
+    --hdp-radius-lg: ${SHAPE.radius_lg}px;
+    --hdp-radius-pill: ${SHAPE.radius_pill}px;
+
+    /* ── Spacing ── */
+    --hdp-card-padding: ${tokens?.card_padding != null ? tokens.card_padding : LAYOUT.card_padding}px;
+    --hdp-card-gap: ${tokens?.card_gap != null ? tokens.card_gap : LAYOUT.card_gap}px;
+
+    /* ── Typography ── */
+    --hdp-font: ${tokens?.font_family || 'inherit'};
+
+    /* ── Motion ── */
+    --hdp-transition: all 0.2s ease;
+    --hdp-motion-fast: 150ms;
+    --hdp-motion-base: 250ms;
+    --hdp-motion-easing: cubic-bezier(0.4, 0, 0.2, 1);
   }
 </style>`;
-}
-
-// ─── Color Utilities ──────────────────────────────────────────────────────
-
-function hexToRgbStr(hex: string): string {
-  const match = hex.match(/^#([0-9a-f]{6})$/i);
-  if (!match) return '79, 110, 247';
-  const v = parseInt(match[1], 16);
-  return `${(v >> 16) & 0xff}, ${(v >> 8) & 0xff}, ${v & 0xff}`;
 }

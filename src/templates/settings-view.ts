@@ -39,6 +39,7 @@ function buildSettingsHeader(tokens?: ResolvedTokens): LovelaceCardConfig {
   return {
     type: 'custom:html-pro-card',
     title: '',
+    do_not_parse: true,
     content: /* html */ `
 ${generateDesignTokenCSS(tokens)}
 <style>
@@ -127,6 +128,7 @@ function buildThemePresetCard(current: string, tokens?: ResolvedTokens): Lovelac
   return {
     type: 'custom:html-pro-card',
     title: '',
+    do_not_parse: true,
     content: /* html */ `
 ${generateDesignTokenCSS(tokens)}
 <style>
@@ -268,6 +270,7 @@ function buildCardStyleCard(stored: StoredVisualConfig, tokens?: ResolvedTokens)
   return {
     type: 'custom:html-pro-card',
     title: '',
+    do_not_parse: true,
     content: /* html */ `
 ${generateDesignTokenCSS(tokens)}
 <style>
@@ -374,6 +377,7 @@ function buildColorPickerCard(stored: StoredVisualConfig, tokens?: ResolvedToken
   return {
     type: 'custom:html-pro-card',
     title: '',
+    do_not_parse: true,
     content: /* html */ `
 ${generateDesignTokenCSS(tokens)}
 <style>
@@ -466,6 +470,7 @@ function buildShapeCard(stored: StoredVisualConfig, tokens?: ResolvedTokens): Lo
   return {
     type: 'custom:html-pro-card',
     title: '',
+    do_not_parse: true,
     content: /* html */ `
 ${generateDesignTokenCSS(tokens)}
 <style>
@@ -693,6 +698,7 @@ function buildFontCard(stored: StoredVisualConfig, tokens?: ResolvedTokens): Lov
   return {
     type: 'custom:html-pro-card',
     title: '',
+    do_not_parse: true,
     content: /* html */ `
 ${generateDesignTokenCSS(tokens)}
 <style>
@@ -779,6 +785,7 @@ function buildActionCard(tokens?: ResolvedTokens): LovelaceCardConfig {
   return {
     type: 'custom:html-pro-card',
     title: '',
+    do_not_parse: true,
     content: /* html */ `
 ${generateDesignTokenCSS(tokens)}
 <style>

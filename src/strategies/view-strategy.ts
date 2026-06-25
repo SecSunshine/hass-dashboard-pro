@@ -24,6 +24,16 @@ export class HassDashboardProViewStrategy {
     const viewPath = config.view_path || null;
     const areaId = config.area_id || null;
 
+    // Debug: log routing info to help diagnose view issues
+    console.debug(
+      '%c[HDPro View]%c path=%s area=%s keys=%s',
+      'color: #4F6EF7; font-weight: bold;',
+      'color: #64748B;',
+      viewPath,
+      areaId,
+      Object.keys(config).join(','),
+    );
+
     // Settings page
     if (viewPath === 'settings' || viewPath === 'hdp-settings') {
       return { cards: buildSettingsView(config, tokens) };
