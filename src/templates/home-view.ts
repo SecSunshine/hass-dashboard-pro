@@ -167,6 +167,7 @@ function getIndoorEnv(hass: Hass): { temp: string; humidity: string; airQuality:
 
 function buildQuickStrip(hass: Hass, tokens?: ResolvedTokens): LovelaceCardConfig {
   const counts = getDomainCounts(hass);
+  const coverInfo = getCoverStatus(hass);
 
   return {
     type: 'custom:html-pro-card',
@@ -241,9 +242,9 @@ ${generateDesignTokenCSS(tokens)}
     <div class="quick-card-label">空调运行</div>
   </div>
   <div class="quick-card">
-    <div class="quick-card-indicator quick-card-indicator--off"></div>
+    <div class="quick-card-indicator ${coverInfo.openCount > 0 ? 'quick-card-indicator--on' : 'quick-card-indicator--off'}"></div>
     <div class="quick-card-icon quick-card-icon--curtain">${ICONS.curtain24}</div>
-    <div class="quick-card-value">关闭</div>
+    <div class="quick-card-value">${coverInfo.display}</div>
     <div class="quick-card-label">窗帘状态</div>
   </div>
 </div>`,
@@ -253,7 +254,8 @@ ${generateDesignTokenCSS(tokens)}
 // ─── Status Monitoring Grid ───────────────────────────────────────────────
 
 function buildStatusGrid(hass: Hass, tokens?: ResolvedTokens): LovelaceCardConfig {
-  const power = getPowerReading(hass);
+  const powerInfo = getPowerInfo(hass);
+  const security = getSecurityInfo(hass);
 
   return {
     type: 'custom:html-pro-card',
@@ -302,6 +304,8 @@ ${generateDesignTokenCSS(tokens)}
   }
   .trend--up { background: var(--hdp-success-light); color: var(--hdp-success); }
   .trend--stable { background: var(--hdp-primary-light); color: var(--hdp-primary); }
+  .trend--warn { background: var(--hdp-warning-light); color: var(--hdp-warning); }
+  .trend--danger { background: var(--hdp-danger-light); color: var(--hdp-danger); }
   .status-card-value {
     font-size: 28px; font-weight: 700; color: var(--hdp-text);
     letter-spacing: -0.5px; line-height: 1; margin-bottom: 4px;
@@ -330,43 +334,119 @@ ${generateDesignTokenCSS(tokens)}
       <div class="status-card-icon" style="background: var(--hdp-primary-light); color: var(--hdp-primary);">
         ${ICONS.power18}
       </div>
-      <div class="status-card-trend trend--up">+12%</div>
+      <div class="status-card-trend ${powerInfo.percent >= 80 ? 'trend--warn' : 'trend--stable'}">${powerInfo.percent >= 80 ? '高负载' : '正常'}</div>
     </div>
-    <div class="status-card-value">${power}</div>
+    <div class="status-card-value">${powerInfo.display}</div>
     <div class="status-card-label">实时功率</div>
     <div class="status-card-bar">
-      <div class="status-card-bar-fill" style="width: 45%; background: var(--hdp-gradient-primary);"></div>
+      <div class="status-card-bar-fill" style="width: ${powerInfo.percent}%; background: ${powerInfo.percent >= 80 ? 'var(--hdp-warning)' : 'var(--hdp-gradient-primary)'};"></div>
     </div>
   </div>
   <div class="status-card">
     <div class="status-card-header">
-      <div class="status-card-icon" style="background: var(--hdp-success-light); color: var(--hdp-success);">
+      <div class="status-card-icon" style="background: ${security.colorBg}; color: ${security.color};">
         ${ICONS.security18}
       </div>
-      <div class="status-card-trend trend--stable">正常</div>
+      <div class="status-card-trend ${security.trendClass}">${security.badge}</div>
     </div>
-    <div class="status-card-value">布防</div>
+    <div class="status-card-value">${security.status}</div>
     <div class="status-card-label">安防状态</div>
     <div class="status-card-bar">
-      <div class="status-card-bar-fill" style="width: 100%; background: var(--hdp-gradient-green);"></div>
+      <div class="status-card-bar-fill" style="width: ${security.barPercent}%; background: ${security.barColor};"></div>
     </div>
   </div>
 </div>`,
   };
 }
 
-function getPowerReading(hass: Hass): string {
+function getPowerInfo(hass: Hass): { display: string; watts: number; percent: number } {
   for (const [entityId, stateObj] of Object.entries(hass.states)) {
     const domain = entityId.split('.')[0];
     if (domain === 'sensor') {
       const uom = stateObj.attributes.unit_of_measurement as string;
       if ((uom === 'W' || uom === 'kW') && (entityId.includes('power') || entityId.includes('energy'))) {
         const val = parseFloat(stateObj.state);
-        return uom === 'W' ? `${(val / 1000).toFixed(1)}kW` : `${val.toFixed(1)}kW`;
+        if (isNaN(val)) continue;
+        const watts = uom === 'kW' ? val * 1000 : val;
+        const display = watts >= 1000 ? `${(watts / 1000).toFixed(1)}kW` : `${Math.round(watts)}W`;
+        // Estimate percent based on a reasonable household max (~8kW)
+        const percent = Math.min(100, Math.round((watts / 8000) * 100));
+        return { display, watts, percent };
       }
     }
   }
-  return '-- kW';
+  return { display: '-- W', watts: 0, percent: 0 };
+}
+
+function getSecurityInfo(hass: Hass): {
+  status: string; badge: string; trendClass: string;
+  colorBg: string; color: string; barPercent: number; barColor: string;
+} {
+  // Check alarm_control_panel entities first
+  for (const [entityId, stateObj] of Object.entries(hass.states)) {
+    const domain = entityId.split('.')[0];
+    if (domain === 'alarm_control_panel') {
+      const s = stateObj.state;
+      if (s === 'armed_away' || s === 'armed_home' || s === 'armed_night') {
+        return {
+          status: '已布防', badge: '安全', trendClass: 'trend--stable',
+          colorBg: 'var(--hdp-success-light)', color: 'var(--hdp-success)',
+          barPercent: 100, barColor: 'var(--hdp-gradient-green)',
+        };
+      }
+      if (s === 'triggered') {
+        return {
+          status: '报警中', badge: '警报', trendClass: 'trend--danger',
+          colorBg: 'var(--hdp-danger-light)', color: 'var(--hdp-danger)',
+          barPercent: 100, barColor: 'var(--hdp-danger)',
+        };
+      }
+      if (s === 'arming' || s === 'pending') {
+        return {
+          status: '布防中', badge: '等待', trendClass: 'trend--warn',
+          colorBg: 'var(--hdp-warning-light)', color: 'var(--hdp-warning)',
+          barPercent: 60, barColor: 'var(--hdp-warning)',
+        };
+      }
+      // disarmed
+      return {
+        status: '已撤防', badge: '未布防', trendClass: 'trend--up',
+        colorBg: 'var(--hdp-primary-light)', color: 'var(--hdp-primary)',
+        barPercent: 30, barColor: 'var(--hdp-gradient-primary)',
+      };
+    }
+  }
+
+  // Fallback: count locked vs unlocked locks/doors
+  let locked = 0;
+  let total = 0;
+  for (const [entityId, stateObj] of Object.entries(hass.states)) {
+    const domain = entityId.split('.')[0];
+    if (domain === 'lock' || domain === 'binary_sensor' && (
+      entityId.includes('door') || entityId.includes('window') || entityId.includes('lock')
+    )) {
+      total++;
+      if (stateObj.state === 'locked' || stateObj.state === 'off') locked++;
+    }
+  }
+
+  if (total > 0) {
+    const pct = Math.round((locked / total) * 100);
+    return {
+      status: `${locked}/${total}`, badge: pct === 100 ? '全部锁定' : '部分开启',
+      trendClass: pct === 100 ? 'trend--stable' : 'trend--warn',
+      colorBg: pct === 100 ? 'var(--hdp-success-light)' : 'var(--hdp-warning-light)',
+      color: pct === 100 ? 'var(--hdp-success)' : 'var(--hdp-warning)',
+      barPercent: pct, barColor: pct === 100 ? 'var(--hdp-gradient-green)' : 'var(--hdp-warning)',
+    };
+  }
+
+  // No security entities at all
+  return {
+    status: '--', badge: '无设备', trendClass: 'trend--stable',
+    colorBg: 'var(--hdp-primary-light)', color: 'var(--hdp-primary)',
+    barPercent: 0, barColor: 'var(--hdp-divider)',
+  };
 }
 
 // ─── Scenes Preview Row ───────────────────────────────────────────────────
@@ -458,6 +538,24 @@ function getDomainCounts(hass: Hass) {
   }
 
   return { lights: { on: lightsOn, total: lightsTotal }, climate: climateActive };
+}
+
+function getCoverStatus(hass: Hass): { display: string; openCount: number; total: number } {
+  let openCount = 0;
+  let total = 0;
+
+  for (const [entityId, stateObj] of Object.entries(hass.states)) {
+    const domain = entityId.split('.')[0];
+    if (domain === 'cover') {
+      total++;
+      if (stateObj.state === 'open' || stateObj.state === 'opening') openCount++;
+    }
+  }
+
+  if (total === 0) return { display: '--', openCount: 0, total: 0 };
+  if (openCount === 0) return { display: '已关闭', openCount: 0, total };
+  if (openCount === total) return { display: '已打开', openCount, total };
+  return { display: `${openCount}/${total}`, openCount, total };
 }
 
 // ─── SVG Icon Set ─────────────────────────────────────────────────────────

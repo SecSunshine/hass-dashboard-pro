@@ -45,7 +45,7 @@ export class HassDashboardProStrategy {
         views.push({
           title: area.name,
           path,
-          icon: 'mdi:home-outline',
+          icon: getAreaIcon(area.name),
           badges: [],
           cards: [],
           strategy: {
@@ -101,4 +101,47 @@ function sanitizePath(name: string): string {
     .replace(/[^a-z0-9-]/g, '')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
+}
+
+function getAreaIcon(name: string): string {
+  const n = name.toLowerCase();
+
+  // Living areas
+  if (/客厅|起居室|lounge|living/.test(n)) return 'mdi:sofa';
+  if (/餐厅|饭厅|dining/.test(n)) return 'mdi:silverware-fork-knife';
+  if (/厨房|kitchen/.test(n)) return 'mdi:chef-hat';
+
+  // Bedrooms
+  if (/主卧|master/.test(n)) return 'mdi:bed-king';
+  if (/卧室|bedroom|bed/.test(n)) return 'mdi:bed';
+  if (/儿童|child|kid/.test(n)) return 'mdi:teddy-bear';
+  if (/客卧|guest/.test(n)) return 'mdi:bed-empty';
+
+  // Work & study
+  if (/书房|study|office/.test(n)) return 'mdi:desk';
+
+  // Bathrooms
+  if (/浴室|卫生间|bath|toilet|wc/.test(n)) return 'mdi:shower';
+
+  // Entryways
+  if (/玄关|门厅|entry|foyer|hall/.test(n)) return 'mdi:door';
+
+  // Storage & utility
+  if (/车库|garage/.test(n)) return 'mdi:car';
+  if (/阳台|balcony|terrace/.test(n)) return 'mdi:flower';
+  if (/花园|garden|yard/.test(n)) return 'mdi:tree';
+  if (/储物|储藏|storage/.test(n)) return 'mdi:package-variant';
+  if (/洗衣|laundry/.test(n)) return 'mdi:washing-machine';
+
+  // Entertainment
+  if (/影院|影音|media|theater|theatre/.test(n)) return 'mdi:movie';
+  if (/游戏|game|play/.test(n)) return 'mdi:gamepad-variant';
+
+  // Outdoor / structural
+  if (/楼梯|stair/.test(n)) return 'mdi:stairs';
+  if (/走廊|corridor|hallway/.test(n)) return 'mdi:foot-print';
+  if (/阁楼|attic/.test(n)) return 'mdi:home-roof';
+  if (/地下|basement/.test(n)) return 'mdi:elevator-passenger';
+
+  return 'mdi:home-outline';
 }
