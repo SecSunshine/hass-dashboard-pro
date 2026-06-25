@@ -1,35 +1,79 @@
 /**
- * Template: Home Dashboard View (v2.1)
+ * Template: Home Dashboard View (v3.0)
  *
- * html-card-pro compliant:
+ * Full dwains-dashboard-next inspired home page:
+ *   1. Welcome hero — greeting, weather, alarm status
+ *   2. Status domain badges — horizontal row of active device counts
+ *   3. People card — person.* entities with home/away status
+ *   4. Indoor climate — averaged temperature & humidity
+ *   5. House power usage — total watts + per-room percentage bars
+ *   6. Favorites — configurable pinned entities
+ *   7. Summary — repairs, updates, entity/device counts
+ *
+ * html-card-pro conventions:
  *   - All colors via HA theme tokens (--hdp-* → var(--primary-color), etc.)
- *   - No inline styles — all in <style> blocks
- *   - border-radius via --hdp-radius (10px spec)
+ *   - No inline styles for colors — all in <style> blocks
+ *   - border-radius via --hdp-radius
  *   - do_not_parse: true on every card
  *   - Hover: translateY(-2px), transition: all 0.2s ease
- *
- * Cards:
- *   1. Welcome card (gradient hero + greeting + env stats)
- *   2. Quick strip (lights / climate / curtains with live data)
- *   3. Status grid (power + security from real HA entities)
- *   4. Scenes row (quick scene previews)
+ *   - Min touch target: 44px
  */
 
 import type { Hass, LovelaceCardConfig, StrategyConfig } from '../types';
 import { generateDesignTokenCSS } from '../styles/design-tokens';
 import type { ResolvedTokens } from '../utils/visual-config';
+import { buildHousePowerUsage } from '../utils/power-usage';
+import {
+  getPersons,
+  getClimateSummary,
+  getStatusDomains,
+  getFavorites,
+  getHomeSummaries,
+  getWeather,
+  getAlarmStatus,
+} from '../utils/home-data';
+import type { PersonInfo, DomainStatus, FavoriteEntity } from '../utils/home-data';
 
-export function buildHomeView(hass: Hass, _config: StrategyConfig, tokens?: ResolvedTokens): LovelaceCardConfig[] {
-  const greeting = getGreeting();
-  const userName = hass.user?.name || '';
+export function buildHomeView(hass: Hass, config: StrategyConfig, tokens?: ResolvedTokens): LovelaceCardConfig[] {
+  const cards: LovelaceCardConfig[] = [];
 
-  return [
-    buildWelcomeCard(hass, greeting, userName, tokens),
-    buildQuickStrip(hass, tokens),
-    buildStatusGrid(hass, tokens),
-    buildScenesPreview(tokens),
-  ];
+  // 1. Welcome hero (always shown)
+  cards.push(buildWelcomeCard(hass, config, tokens));
+
+  // 2. Status domain badges (only if domains exist)
+  const domains = getStatusDomains(hass);
+  if (domains.length > 0) {
+    cards.push(buildStatusBadges(domains, tokens));
+  }
+
+  // 3. People card (only if person entities exist)
+  const persons = getPersons(hass, config.hidden_persons);
+  if (persons.length > 0) {
+    cards.push(buildPeopleCard(persons, tokens));
+  }
+
+  // 4. Climate + Alarm combo card
+  cards.push(buildEnvironmentCard(hass, config, tokens));
+
+  // 5. Power usage card
+  const power = buildHousePowerUsage(hass);
+  if (power.has_data) {
+    cards.push(buildPowerCard(power, tokens));
+  }
+
+  // 6. Favorites (only if configured)
+  const favorites = getFavorites(hass, config);
+  if (favorites.length > 0) {
+    cards.push(buildFavoritesCard(favorites, tokens));
+  }
+
+  // 7. Summary
+  cards.push(buildSummaryCard(hass, tokens));
+
+  return cards;
 }
+
+// ─── Greeting ──────────────────────────────────────────────────────────────
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -40,10 +84,35 @@ function getGreeting(): string {
   return '晚上好';
 }
 
-// ─── Welcome Card ─────────────────────────────────────────────────────────
+function getDateString(): string {
+  const now = new Date();
+  const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+  return `${now.getMonth() + 1}月${now.getDate()}日 ${weekdays[now.getDay()]}`;
+}
 
-function buildWelcomeCard(hass: Hass, greeting: string, userName: string, tokens?: ResolvedTokens): LovelaceCardConfig {
-  const env = getIndoorEnv(hass);
+// ─── 1. Welcome Card ───────────────────────────────────────────────────────
+
+function buildWelcomeCard(hass: Hass, config: StrategyConfig, tokens?: ResolvedTokens): LovelaceCardConfig {
+  const greeting = getGreeting();
+  const userName = hass.user?.name || '';
+  const dateStr = getDateString();
+  const weather = getWeather(hass, config.weather_entity);
+  const alarm = getAlarmStatus(hass);
+
+  const weatherHTML = weather.has_data
+    ? `<div class="hw-weather">
+        <span class="hw-w-icon">${weather.icon_svg}</span>
+        <span class="hw-w-temp">${weather.temp}</span>
+        <span class="hw-w-cond">${weather.condition_display}</span>
+      </div>`
+    : '';
+
+  const alarmHTML = alarm.has_alarm
+    ? `<div class="hw-alarm hw-alarm--${alarm.badge_class}">
+        <span class="hw-a-dot"></span>
+        <span class="hw-a-text">${alarm.display}</span>
+      </div>`
+    : '';
 
   return {
     type: 'custom:html-pro-card',
@@ -52,213 +121,143 @@ function buildWelcomeCard(hass: Hass, greeting: string, userName: string, tokens
     content: /* html */ `
 ${generateDesignTokenCSS(tokens)}
 <style>
-  .hero {
+  .hw {
     background: var(--hdp-gradient-primary);
     border-radius: var(--hdp-radius-lg);
     padding: 24px;
     position: relative;
     overflow: hidden;
   }
-  .hero::before {
+  .hw::before {
     content: '';
     position: absolute;
     top: 0; right: 0;
-    width: 40%; height: 100%;
-    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 100%);
+    width: 45%; height: 100%;
+    background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.05) 100%);
+    pointer-events: none;
   }
-  .hero-body { position: relative; z-index: 1; }
-  .hero-greeting {
-    font: inherit;
-    font-size: 22px;
-    font-weight: 700;
-    color: white;
-    margin-bottom: 4px;
-  }
-  .hero-sub {
-    font: inherit;
-    font-size: 13px;
-    color: rgba(255,255,255,0.7);
-    margin-bottom: 20px;
-  }
-  .hero-stats {
-    display: flex;
-    gap: 20px;
-  }
-  .hero-stat-val {
-    font: inherit;
-    font-size: 20px;
-    font-weight: 700;
-    color: white;
-  }
-  .hero-stat-lbl {
-    font: inherit;
-    font-size: 11px;
-    font-weight: 500;
-    color: rgba(255,255,255,0.55);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  @media (max-width: 480px) {
-    .hero { padding: 18px; }
-    .hero-stats { gap: 14px; }
-    .hero-stat-val { font-size: 17px; }
-    .hero-greeting { font-size: 19px; }
-  }
-</style>
-<div class="hero">
-  <div class="hero-body">
-    <div class="hero-greeting">${greeting}${userName ? '，' + userName : ''}</div>
-    <div class="hero-sub">智能家居 · 一切尽在掌控</div>
-    <div class="hero-stats">
-      <div class="hero-stat">
-        <div class="hero-stat-val">${env.temp}</div>
-        <div class="hero-stat-lbl">温度</div>
-      </div>
-      <div class="hero-stat">
-        <div class="hero-stat-val">${env.humidity}</div>
-        <div class="hero-stat-lbl">湿度</div>
-      </div>
-      <div class="hero-stat">
-        <div class="hero-stat-val">${env.air}</div>
-        <div class="hero-stat-lbl">空气</div>
-      </div>
-    </div>
-  </div>
-</div>`,
-  };
-}
-
-function getIndoorEnv(hass: Hass): { temp: string; humidity: string; air: string } {
-  let temp = '--°C', humidity = '--%', air = '--';
-  for (const [eid, s] of Object.entries(hass.states)) {
-    const d = eid.split('.')[0];
-    if (d !== 'sensor') continue;
-    const uom = s.attributes.unit_of_measurement as string;
-    if (uom === '°C' && temp === '--°C') temp = `${s.state}°C`;
-    if (uom === '%' && humidity === '--%') humidity = `${s.state}%`;
-    if ((eid.includes('pm25') || eid.includes('air_quality')) && air === '--') {
-      const v = Number(s.state);
-      air = v <= 35 ? '优' : v <= 75 ? '良' : '差';
-    }
-  }
-  return { temp, humidity, air };
-}
-
-// ─── Quick Strip ──────────────────────────────────────────────────────────
-
-function buildQuickStrip(hass: Hass, tokens?: ResolvedTokens): LovelaceCardConfig {
-  const counts = getDomainCounts(hass);
-  const cover = getCoverStatus(hass);
-
-  return {
-    type: 'custom:html-pro-card',
-    title: '',
-    do_not_parse: true,
-    content: /* html */ `
-${generateDesignTokenCSS(tokens)}
-<style>
-  .q-strip {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--hdp-card-gap);
-  }
-  .q-card {
-    background: var(--hdp-card-bg);
-    border-radius: var(--hdp-radius);
-    padding: var(--hdp-card-padding);
-    border: 1px solid var(--hdp-border);
-    box-shadow: var(--hdp-shadow-card);
-    transition: all 0.2s ease;
-    position: relative;
-    cursor: pointer;
-  }
-  .q-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--hdp-shadow-elevated);
-  }
-  .q-dot {
+  .hw::after {
+    content: '';
     position: absolute;
-    top: var(--hdp-card-padding);
-    right: var(--hdp-card-padding);
-    width: 8px; height: 8px;
+    bottom: -20px; right: -20px;
+    width: 120px; height: 120px;
     border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+    pointer-events: none;
   }
-  .q-dot--on {
-    background: var(--hdp-success);
-    box-shadow: 0 0 0 3px var(--hdp-success-light);
+  .hw-body { position: relative; z-index: 1; }
+  .hw-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
   }
-  .q-dot--off {
-    background: var(--hdp-text-muted);
-  }
-  .q-icon {
-    width: 40px; height: 40px;
-    border-radius: var(--hdp-radius-sm);
-    display: flex; align-items: center; justify-content: center;
-    margin-bottom: 12px;
-  }
-  .q-icon svg { width: 20px; height: 20px; }
-  .q-icon--light { background: var(--hdp-warning-light); color: var(--hdp-warning); }
-  .q-icon--climate { background: var(--hdp-info-light); color: var(--hdp-info); }
-  .q-icon--cover { background: rgba(124,110,247,0.1); color: var(--hdp-accent); }
-  .q-val {
-    font: inherit;
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--hdp-text);
-    margin-bottom: 2px;
-  }
-  .q-val-sub {
-    font-size: 14px;
-    font-weight: 400;
-    color: var(--hdp-text-secondary);
-  }
-  .q-lbl {
+  .hw-date {
     font: inherit;
     font-size: 12px;
     font-weight: 500;
-    color: var(--hdp-text-secondary);
+    color: rgba(255,255,255,0.55);
+    letter-spacing: 0.3px;
   }
+  .hw-greeting {
+    font: inherit;
+    font-size: 24px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 16px;
+    line-height: 1.2;
+  }
+  .hw-greeting-name {
+    font-weight: 400;
+    font-size: 18px;
+    opacity: 0.85;
+  }
+  .hw-meta {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .hw-weather {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.12);
+    border-radius: var(--hdp-radius-pill);
+    padding: 6px 14px;
+    backdrop-filter: blur(4px);
+  }
+  .hw-w-icon {
+    width: 18px; height: 18px;
+    display: flex; align-items: center;
+    color: white;
+  }
+  .hw-w-icon svg { width: 18px; height: 18px; }
+  .hw-w-temp {
+    font: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    color: white;
+  }
+  .hw-w-cond {
+    font: inherit;
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+  }
+  .hw-alarm {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: var(--hdp-radius-pill);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .hw-a-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+  }
+  .hw-alarm--ok { background: rgba(34,197,94,0.2); color: #86EFAC; }
+  .hw-alarm--ok .hw-a-dot { background: #22C55E; }
+  .hw-alarm--warn { background: rgba(245,158,11,0.2); color: #FCD34D; }
+  .hw-alarm--warn .hw-a-dot { background: #F59E0B; }
+  .hw-alarm--danger { background: rgba(239,68,68,0.2); color: #FCA5A5; }
+  .hw-alarm--danger .hw-a-dot { background: #EF4444; }
+  .hw-alarm--info { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.8); }
+  .hw-alarm--info .hw-a-dot { background: rgba(255,255,255,0.5); }
   @media (max-width: 480px) {
-    .q-card { padding: 12px; }
-    .q-val { font-size: 18px; }
-    .q-icon { width: 34px; height: 34px; margin-bottom: 8px; }
-    .q-icon svg { width: 17px; height: 17px; }
+    .hw { padding: 18px; }
+    .hw-greeting { font-size: 20px; }
+    .hw-greeting-name { font-size: 15px; }
   }
 </style>
-<div class="q-strip">
-  <div class="q-card">
-    <div class="q-dot ${counts.lightsOn > 0 ? 'q-dot--on' : 'q-dot--off'}"></div>
-    <div class="q-icon q-icon--light">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7z"/></svg>
+<div class="hw">
+  <div class="hw-body">
+    <div class="hw-top">
+      <span class="hw-date">${dateStr}</span>
     </div>
-    <div class="q-val">${counts.lightsOn}<span class="q-val-sub">/${counts.lightsTotal}</span></div>
-    <div class="q-lbl">灯光开启</div>
-  </div>
-  <div class="q-card">
-    <div class="q-dot ${counts.climate > 0 ? 'q-dot--on' : 'q-dot--off'}"></div>
-    <div class="q-icon q-icon--climate">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 13V5a3 3 0 0 0-6 0v8a5 5 0 1 0 6 0z"/></svg>
+    <div class="hw-greeting">${greeting}<span class="hw-greeting-name">${userName ? '，' + userName : ''}</span></div>
+    <div class="hw-meta">
+      ${weatherHTML}
+      ${alarmHTML}
     </div>
-    <div class="q-val">${counts.climate}</div>
-    <div class="q-lbl">空调运行</div>
-  </div>
-  <div class="q-card">
-    <div class="q-dot ${cover.openCount > 0 ? 'q-dot--on' : 'q-dot--off'}"></div>
-    <div class="q-icon q-icon--cover">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="12" y1="3" x2="12" y2="21"/><path d="M3 8c3 0 3-2 6-2s3 2 6 2 3-2 6-2"/></svg>
-    </div>
-    <div class="q-val">${cover.display}</div>
-    <div class="q-lbl">窗帘状态</div>
   </div>
 </div>`,
   };
 }
 
-// ─── Status Grid ──────────────────────────────────────────────────────────
+// ─── 2. Status Domain Badges ───────────────────────────────────────────────
 
-function buildStatusGrid(hass: Hass, tokens?: ResolvedTokens): LovelaceCardConfig {
-  const power = getPowerInfo(hass);
-  const security = getSecurityInfo(hass);
+function buildStatusBadges(domains: DomainStatus[], tokens?: ResolvedTokens): LovelaceCardConfig {
+  const badges = domains.map(d => {
+    const countText = d.active > 0 ? `<span class="sd-cnt">${d.active}</span>` : '';
+    return `<div class="sd-badge sd-badge--${d.color_class}">
+      <span class="sd-icon">${d.icon_svg}</span>
+      <span class="sd-label">${d.label}</span>
+      ${countText}
+    </div>`;
+  }).join('');
 
   return {
     type: 'custom:html-pro-card',
@@ -267,147 +266,310 @@ function buildStatusGrid(hass: Hass, tokens?: ResolvedTokens): LovelaceCardConfi
     content: /* html */ `
 ${generateDesignTokenCSS(tokens)}
 <style>
-  .sec-hdr {
+  .sd-wrap {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 2px 0;
+  }
+  .sd-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: var(--hdp-radius-pill);
+    background: var(--hdp-card-bg);
+    border: 1px solid var(--hdp-border);
+    transition: all 0.2s ease;
+    cursor: default;
+  }
+  .sd-badge:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--hdp-shadow-card);
+  }
+  .sd-icon {
+    width: 14px; height: 14px;
+    display: flex; align-items: center;
+  }
+  .sd-icon svg { width: 14px; height: 14px; }
+  .sd-label {
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--hdp-text);
+  }
+  .sd-cnt {
+    font: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    color: white;
+    background: var(--hdp-primary);
+    border-radius: 8px;
+    padding: 1px 6px;
+    min-width: 16px;
+    text-align: center;
+    line-height: 14px;
+  }
+  .sd-badge--warning .sd-icon { color: var(--hdp-warning); }
+  .sd-badge--info .sd-icon { color: var(--hdp-info); }
+  .sd-badge--success .sd-icon { color: var(--hdp-success); }
+  .sd-badge--danger .sd-icon { color: var(--hdp-danger); }
+  .sd-badge--accent .sd-icon { color: var(--hdp-accent); }
+</style>
+<div class="sd-wrap">${badges}</div>`,
+  };
+}
+
+// ─── 3. People Card ────────────────────────────────────────────────────────
+
+function buildPeopleCard(persons: PersonInfo[], tokens?: ResolvedTokens): LovelaceCardConfig {
+  const homeCount = persons.filter(p => p.is_home).length;
+  const people = persons.map(p => {
+    const avatarHTML = p.picture
+      ? `<div class="pp-avatar" style="background-image: url('${p.picture}')"></div>`
+      : `<div class="pp-avatar pp-avatar--fallback">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        </div>`;
+    const stateCls = p.is_home ? 'pp-state--home' : 'pp-state--away';
+    return `<div class="pp-item">
+      ${avatarHTML}
+      <div class="pp-name">${p.name}</div>
+      <div class="pp-state ${stateCls}">${p.display}</div>
+    </div>`;
+  }).join('');
+
+  return {
+    type: 'custom:html-pro-card',
+    title: '',
+    do_not_parse: true,
+    content: /* html */ `
+${generateDesignTokenCSS(tokens)}
+<style>
+  .pp-hdr {
     display: flex;
     align-items: center;
-    margin-bottom: 12px;
-    margin-top: 4px;
+    justify-content: space-between;
+    margin-bottom: 14px;
   }
-  .sec-title {
+  .pp-title {
     font: inherit;
     font-size: 15px;
     font-weight: 700;
     color: var(--hdp-text);
   }
-  .s-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--hdp-card-gap);
-  }
-  .s-card {
-    background: var(--hdp-card-bg);
-    border-radius: var(--hdp-radius);
-    padding: var(--hdp-card-padding);
-    border: 1px solid var(--hdp-border);
-    box-shadow: var(--hdp-shadow-card);
-    transition: all 0.2s ease;
-  }
-  .s-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--hdp-shadow-elevated);
-  }
-  .s-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 10px;
-  }
-  .s-icon {
-    width: 34px; height: 34px;
-    border-radius: var(--hdp-radius-sm);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .s-icon svg { width: 17px; height: 17px; }
-  .s-icon--power { background: var(--hdp-info-light); color: var(--hdp-info); }
-  .s-icon--sec { background: var(--hdp-success-light); color: var(--hdp-success); }
-  .s-badge {
+  .pp-count {
     font: inherit;
     font-size: 11px;
+    font-weight: 600;
+    color: var(--hdp-success);
+    background: var(--hdp-success-light);
+    padding: 2px 10px;
+    border-radius: var(--hdp-radius-pill);
+  }
+  .pp-grid {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .pp-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 64px;
+    text-align: center;
+  }
+  .pp-avatar {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    background-color: var(--hdp-divider);
+  }
+  .pp-avatar--fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--hdp-text-muted);
+    background: var(--hdp-divider);
+  }
+  .pp-avatar--fallback svg { width: 22px; height: 22px; }
+  .pp-name {
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--hdp-text);
+    max-width: 72px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .pp-state {
+    font: inherit;
+    font-size: 10px;
     font-weight: 600;
     padding: 2px 8px;
     border-radius: var(--hdp-radius-pill);
   }
-  .s-badge--ok { background: var(--hdp-success-light); color: var(--hdp-success); }
-  .s-badge--warn { background: var(--hdp-warning-light); color: var(--hdp-warning); }
-  .s-badge--danger { background: var(--hdp-danger-light); color: var(--hdp-danger); }
-  .s-badge--info { background: var(--hdp-info-light); color: var(--hdp-info); }
-  .s-val {
-    font: inherit;
-    font-size: 26px;
-    font-weight: 700;
-    color: var(--hdp-text);
-    line-height: 1;
-    margin-bottom: 4px;
-  }
-  .s-lbl {
-    font: inherit;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--hdp-text-secondary);
-  }
-  .s-bar {
-    margin-top: 10px;
-    height: 4px;
-    border-radius: 2px;
-    background: var(--hdp-divider);
-    overflow: hidden;
-  }
-  .s-bar-fill {
-    height: 100%;
-    border-radius: 2px;
-    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .s-bar-fill--normal { background: var(--hdp-gradient-primary); }
-  .s-bar-fill--warn { background: var(--hdp-warning); }
-  .s-bar-fill--green { background: var(--hdp-gradient-green); }
-  .s-bar-fill--danger { background: var(--hdp-danger); }
-  .s-bar-fill--empty { background: var(--hdp-divider); }
-  @media (max-width: 480px) {
-    .s-grid { grid-template-columns: 1fr; }
-  }
+  .pp-state--home { background: var(--hdp-success-light); color: var(--hdp-success); }
+  .pp-state--away { background: var(--hdp-divider); color: var(--hdp-text-muted); }
 </style>
-<div class="sec-hdr">
-  <div class="sec-title">实时监控</div>
+<div class="pp-hdr">
+  <span class="pp-title">家庭成员</span>
+  <span class="pp-count">${homeCount} 人在家</span>
 </div>
-<div class="s-grid">
-  <div class="s-card">
-    <div class="s-top">
-      <div class="s-icon s-icon--power">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
-      </div>
-      <div class="s-badge ${power.percent >= 80 ? 's-badge--warn' : 's-badge--ok'}">${power.percent >= 80 ? '高负载' : '正常'}</div>
-    </div>
-    <div class="s-val">${power.display}</div>
-    <div class="s-lbl">实时功率</div>
-    <div class="s-bar">
-      <div class="s-bar-fill s-bar-fill--${power.percent >= 80 ? 'warn' : 'normal'}" style="width: ${power.percent}%;"></div>
-    </div>
-  </div>
-  <div class="s-card">
-    <div class="s-top">
-      <div class="s-icon s-icon--sec">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
-      </div>
-      <div class="s-badge ${security.badgeCls}">${security.badge}</div>
-    </div>
-    <div class="s-val">${security.status}</div>
-    <div class="s-lbl">安防状态</div>
-    <div class="s-bar">
-      <div class="s-bar-fill s-bar-fill--${security.barStyle}" style="width: ${security.barPct}%;"></div>
-    </div>
-  </div>
-</div>`,
+<div class="pp-grid">${people}</div>`,
   };
 }
 
-// ─── Scenes Row ───────────────────────────────────────────────────────────
+// ─── 4. Environment Card (Climate + Security) ──────────────────────────────
 
-function buildScenesPreview(tokens?: ResolvedTokens): LovelaceCardConfig {
-  const scenes = [
-    { name: '起床模式', cls: 'sc-icon--warm',
-      svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>' },
-    { name: '离家模式', cls: 'sc-icon--info',
-      svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>' },
-    { name: '睡眠模式', cls: 'sc-icon--accent',
-      svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>' },
-    { name: '安防模式', cls: 'sc-icon--danger',
-      svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' },
-  ];
+function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: ResolvedTokens): LovelaceCardConfig {
+  const climate = getClimateSummary(hass);
+  const alarm = getAlarmStatus(hass);
 
-  const cards = scenes.map(s => `
-    <div class="sc-card">
-      <div class="sc-icon ${s.cls}">${s.svg}</div>
-      <div class="sc-name">${s.name}</div>
+  // Build stat items
+  const items: string[] = [];
+
+  if (climate.has_data) {
+    items.push(`<div class="env-item">
+      <div class="env-icon env-icon--temp">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+      </div>
+      <div class="env-data">
+        <div class="env-val">${climate.avg_temp}</div>
+        <div class="env-lbl">室内温度</div>
+      </div>
+    </div>`);
+  }
+
+  if (climate.has_data && climate.avg_humidity !== '--') {
+    items.push(`<div class="env-item">
+      <div class="env-icon env-icon--hum">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8 8 4 12 4 16a8 8 0 0 0 16 0c0-4-4-8-8-14z"/></svg>
+      </div>
+      <div class="env-data">
+        <div class="env-val">${climate.avg_humidity}</div>
+        <div class="env-lbl">室内湿度</div>
+      </div>
+    </div>`);
+  }
+
+  // Security summary
+  const secIcon = alarm.has_alarm
+    ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`
+    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+
+  items.push(`<div class="env-item">
+    <div class="env-icon env-icon--sec">
+      ${secIcon}
+    </div>
+    <div class="env-data">
+      <div class="env-val">${alarm.display}</div>
+      <div class="env-lbl">安防状态</div>
+    </div>
+  </div>`);
+
+  // Active automations count
+  let autoCount = 0;
+  for (const [eid, s] of Object.entries(hass.states)) {
+    if (eid.startsWith('automation.') && s.state === 'on') autoCount++;
+  }
+  if (autoCount > 0) {
+    items.push(`<div class="env-item">
+      <div class="env-icon env-icon--auto">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+      </div>
+      <div class="env-data">
+        <div class="env-val">${autoCount}</div>
+        <div class="env-lbl">自动化运行</div>
+      </div>
+    </div>`);
+  }
+
+  return {
+    type: 'custom:html-pro-card',
+    title: '',
+    do_not_parse: true,
+    content: /* html */ `
+${generateDesignTokenCSS(tokens)}
+<style>
+  .env-hdr {
+    display: flex;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .env-title {
+    font: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--hdp-text);
+  }
+  .env-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px;
+  }
+  .env-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--hdp-card-bg);
+    border-radius: var(--hdp-radius);
+    padding: 14px;
+    border: 1px solid var(--hdp-border);
+    transition: all 0.2s ease;
+  }
+  .env-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--hdp-shadow-elevated);
+  }
+  .env-icon {
+    width: 36px; height: 36px;
+    border-radius: var(--hdp-radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .env-icon svg { width: 18px; height: 18px; }
+  .env-icon--temp { background: var(--hdp-danger-light); color: var(--hdp-danger); }
+  .env-icon--hum { background: var(--hdp-info-light); color: var(--hdp-info); }
+  .env-icon--sec { background: var(--hdp-success-light); color: var(--hdp-success); }
+  .env-icon--auto { background: rgba(124,110,247,0.1); color: var(--hdp-accent); }
+  .env-data { min-width: 0; }
+  .env-val {
+    font: inherit;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--hdp-text);
+    line-height: 1.2;
+  }
+  .env-lbl {
+    font: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--hdp-text-secondary);
+  }
+</style>
+<div class="env-hdr">
+  <span class="env-title">家居环境</span>
+</div>
+<div class="env-grid">${items.join('')}</div>`,
+  };
+}
+
+// ─── 5. Power Usage Card ───────────────────────────────────────────────────
+
+function buildPowerCard(power: ReturnType<typeof buildHousePowerUsage>, tokens?: ResolvedTokens): LovelaceCardConfig {
+  const roomRows = power.rooms.slice(0, 6).map(r => `
+    <div class="pw-room">
+      <div class="pw-room-top">
+        <span class="pw-room-name">${r.area_name}</span>
+        <span class="pw-room-val">${r.display}</span>
+      </div>
+      <div class="pw-bar">
+        <div class="pw-bar-fill" style="width: ${Math.max(r.percent, 2)}%"></div>
+      </div>
+      <div class="pw-room-pct">${r.percent}%</div>
     </div>
   `).join('');
 
@@ -418,139 +580,333 @@ function buildScenesPreview(tokens?: ResolvedTokens): LovelaceCardConfig {
     content: /* html */ `
 ${generateDesignTokenCSS(tokens)}
 <style>
-  .sec-hdr {
+  .pw-hdr {
     display: flex;
     align-items: center;
-    margin-bottom: 12px;
-    margin-top: 4px;
+    justify-content: space-between;
+    margin-bottom: 14px;
   }
-  .sec-title {
+  .pw-title {
     font: inherit;
     font-size: 15px;
     font-weight: 700;
     color: var(--hdp-text);
   }
-  .sc-row {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
+  .pw-total {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
-  .sc-card {
-    background: var(--hdp-card-bg);
-    border-radius: var(--hdp-radius);
-    padding: 14px;
-    border: 1px solid var(--hdp-border);
-    box-shadow: var(--hdp-shadow-card);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: center;
-  }
-  .sc-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--hdp-shadow-elevated);
-  }
-  .sc-icon {
-    width: 42px; height: 42px;
-    border-radius: var(--hdp-radius);
+  .pw-total-icon {
+    width: 28px; height: 28px;
+    border-radius: var(--hdp-radius-sm);
+    background: var(--hdp-warning-light);
+    color: var(--hdp-warning);
     display: flex; align-items: center; justify-content: center;
-    margin: 0 auto 8px;
   }
-  .sc-icon svg { width: 20px; height: 20px; }
-  .sc-icon--warm { background: var(--hdp-warning-light); color: var(--hdp-warning); }
-  .sc-icon--info { background: var(--hdp-info-light); color: var(--hdp-info); }
-  .sc-icon--accent { background: rgba(124,110,247,0.1); color: var(--hdp-accent); }
-  .sc-icon--danger { background: var(--hdp-danger-light); color: var(--hdp-danger); }
-  .sc-name {
+  .pw-total-icon svg { width: 15px; height: 15px; }
+  .pw-total-val {
     font: inherit;
-    font-size: 12px;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--hdp-text);
+  }
+  .pw-room {
+    margin-bottom: 12px;
+  }
+  .pw-room:last-child { margin-bottom: 0; }
+  .pw-room-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+  }
+  .pw-room-name {
+    font: inherit;
+    font-size: 13px;
     font-weight: 600;
     color: var(--hdp-text);
   }
-  @media (max-width: 480px) {
-    .sc-row { grid-template-columns: repeat(2, 1fr); }
+  .pw-room-val {
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--hdp-text-secondary);
+  }
+  .pw-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--hdp-divider);
+    overflow: hidden;
+  }
+  .pw-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--hdp-gradient-primary);
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 2px;
+  }
+  .pw-room-pct {
+    font: inherit;
+    font-size: 10px;
+    color: var(--hdp-text-muted);
+    text-align: right;
+    margin-top: 2px;
   }
 </style>
-<div class="sec-hdr">
-  <div class="sec-title">快捷场景</div>
+<div class="pw-hdr">
+  <span class="pw-title">全屋功率</span>
+  <div class="pw-total">
+    <div class="pw-total-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+    </div>
+    <span class="pw-total-val">${power.total_display}</span>
+  </div>
 </div>
-<div class="sc-row">${cards}</div>`,
+${roomRows}`,
   };
 }
 
-// ─── Data Helpers ─────────────────────────────────────────────────────────
+// ─── 6. Favorites Card ─────────────────────────────────────────────────────
 
-function getDomainCounts(hass: Hass) {
-  let lightsOn = 0, lightsTotal = 0, climateActive = 0;
-  for (const [eid, s] of Object.entries(hass.states)) {
-    const d = eid.split('.')[0];
-    if (d === 'light') { lightsTotal++; if (s.state === 'on') lightsOn++; }
-    if (d === 'climate' && s.state !== 'off') climateActive++;
+function buildFavoritesCard(favorites: FavoriteEntity[], tokens?: ResolvedTokens): LovelaceCardConfig {
+  const items = favorites.map(f => {
+    const iconSVG = getFavoriteIcon(f.domain, f.is_active);
+    const stateCls = f.is_active ? 'fav--active' : '';
+    return `<div class="fav-item ${stateCls}">
+      <div class="fav-icon">${iconSVG}</div>
+      <div class="fav-info">
+        <div class="fav-name">${f.name}</div>
+        <div class="fav-state">${f.display}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return {
+    type: 'custom:html-pro-card',
+    title: '',
+    do_not_parse: true,
+    content: /* html */ `
+${generateDesignTokenCSS(tokens)}
+<style>
+  .fav-hdr {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
   }
-  return { lightsOn, lightsTotal, climate: climateActive };
+  .fav-title {
+    font: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--hdp-text);
+  }
+  .fav-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .fav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: var(--hdp-radius);
+    background: var(--hdp-card-bg);
+    border: 1px solid var(--hdp-border);
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  .fav-item:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--hdp-shadow-card);
+  }
+  .fav-item--active {
+    border-color: var(--hdp-primary);
+  }
+  .fav-icon {
+    width: 36px; height: 36px;
+    border-radius: var(--hdp-radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    background: var(--hdp-divider);
+    color: var(--hdp-text-muted);
+    flex-shrink: 0;
+  }
+  .fav-icon svg { width: 18px; height: 18px; }
+  .fav--active .fav-icon {
+    background: var(--hdp-primary-light);
+    color: var(--hdp-primary);
+  }
+  .fav-info { min-width: 0; flex: 1; }
+  .fav-name {
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--hdp-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .fav-state {
+    font: inherit;
+    font-size: 12px;
+    color: var(--hdp-text-secondary);
+  }
+</style>
+<div class="fav-hdr">
+  <span class="fav-title">收藏设备</span>
+</div>
+<div class="fav-list">${items}</div>`,
+  };
 }
 
-function getCoverStatus(hass: Hass): { display: string; openCount: number } {
-  let open = 0, total = 0;
-  for (const [eid, s] of Object.entries(hass.states)) {
-    if (eid.split('.')[0] !== 'cover') continue;
-    total++;
-    if (s.state === 'open' || s.state === 'opening') open++;
+function getFavoriteIcon(domain: string, active: boolean): string {
+  const c = 'currentColor';
+  switch (domain) {
+    case 'light':
+      return `<svg viewBox="0 0 24 24" fill="${c}"><path d="M12 2C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7z"/></svg>`;
+    case 'switch':
+      return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><rect x="1" y="5" width="22" height="14" rx="7"/><circle cx="${active ? 16 : 8}" cy="12" r="3"/></svg>`;
+    case 'climate':
+      return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><path d="M15 13V5a3 3 0 0 0-6 0v8a5 5 0 1 0 6 0z"/></svg>`;
+    case 'cover':
+      return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/></svg>`;
+    case 'fan':
+      return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>`;
+    case 'media_player':
+      return `<svg viewBox="0 0 24 24" fill="${c}"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>`;
+    case 'lock':
+      return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+    case 'vacuum':
+      return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>`;
+    case 'sensor':
+    case 'binary_sensor':
+      return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4" fill="${c}" opacity="0.3"/></svg>`;
+    default:
+      return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="12" cy="12" r="3"/></svg>`;
   }
-  if (total === 0) return { display: '--', openCount: 0 };
-  if (open === 0) return { display: '已关闭', openCount: 0 };
-  if (open === total) return { display: '已打开', openCount: open };
-  return { display: `${open}/${total}`, openCount: open };
 }
 
-function getPowerInfo(hass: Hass): { display: string; percent: number } {
-  for (const [eid, s] of Object.entries(hass.states)) {
-    if (eid.split('.')[0] !== 'sensor') continue;
-    const uom = s.attributes.unit_of_measurement as string;
-    if ((uom === 'W' || uom === 'kW') && (eid.includes('power') || eid.includes('energy'))) {
-      const v = parseFloat(s.state);
-      if (isNaN(v)) continue;
-      const w = uom === 'kW' ? v * 1000 : v;
-      const display = w >= 1000 ? `${(w / 1000).toFixed(1)}kW` : `${Math.round(w)}W`;
-      const percent = Math.min(100, Math.round((w / 8000) * 100));
-      return { display, percent };
-    }
-  }
-  return { display: '-- W', percent: 0 };
-}
+// ─── 7. Summary Card ───────────────────────────────────────────────────────
 
-function getSecurityInfo(hass: Hass): {
-  status: string; badge: string; badgeCls: string;
-  iconBg: string; iconColor: string; barPct: number; barBg: string; barStyle: string;
-} {
-  for (const [eid, s] of Object.entries(hass.states)) {
-    if (eid.split('.')[0] !== 'alarm_control_panel') continue;
-    const st = s.state;
-    if (st === 'armed_away' || st === 'armed_home' || st === 'armed_night')
-      return { status: '已布防', badge: '安全', badgeCls: 's-badge--ok', iconBg: 'var(--hdp-success-light)', iconColor: 'var(--hdp-success)', barPct: 100, barBg: 'var(--hdp-gradient-green)', barStyle: 'green' };
-    if (st === 'triggered')
-      return { status: '报警中', badge: '警报', badgeCls: 's-badge--danger', iconBg: 'var(--hdp-danger-light)', iconColor: 'var(--hdp-danger)', barPct: 100, barBg: 'var(--hdp-danger)', barStyle: 'danger' };
-    if (st === 'arming' || st === 'pending')
-      return { status: '布防中', badge: '等待', badgeCls: 's-badge--warn', iconBg: 'var(--hdp-warning-light)', iconColor: 'var(--hdp-warning)', barPct: 60, barBg: 'var(--hdp-warning)', barStyle: 'warn' };
-    return { status: '已撤防', badge: '未布防', badgeCls: 's-badge--info', iconBg: 'var(--hdp-info-light)', iconColor: 'var(--hdp-info)', barPct: 30, barBg: 'var(--hdp-gradient-primary)', barStyle: 'normal' };
+function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens): LovelaceCardConfig {
+  const summaries = getHomeSummaries(hass);
+
+  const items: string[] = [];
+
+  if (summaries.updates_count > 0) {
+    items.push(`<div class="sum-item sum-item--info">
+      <div class="sum-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </div>
+      <div class="sum-val">${summaries.updates_count}</div>
+      <div class="sum-lbl">可用更新</div>
+    </div>`);
   }
 
-  let locked = 0, total = 0;
-  for (const [eid, s] of Object.entries(hass.states)) {
-    if (eid.split('.')[0] !== 'lock') continue;
-    total++;
-    if (s.state === 'locked') locked++;
-  }
-  if (total > 0) {
-    const pct = Math.round((locked / total) * 100);
-    return {
-      status: `${locked}/${total}`, badge: pct === 100 ? '全部锁定' : '部分开启',
-      badgeCls: pct === 100 ? 's-badge--ok' : 's-badge--warn',
-      iconBg: pct === 100 ? 'var(--hdp-success-light)' : 'var(--hdp-warning-light)',
-      iconColor: pct === 100 ? 'var(--hdp-success)' : 'var(--hdp-warning)',
-      barPct: pct, barBg: pct === 100 ? 'var(--hdp-gradient-green)' : 'var(--hdp-warning)',
-      barStyle: pct === 100 ? 'green' : 'warn',
-    };
+  if (summaries.repairs_count > 0) {
+    items.push(`<div class="sum-item sum-item--warn">
+      <div class="sum-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div class="sum-val">${summaries.repairs_count}</div>
+      <div class="sum-lbl">待修复</div>
+    </div>`);
   }
 
-  return { status: '--', badge: '无设备', badgeCls: 's-badge--info', iconBg: 'var(--hdp-info-light)', iconColor: 'var(--hdp-info)', barPct: 0, barBg: 'var(--hdp-divider)', barStyle: 'empty' };
+  items.push(`<div class="sum-item">
+    <div class="sum-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="12" cy="12" r="3"/></svg>
+    </div>
+    <div class="sum-val">${summaries.total_entities}</div>
+    <div class="sum-lbl">实体</div>
+  </div>`);
+
+  if (summaries.total_devices > 0) {
+    items.push(`<div class="sum-item">
+      <div class="sum-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </div>
+      <div class="sum-val">${summaries.total_devices}</div>
+      <div class="sum-lbl">设备</div>
+    </div>`);
+  }
+
+  if (summaries.automations_count > 0) {
+    items.push(`<div class="sum-item">
+      <div class="sum-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg>
+      </div>
+      <div class="sum-val">${summaries.automations_count}</div>
+      <div class="sum-lbl">自动化</div>
+    </div>`);
+  }
+
+  return {
+    type: 'custom:html-pro-card',
+    title: '',
+    do_not_parse: true,
+    content: /* html */ `
+${generateDesignTokenCSS(tokens)}
+<style>
+  .sum-hdr {
+    display: flex;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .sum-title {
+    font: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--hdp-text);
+  }
+  .sum-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 10px;
+  }
+  .sum-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 14px 8px;
+    border-radius: var(--hdp-radius);
+    background: var(--hdp-card-bg);
+    border: 1px solid var(--hdp-border);
+    text-align: center;
+    transition: all 0.2s ease;
+  }
+  .sum-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--hdp-shadow-card);
+  }
+  .sum-icon {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--hdp-text-muted);
+  }
+  .sum-icon svg { width: 20px; height: 20px; }
+  .sum-val {
+    font: inherit;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--hdp-text);
+    line-height: 1;
+  }
+  .sum-lbl {
+    font: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--hdp-text-secondary);
+  }
+  .sum-item--info .sum-icon { color: var(--hdp-info); }
+  .sum-item--warn .sum-icon { color: var(--hdp-warning); }
+  .sum-item--info .sum-val { color: var(--hdp-info); }
+  .sum-item--warn .sum-val { color: var(--hdp-warning); }
+</style>
+<div class="sum-hdr">
+  <span class="sum-title">系统概览</span>
+</div>
+<div class="sum-grid">${items.join('')}</div>`,
+  };
 }

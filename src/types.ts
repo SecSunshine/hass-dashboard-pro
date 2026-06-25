@@ -132,6 +132,12 @@ export interface StrategyConfig {
   custom_cards?: Record<string, LovelaceCardConfig[]>;
   // Visual design tokens — theme + overrides
   visual?: VisualConfig;
+  // Weather entity for home page (auto-detected if not set)
+  weather_entity?: string;
+  // Person entities to hide from the people card
+  hidden_persons?: string[];
+  // Alarm entity override (auto-detected if not set)
+  alarm_entity?: string;
 }
 
 // ─── Theme Preset Definitions ─────────────────────────────────────────────
