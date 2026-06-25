@@ -71,9 +71,9 @@ declare global {
 }
 
 window.customStrategies = window.customStrategies || [];
-if (!window.customStrategies.some((s) => s?.type === DASHBOARD_STRATEGY_TYPE)) {
+if (!window.customStrategies.some((s) => s?.type === `custom:${DASHBOARD_STRATEGY_TYPE}`)) {
   window.customStrategies.push({
-    type: DASHBOARD_STRATEGY_TYPE,
+    type: `custom:${DASHBOARD_STRATEGY_TYPE}`,
     strategyType: 'dashboard',
     name: NAME,
     description: 'Zero-config Lovelace dashboard with Apple HIG design — powered by html-pro-card',

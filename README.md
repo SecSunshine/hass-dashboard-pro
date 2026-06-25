@@ -46,12 +46,12 @@ Or manually:
 
 ```yaml
 strategy:
-  type: hass-dashboard-pro
+  type: custom:hass-dashboard-pro
 ```
 
 4. Click **Save**.
 
-> The strategy type is `hass-dashboard-pro` (no `custom:` prefix).
+> The strategy type is `custom:hass-dashboard-pro` (`custom:` prefix is required by HA 2026.5+).
 
 ## What It Does
 
@@ -69,7 +69,7 @@ All options live inside the top-level `strategy` key. Everything is optional:
 
 ```yaml
 strategy:
-  type: hass-dashboard-pro
+  type: custom:hass-dashboard-pro
   title: My Home
   hidden_areas:
     - utility_room
