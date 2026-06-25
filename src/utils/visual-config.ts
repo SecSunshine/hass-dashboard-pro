@@ -7,7 +7,7 @@
 
 import type { VisualConfig, StrategyConfig, ThemePreset } from '../types';
 import { THEME_PRESETS } from '../types';
-import { COLORS, SPACING, SHAPE, SHADOWS, TYPOGRAPHY, MOTION, LAYOUT } from '../styles/design-tokens';
+import { COLORS, SPACING, SHAPE, SHADOWS, TYPOGRAPHY, MOTION, LAYOUT, GRADIENTS } from '../styles/design-tokens';
 
 // ─── localStorage key ─────────────────────────────────────────────────────
 
@@ -21,6 +21,8 @@ export interface ResolvedTokens {
   sidebar_bg: string;
   primary: string;
   primary_light: string;
+  accent_violet: string;
+  gradient_primary: string;
   text_primary: string;
   text_secondary: string;
   text_muted: string;
@@ -61,6 +63,8 @@ export function resolveTokens(config: StrategyConfig): ResolvedTokens {
     sidebar_bg: COLORS.sidebar_bg,
     primary: COLORS.primary,
     primary_light: COLORS.primary_100,
+    accent_violet: COLORS.accent_violet,
+    gradient_primary: GRADIENTS.primary,
     text_primary: COLORS.text_primary,
     text_secondary: COLORS.text_secondary,
     text_muted: COLORS.text_muted,
@@ -108,6 +112,8 @@ export function resolveTokens(config: StrategyConfig): ResolvedTokens {
       base.sidebar_width = preset.sidebar_width ?? base.sidebar_width;
       base.font_family = preset.font_family ?? base.font_family;
       base.card_gap = preset.card_gap ?? base.card_gap;
+      base.accent_violet = preset.accent_violet ?? base.accent_violet;
+      base.gradient_primary = preset.gradient_primary ?? base.gradient_primary;
       base.shadow_card = preset.shadows === false ? 'none' : base.shadow_card;
       base.shadow_elevated = preset.shadows === false ? 'none' : base.shadow_elevated;
       base.shadow_nav = preset.shadows === false ? 'none' : base.shadow_nav;

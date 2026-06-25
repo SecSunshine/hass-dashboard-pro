@@ -80,13 +80,22 @@ export interface VisualConfig {
     border?: string;
   };
 
-  /** Border radius override (px) — default 10 (html-pro-card spec) */
+  /** Accent violet color */
+  accent_violet?: string;
+
+  /** Primary gradient CSS value */
+  gradient_primary?: string;
+
+  /** Card style preset: classic | glass | gradient */
+  card_style?: 'classic' | 'glass' | 'gradient';
+
+  /** Border radius override (px) — default 14 (html-pro-card spec) */
   border_radius?: number;
 
-  /** Card padding (px) — default 16 */
+  /** Card padding (px) — default 18 */
   card_padding?: number;
 
-  /** Sidebar width (px) — default 250 */
+  /** Sidebar width (px) — default 72 */
   sidebar_width?: number;
 
   /** Font family */
@@ -95,7 +104,7 @@ export interface VisualConfig {
   /** Enable/disable card shadows */
   shadows?: boolean;
 
-  /** Card gap (px) — default 16 */
+  /** Card gap (px) — default 14 */
   card_gap?: number;
 
   /** Enable/disable page transitions */
@@ -125,97 +134,112 @@ export interface StrategyConfig {
 export const THEME_PRESETS: Record<ThemePreset, Omit<Required<VisualConfig>, 'theme'>> = {
   light: {
     colors: {
-      page_bg: '#F8FAFC',
+      page_bg: '#F4F6FA',
       card_bg: '#FFFFFF',
       sidebar_bg: '#FFFFFF',
-      primary: '#1E40AF',
-      text_primary: '#1E293B',
-      text_secondary: '#64748B',
-      text_muted: '#94A3B8',
-      border: '#DBEAFE',
+      primary: '#4F6EF7',
+      text_primary: '#1A1D26',
+      text_secondary: '#6B7280',
+      text_muted: '#9CA3AF',
+      border: 'rgba(0, 0, 0, 0.06)',
     },
-    border_radius: 10,
-    card_padding: 16,
-    sidebar_width: 250,
+    accent_violet: '#7C6EF7',
+    gradient_primary: 'linear-gradient(135deg, #4F6EF7 0%, #38BDF8 100%)',
+    card_style: 'classic',
+    border_radius: 14,
+    card_padding: 18,
+    sidebar_width: 72,
     font_family: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     shadows: true,
-    card_gap: 16,
+    card_gap: 14,
     animations: true,
   },
   dark: {
     colors: {
-      page_bg: '#0F172A',
-      card_bg: '#1E293B',
-      sidebar_bg: '#1E293B',
-      primary: '#3B82F6',
-      text_primary: '#F1F5F9',
-      text_secondary: '#94A3B8',
-      text_muted: '#64748B',
-      border: '#334155',
+      page_bg: '#0C0E14',
+      card_bg: '#161922',
+      sidebar_bg: '#10121A',
+      primary: '#6B85F9',
+      text_primary: '#F1F3F8',
+      text_secondary: '#8B92A5',
+      text_muted: '#565D72',
+      border: 'rgba(255, 255, 255, 0.06)',
     },
-    border_radius: 10,
-    card_padding: 16,
-    sidebar_width: 250,
+    accent_violet: '#9DA5FF',
+    gradient_primary: 'linear-gradient(135deg, #6B85F9 0%, #60A5FA 100%)',
+    card_style: 'classic',
+    border_radius: 14,
+    card_padding: 18,
+    sidebar_width: 72,
     font_family: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     shadows: true,
-    card_gap: 16,
+    card_gap: 14,
     animations: true,
   },
   warm: {
     colors: {
-      page_bg: '#FFFBEB',
+      page_bg: '#FBF8F3',
       card_bg: '#FFFFFF',
       sidebar_bg: '#FFFFFF',
-      primary: '#D97706',
-      text_primary: '#451A03',
-      text_secondary: '#92400E',
-      text_muted: '#B45309',
-      border: '#FDE68A',
+      primary: '#C2702E',
+      text_primary: '#2C1810',
+      text_secondary: '#8B6E5A',
+      text_muted: '#B89B85',
+      border: 'rgba(139, 110, 90, 0.1)',
     },
-    border_radius: 12,
-    card_padding: 16,
-    sidebar_width: 250,
+    accent_violet: '#B8860B',
+    gradient_primary: 'linear-gradient(135deg, #C2702E 0%, #D97706 100%)',
+    card_style: 'classic',
+    border_radius: 16,
+    card_padding: 18,
+    sidebar_width: 72,
     font_family: "Georgia, 'Noto Serif SC', serif",
     shadows: true,
-    card_gap: 16,
+    card_gap: 14,
     animations: true,
   },
   forest: {
     colors: {
-      page_bg: '#ECFDF5',
+      page_bg: '#F0F7F2',
       card_bg: '#FFFFFF',
       sidebar_bg: '#FFFFFF',
-      primary: '#065F46',
-      text_primary: '#022C22',
-      text_secondary: '#047857',
-      text_muted: '#6B7280',
-      border: '#A7F3D0',
+      primary: '#2D7A4F',
+      text_primary: '#1A2E22',
+      text_secondary: '#5A7D6A',
+      text_muted: '#8BA89A',
+      border: 'rgba(45, 122, 79, 0.1)',
     },
-    border_radius: 10,
-    card_padding: 16,
-    sidebar_width: 250,
+    accent_violet: '#3D9A65',
+    gradient_primary: 'linear-gradient(135deg, #2D7A4F 0%, #16A34A 100%)',
+    card_style: 'classic',
+    border_radius: 14,
+    card_padding: 18,
+    sidebar_width: 72,
     font_family: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     shadows: true,
-    card_gap: 16,
+    card_gap: 14,
     animations: true,
   },
   auto: {
     colors: {
-      page_bg: '#F8FAFC',
+      page_bg: '#F4F6FA',
       card_bg: '#FFFFFF',
       sidebar_bg: '#FFFFFF',
-      primary: '#1E40AF',
-      text_primary: '#1E293B',
-      text_secondary: '#64748B',
-      text_muted: '#94A3B8',
-      border: '#DBEAFE',
+      primary: '#4F6EF7',
+      text_primary: '#1A1D26',
+      text_secondary: '#6B7280',
+      text_muted: '#9CA3AF',
+      border: 'rgba(0, 0, 0, 0.06)',
     },
-    border_radius: 10,
-    card_padding: 16,
-    sidebar_width: 250,
+    accent_violet: '#7C6EF7',
+    gradient_primary: 'linear-gradient(135deg, #4F6EF7 0%, #38BDF8 100%)',
+    card_style: 'classic',
+    border_radius: 14,
+    card_padding: 18,
+    sidebar_width: 72,
     font_family: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     shadows: true,
-    card_gap: 16,
+    card_gap: 14,
     animations: true,
   },
 };
