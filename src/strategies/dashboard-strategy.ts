@@ -1,16 +1,17 @@
 /**
- * Dashboard Strategy — Top-Level
+ * Dashboard Strategy v4.0 — Top-Level
  *
- * Generates the overview page + one view per HA area + settings page.
- * Uses html-pro-card for card rendering with beautified design tokens.
+ * Generates the view list:
+ *   1. Home view (panel: true, contains layout card with sidebar + all areas)
+ *   2. Devices view
+ *   3. Blueprint page views (0..N)
+ *   4. Settings view
  *
- * The strategy type for generated views is `custom:hass-dashboard-pro-view`,
- * which maps to custom element `ll-strategy-view-hass-dashboard-pro-view`.
- * HA 2026.5+ requires the `custom:` prefix for all custom strategies.
+ * Areas are NOT separate views — they are pre-rendered into the layout card.
  */
 
-import type { Hass, StrategyConfig, DashboardStrategyResult, LovelaceViewConfig } from '../types';
-import { buildAreaEntityMap, groupAreasByFloor } from '../utils/area-entities';
+import type { Hass, StrategyConfig, DashboardStrategyResult, LovelaceViewConfig, AreaSummary, BlueprintInstance } from '../types';
+import { buildAreaEntityMap, groupAreasByFloor, isEntityOn } from '../utils/area-entities';
 
 const VIEW_STRATEGY_TYPE = 'custom:hass-dashboard-pro-view';
 
@@ -18,56 +19,78 @@ export class HassDashboardProStrategy {
   static async generate(config: StrategyConfig, hass: Hass): Promise<DashboardStrategyResult> {
     const hiddenAreas = config.hidden_areas || [];
     const areaEntityMap = buildAreaEntityMap(hass, hiddenAreas);
-    const floorGroups = groupAreasByFloor(hass);
+
+    // Pre-compute area summaries (for sidebar display)
+    const areaSummaries = buildAreaSummaries(hass, areaEntityMap, hiddenAreas);
+
+    // Inject pre-computed data into config for the view strategy
+    const enrichedConfig: StrategyConfig = {
+      ...config,
+      area_summaries: areaSummaries,
+    };
 
     const views: LovelaceViewConfig[] = [];
 
-    // 1. Home View
-    views.push(buildHomeViewConfig(config));
-
-    // 2. Area Views — grouped by floor
-    const floors = Array.from(floorGroups.entries()).sort((a, b) => {
-      if (a[0] === null) return 1;
-      if (b[0] === null) return -1;
-      return 0;
-    });
-
-    for (const [, { areas }] of floors) {
-      for (const areaId of areas) {
-        const area = hass.areas[areaId];
-        if (!area || hiddenAreas.includes(areaId)) continue;
-
-        const entities = areaEntityMap.get(areaId) || [];
-        const path = sanitizePath(area.name);
-        const badgeCount = entities.length;
-        const badgeText = badgeCount > 0 ? String(badgeCount) : '';
-
-        views.push({
-          title: area.name,
-          path,
-          icon: getAreaIcon(area.name),
-          badges: [],
-          cards: [],
-          strategy: {
-            ...config,
-            type: VIEW_STRATEGY_TYPE,
-            view_path: path,
-            area_id: areaId,
-          } as StrategyConfig,
-          subview: false,
-        });
-      }
-    }
-
-    // 3. Settings View — visual configuration panel
+    // 1. Home View (panel: true — takes full width for sidebar layout)
     views.push({
-      title: '视觉设置',
-      path: 'hdp-settings',
-      icon: 'mdi:palette',
+      title: config.title || '首页',
+      path: 'home',
+      icon: 'mdi:home',
       badges: [],
       cards: [],
+      panel: true,
       strategy: {
-        ...config,
+        ...enrichedConfig,
+        type: VIEW_STRATEGY_TYPE,
+        view_path: 'home',
+      } as StrategyConfig,
+      subview: false,
+    });
+
+    // 2. Devices View
+    views.push({
+      title: '设备',
+      path: 'devices',
+      icon: 'mdi:format-list-bulleted-type',
+      badges: [],
+      cards: [],
+      panel: true,
+      strategy: {
+        ...enrichedConfig,
+        type: VIEW_STRATEGY_TYPE,
+        view_path: 'devices',
+      } as StrategyConfig,
+      subview: false,
+    });
+
+    // 3. Blueprint Page Views
+    const blueprintPages = config.blueprint_pages || [];
+    for (const page of blueprintPages) {
+      views.push({
+        title: page.name,
+        path: `bp-${page.id}`,
+        icon: page.icon || 'mdi:puzzle',
+        badges: [],
+        cards: [],
+        strategy: {
+          ...enrichedConfig,
+          type: VIEW_STRATEGY_TYPE,
+          view_path: `bp-${page.id}`,
+        } as StrategyConfig,
+        subview: false,
+      });
+    }
+
+    // 4. Settings View
+    views.push({
+      title: '设置',
+      path: 'hdp-settings',
+      icon: 'mdi:cog',
+      badges: [],
+      cards: [],
+      panel: true,
+      strategy: {
+        ...enrichedConfig,
         type: VIEW_STRATEGY_TYPE,
         view_path: 'hdp-settings',
       } as StrategyConfig,
@@ -78,32 +101,57 @@ export class HassDashboardProStrategy {
   }
 }
 
-function buildHomeViewConfig(config: StrategyConfig): LovelaceViewConfig {
-  return {
-    title: config.title || '首页',
-    path: 'home',
-    icon: 'mdi:home',
-    badges: [],
-    cards: [],
-    strategy: {
-      ...config,
-      type: VIEW_STRATEGY_TYPE,
-      view_path: 'home',
-    } as StrategyConfig,
-    subview: false,
-  };
+// ─── Area Summaries ────────────────────────────────────────────────────────
+
+function buildAreaSummaries(
+  hass: Hass,
+  areaEntityMap: Map<string, import('../types').EntityInfo[]>,
+  hiddenAreas: string[],
+): AreaSummary[] {
+  const summaries: AreaSummary[] = [];
+
+  for (const [areaId, area] of Object.entries(hass.areas)) {
+    if (hiddenAreas.includes(areaId)) continue;
+
+    const entities = areaEntityMap.get(areaId) || [];
+    const activeCount = entities.filter(e => isEntityOn(e.state, e.domain)).length;
+
+    // Find temp/humidity sensors in this area
+    let temp: string | null = null;
+    let humidity: string | null = null;
+    const domainCounts: Record<string, number> = {};
+
+    for (const e of entities) {
+      // Count domains
+      domainCounts[e.domain] = (domainCounts[e.domain] || 0) + 1;
+
+      // Find temp/humidity
+      if (e.domain === 'sensor') {
+        if (e.unit === '°C' && !temp) temp = `${e.state}°C`;
+        if (e.unit === '%' && (e.entity_id.includes('humidity') || e.entity_id.includes('humid')) && !humidity) {
+          humidity = `${e.state}%`;
+        }
+      }
+    }
+
+    summaries.push({
+      area_id: areaId,
+      area_name: area.name,
+      icon: getAreaIcon(area.name),
+      entity_count: entities.length,
+      active_count: activeCount,
+      temp,
+      humidity,
+      domain_counts: domainCounts,
+    });
+  }
+
+  return summaries;
 }
 
-function sanitizePath(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-}
+// ─── Area Icon Mapping ─────────────────────────────────────────────────────
 
-function getAreaIcon(name: string): string {
+export function getAreaIcon(name: string): string {
   const n = name.toLowerCase();
 
   // Living areas

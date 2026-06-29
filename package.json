@@ -1,7 +1,7 @@
 {
   "name": "hass-dashboard-pro",
-  "version": "3.0.0",
-  "description": "HA Lovelace Dashboard Strategy with html-pro-card rendering — beautified smart home dashboard based on Apple HIG / Dieter Rams minimalism principles",
+  "version": "4.0.0",
+  "description": "HA Lovelace Dashboard Strategy with monolithic layout + html-pro-card rendering — dwains-dashboard-next inspired smart home dashboard with sidebar navigation, blueprints, and theme system",
   "main": "dist/hass-dashboard-pro.js",
   "type": "module",
   "scripts": {

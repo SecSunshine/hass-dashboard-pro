@@ -41,6 +41,31 @@ export function buildAreaView(areaName: string, entities: EntityInfo[], hass: Ha
   return cards;
 }
 
+/**
+ * Build area content as raw HTML string (for embedding in layout card).
+ */
+export function buildAreaHTML(areaName: string, entities: EntityInfo[], hass: Hass, tokens?: ResolvedTokens): string {
+  const groups = groupByDomain(entities);
+  const sections: string[] = [];
+
+  sections.push(extractAreaHTML(buildAreaHeader(areaName, entities, hass, tokens)));
+
+  if (groups.length <= 1) {
+    sections.push(extractAreaHTML(buildEntityGrid(entities, tokens)));
+  } else {
+    for (const group of groups) {
+      sections.push(extractAreaHTML(buildDomainSection(group, tokens)));
+    }
+  }
+
+  return sections.join('\n');
+}
+
+function extractAreaHTML(card: LovelaceCardConfig): string {
+  const content = (card.content as string) || '';
+  return content.replace(/<style>[\s\S]*?<\/style>/, '').trim();
+}
+
 // ─── Domain Grouping ───────────────────────────────────────────────────────
 
 interface DomainSection {

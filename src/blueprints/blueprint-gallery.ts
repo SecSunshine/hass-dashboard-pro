@@ -1,0 +1,547 @@
+/**
+ * Blueprint Gallery — Import UI
+ *
+ * Builds the HTML for the blueprint management interface:
+ *   1. Gallery header — title + import buttons
+ *   2. Blueprint list — installed pages with edit/remove
+ *   3. Import modal — paste YAML, enter URL, or browse gallery
+ *   4. Input editor — configure placeholder values
+ *
+ * All interactions are handled by client-side JS (from blueprint-storage.ts).
+ */
+
+import type { BlueprintInstance } from '../types';
+
+// ─── Gallery HTML Builder ───────────────────────────────────────────────────
+
+/**
+ * Build the blueprint management panel HTML.
+ * This is rendered inside the settings view's "Blueprints" section.
+ */
+export function buildBlueprintGalleryHTML(pages: BlueprintInstance[]): string {
+  const pagesHTML = pages.length > 0
+    ? pages.map(p => buildBlueprintItemHTML(p)).join('')
+    : '<div class="bp-empty-list">暂无蓝图页面，点击上方按钮导入</div>';
+
+  return `
+<style>
+  .bp-gallery {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .bp-gallery-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .bp-gallery-title {
+    font: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--hdp-text);
+  }
+  .bp-gallery-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .bp-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--hdp-radius);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 44px;
+    border: 1px solid var(--hdp-border);
+    background: var(--hdp-card-bg);
+    color: var(--hdp-text);
+  }
+  .bp-btn:hover {
+    transform: translateY(-2px);
+    border-color: var(--hdp-primary);
+  }
+  .bp-btn--primary {
+    background: var(--hdp-primary);
+    color: white;
+    border-color: var(--hdp-primary);
+  }
+  .bp-btn--primary:hover {
+    opacity: 0.9;
+  }
+  .bp-btn svg {
+    width: 16px; height: 16px;
+  }
+  .bp-item {
+    background: var(--hdp-card-bg);
+    border-radius: var(--hdp-radius);
+    padding: 14px;
+    border: 1px solid var(--hdp-border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s ease;
+  }
+  .bp-item:hover {
+    border-color: var(--hdp-primary);
+  }
+  .bp-item-icon {
+    width: 38px; height: 38px;
+    border-radius: var(--hdp-radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    background: var(--hdp-primary-light, rgba(79,110,247,0.1));
+    color: var(--hdp-primary);
+    flex-shrink: 0;
+  }
+  .bp-item-icon svg { width: 19px; height: 19px; }
+  .bp-item-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .bp-item-name {
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--hdp-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .bp-item-meta {
+    font: inherit;
+    font-size: 12px;
+    color: var(--hdp-text-secondary);
+    display: flex;
+    gap: 8px;
+    margin-top: 2px;
+  }
+  .bp-item-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .bp-item-btn {
+    width: 34px; height: 34px;
+    border-radius: var(--hdp-radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid var(--hdp-border);
+    background: transparent;
+    color: var(--hdp-text-secondary);
+  }
+  .bp-item-btn:hover {
+    background: var(--hdp-divider);
+    color: var(--hdp-text);
+  }
+  .bp-item-btn--danger:hover {
+    background: var(--hdp-danger-light, rgba(239,68,68,0.1));
+    color: var(--hdp-danger, #EF4444);
+    border-color: var(--hdp-danger, #EF4444);
+  }
+  .bp-item-btn svg { width: 16px; height: 16px; }
+  .bp-empty-list {
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--hdp-text-muted);
+    font: inherit;
+    font-size: 13px;
+  }
+  .bp-version {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: var(--hdp-radius-pill, 20px);
+    background: var(--hdp-divider);
+    color: var(--hdp-text-muted);
+    font-weight: 600;
+  }
+  .bp-update-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--hdp-success);
+    display: inline-block;
+    margin-left: 4px;
+  }
+</style>
+<div class="bp-gallery" id="bp-gallery">
+  <div class="bp-gallery-hdr">
+    <span class="bp-gallery-title">蓝图页面</span>
+    <div class="bp-gallery-actions">
+      <button class="bp-btn" onclick="hdpShowImportModal('url')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        URL 导入
+      </button>
+      <button class="bp-btn bp-btn--primary" onclick="hdpShowImportModal('paste')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+        粘贴导入
+      </button>
+    </div>
+  </div>
+  ${pagesHTML}
+</div>`;
+}
+
+function buildBlueprintItemHTML(page: BlueprintInstance): string {
+  const c = 'currentColor';
+  const inputCount = Object.keys(page.inputs || {}).length;
+
+  return `<div class="bp-item" data-bp-id="${page.id}">
+    <div class="bp-item-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+    </div>
+    <div class="bp-item-info">
+      <div class="bp-item-name">${page.name}</div>
+      <div class="bp-item-meta">
+        <span>${inputCount} 个输入</span>
+        ${page.source ? '<span>来源: URL</span>' : '<span>本地导入</span>'}
+      </div>
+    </div>
+    <div class="bp-item-actions">
+      <button class="bp-item-btn" title="编辑输入" onclick="hdpShowInputEditor('${page.id}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+      ${page.source ? `<button class="bp-item-btn" title="检查更新" onclick="hdpCheckBlueprintUpdate('${page.id}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </button>` : ''}
+      <button class="bp-item-btn bp-item-btn--danger" title="删除" onclick="hdpRemoveBlueprint('${page.id}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      </button>
+    </div>
+  </div>`;
+}
+
+// ─── Import Modal Builder ───────────────────────────────────────────────────
+
+/**
+ * Build the import modal HTML (shown as a sheet/overlay).
+ */
+export function buildImportModalHTML(): string {
+  return `
+<style>
+  .bp-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+  }
+  .bp-modal-overlay--active { display: flex; }
+  .bp-modal {
+    background: var(--hdp-card-bg, #fff);
+    border-radius: var(--hdp-radius, 14px);
+    padding: 24px;
+    width: 90%;
+    max-width: 560px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  }
+  .bp-modal-title {
+    font: inherit;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--hdp-text);
+    margin-bottom: 16px;
+  }
+  .bp-modal-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .bp-modal-label {
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--hdp-text);
+  }
+  .bp-modal-input {
+    font: inherit;
+    font-size: 14px;
+    padding: 10px 14px;
+    border-radius: var(--hdp-radius);
+    border: 1px solid var(--hdp-border);
+    background: var(--hdp-bg);
+    color: var(--hdp-text);
+    outline: none;
+    min-height: 44px;
+  }
+  .bp-modal-input:focus {
+    border-color: var(--hdp-primary);
+    box-shadow: 0 0 0 3px var(--hdp-primary-glow, rgba(79,110,247,0.15));
+  }
+  .bp-modal-textarea {
+    font: inherit;
+    font-size: 13px;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    padding: 12px 14px;
+    border-radius: var(--hdp-radius);
+    border: 1px solid var(--hdp-border);
+    background: var(--hdp-bg);
+    color: var(--hdp-text);
+    outline: none;
+    min-height: 200px;
+    resize: vertical;
+  }
+  .bp-modal-textarea:focus {
+    border-color: var(--hdp-primary);
+  }
+  .bp-modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 16px;
+  }
+  .bp-input-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .bp-input-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .bp-input-label {
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--hdp-text);
+  }
+  .bp-input-desc {
+    font: inherit;
+    font-size: 12px;
+    color: var(--hdp-text-muted);
+  }
+</style>
+<div class="bp-modal-overlay" id="bp-import-modal">
+  <div class="bp-modal">
+    <div class="bp-modal-title" id="bp-modal-title">导入蓝图</div>
+
+    <!-- URL Import -->
+    <div id="bp-import-url" style="display:none">
+      <div class="bp-modal-field">
+        <label class="bp-modal-label">蓝图 YAML URL</label>
+        <input class="bp-modal-input" id="bp-url-input" placeholder="https://raw.githubusercontent.com/.../page.yaml" />
+      </div>
+    </div>
+
+    <!-- Paste Import -->
+    <div id="bp-import-paste" style="display:none">
+      <div class="bp-modal-field">
+        <label class="bp-modal-label">粘贴蓝图 YAML</label>
+        <textarea class="bp-modal-textarea" id="bp-yaml-input" placeholder="meta:&#10;  name: My Page&#10;  version: 1.0.0&#10;  inputs: ..."></textarea>
+      </div>
+    </div>
+
+    <!-- Input Editor (for editing existing blueprint inputs) -->
+    <div id="bp-input-editor" style="display:none">
+      <div class="bp-input-editor" id="bp-input-fields"></div>
+    </div>
+
+    <div class="bp-modal-actions">
+      <button class="bp-btn" onclick="hdpCloseImportModal()">取消</button>
+      <button class="bp-btn bp-btn--primary" id="bp-modal-confirm" onclick="hdpConfirmImport()">导入</button>
+    </div>
+  </div>
+</div>`;
+}
+
+// ─── Client-Side Modal JS ───────────────────────────────────────────────────
+
+/**
+ * Generate client-side JS for the import modal and input editor.
+ */
+export function generateBlueprintModalJS(): string {
+  return `
+// ─── Blueprint Modal ─────────────────────────────────────────────────────
+
+(function() {
+  var currentMode = '';
+  var editingPageId = '';
+
+  window.hdpShowImportModal = function(mode) {
+    currentMode = mode;
+    editingPageId = '';
+    var modal = document.getElementById('bp-import-modal');
+    if (!modal) return;
+
+    // Reset all panels
+    document.getElementById('bp-import-url').style.display = 'none';
+    document.getElementById('bp-import-paste').style.display = 'none';
+    document.getElementById('bp-input-editor').style.display = 'none';
+
+    var title = document.getElementById('bp-modal-title');
+    var confirm = document.getElementById('bp-modal-confirm');
+
+    if (mode === 'url') {
+      title.textContent = '从 URL 导入';
+      document.getElementById('bp-import-url').style.display = '';
+      confirm.textContent = '导入';
+      confirm.onclick = hdpConfirmImport;
+    } else if (mode === 'paste') {
+      title.textContent = '粘贴 YAML 导入';
+      document.getElementById('bp-import-paste').style.display = '';
+      confirm.textContent = '导入';
+      confirm.onclick = hdpConfirmImport;
+    }
+
+    modal.classList.add('bp-modal-overlay--active');
+  };
+
+  window.hdpCloseImportModal = function() {
+    var modal = document.getElementById('bp-import-modal');
+    if (modal) modal.classList.remove('bp-modal-overlay--active');
+  };
+
+  window.hdpConfirmImport = function() {
+    if (currentMode === 'url') {
+      var url = document.getElementById('bp-url-input').value.trim();
+      if (!url) { alert('请输入 URL'); return; }
+      hdpBlueprintImportURL(url, function(page, err) {
+        if (page) {
+          hdpCloseImportModal();
+          alert('蓝图 "' + page.name + '" 导入成功！');
+          hdpShowView('bp-' + page.id);
+          // Re-render gallery in settings
+          hdpRefreshBlueprintGallery();
+        } else {
+          alert('导入失败: ' + (err || '未知错误'));
+        }
+      });
+    } else if (currentMode === 'paste') {
+      var yaml = document.getElementById('bp-yaml-input').value.trim();
+      if (!yaml) { alert('请粘贴 YAML 内容'); return; }
+      var page = hdpBlueprintImportYAML(yaml);
+      if (page) {
+        hdpBlueprintAdd(page);
+        hdpCloseImportModal();
+        alert('蓝图 "' + page.name + '" 导入成功！');
+        hdpShowView('bp-' + page.id);
+        hdpRefreshBlueprintGallery();
+      }
+    } else if (currentMode === 'edit') {
+      hdpSaveInputEditor();
+    }
+  };
+
+  // Input editor for existing blueprint
+  window.hdpShowInputEditor = function(pageId) {
+    editingPageId = pageId;
+    currentMode = 'edit';
+    var pages = hdpBlueprintLoad();
+    var page = null;
+    for (var i = 0; i < pages.length; i++) {
+      if (pages[i].id === pageId) { page = pages[i]; break; }
+    }
+    if (!page) return;
+
+    var modal = document.getElementById('bp-import-modal');
+    document.getElementById('bp-import-url').style.display = 'none';
+    document.getElementById('bp-import-paste').style.display = 'none';
+    document.getElementById('bp-input-editor').style.display = '';
+
+    document.getElementById('bp-modal-title').textContent = '编辑: ' + page.name;
+    document.getElementById('bp-modal-confirm').textContent = '保存';
+    document.getElementById('bp-modal-confirm').onclick = hdpConfirmImport;
+
+    // Build input fields
+    var meta = hdpBlueprintParseMeta(page.blueprint_yaml);
+    var fieldsHTML = '';
+    var inputs = page.inputs || {};
+
+    for (var key in meta.inputs) {
+      if (!meta.inputs.hasOwnProperty(key)) continue;
+      var inp = meta.inputs[key];
+      var val = inputs[key] !== undefined ? inputs[key] : (inp['default'] || '');
+
+      fieldsHTML += '<div class="bp-input-row">' +
+        '<label class="bp-input-label">' + (inp.name || key) + '</label>' +
+        (inp.description ? '<span class="bp-input-desc">' + inp.description + '</span>' : '') +
+        '<input class="bp-modal-input" data-input-key="' + key + '" value="' + String(val).replace(/"/g, '&quot;') + '" placeholder="' + key + '" />' +
+        '</div>';
+    }
+
+    if (!fieldsHTML) {
+      fieldsHTML = '<div class="bp-input-desc">此蓝图没有可配置的输入</div>';
+    }
+
+    document.getElementById('bp-input-fields').innerHTML = fieldsHTML;
+    modal.classList.add('bp-modal-overlay--active');
+  };
+
+  window.hdpSaveInputEditor = function() {
+    if (!editingPageId) return;
+    var fields = document.querySelectorAll('#bp-input-fields [data-input-key]');
+    var inputs = {};
+    for (var i = 0; i < fields.length; i++) {
+      var key = fields[i].getAttribute('data-input-key');
+      inputs[key] = fields[i].value;
+    }
+    hdpBlueprintUpdateInputs(editingPageId, inputs);
+    hdpCloseImportModal();
+    hdpShowView('bp-' + editingPageId);
+    hdpRefreshBlueprintGallery();
+  };
+
+  // Remove blueprint
+  window.hdpRemoveBlueprint = function(id) {
+    if (!confirm('确定删除此蓝图页面？')) return;
+    hdpBlueprintRemove(id);
+    hdpShowView('home');
+    hdpRefreshBlueprintGallery();
+  };
+
+  // Check for updates
+  window.hdpCheckBlueprintUpdate = function(id) {
+    var pages = hdpBlueprintLoad();
+    var page = null;
+    for (var i = 0; i < pages.length; i++) {
+      if (pages[i].id === id) { page = pages[i]; break; }
+    }
+    if (!page) return;
+
+    hdpBlueprintCheckUpdate(page, function(result, err) {
+      if (err) { alert('检查更新失败: ' + err); return; }
+      if (result && result.hasUpdate) {
+        if (confirm('发现新版本 ' + result.remoteVersion + '（当前 ' + result.localVersion + '），是否更新？')) {
+          // Update YAML but preserve inputs
+          page.blueprint_yaml = result.remoteYaml;
+          page.card = hdpBlueprintResolveCard(page);
+          var allPages = hdpBlueprintLoad();
+          for (var i = 0; i < allPages.length; i++) {
+            if (allPages[i].id === id) { allPages[i] = page; break; }
+          }
+          hdpBlueprintSave(allPages);
+          hdpShowView('bp-' + id);
+          hdpRefreshBlueprintGallery();
+          alert('蓝图已更新到 ' + result.remoteVersion);
+        }
+      } else {
+        alert('当前已是最新版本 (' + (result ? result.localVersion : '未知') + ')');
+      }
+    });
+  };
+
+  // Refresh gallery (re-render the gallery section in settings)
+  window.hdpRefreshBlueprintGallery = function() {
+    // Trigger a re-render by navigating to settings and back
+    // This is a simple approach; a more sophisticated approach would
+    // use DOM manipulation to update just the gallery section
+    var galleryEl = document.getElementById('bp-gallery');
+    if (galleryEl) {
+      // Force page reload to pick up new blueprints
+      // In a future version, we can do partial DOM updates
+      console.log('[HDP] Blueprint gallery updated, refresh to see changes');
+    }
+  };
+})();
+`;
+}

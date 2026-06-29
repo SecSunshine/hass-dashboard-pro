@@ -12,11 +12,26 @@
  * All changes save to localStorage and apply via CSS variables in real-time.
  */
 
-import type { LovelaceCardConfig, StrategyConfig, ThemePreset } from '../types';
+import type { LovelaceCardConfig, StrategyConfig, ThemePreset, Hass } from '../types';
 import { THEME_PRESETS } from '../types';
 import { generateDesignTokenCSS } from '../styles/design-tokens';
 import type { ResolvedTokens, StoredVisualConfig } from '../utils/visual-config';
 import { loadStoredConfig, saveStoredConfig, clearStoredConfig } from '../utils/visual-config';
+import {
+  getSettingsSectionsCSS,
+  generateSettingsSectionsJS,
+  buildDashboardSection,
+  buildHomeSection,
+  buildHeaderSection,
+  buildPeopleSection,
+  buildAreasSection,
+  buildDevicesSection,
+  buildBlueprintsSection,
+  buildThemeFilesSection,
+  buildPermissionsSection,
+  buildAboutSection,
+  buildResetSection,
+} from './settings-sections';
 
 export function buildSettingsView(config: StrategyConfig, tokens?: ResolvedTokens): LovelaceCardConfig[] {
   const stored: StoredVisualConfig = loadStoredConfig() || {};
@@ -31,6 +46,49 @@ export function buildSettingsView(config: StrategyConfig, tokens?: ResolvedToken
     buildFontCard(stored, tokens),
     buildActionCard(tokens),
   ];
+}
+
+/**
+ * Build full settings content as raw HTML string (for embedding in layout card).
+ * Combines 12 settings sections + existing visual settings.
+ */
+export function buildSettingsHTML(config: StrategyConfig, tokens?: ResolvedTokens, hass?: Hass): string {
+  const blueprintPages = config.blueprint_pages || [];
+
+  // Extract visual settings HTML from existing card builders
+  const visualCards = buildSettingsView(config, tokens);
+  const visualHTML = visualCards.map(card => {
+    const content = (card.content as string) || '';
+    return content.replace(/<style>[\s\S]*?<\/style>/, '').trim();
+  }).join('\n');
+
+  // Wrap visual settings in a collapsible section
+  const visualSection = `<div class="st-section st-section--open" id="st-visual" data-component="settings-visual">
+    <div class="st-section-hdr" onclick="hdpToggleSection('st-visual')">
+      <div class="st-section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div>
+      <span class="st-section-title">视觉设置</span>
+      <svg class="st-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+    <div class="st-section-body" id="st-visual-body">
+      ${visualHTML}
+    </div>
+  </div>`;
+
+  return `
+<style>${getSettingsSectionsCSS()}</style>
+${buildDashboardSection(config)}
+${buildHomeSection(config)}
+${buildHeaderSection(config)}
+${hass ? buildPeopleSection(hass, config) : ''}
+${hass ? buildAreasSection(hass, config) : ''}
+${buildDevicesSection(config)}
+${buildBlueprintsSection(blueprintPages)}
+${visualSection}
+${buildThemeFilesSection()}
+${buildPermissionsSection(config)}
+${buildAboutSection()}
+${buildResetSection()}
+<script>${generateSettingsSectionsJS()}</script>`;
 }
 
 // ─── Settings Header ──────────────────────────────────────────────────────

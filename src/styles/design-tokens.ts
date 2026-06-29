@@ -1,8 +1,13 @@
 /**
- * Design Token System — HA Native Theme Integration (v2.1)
+ * Design Token System — HA Native Theme Integration (v4.0)
  *
  * Uses Home Assistant native theme CSS variables as primary values,
  * with sensible fallbacks for themes that don't define all tokens.
+ *
+ * v4.0 additions:
+ *   - Sidebar tokens (--hdp-sidebar-bg, --hdp-sidebar-width)
+ *   - Content padding token (--hdp-content-padding)
+ *   - Primary glow for focus states (--hdp-primary-glow)
  *
  * html-card-pro conventions:
  *   - Hardcoded hex/RGB values are FORBIDDEN in card templates
@@ -129,6 +134,14 @@ export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
     --hdp-motion-fast: 150ms;
     --hdp-motion-base: 250ms;
     --hdp-motion-easing: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* ── v4.0: Sidebar & Layout ── */
+    --hdp-sidebar-bg: var(--ha-card-background, var(--card-background-color, #FFFFFF));
+    --hdp-sidebar-width: 72px;
+    --hdp-content-padding: ${tokens?.card_padding != null ? tokens.card_padding : LAYOUT.card_padding}px;
+
+    /* ── v4.0: Focus & Interaction ── */
+    --hdp-primary-glow: rgba(79, 110, 247, 0.15);
   }
 </style>`;
 }

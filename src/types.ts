@@ -138,6 +138,16 @@ export interface StrategyConfig {
   hidden_persons?: string[];
   // Alarm entity override (auto-detected if not set)
   alarm_entity?: string;
+  // v4.0: Persistent config (read from Lovelace config at generate time)
+  hdp_config?: Partial<HDPConfig>;
+  // v4.0: Blueprint pages (from Lovelace config)
+  blueprint_pages?: BlueprintInstance[];
+  // v4.0: Theme definition (resolved at generate time)
+  theme_definition?: ThemeDefinition;
+  // v4.0: Pre-computed area summaries (injected by dashboard strategy)
+  area_summaries?: AreaSummary[];
+  // v4.0: Pre-rendered area HTML sections (injected by dashboard strategy)
+  area_html_sections?: Array<{ area_id: string; html: string }>;
 }
 
 // ─── Theme Preset Definitions ─────────────────────────────────────────────
@@ -339,3 +349,167 @@ export const DOMAIN_GROUPS: Record<string, { label: string; color: string }> = {
 };
 
 export const HIDDEN_DOMAINS = new Set(['automation', 'script', 'scene', 'group', 'zone', 'person', 'sun', 'weather', 'conversation', 'update', 'tts', 'stt']);
+
+// ─── v4.0: Persistent Config (stored in Lovelace config via websocket) ───
+
+export interface HDPConfig {
+  dashboard: {
+    name: string;
+    icon: string;
+  };
+  home: {
+    section_order: string[];
+    hidden_sections: string[];
+    hidden_info_cards: string[];
+  };
+  header: {
+    show_time: boolean;
+    show_weather: boolean;
+    show_notifications: boolean;
+    weather_entity: string;
+    alarm_entity: string;
+  };
+  people: {
+    hidden_persons: string[];
+  };
+  areas: {
+    hidden_areas: string[];
+    area_order: string[];
+    hide_unavailable: boolean;
+  };
+  devices: {
+    hidden_domains: string[];
+    hidden_device_types: string[];
+  };
+  blueprints: {
+    pages: BlueprintInstance[];
+    replacements: Record<string, string>;
+  };
+  visual: StoredVisualConfig;
+  permissions: {
+    restrict_non_admin: boolean;
+    restrict_settings: boolean;
+  };
+}
+
+export interface StoredVisualConfig {
+  theme_id: string;            // built-in name or theme filename
+  card_style: string;
+  colors: Record<string, string>;
+  border_radius: number;
+  card_padding: number;
+  card_gap: number;
+  font_family: string;
+  shadows: boolean;
+}
+
+// ─── v4.0: Blueprint Types ────────────────────────────────────────────────
+
+export type BlueprintInputType =
+  | 'text-field'
+  | 'entity-picker'
+  | 'icon-picker'
+  | 'boolean'
+  | 'number'
+  | 'area-picker';
+
+export interface BlueprintInput {
+  name: string;
+  description?: string;
+  type: BlueprintInputType;
+  default?: string | number | boolean;
+  domain?: string;       // for entity-picker: restrict domain
+}
+
+export interface BlueprintMeta {
+  name: string;
+  description: string;
+  version: string;
+  type: 'page';
+  custom_cards?: string[];
+  inputs: Record<string, BlueprintInput>;
+}
+
+export interface BlueprintDefinition {
+  meta: BlueprintMeta;
+  card: LovelaceCardConfig;  // card template with $key$ placeholders
+}
+
+export interface BlueprintInstance {
+  id: string;
+  name: string;
+  icon: string;
+  blueprint_yaml: string;   // raw YAML for re-editing
+  source?: string;           // GitHub URL for update checking
+  inputs: Record<string, string | number | boolean>;
+  card: LovelaceCardConfig;  // resolved card config
+}
+
+export interface BlueprintGalleryItem {
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  author: string;
+  source_url: string;        // raw GitHub URL to page.yaml
+  preview_url?: string;
+  tags?: string[];
+}
+
+// ─── v4.0: Theme Types ────────────────────────────────────────────────────
+
+export interface ThemeDefinition {
+  name: string;
+  version: string;
+  colors: {
+    page_bg: string;
+    card_bg: string;
+    sidebar_bg: string;
+    primary: string;
+    text_primary: string;
+    text_secondary: string;
+    text_muted: string;
+    border: string;
+    accent?: string;
+  };
+  layout: {
+    border_radius: number;
+    card_padding: number;
+    card_gap: number;
+    sidebar_width: number;
+  };
+  font_family: string;
+  gradient_primary?: string;
+}
+
+// ─── v4.0: Home Section Keys ──────────────────────────────────────────────
+
+export type HomeSectionKey =
+  | 'status_badges'
+  | 'people'
+  | 'environment'
+  | 'power_usage'
+  | 'favorites'
+  | 'summary';
+
+export const HOME_SECTION_LABELS: Record<HomeSectionKey, string> = {
+  status_badges: '状态徽章',
+  people: '家庭成员',
+  environment: '家居环境',
+  power_usage: '全屋功率',
+  favorites: '收藏设备',
+  summary: '系统概览',
+};
+
+// ─── v4.0: Area Summary (for sidebar display) ─────────────────────────────
+
+export interface AreaSummary {
+  area_id: string;
+  area_name: string;
+  icon: string;
+  entity_count: number;
+  active_count: number;
+  temp: string | null;
+  humidity: string | null;
+  domain_counts: Record<string, number>;
+}
