@@ -48,7 +48,7 @@ export class HassDashboardProViewStrategy {
 // ─── Build Complete Layout Card ─────────────────────────────────────────────
 
 function buildFullLayoutCard(hass: Hass, config: StrategyConfig, tokens: ReturnType<typeof resolveTokens>): LovelaceCardConfig {
-  const hiddenAreas = config.hidden_areas || [];
+  const hiddenAreas = config.hdp_config?.areas?.hidden_areas || config.hidden_areas || [];
   const areaEntityMap = buildAreaEntityMap(hass, hiddenAreas);
   const areaSummaries = config.area_summaries || [];
   const blueprintPages = config.hdp_config?.blueprints?.pages || config.blueprint_pages || [];

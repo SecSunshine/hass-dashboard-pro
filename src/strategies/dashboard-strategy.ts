@@ -17,7 +17,7 @@ const VIEW_STRATEGY_TYPE = 'custom:hass-dashboard-pro-view';
 
 export class HassDashboardProStrategy {
   static async generate(config: StrategyConfig, hass: Hass): Promise<DashboardStrategyResult> {
-    const hiddenAreas = config.hidden_areas || [];
+    const hiddenAreas = config.hdp_config?.areas?.hidden_areas || config.hidden_areas || [];
     const areaEntityMap = buildAreaEntityMap(hass, hiddenAreas);
 
     // Pre-compute area summaries (for sidebar display)

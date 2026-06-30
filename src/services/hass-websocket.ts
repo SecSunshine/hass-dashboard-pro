@@ -148,12 +148,106 @@ function hdpPulseCard(entityId) {
   }
 }
 
+// ── Climate Controls ──
+function hdpSetClimateMode(entityId, mode) {
+  var hass = hdpFindHass();
+  if (!hass || !hass.callService) { hdpShowToast('无法连接到 Home Assistant', 'error'); return; }
+  try {
+    hass.callService('climate', 'set_hvac_mode', { entity_id: entityId, hvac_mode: mode });
+    hdpPulseCard(entityId);
+  } catch(e) { hdpShowToast('空调模式切换失败', 'error'); }
+}
+
+function hdpSetClimateTemp(entityId, delta, minTemp, maxTemp) {
+  var hass = hdpFindHass();
+  if (!hass || !hass.callService) { hdpShowToast('无法连接到 Home Assistant', 'error'); return; }
+  var stateObj = hass.states[entityId];
+  if (!stateObj) return;
+  var current = stateObj.attributes && stateObj.attributes.temperature;
+  if (current == null) current = 24;
+  var newTemp = Math.round((current + delta) * 2) / 2; // round to 0.5
+  if (minTemp != null && newTemp < minTemp) newTemp = minTemp;
+  if (maxTemp != null && newTemp > maxTemp) newTemp = maxTemp;
+  try {
+    hass.callService('climate', 'set_temperature', { entity_id: entityId, temperature: newTemp });
+    hdpPulseCard(entityId);
+  } catch(e) { hdpShowToast('温度调节失败', 'error'); }
+}
+
+function hdpSetClimateFanMode(entityId, fanMode) {
+  var hass = hdpFindHass();
+  if (!hass || !hass.callService) { hdpShowToast('无法连接到 Home Assistant', 'error'); return; }
+  try {
+    hass.callService('climate', 'set_fan_mode', { entity_id: entityId, fan_mode: fanMode });
+    hdpPulseCard(entityId);
+  } catch(e) { hdpShowToast('风速切换失败', 'error'); }
+}
+
+// ── Cover Controls ──
+function hdpCoverAction(entityId, action) {
+  var hass = hdpFindHass();
+  if (!hass || !hass.callService) { hdpShowToast('无法连接到 Home Assistant', 'error'); return; }
+  var serviceMap = { open: 'open_cover', close: 'close_cover', stop: 'stop_cover' };
+  var service = serviceMap[action] || 'stop_cover';
+  try {
+    hass.callService('cover', service, { entity_id: entityId });
+    hdpPulseCard(entityId);
+  } catch(e) { hdpShowToast('窗帘控制失败', 'error'); }
+}
+
+// ── Lock Controls ──
+function hdpLockAction(entityId, action) {
+  var hass = hdpFindHass();
+  if (!hass || !hass.callService) { hdpShowToast('无法连接到 Home Assistant', 'error'); return; }
+  try {
+    hass.callService('lock', action, { entity_id: entityId });
+    hdpPulseCard(entityId);
+  } catch(e) { hdpShowToast('门锁控制失败', 'error'); }
+}
+
+// ── Media Player Controls ──
+function hdpMediaAction(entityId, action) {
+  var hass = hdpFindHass();
+  if (!hass || !hass.callService) { hdpShowToast('无法连接到 Home Assistant', 'error'); return; }
+  var serviceMap = { play_pause: 'media_play_pause', next: 'media_next_track', previous: 'media_previous_track' };
+  var service = serviceMap[action] || 'media_play_pause';
+  try {
+    hass.callService('media_player', service, { entity_id: entityId });
+    hdpPulseCard(entityId);
+  } catch(e) { hdpShowToast('媒体控制失败', 'error'); }
+}
+
+function hdpSetMediaVolume(entityId, volumeLevel) {
+  var hass = hdpFindHass();
+  if (!hass || !hass.callService) return;
+  var v = parseFloat(volumeLevel);
+  if (isNaN(v)) return;
+  v = Math.max(0, Math.min(1, v));
+  try {
+    hass.callService('media_player', 'volume_set', { entity_id: entityId, volume_level: v });
+  } catch(e) { /* silent — volume slider fires frequently */ }
+}
+
+// ── Vacuum Controls ──
+function hdpVacuumAction(entityId, action) {
+  var hass = hdpFindHass();
+  if (!hass || !hass.callService) { hdpShowToast('无法连接到 Home Assistant', 'error'); return; }
+  var serviceMap = { start: 'start', pause: 'pause', dock: 'return_to_base' };
+  var service = serviceMap[action] || 'start';
+  try {
+    hass.callService('vacuum', service, { entity_id: entityId });
+    hdpPulseCard(entityId);
+  } catch(e) { hdpShowToast('扫地机控制失败', 'error'); }
+}
+
 function hdpInitEntityClickHandlers() {
   // Event delegation on the main content area
   document.addEventListener('click', function(e) {
     // Check if click is on an entity card or its toggle
     var card = e.target.closest('[data-entity]');
     if (!card) return;
+    // Domain-specific cards (climate, cover, lock, etc.) have their own buttons
+    if (card.hasAttribute('data-no-toggle')) return;
     var entityId = card.getAttribute('data-entity');
     if (!entityId) return;
     // Don't toggle sensors or binary_sensors

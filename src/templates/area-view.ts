@@ -19,6 +19,7 @@ import type { ResolvedTokens } from '../utils/visual-config';
 import { bentoWrap, resolveCardSize } from '../utils/bento-layout';
 import { DOMAIN_GROUPS } from '../types';
 import { formatState, isEntityOn } from '../utils/area-entities';
+import { buildDomainCard, getDomainCardCSS } from './entity-cards';
 
 // ─── Area-specific Skin Resolution (Phase 6) ────────────────────────────────
 
@@ -70,11 +71,11 @@ export function buildAreaView(areaName: string, entities: EntityInfo[], hass: Ha
   // 2. One card per domain group (only if >1 group, else single flat grid)
   if (groups.length <= 1) {
     // Single domain — just show entity grid
-    cards.push(buildEntityGrid(entities, tokens));
+    cards.push(buildEntityGrid(entities, tokens, undefined, hass));
   } else {
     // Multiple domains — show each as a grouped section
     for (const group of groups) {
-      cards.push(buildDomainSection(group, tokens));
+      cards.push(buildDomainSection(group, tokens, undefined, hass));
     }
   }
 
@@ -95,12 +96,12 @@ export function buildAreaHTML(areaName: string, entities: EntityInfo[], hass: Ha
   sections.push(bentoWrap(extractAreaHTML(buildAreaHeader(areaName, entities, hass, tokens)), resolveCardSize('area_header', 'wide', cs)));
 
   if (groups.length <= 1) {
-    sections.push(bentoWrap(extractAreaHTML(buildEntityGrid(entities, tokens, areaSkin)), resolveCardSize('area_grid', 'wide', cs)));
+    sections.push(bentoWrap(extractAreaHTML(buildEntityGrid(entities, tokens, areaSkin, hass)), resolveCardSize('area_grid', 'wide', cs)));
   } else {
     for (const group of groups) {
       // Small domain sections (≤4 entities) take half width, large ones full width
       const defaultSize = group.entities.length <= 4 ? 'md' : 'wide';
-      sections.push(bentoWrap(extractAreaHTML(buildDomainSection(group, tokens, areaSkin)), resolveCardSize(`area_domain_${group.domain}`, defaultSize, cs)));
+      sections.push(bentoWrap(extractAreaHTML(buildDomainSection(group, tokens, areaSkin, hass)), resolveCardSize(`area_domain_${group.domain}`, defaultSize, cs)));
     }
   }
 
@@ -373,7 +374,17 @@ const ENTITY_CARD_CSS = /* css */ `
 
 // ─── Entity Card ───────────────────────────────────────────────────────────
 
-function buildEntityCard(entity: EntityInfo, skin?: string): string {
+function buildEntityCard(entity: EntityInfo, skin?: string, hass?: Hass): string {
+  // Try domain-specific card first (climate, cover, lock, media_player, vacuum)
+  if (hass) {
+    const stateObj = hass.states[entity.entity_id];
+    if (stateObj) {
+      const domainCard = buildDomainCard(entity, stateObj, skin);
+      if (domainCard) return domainCard;
+    }
+  }
+
+  // Default card for light, switch, fan, sensor, etc.
   const active = isEntityOn(entity.state, entity.domain);
   const stateText = formatState(entity);
   const iconSVG = getEntityIcon(entity.domain, active);
@@ -407,9 +418,9 @@ function buildEntityCard(entity: EntityInfo, skin?: string): string {
 
 // ─── Domain Section (with entity card CSS) ─────────────────────────────────
 
-function buildDomainSection(group: DomainSection, tokens?: ResolvedTokens, areaSkin?: string): LovelaceCardConfig {
+function buildDomainSection(group: DomainSection, tokens?: ResolvedTokens, areaSkin?: string, hass?: Hass): LovelaceCardConfig {
   const skin = areaSkin || tokens?.card_style;
-  const cards = group.entities.map(e => buildEntityCard(e, skin)).join('');
+  const cards = group.entities.map(e => buildEntityCard(e, skin, hass)).join('');
   const countBadge = group.active_count > 0
     ? `<span class="ds-cnt ds-cnt--${group.color_class}">${group.active_count}/${group.total}</span>`
     : `<span class="ds-cnt ds-cnt--off">${group.total}</span>`;
@@ -467,6 +478,7 @@ ${generateDesignTokenCSS(tokens)}
     .ds-grid { grid-template-columns: 1fr; }
   }
   ${ENTITY_CARD_CSS}
+  ${getDomainCardCSS()}
 </style>
 <div class="ds-hdr">
   <div class="ds-icon ds-icon--${group.color_class}">${getSectionIcon(group.domain)}</div>
@@ -477,9 +489,9 @@ ${generateDesignTokenCSS(tokens)}
   };
 }
 
-function buildEntityGrid(entities: EntityInfo[], tokens?: ResolvedTokens, areaSkin?: string): LovelaceCardConfig {
+function buildEntityGrid(entities: EntityInfo[], tokens?: ResolvedTokens, areaSkin?: string, hass?: Hass): LovelaceCardConfig {
   const skin = areaSkin || tokens?.card_style;
-  const cards = entities.map(e => buildEntityCard(e, skin)).join('');
+  const cards = entities.map(e => buildEntityCard(e, skin, hass)).join('');
 
   return {
     type: 'custom:html-pro-card',
@@ -497,6 +509,7 @@ ${generateDesignTokenCSS(tokens)}
     .eg { grid-template-columns: 1fr; }
   }
   ${ENTITY_CARD_CSS}
+  ${getDomainCardCSS()}
 </style>
 <div class="eg">${cards}</div>`,
   };

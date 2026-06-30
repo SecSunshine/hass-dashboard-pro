@@ -251,6 +251,12 @@ window.hdpSaveSetting = function(path, value) {
   }
   current[parts[parts.length - 1]] = value;
   hdpSaveConfig(obj);
+  // Persist to Lovelace config (async, non-blocking)
+  if (typeof hdpSaveToLovelace === 'function') {
+    hdpSaveToLovelace(hdpLoadConfig()).catch(function(err) {
+      console.warn('[HDP] Lovelace sync failed, saved to localStorage only', err);
+    });
+  }
 };
 
 window.hdpToggleArrayItem = function(path, item) {
@@ -268,6 +274,20 @@ window.hdpToggleArrayItem = function(path, item) {
   // Re-render chip state
   var chip = event.target.closest('.st-chip');
   if (chip) chip.classList.toggle('st-chip--active');
+  // Persist to Lovelace and reload so entity filtering takes effect
+  if (typeof hdpSaveToLovelace === 'function') {
+    hdpShowToast('正在保存设置...', 'info');
+    hdpSaveToLovelace(hdpLoadConfig()).then(function() {
+      hdpShowToast('设置已保存，正在刷新...', 'success');
+      setTimeout(function() { location.reload(); }, 800);
+    }).catch(function() {
+      hdpShowToast('已保存到本地，正在刷新...', 'info');
+      setTimeout(function() { location.reload(); }, 1200);
+    });
+  } else {
+    hdpShowToast('已保存，正在刷新...', 'success');
+    setTimeout(function() { location.reload(); }, 800);
+  }
 };
 
 window.hdpResetConfig = function() {
@@ -478,8 +498,8 @@ export function buildPeopleSection(hass: any, config: StrategyConfig): string {
 // ─── 5. Areas ───────────────────────────────────────────────────────────────
 
 export function buildAreasSection(hass: any, config: StrategyConfig): string {
-  const hiddenAreas: string[] = config.hidden_areas || [];
-  const hideUnavailable = (config as any).hdp_config?.areas?.hide_unavailable || false;
+  const hiddenAreas: string[] = config.hdp_config?.areas?.hidden_areas || config.hidden_areas || [];
+  const hideUnavailable = config.hdp_config?.areas?.hide_unavailable || false;
 
   const areaChips = Object.entries(hass.areas || {}).map(([id, area]: [string, any]) => {
     const hidden = hiddenAreas.includes(id);
@@ -507,7 +527,7 @@ export function buildAreasSection(hass: any, config: StrategyConfig): string {
 // ─── 6. Devices ─────────────────────────────────────────────────────────────
 
 export function buildDevicesSection(config: StrategyConfig): string {
-  const hiddenDomains: string[] = config.hidden_domains || [];
+  const hiddenDomains: string[] = config.hdp_config?.devices?.hidden_domains || config.hidden_domains || [];
   const domains = ['light', 'switch', 'climate', 'fan', 'cover', 'lock', 'sensor', 'binary_sensor', 'media_player', 'camera', 'vacuum', 'button'];
   const domainLabels: Record<string, string> = {
     light: '灯光', switch: '开关', climate: '空调', fan: '风扇', cover: '窗帘',
