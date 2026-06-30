@@ -29,7 +29,9 @@ export interface LayoutCardOptions {
   homeHTML: string;
   areaSections: Array<{ area_id: string; area_name: string; html: string }>;
   devicesHTML: string;
+  devicesJS?: string;
   settingsHTML: string;
+  settingsJS?: string;
   areaSummaries: AreaSummary[];
   blueprintPages: BlueprintInstance[];
   blueprintHTML?: Array<{ id: string; html: string }>;
@@ -39,8 +41,8 @@ export interface LayoutCardOptions {
  * Build the monolithic layout card.
  */
 export function buildLayoutCard(opts: LayoutCardOptions): LovelaceCardConfig {
-  const { hass, config, tokens, homeHTML, areaSections, devicesHTML, settingsHTML,
-          areaSummaries, blueprintPages } = opts;
+  const { hass, config, tokens, homeHTML, areaSections, devicesHTML, devicesJS, settingsHTML,
+          settingsJS, areaSummaries, blueprintPages } = opts;
 
   const title = config.title || '智能家居';
   const hiddenAreas = config.hidden_areas || [];
@@ -157,6 +159,8 @@ ${generateServiceScript()}
 ${generateStorageJS()}
 ${generateBlueprintJS()}
 ${generateBlueprintModalJS()}
+${devicesJS || ''}
+${settingsJS || ''}
 ${buildNavigationScript()}
 </script>`;
 

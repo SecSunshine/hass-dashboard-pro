@@ -310,6 +310,17 @@ window.hdpImportConfig = function() {
   };
   input.click();
 };
+
+window.hdpRefreshThemes = function() {
+  // Clear cached theme file list so it re-scans on next load
+  try { localStorage.removeItem('hdp_theme_files'); } catch(e) {}
+  // Try to fetch theme file list from HA www directory
+  var hass = hdpFindHass();
+  if (hass && hass.callApi) {
+    hass.callApi('GET', 'hassio/ingress').catch(function() {});
+  }
+  location.reload();
+};
 `;
 }
 

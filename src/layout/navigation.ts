@@ -192,6 +192,11 @@ export function buildNavigationScript(): string {
 
   // Initialize
   hdpShowView(initialView);
+
+  // Initialize entity click handlers (toggle entities by clicking cards)
+  if (typeof hdpInitEntityClickHandlers === 'function') {
+    hdpInitEntityClickHandlers();
+  }
 })();
 `;
 }

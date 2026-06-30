@@ -49,6 +49,50 @@ function hdpFindHass() {
   }
   return null;
 }
+
+function hdpToggleEntity(entityId) {
+  var hass = hdpFindHass();
+  if (!hass || !hass.callService) {
+    console.warn('[HDP] No HA connection available to toggle', entityId);
+    return;
+  }
+  var domain = entityId.split('.')[0];
+  var service = 'toggle';
+  // Some domains need specific services
+  if (domain === 'cover') service = 'toggle';
+  else if (domain === 'lock') {
+    // Lock needs lock/unlock, not toggle
+    var stateObj = hass.states[entityId];
+    service = stateObj && stateObj.state === 'locked' ? 'unlock' : 'lock';
+  } else if (domain === 'climate') {
+    // Climate doesn't have a simple toggle
+    return;
+  } else if (domain === 'button' || domain === 'input_button') {
+    service = 'press';
+  }
+  hass.callService(domain, service, { entity_id: entityId });
+  // Optimistic UI feedback — briefly pulse the card
+  var card = document.querySelector('[data-entity="' + entityId + '"]');
+  if (card) {
+    card.style.opacity = '0.6';
+    setTimeout(function() { card.style.opacity = '1'; }, 300);
+  }
+}
+
+function hdpInitEntityClickHandlers() {
+  // Event delegation on the main content area
+  document.addEventListener('click', function(e) {
+    // Check if click is on an entity card or its toggle
+    var card = e.target.closest('[data-entity]');
+    if (!card) return;
+    var entityId = card.getAttribute('data-entity');
+    if (!entityId) return;
+    // Don't toggle sensors or binary_sensors
+    var domain = entityId.split('.')[0];
+    if (domain === 'sensor' || domain === 'binary_sensor' || domain === 'camera') return;
+    hdpToggleEntity(entityId);
+  });
+}
 `;
 }
 

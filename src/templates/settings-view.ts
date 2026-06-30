@@ -51,15 +51,21 @@ export function buildSettingsView(config: StrategyConfig, tokens?: ResolvedToken
 /**
  * Build full settings content as raw HTML string (for embedding in layout card).
  * Combines 12 settings sections + existing visual settings.
+ * NOTE: No <script> tags here — they are extracted and must be included
+ * in the main layout card script block (nested scripts don't execute via innerHTML).
  */
 export function buildSettingsHTML(config: StrategyConfig, tokens?: ResolvedTokens, hass?: Hass): string {
   const blueprintPages = config.blueprint_pages || [];
 
   // Extract visual settings HTML from existing card builders
+  // Strip both <style> and <script> tags — scripts are handled separately
   const visualCards = buildSettingsView(config, tokens);
   const visualHTML = visualCards.map(card => {
     const content = (card.content as string) || '';
-    return content.replace(/<style>[\s\S]*?<\/style>/, '').trim();
+    return content
+      .replace(/<style>[\s\S]*?<\/style>/g, '')
+      .replace(/<script>[\s\S]*?<\/script>/g, '')
+      .trim();
   }).join('\n');
 
   // Wrap visual settings in a collapsible section
@@ -87,8 +93,25 @@ ${visualSection}
 ${buildThemeFilesSection()}
 ${buildPermissionsSection(config)}
 ${buildAboutSection()}
-${buildResetSection()}
-<script>${generateSettingsSectionsJS()}</script>`;
+${buildResetSection()}`;
+}
+
+/**
+ * Generate all settings-related JavaScript for the main script block.
+ * Includes settings sections JS + visual settings JS from all cards.
+ */
+export function generateSettingsJS(config: StrategyConfig, tokens?: ResolvedTokens): string {
+  const visualCards = buildSettingsView(config, tokens);
+  const scripts = visualCards.map(card => {
+    const content = (card.content as string) || '';
+    const matches = content.match(/<script>([\s\S]*?)<\/script>/g);
+    if (!matches) return '';
+    return matches.map(m => m.replace(/<\/?script>/g, '')).join('\n');
+  }).filter(Boolean).join('\n');
+
+  return `
+${generateSettingsSectionsJS()}
+${scripts}`;
 }
 
 // ─── Settings Header ──────────────────────────────────────────────────────

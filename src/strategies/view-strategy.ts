@@ -16,8 +16,8 @@ import { buildAreaEntityMap } from '../utils/area-entities';
 import { resolveTokens } from '../utils/visual-config';
 import { buildHomeHTML } from '../templates/home-view';
 import { buildAreaHTML } from '../templates/area-view';
-import { buildDevicesHTML } from '../templates/devices-view';
-import { buildSettingsHTML } from '../templates/settings-view';
+import { buildDevicesHTML, generateDevicesJS } from '../templates/devices-view';
+import { buildSettingsHTML, generateSettingsJS } from '../templates/settings-view';
 import { buildBlueprintPagesHTML } from '../blueprints/blueprint-page';
 import { buildLayoutCard } from '../layout/layout-card';
 
@@ -56,23 +56,25 @@ function buildFullLayoutCard(hass: Hass, config: StrategyConfig, tokens: ReturnT
   // 1. Home HTML
   const homeHTML = buildHomeHTML(hass, config, tokens);
 
-  // 2. Area HTML sections
+  // 2. Area HTML sections — iterate areaSummaries so ALL visible areas get a view,
+  // even those with no entities (otherwise sidebar clicks fall back to home)
   const areaSections: Array<{ area_id: string; area_name: string; html: string }> = [];
-  for (const [areaId, entities] of areaEntityMap.entries()) {
-    const area = hass.areas[areaId];
-    if (!area) continue;
+  for (const summary of areaSummaries) {
+    const entities = areaEntityMap.get(summary.area_id) || [];
     areaSections.push({
-      area_id: areaId,
-      area_name: area.name,
-      html: buildAreaHTML(area.name, entities, hass, tokens),
+      area_id: summary.area_id,
+      area_name: summary.area_name,
+      html: buildAreaHTML(summary.area_name, entities, hass, tokens),
     });
   }
 
-  // 3. Devices HTML (all entities grouped by domain)
+  // 3. Devices HTML + JS (JS must go in main script block — nested scripts don't execute)
   const devicesHTML = buildDevicesHTML(hass, config, tokens);
+  const devicesJS = generateDevicesJS();
 
-  // 4. Settings HTML
+  // 4. Settings HTML + JS (JS must go in main script block — nested scripts don't execute)
   const settingsHTML = buildSettingsHTML(config, tokens, hass);
+  const settingsJS = generateSettingsJS(config, tokens);
 
   // 5. Blueprint page HTML
   const blueprintHTML = buildBlueprintPagesHTML(blueprintPages);
@@ -84,7 +86,9 @@ function buildFullLayoutCard(hass: Hass, config: StrategyConfig, tokens: ReturnT
     homeHTML,
     areaSections,
     devicesHTML,
+    devicesJS,
     settingsHTML,
+    settingsJS,
     areaSummaries,
     blueprintPages,
     blueprintHTML,

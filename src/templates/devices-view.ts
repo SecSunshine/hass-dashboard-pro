@@ -174,13 +174,19 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
   ${getDeviceEntityCardCSS()}
 </style>
 <div class="dv-chips">${chipsHTML}</div>
-${sectionsHTML || '<div class="dv-empty">暂无设备</div>'}
-<script>
-  window.hdpScrollToDomain = function(domain) {
-    var el = document.getElementById('dv-domain-' + domain);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-</script>`;
+${sectionsHTML || '<div class="dv-empty">暂无设备</div>'}`;
+}
+
+/**
+ * Generate devices view JavaScript for the main script block.
+ * Includes hdpScrollToDomain for domain chip navigation.
+ */
+export function generateDevicesJS(): string {
+  return `
+window.hdpScrollToDomain = function(domain) {
+  var el = document.getElementById('dv-domain-' + domain);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};`;
 }
 
 // ─── Domain Section ─────────────────────────────────────────────────────────
