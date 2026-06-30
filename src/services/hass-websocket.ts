@@ -39,21 +39,70 @@ function hdpFindHassConnection() {
 }
 
 function hdpFindHass() {
+  // Method 1: Direct lookup on home-assistant element (light DOM)
   var ha = document.querySelector('home-assistant');
-  if (ha && ha.hass) return ha.hass;
+  if (ha && ha.hass && typeof ha.hass.callService === 'function') return ha.hass;
+  // Method 2: Walk shadow roots of home-assistant
+  if (ha && ha.shadowRoot) {
+    var panel = ha.shadowRoot.querySelector('ha-panel-lovelace');
+    if (panel && panel.hass && typeof panel.hass.callService === 'function') return panel.hass;
+    // Search deeper in shadow roots
+    var deep = hdpSearchShadowRoots(ha.shadowRoot, 3);
+    if (deep) return deep;
+  }
+  // Method 3: Search all custom elements with shadow roots
   var els = document.querySelectorAll('*');
   for (var i = 0; i < els.length; i++) {
-    if (els[i].hass && typeof els[i].hass.callApi === 'function') {
-      return els[i].hass;
+    var el = els[i];
+    if (el.hass && typeof el.hass.callService === 'function') return el.hass;
+    if (el.shadowRoot) {
+      var found = hdpSearchShadowRoots(el.shadowRoot, 2);
+      if (found) return found;
     }
   }
   return null;
+}
+
+function hdpSearchShadowRoots(root, depth) {
+  if (depth <= 0 || !root) return null;
+  var els = root.querySelectorAll('*');
+  for (var i = 0; i < els.length; i++) {
+    var el = els[i];
+    if (el.hass && typeof el.hass.callService === 'function') return el.hass;
+    if (el.shadowRoot) {
+      var found = hdpSearchShadowRoots(el.shadowRoot, depth - 1);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function hdpShowToast(msg, type) {
+  type = type || 'info';
+  var toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:' +
+    (type === 'error' ? '#ef4444' : type === 'success' ? '#22c55e' : '#1a1d26') +
+    ';color:white;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:600;z-index:999999;' +
+    'box-shadow:0 4px 16px rgba(0,0,0,0.15);opacity:0;transition:opacity 0.3s ease,transform 0.3s ease;' +
+    'max-width:90vw;text-align:center;';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  requestAnimationFrame(function() {
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateX(-50%) translateY(-4px)';
+  });
+  setTimeout(function() {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(-50%) translateY(4px)';
+    setTimeout(function() { toast.remove(); }, 300);
+  }, 2500);
 }
 
 function hdpToggleEntity(entityId) {
   var hass = hdpFindHass();
   if (!hass || !hass.callService) {
     console.warn('[HDP] No HA connection available to toggle', entityId);
+    hdpShowToast('无法连接到 Home Assistant，设备控制不可用', 'error');
     return;
   }
   var domain = entityId.split('.')[0];
@@ -61,17 +110,37 @@ function hdpToggleEntity(entityId) {
   // Some domains need specific services
   if (domain === 'cover') service = 'toggle';
   else if (domain === 'lock') {
-    // Lock needs lock/unlock, not toggle
     var stateObj = hass.states[entityId];
     service = stateObj && stateObj.state === 'locked' ? 'unlock' : 'lock';
   } else if (domain === 'climate') {
-    // Climate doesn't have a simple toggle
+    // Climate: toggle between 'off' and previous HVAC mode
+    var climateState = hass.states[entityId];
+    if (!climateState) return;
+    var currentMode = climateState.state;
+    if (currentMode === 'off') {
+      // Turn on — use the first available mode from attributes
+      var modes = climateState.attributes && climateState.attributes.hvac_modes;
+      var targetMode = (modes && modes.length > 1) ? modes[1] : 'auto';
+      service = 'set_hvac_mode';
+      hass.callService('climate', service, { entity_id: entityId, hvac_mode: targetMode });
+    } else {
+      hass.callService('climate', 'set_hvac_mode', { entity_id: entityId, hvac_mode: 'off' });
+    }
+    hdpPulseCard(entityId);
     return;
   } else if (domain === 'button' || domain === 'input_button') {
     service = 'press';
   }
-  hass.callService(domain, service, { entity_id: entityId });
-  // Optimistic UI feedback — briefly pulse the card
+  try {
+    hass.callService(domain, service, { entity_id: entityId });
+    hdpPulseCard(entityId);
+  } catch(e) {
+    console.error('[HDP] Toggle failed:', e);
+    hdpShowToast('设备控制失败: ' + (e.message || '未知错误'), 'error');
+  }
+}
+
+function hdpPulseCard(entityId) {
   var card = document.querySelector('[data-entity="' + entityId + '"]');
   if (card) {
     card.style.opacity = '0.6';

@@ -34,7 +34,7 @@ import {
   buildResetSection,
 } from './settings-sections';
 
-export function buildSettingsView(config: StrategyConfig, tokens?: ResolvedTokens): LovelaceCardConfig[] {
+export function buildSettingsView(config: StrategyConfig, tokens?: ResolvedTokens, hass?: Hass): LovelaceCardConfig[] {
   const stored: StoredVisualConfig = loadStoredConfig() || {};
   const preset = (config.visual?.theme || 'light') as string;
 
@@ -44,6 +44,7 @@ export function buildSettingsView(config: StrategyConfig, tokens?: ResolvedToken
     buildSeedColorCard(stored, tokens),
     buildAutoMoodCard(stored, tokens),
     buildCardStyleCard(stored, tokens),
+    buildLayoutConfigCard(stored, tokens, hass),
     buildColorPickerCard(stored, tokens),
     buildShapeCard(stored, tokens),
     buildFontCard(stored, tokens),
@@ -62,7 +63,7 @@ export function buildSettingsHTML(config: StrategyConfig, tokens?: ResolvedToken
 
   // Extract visual settings HTML from existing card builders
   // Strip both <style> and <script> tags — scripts are handled separately
-  const visualCards = buildSettingsView(config, tokens);
+  const visualCards = buildSettingsView(config, tokens, hass);
   const visualHTML = visualCards.map(card => {
     const content = (card.content as string) || '';
     return content
@@ -85,6 +86,60 @@ export function buildSettingsHTML(config: StrategyConfig, tokens?: ResolvedToken
 
   return `
 <style>${getSettingsSectionsCSS()}</style>
+<style>
+  /* Visual settings card spacing & wrappers */
+  .st-section-body > div {
+    padding: 16px;
+    margin-bottom: 12px;
+    border-radius: var(--hdp-radius, 14px);
+    background: var(--hdp-card-bg, #fff);
+    border: 1px solid var(--hdp-border, rgba(0,0,0,0.06));
+    transition: border-color 0.2s ease;
+  }
+  .st-section-body > div:last-child { margin-bottom: 0; }
+  .st-section-body > div:hover { border-color: var(--hdp-primary, #4F6EF7); }
+  /* Settings header doesn't need card wrapper */
+  .st-section-body > div[data-component="settings-header"] {
+    padding: 4px 0 0 0;
+    margin-bottom: 16px;
+    background: transparent;
+    border: none;
+  }
+  .st-section-body > div[data-component="settings-header"]:hover { border: none; }
+  /* Action card full width */
+  .st-section-body > div[data-component="settings-actions"] {
+    display: flex;
+    gap: 12px;
+  }
+  /* Selectable items in visual cards */
+  .theme-card, .mood-card, .style-card, .font-card {
+    border-radius: var(--hdp-radius, 14px);
+    transition: all 0.2s ease;
+  }
+  /* Toggle switch consistency */
+  .toggle-switch {
+    width: 44px; height: 24px;
+    border-radius: 12px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    flex-shrink: 0;
+  }
+  .toggle-switch--on { background: var(--hdp-primary, #4F6EF7); }
+  .toggle-switch--off { background: var(--hdp-divider, rgba(0,0,0,0.08)); }
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: white;
+    top: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    transition: transform 0.2s ease;
+  }
+  .toggle-switch--on::after { transform: translateX(20px); }
+  .toggle-switch--off::after { transform: translateX(2px); border: 1px solid var(--hdp-border); }
+</style>
 ${buildDashboardSection(config)}
 ${buildHomeSection(config)}
 ${buildHeaderSection(config)}
@@ -103,8 +158,8 @@ ${buildResetSection()}`;
  * Generate all settings-related JavaScript for the main script block.
  * Includes settings sections JS + visual settings JS from all cards.
  */
-export function generateSettingsJS(config: StrategyConfig, tokens?: ResolvedTokens): string {
-  const visualCards = buildSettingsView(config, tokens);
+export function generateSettingsJS(config: StrategyConfig, tokens?: ResolvedTokens, hass?: Hass): string {
+  const visualCards = buildSettingsView(config, tokens, hass);
   const scripts = visualCards.map(card => {
     const content = (card.content as string) || '';
     const matches = content.match(/<script>([\s\S]*?)<\/script>/g);
@@ -995,6 +1050,277 @@ ${generateDesignTokenCSS(tokens)}
         cfg.card_style = style;
         localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
         location.reload();
+      });
+    });
+  })();
+</script>`,
+  };
+}
+
+// ─── Layout Config Card (card_sizes + density + area_skins) ────────────────
+
+function buildLayoutConfigCard(stored: StoredVisualConfig, tokens?: ResolvedTokens, hass?: Hass): LovelaceCardConfig {
+  const cardSizes = (stored.card_sizes || {}) as Record<string, string>;
+  const currentDensity = stored.layout_density || 'standard';
+  const areaSkins = (stored.area_skins || {}) as Record<string, string>;
+
+  // Home view card definitions
+  const homeCards = [
+    { id: 'home_welcome', label: '欢迎横幅', default: 'lg' },
+    { id: 'home_status_badges', label: '状态徽章', default: 'wide' },
+    { id: 'home_people', label: '家庭成员', default: 'md' },
+    { id: 'home_environment', label: '家居环境', default: 'md' },
+    { id: 'home_power', label: '全屋功率', default: 'md' },
+    { id: 'home_favorites', label: '收藏设备', default: 'wide' },
+    { id: 'home_summary', label: '系统概览', default: 'md' },
+  ];
+
+  const sizeOptions = [
+    { val: 'sm', label: '小', hint: '1×1' },
+    { val: 'md', label: '中', hint: '2×1' },
+    { val: 'lg', label: '大', hint: '2×2' },
+    { val: 'wide', label: '通栏', hint: '4×1' },
+    { val: 'tall', label: '高', hint: '1×2' },
+  ];
+
+  const sizeRows = homeCards.map(c => {
+    const current = cardSizes[c.id] || c.default;
+    const options = sizeOptions.map(o =>
+      `<option value="${o.val}" ${o.val === current ? 'selected' : ''}>${o.label} (${o.hint})</option>`
+    ).join('');
+    return `<div class="lc-size-row">
+      <span class="lc-size-label">${c.label}</span>
+      <select class="lc-size-select" data-card-id="${c.id}" data-default="${c.default}">
+        ${options}
+      </select>
+    </div>`;
+  }).join('');
+
+  // Density buttons
+  const densities = [
+    { val: 'compact', label: '紧凑', desc: '更小间距' },
+    { val: 'standard', label: '标准', desc: '平衡舒适' },
+    { val: 'spacious', label: '宽松', desc: '更多留白' },
+  ];
+  const densityBtns = densities.map(d =>
+    `<button class="lc-density-btn ${d.val === currentDensity ? 'lc-density-btn--active' : ''}" data-density="${d.val}">
+      <span class="lc-density-label">${d.label}</span>
+      <span class="lc-density-desc">${d.desc}</span>
+    </button>`
+  ).join('');
+
+  // Area skins (only if hass is available)
+  let areaSkinsHTML = '';
+  if (hass && hass.areas) {
+    const skinOptions = [
+      { val: '', label: '自动' },
+      { val: 'classic', label: '经典' },
+      { val: 'glass', label: '毛玻璃' },
+      { val: 'gradient', label: '渐变' },
+      { val: 'aurora', label: '极光' },
+      { val: 'soft', label: '柔影' },
+      { val: 'neon', label: '霓虹' },
+    ];
+    const hiddenAreas = (tokens as any)?.hidden_areas || [];
+    const areas = Object.entries(hass.areas)
+      .filter(([, a]) => a && a.name)
+      .sort((a, b) => (a[1].name || '').localeCompare(b[1].name || ''))
+      .slice(0, 12); // limit to 12 areas
+
+    const areaRows = areas.map(([areaId, area]) => {
+      const current = areaSkins[areaId] || '';
+      const opts = skinOptions.map(o =>
+        `<option value="${o.val}" ${o.val === current ? 'selected' : ''}>${o.label}</option>`
+      ).join('');
+      return `<div class="lc-skin-row">
+        <span class="lc-skin-label">${area.name}</span>
+        <select class="lc-skin-select" data-area-id="${areaId}">
+          ${opts}
+        </select>
+      </div>`;
+    }).join('');
+    areaSkinsHTML = `
+    <div class="lc-sub-section">
+      <div class="lc-sub-title">区域皮肤</div>
+      <div class="lc-skin-list">${areaRows || '<div class="lc-empty">暂无区域</div>'}</div>
+    </div>`;
+  }
+
+  return {
+    type: 'custom:html-pro-card',
+    title: '',
+    do_not_parse: true,
+    content: /* html */ `
+${generateDesignTokenCSS(tokens)}
+<style>
+  .lc-card { padding: 0; }
+  .lc-title {
+    font: inherit; font-size: 15px; font-weight: 700; color: var(--hdp-text);
+    margin-bottom: 4px;
+  }
+  .lc-subtitle {
+    font: inherit; font-size: 12px; color: var(--hdp-text-secondary);
+    margin-bottom: 16px;
+  }
+  .lc-sub-section { margin-bottom: 20px; }
+  .lc-sub-section:last-child { margin-bottom: 0; }
+  .lc-sub-title {
+    font: inherit; font-size: 13px; font-weight: 600; color: var(--hdp-text);
+    margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+  }
+  .lc-sub-title svg { width: 16px; height: 16px; color: var(--hdp-primary); }
+
+  /* Size rows */
+  .lc-size-list { display: flex; flex-direction: column; gap: 8px; }
+  .lc-size-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; border-radius: var(--hdp-radius);
+    background: var(--hdp-card-bg); border: 1px solid var(--hdp-border);
+    transition: all 0.2s ease;
+  }
+  .lc-size-row:hover { border-color: var(--hdp-primary); }
+  .lc-size-label {
+    font: inherit; font-size: 13px; font-weight: 500; color: var(--hdp-text);
+  }
+  .lc-size-select {
+    font-family: var(--hdp-font); font-size: 12px; font-weight: 600;
+    padding: 6px 12px; border-radius: var(--hdp-radius-sm);
+    border: 1px solid var(--hdp-border); background: var(--hdp-bg);
+    color: var(--hdp-text); cursor: pointer; outline: none;
+    transition: border-color 0.2s ease;
+  }
+  .lc-size-select:focus { border-color: var(--hdp-primary); }
+  .lc-size-select option { font-size: 12px; }
+
+  /* Density buttons */
+  .lc-density-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  }
+  .lc-density-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 12px 8px; border-radius: var(--hdp-radius);
+    border: 2px solid var(--hdp-border); background: var(--hdp-card-bg);
+    cursor: pointer; transition: all 0.2s ease;
+    font-family: var(--hdp-font);
+  }
+  .lc-density-btn:hover { border-color: var(--hdp-primary); }
+  .lc-density-btn--active {
+    border-color: var(--hdp-primary);
+    background: var(--hdp-primary-light);
+  }
+  .lc-density-label { font-size: 13px; font-weight: 700; color: var(--hdp-text); }
+  .lc-density-btn--active .lc-density-label { color: var(--hdp-primary); }
+  .lc-density-desc { font-size: 10px; color: var(--hdp-text-muted); }
+
+  /* Area skin rows */
+  .lc-skin-list { display: flex; flex-direction: column; gap: 8px; }
+  .lc-skin-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; border-radius: var(--hdp-radius);
+    background: var(--hdp-card-bg); border: 1px solid var(--hdp-border);
+  }
+  .lc-skin-label {
+    font: inherit; font-size: 13px; font-weight: 500; color: var(--hdp-text);
+  }
+  .lc-skin-select {
+    font-family: var(--hdp-font); font-size: 12px; font-weight: 600;
+    padding: 6px 12px; border-radius: var(--hdp-radius-sm);
+    border: 1px solid var(--hdp-border); background: var(--hdp-bg);
+    color: var(--hdp-text); cursor: pointer; outline: none;
+  }
+  .lc-skin-select:focus { border-color: var(--hdp-primary); }
+  .lc-empty {
+    font: inherit; font-size: 13px; color: var(--hdp-text-muted);
+    text-align: center; padding: 16px;
+  }
+</style>
+<div class="lc-card">
+  <div class="lc-title">布局配置</div>
+  <div class="lc-subtitle">调整卡片尺寸、布局密度和区域皮肤</div>
+
+  <div class="lc-sub-section">
+    <div class="lc-sub-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      卡片尺寸
+    </div>
+    <div class="lc-size-list">${sizeRows}</div>
+  </div>
+
+  <div class="lc-sub-section">
+    <div class="lc-sub-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      布局密度
+    </div>
+    <div class="lc-density-row">${densityBtns}</div>
+  </div>
+
+  ${areaSkinsHTML}
+</div>
+<script>
+  (function() {
+    // Card size selects
+    document.querySelectorAll('.lc-size-select').forEach(function(sel) {
+      sel.addEventListener('change', function() {
+        var cardId = this.getAttribute('data-card-id');
+        var size = this.value;
+        var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
+        if (!cfg.card_sizes) cfg.card_sizes = {};
+        if (size === this.getAttribute('data-default')) {
+          delete cfg.card_sizes[cardId];
+        } else {
+          cfg.card_sizes[cardId] = size;
+        }
+        localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+        if (typeof hdpShowToast === 'function') hdpShowToast('卡片尺寸已保存', 'success');
+        setTimeout(function() { location.reload(); }, 600);
+      });
+    });
+
+    // Density buttons
+    document.querySelectorAll('.lc-density-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var density = this.getAttribute('data-density');
+        document.querySelectorAll('.lc-density-btn').forEach(function(b) {
+          b.className = 'lc-density-btn' + (b.getAttribute('data-density') === density ? ' lc-density-btn--active' : '');
+        });
+        var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
+        cfg.layout_density = density;
+        // Also set gap/padding defaults for the density
+        var dmap = { compact: [8,12], standard: [14,18], spacious: [20,24] };
+        var dp = dmap[density] || dmap.standard;
+        cfg.card_gap = dp[0];
+        cfg.card_padding = dp[1];
+        localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+        // Apply density CSS vars in real-time
+        var root = document.documentElement;
+        var dcss = { compact: [8,12,100,10], standard: [14,18,120,14], spacious: [20,24,140,18] };
+        var dc = dcss[density] || dcss.standard;
+        root.style.setProperty('--hdp-density', density);
+        root.style.setProperty('--hdp-density-gap', dc[0] + 'px');
+        root.style.setProperty('--hdp-density-padding', dc[1] + 'px');
+        root.style.setProperty('--hdp-density-row-height', dc[2] + 'px');
+        root.style.setProperty('--hdp-density-entity-padding', dc[3] + 'px');
+        root.style.setProperty('--hdp-card-gap', dc[0] + 'px');
+        root.style.setProperty('--hdp-card-padding', dc[1] + 'px');
+        if (typeof hdpShowToast === 'function') hdpShowToast('布局密度: ' + ({compact:'紧凑',standard:'标准',spacious:'宽松'})[density], 'success');
+      });
+    });
+
+    // Area skin selects
+    document.querySelectorAll('.lc-skin-select').forEach(function(sel) {
+      sel.addEventListener('change', function() {
+        var areaId = this.getAttribute('data-area-id');
+        var skin = this.value;
+        var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
+        if (!cfg.area_skins) cfg.area_skins = {};
+        if (skin) {
+          cfg.area_skins[areaId] = skin;
+        } else {
+          delete cfg.area_skins[areaId];
+        }
+        localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+        if (typeof hdpShowToast === 'function') hdpShowToast('区域皮肤已保存', 'success');
+        setTimeout(function() { location.reload(); }, 600);
       });
     });
   })();

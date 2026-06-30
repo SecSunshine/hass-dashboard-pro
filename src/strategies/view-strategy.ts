@@ -74,7 +74,7 @@ function buildFullLayoutCard(hass: Hass, config: StrategyConfig, tokens: ReturnT
 
   // 4. Settings HTML + JS (JS must go in main script block — nested scripts don't execute)
   const settingsHTML = buildSettingsHTML(config, tokens, hass);
-  const settingsJS = generateSettingsJS(config, tokens);
+  const settingsJS = generateSettingsJS(config, tokens, hass);
 
   // 5. Blueprint page HTML
   const blueprintHTML = buildBlueprintPagesHTML(blueprintPages);
