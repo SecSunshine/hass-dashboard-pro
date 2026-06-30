@@ -51,7 +51,7 @@ function buildFullLayoutCard(hass: Hass, config: StrategyConfig, tokens: ReturnT
   const hiddenAreas = config.hidden_areas || [];
   const areaEntityMap = buildAreaEntityMap(hass, hiddenAreas);
   const areaSummaries = config.area_summaries || [];
-  const blueprintPages = config.blueprint_pages || [];
+  const blueprintPages = config.hdp_config?.blueprints?.pages || config.blueprint_pages || [];
 
   // 1. Home HTML
   const homeHTML = buildHomeHTML(hass, config, tokens);

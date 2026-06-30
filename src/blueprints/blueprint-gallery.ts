@@ -530,17 +530,13 @@ export function generateBlueprintModalJS(): string {
     });
   };
 
-  // Refresh gallery (re-render the gallery section in settings)
+  // Refresh gallery — reload so strategy regenerates with updated blueprints
   window.hdpRefreshBlueprintGallery = function() {
-    // Trigger a re-render by navigating to settings and back
-    // This is a simple approach; a more sophisticated approach would
-    // use DOM manipulation to update just the gallery section
-    var galleryEl = document.getElementById('bp-gallery');
-    if (galleryEl) {
-      // Force page reload to pick up new blueprints
-      // In a future version, we can do partial DOM updates
-      console.log('[HDP] Blueprint gallery updated, refresh to see changes');
-    }
+    // Give hdpSaveToLovelace time to finish the async Lovelace config sync
+    // before reloading, otherwise the new config may not be persisted yet
+    setTimeout(function() {
+      location.reload();
+    }, 500);
   };
 })();
 `;

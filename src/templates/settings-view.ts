@@ -55,7 +55,7 @@ export function buildSettingsView(config: StrategyConfig, tokens?: ResolvedToken
  * in the main layout card script block (nested scripts don't execute via innerHTML).
  */
 export function buildSettingsHTML(config: StrategyConfig, tokens?: ResolvedTokens, hass?: Hass): string {
-  const blueprintPages = config.blueprint_pages || [];
+  const blueprintPages = config.hdp_config?.blueprints?.pages || config.blueprint_pages || [];
 
   // Extract visual settings HTML from existing card builders
   // Strip both <style> and <script> tags — scripts are handled separately

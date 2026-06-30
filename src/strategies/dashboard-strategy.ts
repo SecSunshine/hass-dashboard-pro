@@ -63,8 +63,8 @@ export class HassDashboardProStrategy {
       subview: false,
     });
 
-    // 3. Blueprint Page Views
-    const blueprintPages = config.blueprint_pages || [];
+    // 3. Blueprint Page Views — read from hdp_config (where runtime saves them)
+    const blueprintPages = config.hdp_config?.blueprints?.pages || config.blueprint_pages || [];
     for (const page of blueprintPages) {
       views.push({
         title: page.name,

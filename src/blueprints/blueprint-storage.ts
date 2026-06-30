@@ -39,9 +39,14 @@ export function generateBlueprintJS(): string {
     } catch(e) {
       console.error('[HDP Blueprint] Save failed:', e);
     }
-    // Also persist to Lovelace config via websocket
-    if (window.hdpSaveLovelaceConfig) {
-      window.hdpSaveLovelaceConfig('blueprints.pages', pages);
+    // Persist into hdp_config so strategies can read it on next generate()
+    if (typeof hdpSaveConfig === 'function') {
+      hdpSaveConfig({ blueprints: { pages: pages, replacements: {} } });
+    }
+    // Sync to HA Lovelace config (survives cache clear, cross-device)
+    if (typeof hdpSaveToLovelace === 'function') {
+      var hdpCfg = (typeof hdpLoadConfig === 'function') ? hdpLoadConfig() : null;
+      if (hdpCfg) hdpSaveToLovelace(hdpCfg);
     }
   };
 
@@ -108,6 +113,7 @@ export function generateBlueprintJS(): string {
     var lines = yaml.split('\\n');
     var section = '';
     var currentInput = '';
+    var cardLines = [];
 
     for (var i = 0; i < lines.length; i++) {
       var line = lines[i];
@@ -116,7 +122,7 @@ export function generateBlueprintJS(): string {
       if (trimmed === '' || trimmed.indexOf('#') === 0) continue;
 
       if (trimmed === 'meta:') { section = 'meta'; continue; }
-      if (trimmed === 'card:') { section = 'card'; break; }
+      if (trimmed === 'card:') { section = 'card'; continue; }
       if (trimmed === 'inputs:') { section = 'inputs'; continue; }
 
       if (section === 'meta') {
@@ -140,10 +146,85 @@ export function generateBlueprintJS(): string {
           }
         }
       }
+
+      // Collect card section lines for later parsing
+      if (section === 'card') {
+        cardLines.push(line);
+      }
     }
+
+    // Parse the collected card lines into an object
+    result.card = hdpParseCardObject(cardLines);
 
     return result;
   };
+
+  // Parse card YAML lines into a config object (client-side)
+  function hdpParseCardObject(lines) {
+    var result = {};
+    var stack = [{ obj: result, indent: -1 }];
+
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      if (!line.trim() || line.trim().indexOf('#') === 0) continue;
+
+      var indent = line.length - line.replace(/^\\s+/, '').length;
+      var trimmed = line.trim();
+
+      // Pop stack to find parent
+      while (stack.length > 1 && stack[stack.length - 1].indent >= indent) {
+        stack.pop();
+      }
+      var parent = stack[stack.length - 1].obj;
+
+      // Multi-line block string (| literal or > folded)
+      if (trimmed.charAt(trimmed.length - 1) === '|' || trimmed.charAt(trimmed.length - 1) === '>') {
+        var key = trimmed.replace(/[|>]\\s*$/, '').replace(/:$/, '').trim();
+        var isFolded = trimmed.charAt(trimmed.length - 1) === '>';
+        var blockLines = [];
+        var blockIndent = -1;
+
+        while (i + 1 < lines.length) {
+          var nextLine = lines[i + 1];
+          if (!nextLine.trim()) { blockLines.push(''); i++; continue; }
+          var nextIndent = nextLine.length - nextLine.replace(/^\\s+/, '').length;
+          if (blockIndent === -1) blockIndent = nextIndent;
+          if (nextIndent < blockIndent) break;
+          blockLines.push(nextLine.substring(blockIndent));
+          i++;
+        }
+
+        parent[key] = isFolded
+          ? blockLines.join(' ').replace(/\\s+/g, ' ').trim()
+          : blockLines.join('\\n');
+        continue;
+      }
+
+      // Key-value or nested object
+      var colonIdx = trimmed.indexOf(':');
+      if (colonIdx === -1) continue;
+      var key = trimmed.substring(0, colonIdx).trim();
+      var val = trimmed.substring(colonIdx + 1).trim();
+
+      if (val === '' || val === undefined) {
+        // Nested object
+        var child = {};
+        parent[key] = child;
+        stack.push({ obj: child, indent: indent });
+      } else {
+        // Parse value: strip quotes, handle bool/null/number
+        val = val.replace(/^["']|["']$/g, '');
+        if (val === 'true') val = true;
+        else if (val === 'false') val = false;
+        else if (val === 'null' || val === '~') val = null;
+        else if (/^-?\\d+$/.test(val)) val = parseInt(val, 10);
+        else if (/^-?\\d+\\.\\d+$/.test(val)) val = parseFloat(val);
+        parent[key] = val;
+      }
+    }
+
+    return result;
+  }
 
   function hdpParseKV(line) {
     var idx = line.indexOf(':');
