@@ -15,8 +15,19 @@ export function buildAreaEntityMap(hass: Hass, hiddenAreas: string[] = []): Map<
     const domain = entityId.split('.')[0];
     if (HIDDEN_DOMAINS.has(domain)) continue;
 
+    // Resolve area: entity registry → device registry → state attribute
     const registryEntry = hass.entities?.[entityId];
-    const areaId = registryEntry?.area_id ?? stateObj.attributes?.area_id as string | undefined;
+    let areaId: string | undefined = registryEntry?.area_id ?? undefined;
+
+    if (!areaId && registryEntry?.device_id) {
+      const device = hass.devices?.[registryEntry.device_id];
+      areaId = device?.area_id ?? undefined;
+    }
+
+    if (!areaId) {
+      areaId = stateObj.attributes?.area_id as string | undefined;
+    }
+
     if (!areaId || hiddenAreas.includes(areaId)) continue;
 
     const area = hass.areas[areaId];
