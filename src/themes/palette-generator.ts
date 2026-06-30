@@ -310,7 +310,7 @@ export const MOOD_PRESETS: MoodPreset[] = [
     lightness_mode: 'dark',
     radius: 12,
     shadow_style: 'deep',
-    card_skin: 'glass',
+    card_skin: 'aurora',
     icon: '🌊',
   },
   {
@@ -358,7 +358,7 @@ export const MOOD_PRESETS: MoodPreset[] = [
     lightness_mode: 'dark',
     radius: 20,
     shadow_style: 'glow',
-    card_skin: 'gradient',
+    card_skin: 'neon',
     icon: '💜',
   },
 ];
@@ -441,8 +441,8 @@ export function generateFromSeed(
 
   return {
     ...palette,
-    card_style: 'glass',  // default skin for custom seed
-    border_radius: 14,    // default radius
+    card_style: resolvedMode === 'dark' ? 'aurora' : 'glass',
+    border_radius: 14,
     mood_id: 'custom',
     mood_name: '自定义',
   };

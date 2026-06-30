@@ -86,8 +86,8 @@ export interface VisualConfig {
   /** Primary gradient CSS value */
   gradient_primary?: string;
 
-  /** Card style preset: classic | glass | gradient */
-  card_style?: 'classic' | 'glass' | 'gradient';
+  /** Card style preset: classic | glass | gradient | aurora | soft | neon */
+  card_style?: 'classic' | 'glass' | 'gradient' | 'aurora' | 'soft' | 'neon';
 
   /** Border radius override (px) — default 14 (html-pro-card spec) */
   border_radius?: number;

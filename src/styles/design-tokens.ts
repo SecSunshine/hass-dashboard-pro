@@ -155,7 +155,7 @@ export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
     /* ── v4.0: Focus & Interaction ── */
     --hdp-primary-glow: rgba(79, 110, 247, 0.15);
 
-    /* ── Card Skin (classic | glass | gradient) ── */
+    /* ── Card Skin (classic | glass | gradient | aurora | soft | neon) ── */
     --hdp-card-skin: ${tokens?.card_style || 'classic'};
   }
 
@@ -199,6 +199,64 @@ export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
   .hdp-card.hdp-card--gradient:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 32px color-mix(in srgb, var(--hdp-primary) 12%, transparent);
+  }
+
+  .hdp-card.hdp-card--aurora {
+    background: var(--hdp-card-bg);
+    position: relative;
+    border: 1px solid color-mix(in srgb, var(--hdp-accent) 20%, transparent);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--hdp-primary) 5%, transparent),
+      0 4px 24px color-mix(in srgb, var(--hdp-primary) 12%, transparent);
+  }
+  .hdp-card.hdp-card--aurora::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(circle at top left,
+      color-mix(in srgb, var(--hdp-primary) 15%, transparent),
+      transparent 60%);
+    pointer-events: none;
+  }
+  .hdp-card.hdp-card--aurora:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--hdp-primary) 8%, transparent),
+      0 8px 32px color-mix(in srgb, var(--hdp-primary) 18%, transparent);
+  }
+  .hdp-card.hdp-card--aurora:hover::before {
+    background: radial-gradient(circle at top left,
+      color-mix(in srgb, var(--hdp-primary) 22%, transparent),
+      transparent 70%);
+  }
+
+  .hdp-card.hdp-card--soft {
+    background: var(--hdp-bg);
+    border: none;
+    box-shadow:
+      6px 6px 12px color-mix(in srgb, var(--hdp-text) 6%, transparent),
+      -6px -6px 12px color-mix(in srgb, var(--hdp-card-bg) 80%, var(--hdp-bg));
+  }
+  .hdp-card.hdp-card--soft:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      8px 8px 16px color-mix(in srgb, var(--hdp-text) 8%, transparent),
+      -8px -8px 16px color-mix(in srgb, var(--hdp-card-bg) 80%, var(--hdp-bg));
+  }
+
+  .hdp-card.hdp-card--neon {
+    background: var(--hdp-card-bg);
+    border: 1px solid var(--hdp-primary);
+    box-shadow:
+      0 0 8px color-mix(in srgb, var(--hdp-primary) 40%, transparent),
+      inset 0 0 8px color-mix(in srgb, var(--hdp-primary) 5%, transparent);
+  }
+  .hdp-card.hdp-card--neon:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 0 16px color-mix(in srgb, var(--hdp-primary) 60%, transparent),
+      inset 0 0 12px color-mix(in srgb, var(--hdp-primary) 8%, transparent);
   }
 </style>`;
 }

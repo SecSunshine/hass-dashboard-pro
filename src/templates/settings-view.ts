@@ -528,7 +528,8 @@ ${generateDesignTokenCSS(tokens)}
         var isAutoDark = autoDarkEl ? autoDarkEl.className.indexOf('toggle-switch--on') !== -1 : true;
         var mode = isAutoDark ? 'auto' : 'light';
         var palette = window.HDP_Palette.generate(val, mode);
-        palette.card_style = 'glass';
+        var isDark = isAutoDark && window.HDP_Palette.shouldUseDarkMode();
+        palette.card_style = isDark ? 'aurora' : 'glass';
         palette.border_radius = 14;
         palette.mood_id = 'custom';
         palette.mood_name = '自定义';
@@ -546,7 +547,8 @@ ${generateDesignTokenCSS(tokens)}
         // Generate and save all palette colors
         var mode = isAutoDark ? 'auto' : 'light';
         var palette = window.HDP_Palette.generate(val, mode);
-        cfg.card_style = 'glass';
+        var isDark = isAutoDark && window.HDP_Palette.shouldUseDarkMode();
+        cfg.card_style = isDark ? 'aurora' : 'glass';
         cfg.border_radius = 14;
         cfg.primary = palette.primary;
         cfg.page_bg = palette.page_bg;
@@ -622,6 +624,24 @@ function buildCardStyleCard(stored: StoredVisualConfig, tokens?: ResolvedTokens)
       desc: '渐变底纹 · 视觉层次',
       preview: 'background: linear-gradient(145deg, var(--hdp-card-bg) 0%, var(--hdp-primary-light) 100%); border: 1px solid var(--hdp-border);',
     },
+    {
+      key: 'aurora',
+      label: '极光',
+      desc: '径向光晕 · 暗色推荐',
+      preview: 'background: var(--hdp-card-bg); border: 1px solid rgba(124,110,247,0.2); box-shadow: 0 0 0 1px rgba(79,110,247,0.05), 0 4px 16px rgba(79,110,247,0.12); position: relative; overflow: hidden;',
+    },
+    {
+      key: 'soft',
+      label: '柔影',
+      desc: '双面投影 · 立体质感',
+      preview: 'background: var(--hdp-bg); border: none; box-shadow: 4px 4px 8px rgba(0,0,0,0.06), -4px -4px 8px rgba(255,255,255,0.8);',
+    },
+    {
+      key: 'neon',
+      label: '霓虹',
+      desc: '发光边框 · 赛博风格',
+      preview: 'background: var(--hdp-card-bg); border: 1px solid var(--hdp-primary); box-shadow: 0 0 8px rgba(79,110,247,0.4), inset 0 0 8px rgba(79,110,247,0.05);',
+    },
   ];
 
   const cards = styles
@@ -665,7 +685,7 @@ ${generateDesignTokenCSS(tokens)}
     gap: 10px;
   }
   @media (max-width: 480px) {
-    .style-grid { grid-template-columns: 1fr; }
+    .style-grid { grid-template-columns: repeat(2, 1fr); }
   }
   .style-card {
     display: flex; flex-direction: column; gap: 10px;
