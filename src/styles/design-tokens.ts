@@ -142,6 +142,51 @@ export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
 
     /* ── v4.0: Focus & Interaction ── */
     --hdp-primary-glow: rgba(79, 110, 247, 0.15);
+
+    /* ── Card Skin (classic | glass | gradient) ── */
+    --hdp-card-skin: ${tokens?.card_style || 'classic'};
+  }
+
+  /* ── Card Skin Classes (compound selectors for specificity) ── */
+  .hdp-card {
+    border-radius: var(--hdp-radius);
+    padding: var(--hdp-card-padding);
+    transition: var(--hdp-transition);
+    overflow: hidden;
+  }
+
+  .hdp-card.hdp-card--classic {
+    background: var(--hdp-card-bg);
+    border: 1px solid var(--hdp-border);
+    box-shadow: var(--hdp-shadow-card);
+  }
+  .hdp-card.hdp-card--classic:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--hdp-shadow-elevated);
+  }
+
+  .hdp-card.hdp-card--glass {
+    background: color-mix(in srgb, var(--hdp-card-bg) 65%, transparent);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid color-mix(in srgb, var(--hdp-primary) 8%, transparent);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+  }
+  .hdp-card.hdp-card--glass:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+  }
+
+  .hdp-card.hdp-card--gradient {
+    background: linear-gradient(145deg,
+      color-mix(in srgb, var(--hdp-card-bg) 85%, var(--hdp-primary) 15%) 0%,
+      var(--hdp-card-bg) 100%);
+    border: 1px solid color-mix(in srgb, var(--hdp-primary) 12%, transparent);
+    box-shadow: 0 4px 24px color-mix(in srgb, var(--hdp-primary) 6%, transparent);
+  }
+  .hdp-card.hdp-card--gradient:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px color-mix(in srgb, var(--hdp-primary) 12%, transparent);
   }
 </style>`;
 }

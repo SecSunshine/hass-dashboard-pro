@@ -481,12 +481,14 @@ ${generateDesignTokenCSS(tokens)}
 function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: ResolvedTokens): LovelaceCardConfig {
   const climate = getClimateSummary(hass);
   const alarm = getAlarmStatus(hass);
+  const skin = tokens?.card_style || 'classic';
+  const skinCls = `hdp-card hdp-card--${skin}`;
 
   // Build stat items
   const items: string[] = [];
 
   if (climate.has_data) {
-    items.push(`<div class="env-item">
+    items.push(`<div class="env-item ${skinCls}">
       <div class="env-icon env-icon--temp">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
       </div>
@@ -498,7 +500,7 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
   }
 
   if (climate.has_data && climate.avg_humidity !== '--') {
-    items.push(`<div class="env-item">
+    items.push(`<div class="env-item ${skinCls}">
       <div class="env-icon env-icon--hum">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8 8 4 12 4 16a8 8 0 0 0 16 0c0-4-4-8-8-14z"/></svg>
       </div>
@@ -514,7 +516,7 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
     ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`
     : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
 
-  items.push(`<div class="env-item">
+  items.push(`<div class="env-item ${skinCls}">
     <div class="env-icon env-icon--sec">
       ${secIcon}
     </div>
@@ -530,7 +532,7 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
     if (eid.startsWith('automation.') && s.state === 'on') autoCount++;
   }
   if (autoCount > 0) {
-    items.push(`<div class="env-item">
+    items.push(`<div class="env-item ${skinCls}">
       <div class="env-icon env-icon--auto">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
       </div>
@@ -724,10 +726,12 @@ ${roomRows}`,
 // ─── 6. Favorites Card ─────────────────────────────────────────────────────
 
 function buildFavoritesCard(favorites: FavoriteEntity[], tokens?: ResolvedTokens): LovelaceCardConfig {
+  const skin = tokens?.card_style || 'classic';
+  const skinCls = `hdp-card hdp-card--${skin}`;
   const items = favorites.map(f => {
     const iconSVG = getFavoriteIcon(f.domain, f.is_active);
     const stateCls = f.is_active ? 'fav--active' : '';
-    return `<div class="fav-item ${stateCls}">
+    return `<div class="fav-item ${stateCls} ${skinCls}">
       <div class="fav-icon">${iconSVG}</div>
       <div class="fav-info">
         <div class="fav-name">${f.name}</div>
@@ -844,11 +848,13 @@ function getFavoriteIcon(domain: string, active: boolean): string {
 
 function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens): LovelaceCardConfig {
   const summaries = getHomeSummaries(hass);
+  const skin = tokens?.card_style || 'classic';
+  const skinCls = `hdp-card hdp-card--${skin}`;
 
   const items: string[] = [];
 
   if (summaries.updates_count > 0) {
-    items.push(`<div class="sum-item sum-item--info">
+    items.push(`<div class="sum-item sum-item--info ${skinCls}">
       <div class="sum-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       </div>
@@ -858,7 +864,7 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens): LovelaceCardConf
   }
 
   if (summaries.repairs_count > 0) {
-    items.push(`<div class="sum-item sum-item--warn">
+    items.push(`<div class="sum-item sum-item--warn ${skinCls}">
       <div class="sum-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       </div>
@@ -867,7 +873,7 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens): LovelaceCardConf
     </div>`);
   }
 
-  items.push(`<div class="sum-item">
+  items.push(`<div class="sum-item ${skinCls}">
     <div class="sum-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="12" cy="12" r="3"/></svg>
     </div>
@@ -876,7 +882,7 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens): LovelaceCardConf
   </div>`);
 
   if (summaries.total_devices > 0) {
-    items.push(`<div class="sum-item">
+    items.push(`<div class="sum-item ${skinCls}">
       <div class="sum-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
       </div>
@@ -886,7 +892,7 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens): LovelaceCardConf
   }
 
   if (summaries.automations_count > 0) {
-    items.push(`<div class="sum-item">
+    items.push(`<div class="sum-item ${skinCls}">
       <div class="sum-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg>
       </div>

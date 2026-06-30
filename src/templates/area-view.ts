@@ -327,12 +327,13 @@ const ENTITY_CARD_CSS = /* css */ `
 
 // ─── Entity Card ───────────────────────────────────────────────────────────
 
-function buildEntityCard(entity: EntityInfo): string {
+function buildEntityCard(entity: EntityInfo, skin?: string): string {
   const active = isEntityOn(entity.state, entity.domain);
   const stateText = formatState(entity);
   const iconSVG = getEntityIcon(entity.domain, active);
   const isSensor = entity.domain === 'sensor' || entity.domain === 'binary_sensor';
-  const cardCls = active ? 'ec ec--on' : 'ec';
+  const skinCls = skin ? `hdp-card hdp-card--${skin}` : '';
+  const cardCls = active ? `ec ec--on ${skinCls}` : `ec ${skinCls}`;
 
   const rightHTML = isSensor
     ? `<span class="ec-val">${stateText}</span>`
@@ -361,7 +362,8 @@ function buildEntityCard(entity: EntityInfo): string {
 // ─── Domain Section (with entity card CSS) ─────────────────────────────────
 
 function buildDomainSection(group: DomainSection, tokens?: ResolvedTokens): LovelaceCardConfig {
-  const cards = group.entities.map(e => buildEntityCard(e)).join('');
+  const skin = tokens?.card_style;
+  const cards = group.entities.map(e => buildEntityCard(e, skin)).join('');
   const countBadge = group.active_count > 0
     ? `<span class="ds-cnt ds-cnt--${group.color_class}">${group.active_count}/${group.total}</span>`
     : `<span class="ds-cnt ds-cnt--off">${group.total}</span>`;
@@ -430,7 +432,8 @@ ${generateDesignTokenCSS(tokens)}
 }
 
 function buildEntityGrid(entities: EntityInfo[], tokens?: ResolvedTokens): LovelaceCardConfig {
-  const cards = entities.map(e => buildEntityCard(e)).join('');
+  const skin = tokens?.card_style;
+  const cards = entities.map(e => buildEntityCard(e, skin)).join('');
 
   return {
     type: 'custom:html-pro-card',

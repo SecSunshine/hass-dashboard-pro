@@ -84,8 +84,9 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
   }).join('');
 
   // Domain sections
+  const skin = tokens?.card_style;
   const sectionsHTML = sorted.map(([domain, entities]) => {
-    return buildDomainSection(domain, entities);
+    return buildDomainSection(domain, entities, skin);
   }).join('');
 
   return `
@@ -191,12 +192,12 @@ window.hdpScrollToDomain = function(domain) {
 
 // ─── Domain Section ─────────────────────────────────────────────────────────
 
-function buildDomainSection(domain: string, entities: EntityInfo[]): string {
+function buildDomainSection(domain: string, entities: EntityInfo[], skin?: string): string {
   const label = DOMAIN_GROUPS[domain]?.label || domain;
   const activeCount = entities.filter(e => isEntityOn(e.state, e.domain)).length;
   const iconColor = getDomainColor(domain);
 
-  const cardsHTML = entities.map(e => buildDeviceEntityCard(e)).join('');
+  const cardsHTML = entities.map(e => buildDeviceEntityCard(e, skin)).join('');
 
   return `<div class="dv-section" id="dv-domain-${domain}">
     <div class="dv-section-hdr">
@@ -321,12 +322,13 @@ function getDeviceEntityCardCSS(): string {
 
 // ─── Entity Card ────────────────────────────────────────────────────────────
 
-function buildDeviceEntityCard(entity: EntityInfo): string {
+function buildDeviceEntityCard(entity: EntityInfo, skin?: string): string {
   const active = isEntityOn(entity.state, entity.domain);
   const stateText = formatState(entity);
   const iconSVG = getEntityIconSVG(entity.domain, active);
   const isSensor = entity.domain === 'sensor' || entity.domain === 'binary_sensor';
-  const cardCls = active ? 'dvc dvc--on' : 'dvc';
+  const skinCls = skin ? `hdp-card hdp-card--${skin}` : '';
+  const cardCls = active ? `dvc dvc--on ${skinCls}` : `dvc ${skinCls}`;
 
   const rightHTML = isSensor
     ? `<span class="dvc-val">${stateText}</span>`

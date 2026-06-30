@@ -35,6 +35,7 @@ export interface ResolvedTokens {
   card_gap?: number;
   font_family?: string;
   shadows?: boolean;
+  card_style?: string;
 }
 
 /**
@@ -77,6 +78,7 @@ export function resolveTokens(config: StrategyConfig): ResolvedTokens {
   if (visual?.card_gap !== undefined) result.card_gap = visual.card_gap;
   if (visual?.font_family) result.font_family = visual.font_family;
   if (visual?.shadows === false) result.shadows = false;
+  if (visual?.card_style) result.card_style = visual.card_style;
 
   // 3. Apply localStorage overrides (Settings page)
   const stored = loadStoredConfig();
@@ -91,6 +93,7 @@ export function resolveTokens(config: StrategyConfig): ResolvedTokens {
     if (stored.card_padding !== undefined) result.card_padding = stored.card_padding;
     if (stored.font_family) result.font_family = stored.font_family;
     if (stored.shadows === false) result.shadows = false;
+    if (stored.card_style) result.card_style = stored.card_style;
   }
 
   return result;
