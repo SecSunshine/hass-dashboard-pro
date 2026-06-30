@@ -22,6 +22,7 @@
 import type { Hass, LovelaceCardConfig, StrategyConfig } from '../types';
 import { generateDesignTokenCSS } from '../styles/design-tokens';
 import type { ResolvedTokens } from '../utils/visual-config';
+import { bentoWrap } from '../utils/bento-layout';
 import { buildHousePowerUsage } from '../utils/power-usage';
 import {
   getPersons,
@@ -81,38 +82,38 @@ export function buildHomeView(hass: Hass, config: StrategyConfig, tokens?: Resol
 export function buildHomeHTML(hass: Hass, config: StrategyConfig, tokens?: ResolvedTokens): string {
   const sections: string[] = [];
 
-  // Welcome hero
-  sections.push(extractCardHTML(buildWelcomeCard(hass, config, tokens)));
+  // Welcome hero — large 2x2 card
+  sections.push(bentoWrap(extractCardHTML(buildWelcomeCard(hass, config, tokens)), 'lg'));
 
-  // Status badges
+  // Status badges — full width banner
   const domains = getStatusDomains(hass);
   if (domains.length > 0) {
-    sections.push(extractCardHTML(buildStatusBadges(domains, tokens)));
+    sections.push(bentoWrap(extractCardHTML(buildStatusBadges(domains, tokens)), 'wide'));
   }
 
-  // People
+  // People — medium card
   const persons = getPersons(hass, config.hidden_persons);
   if (persons.length > 0) {
-    sections.push(extractCardHTML(buildPeopleCard(persons, tokens)));
+    sections.push(bentoWrap(extractCardHTML(buildPeopleCard(persons, tokens)), 'md'));
   }
 
-  // Environment
-  sections.push(extractCardHTML(buildEnvironmentCard(hass, config, tokens)));
+  // Environment — medium card
+  sections.push(bentoWrap(extractCardHTML(buildEnvironmentCard(hass, config, tokens)), 'md'));
 
-  // Power
+  // Power — medium card
   const power = buildHousePowerUsage(hass);
   if (power.has_data) {
-    sections.push(extractCardHTML(buildPowerCard(power, tokens)));
+    sections.push(bentoWrap(extractCardHTML(buildPowerCard(power, tokens)), 'md'));
   }
 
-  // Favorites
+  // Favorites — full width
   const favorites = getFavorites(hass, config);
   if (favorites.length > 0) {
-    sections.push(extractCardHTML(buildFavoritesCard(favorites, tokens)));
+    sections.push(bentoWrap(extractCardHTML(buildFavoritesCard(favorites, tokens)), 'wide'));
   }
 
-  // Summary
-  sections.push(extractCardHTML(buildSummaryCard(hass, tokens)));
+  // Summary — medium card
+  sections.push(bentoWrap(extractCardHTML(buildSummaryCard(hass, tokens)), 'md'));
 
   return sections.join('\n');
 }

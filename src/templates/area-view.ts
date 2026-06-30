@@ -16,6 +16,7 @@
 import type { Hass, LovelaceCardConfig, EntityInfo } from '../types';
 import { generateDesignTokenCSS } from '../styles/design-tokens';
 import type { ResolvedTokens } from '../utils/visual-config';
+import { bentoWrap } from '../utils/bento-layout';
 import { DOMAIN_GROUPS } from '../types';
 import { formatState, isEntityOn } from '../utils/area-entities';
 
@@ -48,13 +49,15 @@ export function buildAreaHTML(areaName: string, entities: EntityInfo[], hass: Ha
   const groups = groupByDomain(entities);
   const sections: string[] = [];
 
-  sections.push(extractAreaHTML(buildAreaHeader(areaName, entities, hass, tokens)));
+  sections.push(bentoWrap(extractAreaHTML(buildAreaHeader(areaName, entities, hass, tokens)), 'wide'));
 
   if (groups.length <= 1) {
-    sections.push(extractAreaHTML(buildEntityGrid(entities, tokens)));
+    sections.push(bentoWrap(extractAreaHTML(buildEntityGrid(entities, tokens)), 'wide'));
   } else {
     for (const group of groups) {
-      sections.push(extractAreaHTML(buildDomainSection(group, tokens)));
+      // Small domain sections (≤4 entities) take half width, large ones full width
+      const size = group.entities.length <= 4 ? 'md' : 'wide';
+      sections.push(bentoWrap(extractAreaHTML(buildDomainSection(group, tokens)), size));
     }
   }
 

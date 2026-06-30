@@ -13,6 +13,7 @@
 
 import type { Hass, LovelaceCardConfig, StrategyConfig, AreaSummary, BlueprintInstance } from '../types';
 import { generateDesignTokenCSS } from '../styles/design-tokens';
+import { generateBentoCSS } from '../utils/bento-layout';
 import type { ResolvedTokens } from '../utils/visual-config';
 import { buildSidebarHTML, getSidebarCSS } from './sidebar';
 import { buildBottomNavHTML, getBottomNavCSS } from './bottom-nav';
@@ -117,17 +118,7 @@ ${generateDesignTokenCSS(tokens)}
     font-weight: 700;
     color: var(--hdp-text);
   }
-  .hdp-area-content {
-    display: flex;
-    flex-direction: column;
-    gap: var(--hdp-card-gap, 12px);
-  }
-  .hdp-home-content {
-    display: flex;
-    flex-direction: column;
-    gap: var(--hdp-card-gap, 12px);
-    max-width: 900px;
-  }
+  ${generateBentoCSS()}
 </style>
 <div class="hdp-root" id="hdp-root">
   <aside class="hdp-sidebar">${sidebarHTML}</aside>

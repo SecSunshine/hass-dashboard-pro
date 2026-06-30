@@ -17,6 +17,7 @@
 import type { Hass, EntityInfo, StrategyConfig } from '../types';
 import { DOMAIN_GROUPS, HIDDEN_DOMAINS } from '../types';
 import type { ResolvedTokens } from '../utils/visual-config';
+import { bentoWrap } from '../utils/bento-layout';
 import { isEntityOn, formatState } from '../utils/area-entities';
 
 // ─── Main Export ────────────────────────────────────────────────────────────
@@ -86,7 +87,9 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
   // Domain sections
   const skin = tokens?.card_style;
   const sectionsHTML = sorted.map(([domain, entities]) => {
-    return buildDomainSection(domain, entities, skin);
+    const sectionHTML = buildDomainSection(domain, entities, skin);
+    const size = entities.length <= 4 ? 'md' : 'wide';
+    return bentoWrap(sectionHTML, size);
   }).join('');
 
   return `
@@ -129,7 +132,7 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
     background: var(--hdp-primary-light, rgba(79,110,247,0.1));
     color: var(--hdp-primary);
   }
-  .dv-section { margin-bottom: 24px; }
+  .dv-section { margin-bottom: 0; }
   .dv-section-hdr {
     display: flex;
     align-items: center;
@@ -174,8 +177,8 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
   }
   ${getDeviceEntityCardCSS()}
 </style>
-<div class="dv-chips">${chipsHTML}</div>
-${sectionsHTML || '<div class="dv-empty">暂无设备</div>'}`;
+${bentoWrap(`<div class="dv-chips">${chipsHTML}</div>`, 'wide')}
+${sectionsHTML || bentoWrap('<div class="dv-empty">暂无设备</div>', 'wide')}`;
 }
 
 /**
