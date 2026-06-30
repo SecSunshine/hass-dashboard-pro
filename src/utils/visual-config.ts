@@ -12,7 +12,7 @@
 
 import type { StrategyConfig } from '../types';
 import { THEME_PRESETS } from '../types';
-import { generateFromMood, generateFromSeed, paletteToTokens, resolveMode, type MoodPaletteResult } from '../themes/palette-generator';
+import { generateFromMood, generateFromSeed, generateFromTimeMood, paletteToTokens, resolveMode, type MoodPaletteResult } from '../themes/palette-generator';
 
 // ─── localStorage key ─────────────────────────────────────────────────────
 
@@ -41,6 +41,16 @@ export interface ResolvedTokens {
   seed_color?: string;
   mood_preset?: string;
   auto_dark?: boolean;
+  // Phase 6: Context-aware adaptation
+  auto_mood?: boolean;
+  time_moods?: {
+    dawn?: string;
+    day?: string;
+    dusk?: string;
+    night?: string;
+    midnight?: string;
+  };
+  area_skins?: Record<string, string>;
   // Palette-generated semantic colors
   accent?: string;
   text_muted?: string;
@@ -87,7 +97,11 @@ export function resolveTokens(config: StrategyConfig): ResolvedTokens {
   if (storedForPalette) {
     let palette: MoodPaletteResult | null = null;
 
-    if (storedForPalette.mood_preset && storedForPalette.mood_preset !== 'custom') {
+    // Phase 6: Auto mood switching — time-based mood takes priority
+    if (storedForPalette.auto_mood) {
+      const autoDark = storedForPalette.auto_dark !== false;
+      palette = generateFromTimeMood(storedForPalette.time_moods, autoDark);
+    } else if (storedForPalette.mood_preset && storedForPalette.mood_preset !== 'custom') {
       const autoDark = storedForPalette.auto_dark !== false; // default true
       palette = generateFromMood(storedForPalette.mood_preset, autoDark);
     } else if (storedForPalette.seed_color) {
@@ -110,6 +124,10 @@ export function resolveTokens(config: StrategyConfig): ResolvedTokens {
       result.seed_color = palette.seed;
       result.mood_preset = palette.mood_id;
       result.auto_dark = storedForPalette.auto_dark !== false;
+      // Phase 6: Context-aware adaptation
+      result.auto_mood = storedForPalette.auto_mood === true;
+      result.time_moods = storedForPalette.time_moods as ResolvedTokens['time_moods'];
+      result.area_skins = storedForPalette.area_skins as ResolvedTokens['area_skins'];
       // Store semantic/derived colors
       result.accent = palette.accent;
       result.text_muted = palette.text_muted;
@@ -163,7 +181,7 @@ export function resolveTokens(config: StrategyConfig): ResolvedTokens {
 // ─── localStorage Persistence ──────────────────────────────────────────────
 
 export interface StoredVisualConfig {
-  [key: string]: string | number | boolean | undefined;
+  [key: string]: string | number | boolean | undefined | Record<string, string> | object;
   page_bg?: string;
   card_bg?: string;
   primary?: string;
@@ -180,6 +198,16 @@ export interface StoredVisualConfig {
   seed_color?: string;
   mood_preset?: string;
   auto_dark?: boolean;
+  // Phase 6: Context-aware adaptation
+  auto_mood?: boolean;
+  time_moods?: {
+    dawn?: string;
+    day?: string;
+    dusk?: string;
+    night?: string;
+    midnight?: string;
+  };
+  area_skins?: Record<string, string>;
 }
 
 export function loadStoredConfig(): StoredVisualConfig | null {

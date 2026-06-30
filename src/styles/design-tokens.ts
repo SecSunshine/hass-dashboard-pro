@@ -146,6 +146,8 @@ export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
     --hdp-motion-fast: 150ms;
     --hdp-motion-base: 250ms;
     --hdp-motion-easing: cubic-bezier(0.4, 0, 0.2, 1);
+    /* Phase 6: Smooth mood transition duration */
+    --hdp-mood-transition: 0.8s ease;
 
     /* ── v4.0: Sidebar & Layout ── */
     --hdp-sidebar-bg: var(--ha-card-background, var(--card-background-color, #FFFFFF));
@@ -163,8 +165,13 @@ export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
   .hdp-card {
     border-radius: var(--hdp-radius);
     padding: var(--hdp-card-padding);
-    transition: var(--hdp-transition);
+    transition: transform 0.2s ease, background var(--hdp-mood-transition), color var(--hdp-mood-transition), border-color var(--hdp-mood-transition), box-shadow var(--hdp-mood-transition);
     overflow: hidden;
+  }
+
+  /* Phase 6: Smooth mood transition on root container */
+  .hdp-root {
+    transition: background var(--hdp-mood-transition), color var(--hdp-mood-transition);
   }
 
   .hdp-card.hdp-card--classic {

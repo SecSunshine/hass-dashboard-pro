@@ -42,6 +42,7 @@ export function buildSettingsView(config: StrategyConfig, tokens?: ResolvedToken
     buildSettingsHeader(tokens),
     buildThemePresetCard(preset, tokens),
     buildSeedColorCard(stored, tokens),
+    buildAutoMoodCard(stored, tokens),
     buildCardStyleCard(stored, tokens),
     buildColorPickerCard(stored, tokens),
     buildShapeCard(stored, tokens),
@@ -638,6 +639,228 @@ ${generateDesignTokenCSS(tokens)}
         location.reload();
       });
     }
+  })();
+</script>`,
+  };
+}
+
+// ─── Auto Mood Card (Phase 6) ─────────────────────────────────────────────
+
+function buildAutoMoodCard(stored: StoredVisualConfig, tokens?: ResolvedTokens): LovelaceCardConfig {
+  const autoMood = stored.auto_mood === true;
+  const timeMoods = stored.time_moods || {};
+
+  const periods = [
+    { key: 'dawn', label: '晨间', time: '06:00 - 10:00', icon: '🌅', default: 'coral' },
+    { key: 'day', label: '日间', time: '10:00 - 17:00', icon: '☀️', default: 'mono' },
+    { key: 'dusk', label: '傍晚', time: '17:00 - 20:00', icon: '🌇', default: 'amber' },
+    { key: 'night', label: '夜间', time: '20:00 - 23:00', icon: '🌙', default: 'abyss' },
+    { key: 'midnight', label: '深夜', time: '23:00 - 06:00', icon: '✨', default: 'mono' },
+  ];
+
+  // Determine current time period for highlight
+  const hour = new Date().getHours();
+  let currentPeriod = 'day';
+  if (hour >= 6 && hour < 10) currentPeriod = 'dawn';
+  else if (hour >= 10 && hour < 17) currentPeriod = 'day';
+  else if (hour >= 17 && hour < 20) currentPeriod = 'dusk';
+  else if (hour >= 20 && hour < 23) currentPeriod = 'night';
+  else currentPeriod = 'midnight';
+
+  const moodOptions = MOOD_PRESETS.map(m =>
+    `<option value="${m.id}">${m.name} ${m.name_en}</option>`
+  ).join('');
+
+  const periodRows = periods.map(p => {
+    const currentMood = (timeMoods as any)[p.key] || p.default;
+    const isCurrent = p.key === currentPeriod;
+    const options = MOOD_PRESETS.map(m =>
+      `<option value="${m.id}" ${m.id === currentMood ? 'selected' : ''}>${m.name} ${m.name_en}</option>`
+    ).join('');
+    return `<div class="am-period-row ${isCurrent ? 'am-period-row--current' : ''}" data-period="${p.key}">
+      <div class="am-period-info">
+        <span class="am-period-icon">${p.icon}</span>
+        <div class="am-period-text">
+          <span class="am-period-label">${p.label} ${isCurrent ? '<span class="am-now-badge">当前</span>' : ''}</span>
+          <span class="am-period-time">${p.time}</span>
+        </div>
+      </div>
+      <select class="am-mood-select" data-period="${p.key}" ${autoMood ? '' : 'disabled'}>
+        ${options}
+      </select>
+    </div>`;
+  }).join('');
+
+  return {
+    type: 'custom:html-pro-card',
+    title: '',
+    do_not_parse: true,
+    content: /* html */ `
+${generateDesignTokenCSS(tokens)}
+<style>
+  .settings-section {
+    background: var(--hdp-card-bg);
+    border-radius: var(--hdp-radius);
+    padding: var(--hdp-card-padding);
+    box-shadow: var(--hdp-shadow-card);
+    border: 1px solid var(--hdp-border);
+  }
+  .settings-title {
+    font-size: 15px; font-weight: 700;
+    color: var(--hdp-text);
+    margin-bottom: 6px;
+  }
+  .settings-subtitle {
+    font-size: 12px; color: var(--hdp-text-muted);
+    margin-bottom: 14px;
+  }
+  .am-toggle-row {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--hdp-divider);
+    margin-bottom: 10px;
+  }
+  .am-toggle-info {
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .am-toggle-label {
+    font-size: 14px; font-weight: 500; color: var(--hdp-text);
+  }
+  .am-toggle-desc {
+    font-size: 11px; color: var(--hdp-text-muted);
+  }
+  .toggle-switch {
+    width: 44px; height: 26px;
+    border-radius: 13px;
+    position: relative;
+    cursor: pointer;
+    transition: background var(--hdp-motion-base) var(--hdp-motion-easing);
+  }
+  .toggle-switch--on { background: var(--hdp-primary); }
+  .toggle-switch--off { background: var(--hdp-divider); }
+  .toggle-switch-knob {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    position: absolute;
+    top: 2px;
+    transition: left var(--hdp-motion-base) var(--hdp-motion-easing);
+  }
+  .toggle-switch--on .toggle-switch-knob { left: 20px; }
+  .toggle-switch--off .toggle-switch-knob { left: 2px; }
+  .am-periods {
+    display: flex; flex-direction: column;
+    gap: 4px;
+    transition: opacity 0.3s ease;
+  }
+  .am-periods--disabled {
+    opacity: 0.4; pointer-events: none;
+  }
+  .am-period-row {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-radius: var(--hdp-radius);
+    transition: background 0.2s ease;
+  }
+  .am-period-row--current {
+    background: var(--hdp-primary-light);
+    border: 1px solid color-mix(in srgb, var(--hdp-primary) 20%, transparent);
+  }
+  .am-period-info {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .am-period-icon {
+    font-size: 18px;
+  }
+  .am-period-text {
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .am-period-label {
+    font-size: 13px; font-weight: 600; color: var(--hdp-text);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .am-now-badge {
+    font-size: 9px; font-weight: 700;
+    color: white;
+    background: var(--hdp-primary);
+    padding: 1px 6px;
+    border-radius: 6px;
+    text-transform: uppercase;
+  }
+  .am-period-time {
+    font-size: 11px; color: var(--hdp-text-muted);
+    font-family: 'SF Mono', 'Cascadia Code', monospace;
+  }
+  .am-mood-select {
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--hdp-border);
+    background: var(--hdp-card-bg);
+    color: var(--hdp-text);
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+  .am-mood-select:hover { border-color: var(--hdp-primary); }
+  .am-mood-select:focus { border-color: var(--hdp-primary); }
+  .am-mood-select:disabled { cursor: not-allowed; }
+</style>
+<div class="settings-section" data-component="auto-mood">
+  <div class="settings-title">上下文自适应</div>
+  <div class="settings-subtitle">主题随时间自动切换氛围，区域各有性格</div>
+  <div class="am-toggle-row">
+    <div class="am-toggle-info">
+      <span class="am-toggle-label">自动氛围切换</span>
+      <span class="am-toggle-desc">每 5 分钟检测时间段，自动切换氛围预设</span>
+    </div>
+    <div class="toggle-switch ${autoMood ? 'toggle-switch--on' : 'toggle-switch--off'}" id="auto-mood-toggle" data-component="auto-mood-toggle">
+      <div class="toggle-switch-knob"></div>
+    </div>
+  </div>
+  <div class="am-periods ${autoMood ? '' : 'am-periods--disabled'}" id="am-periods">
+    ${periodRows}
+  </div>
+</div>
+<script>
+  (function() {
+    // Auto mood toggle
+    var moodToggle = document.getElementById('auto-mood-toggle');
+    var periodsEl = document.getElementById('am-periods');
+    if (moodToggle) {
+      moodToggle.addEventListener('click', function() {
+        var isOn = this.className.indexOf('toggle-switch--on') !== -1;
+        this.className = 'toggle-switch ' + (isOn ? 'toggle-switch--off' : 'toggle-switch--on');
+        var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
+        cfg.auto_mood = !isOn;
+        localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+        if (periodsEl) {
+          periodsEl.className = 'am-periods' + (!isOn ? '' : ' am-periods--disabled');
+        }
+        // Enable/disable selects
+        document.querySelectorAll('.am-mood-select').forEach(function(sel) {
+          sel.disabled = isOn;
+        });
+        location.reload();
+      });
+    }
+
+    // Time period mood selectors
+    document.querySelectorAll('.am-mood-select').forEach(function(sel) {
+      sel.addEventListener('change', function() {
+        var period = this.getAttribute('data-period');
+        var mood = this.value;
+        var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
+        if (!cfg.time_moods) cfg.time_moods = {};
+        cfg.time_moods[period] = mood;
+        localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+        location.reload();
+      });
+    });
   })();
 </script>`,
   };

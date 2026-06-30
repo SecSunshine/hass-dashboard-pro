@@ -109,6 +109,21 @@ export interface VisualConfig {
 
   /** Enable/disable page transitions */
   animations?: boolean;
+
+  /** Phase 6: Auto mood switching based on time of day */
+  auto_mood?: boolean;
+
+  /** Phase 6: Custom mood per time period */
+  time_moods?: {
+    dawn?: string;      // 06:00-10:00
+    day?: string;       // 10:00-17:00
+    dusk?: string;      // 17:00-20:00
+    night?: string;     // 20:00-23:00
+    midnight?: string;  // 23:00-06:00
+  };
+
+  /** Phase 6: Per-area card skin overrides (area_id → skin name) */
+  area_skins?: Record<string, string>;
 }
 
 export interface StrategyConfig {
@@ -152,7 +167,7 @@ export interface StrategyConfig {
 
 // ─── Theme Preset Definitions ─────────────────────────────────────────────
 
-export const THEME_PRESETS: Record<ThemePreset, Omit<Required<VisualConfig>, 'theme'>> = {
+export const THEME_PRESETS: Record<ThemePreset, Omit<Required<VisualConfig>, 'theme' | 'auto_mood' | 'time_moods' | 'area_skins'>> = {
   light: {
     colors: {
       page_bg: '#F4F6FA',

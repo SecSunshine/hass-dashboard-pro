@@ -387,6 +387,66 @@ export function resolveMode(mode: 'light' | 'dark' | 'auto'): 'light' | 'dark' {
   return mode;
 }
 
+// ─── Phase 6: Time-based Mood Switching ─────────────────────────────────────
+
+export type TimePeriod = 'dawn' | 'day' | 'dusk' | 'night' | 'midnight';
+
+/**
+ * Determine the current time period based on hour.
+ *   06:00-10:00 → dawn    (晨曦 — 暖色调唤醒)
+ *   10:00-17:00 → day     (日间 — 用户自选)
+ *   17:00-20:00 → dusk    (暮金 — 暖色调过渡)
+ *   20:00-23:00 → night   (深海 — 暗色模式)
+ *   23:00-06:00 → midnight(极简 — 深夜模式)
+ */
+export function getTimePeriod(hour?: number): TimePeriod {
+  const h = hour != null ? hour : new Date().getHours();
+  if (h >= 6 && h < 10) return 'dawn';
+  if (h >= 10 && h < 17) return 'day';
+  if (h >= 17 && h < 20) return 'dusk';
+  if (h >= 20 && h < 23) return 'night';
+  return 'midnight';
+}
+
+/**
+ * Default mood mapping per time period.
+ * Users can override these via time_moods in config.
+ */
+export const DEFAULT_TIME_MOODS: Record<TimePeriod, string> = {
+  dawn: 'coral',      // 晨曦 — warm wake-up
+  day: 'mono',        // 极简 — clean daytime
+  dusk: 'amber',      // 暮金 — warm transition
+  night: 'abyss',     // 深海 — dark mode
+  midnight: 'mono',   // 极简(暗) — late night
+};
+
+/**
+ * Get the mood ID for the current time period.
+ * Uses user's custom time_moods if provided, otherwise defaults.
+ */
+export function getTimeBasedMood(
+  timeMoods?: { dawn?: string; day?: string; dusk?: string; night?: string; midnight?: string },
+  hour?: number,
+): string {
+  const period = getTimePeriod(hour);
+  if (timeMoods && timeMoods[period]) {
+    return timeMoods[period]!;
+  }
+  return DEFAULT_TIME_MOODS[period];
+}
+
+/**
+ * Generate palette from the current time-based mood.
+ * Used when auto_mood is enabled.
+ */
+export function generateFromTimeMood(
+  timeMoods?: { dawn?: string; day?: string; dusk?: string; night?: string; midnight?: string },
+  autoDark: boolean = true,
+): MoodPaletteResult | null {
+  const moodId = getTimeBasedMood(timeMoods);
+  return generateFromMood(moodId, autoDark);
+}
+
 // ─── Mood-based Palette Generation ─────────────────────────────────────────
 
 export interface MoodPaletteResult extends GeneratedPalette {
@@ -669,5 +729,61 @@ window.HDP_Palette = {
     } catch(e) {}
   }
 };
+
+// ── Phase 6: Auto Mood Timer (client-side) ───────────────────
+window.HDP_Palette.DEFAULT_TIME_MOODS = {
+  dawn: 'coral',
+  day: 'mono',
+  dusk: 'amber',
+  night: 'abyss',
+  midnight: 'mono'
+};
+
+window.HDP_Palette.getTimePeriod = function(hour) {
+  var h = hour != null ? hour : new Date().getHours();
+  if (h >= 6 && h < 10) return 'dawn';
+  if (h >= 10 && h < 17) return 'day';
+  if (h >= 17 && h < 20) return 'dusk';
+  if (h >= 20 && h < 23) return 'night';
+  return 'midnight';
+};
+
+window.HDP_Palette.getTimeBasedMood = function(timeMoods) {
+  var period = this.getTimePeriod();
+  if (timeMoods && timeMoods[period]) return timeMoods[period];
+  return this.DEFAULT_TIME_MOODS[period];
+};
+
+window.HDP_Palette.startAutoMoodTimer = function() {
+  var lastPeriod = null;
+  function checkAndSwitch() {
+    try {
+      var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
+      if (!cfg.auto_mood) return;
+      var period = window.HDP_Palette.getTimePeriod();
+      if (period === lastPeriod) return;  // no change
+      lastPeriod = period;
+      var moodId = window.HDP_Palette.getTimeBasedMood(cfg.time_moods);
+      var autoDark = cfg.auto_dark !== false;
+      var palette = window.HDP_Palette.generateFromMood(moodId, autoDark);
+      if (palette) {
+        palette.mood_id = moodId;
+        palette.seed = palette.seed || moodId;
+        window.HDP_Palette.applyPaletteToCSS(palette);
+      }
+    } catch(e) {}
+  }
+  checkAndSwitch();
+  setInterval(checkAndSwitch, 5 * 60 * 1000);  // every 5 minutes
+};
+
+// Start the auto mood timer on load
+if (document.readyState !== 'loading') {
+  window.HDP_Palette.startAutoMoodTimer();
+} else {
+  document.addEventListener('DOMContentLoaded', function() {
+    window.HDP_Palette.startAutoMoodTimer();
+  });
+}
 `;
 }

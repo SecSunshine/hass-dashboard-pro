@@ -64,7 +64,7 @@ function buildFullLayoutCard(hass: Hass, config: StrategyConfig, tokens: ReturnT
     areaSections.push({
       area_id: summary.area_id,
       area_name: summary.area_name,
-      html: buildAreaHTML(summary.area_name, entities, hass, tokens),
+      html: buildAreaHTML(summary.area_name, entities, hass, tokens, summary.area_id),
     });
   }
 

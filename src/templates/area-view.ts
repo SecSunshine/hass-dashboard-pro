@@ -20,6 +20,45 @@ import { bentoWrap } from '../utils/bento-layout';
 import { DOMAIN_GROUPS } from '../types';
 import { formatState, isEntityOn } from '../utils/area-entities';
 
+// ─── Area-specific Skin Resolution (Phase 6) ────────────────────────────────
+
+/**
+ * Default area skin mapping by name keywords.
+ * Used when user hasn't explicitly set a skin for an area.
+ */
+const AREA_SKIN_KEYWORDS: Array<{ keywords: string[]; skin: string }> = [
+  { keywords: ['bedroom', '卧室', '主卧', '次卧', '客房'], skin: 'soft' },      // 柔影 — 温馨
+  { keywords: ['living', '客厅', '起居'], skin: 'glass' },                      // 毛玻璃 — 通透大气
+  { keywords: ['kitchen', '厨房', '厨房'], skin: 'classic' },                    // 经典 — 清晰实用
+  { keywords: ['study', '书房', 'office', '办公室', '工作室'], skin: 'gradient' }, // 渐变 — 专注层次
+  { keywords: ['bath', '卫生间', '浴室', '洗手间', ' toilet'], skin: 'glass' },   // 毛玻璃 — 干净明亮
+  { keywords: ['balcony', '阳台', '露台'], skin: 'classic' },
+  { keywords: ['garage', '车库'], skin: 'classic' },
+  { keywords: ['dining', '餐厅', '饭厅'], skin: 'gradient' },
+  { keywords: ['closet', '衣帽间', '更衣'], skin: 'soft' },
+  { keywords: ['child', '儿童', '小孩', 'baby'], skin: 'soft' },
+];
+
+/**
+ * Resolve the card skin for a specific area.
+ * Priority: user's area_skins override → keyword-based default → global card_style.
+ */
+function resolveAreaSkin(areaId: string, areaName: string, areaSkins: Record<string, string> | undefined, globalSkin: string | undefined): string {
+  // 1. User's explicit override for this area_id
+  if (areaSkins && areaSkins[areaId]) {
+    return areaSkins[areaId];
+  }
+  // 2. Keyword-based default (match area name)
+  const lowerName = areaName.toLowerCase();
+  for (const entry of AREA_SKIN_KEYWORDS) {
+    if (entry.keywords.some(kw => lowerName.includes(kw.toLowerCase()))) {
+      return entry.skin;
+    }
+  }
+  // 3. Fall back to global card_style
+  return globalSkin || 'classic';
+}
+
 export function buildAreaView(areaName: string, entities: EntityInfo[], hass: Hass, tokens?: ResolvedTokens): LovelaceCardConfig[] {
   const groups = groupByDomain(entities);
 
@@ -44,20 +83,23 @@ export function buildAreaView(areaName: string, entities: EntityInfo[], hass: Ha
 
 /**
  * Build area content as raw HTML string (for embedding in layout card).
+ * Phase 6: now accepts areaId and areaSkins for per-area skin resolution.
  */
-export function buildAreaHTML(areaName: string, entities: EntityInfo[], hass: Hass, tokens?: ResolvedTokens): string {
+export function buildAreaHTML(areaName: string, entities: EntityInfo[], hass: Hass, tokens?: ResolvedTokens, areaId?: string): string {
   const groups = groupByDomain(entities);
   const sections: string[] = [];
+  const globalSkin = tokens?.card_style;
+  const areaSkin = areaId ? resolveAreaSkin(areaId, areaName, tokens?.area_skins, globalSkin) : globalSkin;
 
   sections.push(bentoWrap(extractAreaHTML(buildAreaHeader(areaName, entities, hass, tokens)), 'wide'));
 
   if (groups.length <= 1) {
-    sections.push(bentoWrap(extractAreaHTML(buildEntityGrid(entities, tokens)), 'wide'));
+    sections.push(bentoWrap(extractAreaHTML(buildEntityGrid(entities, tokens, areaSkin)), 'wide'));
   } else {
     for (const group of groups) {
       // Small domain sections (≤4 entities) take half width, large ones full width
       const size = group.entities.length <= 4 ? 'md' : 'wide';
-      sections.push(bentoWrap(extractAreaHTML(buildDomainSection(group, tokens)), size));
+      sections.push(bentoWrap(extractAreaHTML(buildDomainSection(group, tokens, areaSkin)), size));
     }
   }
 
@@ -364,8 +406,8 @@ function buildEntityCard(entity: EntityInfo, skin?: string): string {
 
 // ─── Domain Section (with entity card CSS) ─────────────────────────────────
 
-function buildDomainSection(group: DomainSection, tokens?: ResolvedTokens): LovelaceCardConfig {
-  const skin = tokens?.card_style;
+function buildDomainSection(group: DomainSection, tokens?: ResolvedTokens, areaSkin?: string): LovelaceCardConfig {
+  const skin = areaSkin || tokens?.card_style;
   const cards = group.entities.map(e => buildEntityCard(e, skin)).join('');
   const countBadge = group.active_count > 0
     ? `<span class="ds-cnt ds-cnt--${group.color_class}">${group.active_count}/${group.total}</span>`
@@ -434,8 +476,8 @@ ${generateDesignTokenCSS(tokens)}
   };
 }
 
-function buildEntityGrid(entities: EntityInfo[], tokens?: ResolvedTokens): LovelaceCardConfig {
-  const skin = tokens?.card_style;
+function buildEntityGrid(entities: EntityInfo[], tokens?: ResolvedTokens, areaSkin?: string): LovelaceCardConfig {
+  const skin = areaSkin || tokens?.card_style;
   const cards = entities.map(e => buildEntityCard(e, skin)).join('');
 
   return {
