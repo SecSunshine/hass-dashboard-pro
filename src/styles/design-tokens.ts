@@ -73,7 +73,19 @@ export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
   const cardBgOverride = tokens?.card_bg || '';
   const textOverride = tokens?.text_primary || '';
   const textSecOverride = tokens?.text_secondary || '';
+  const textMutedOverride = tokens?.text_muted || '';
   const borderOverride = tokens?.border || '';
+  const accentOverride = tokens?.accent || '';
+  const primaryLightOverride = tokens?.primary_light || '';
+  const gradientOverride = tokens?.gradient_primary || '';
+
+  // Palette-generated semantic colors (from seed color engine)
+  const successOverride = tokens?.success || '';
+  const warningOverride = tokens?.warning || '';
+  const dangerOverride = tokens?.danger || '';
+  const infoOverride = tokens?.info || '';
+  const shadowCardOverride = tokens?.shadow_card || '';
+  const shadowElevatedOverride = tokens?.shadow_elevated || '';
 
   // Build CSS: HA theme tokens with hardcoded fallbacks
   return /* css */ `
@@ -81,8 +93,8 @@ export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
   :host, :root {
     /* ── Primary Colors (HA theme → fallback) ── */
     --hdp-primary: ${primaryOverride || 'var(--primary-color, #4F6EF7)'};
-    --hdp-primary-light: var(--light-primary-color, #EEF1FE);
-    --hdp-accent: var(--accent-color, #7C6EF7);
+    --hdp-primary-light: ${primaryLightOverride || 'var(--light-primary-color, #EEF1FE)'};
+    --hdp-accent: ${accentOverride || 'var(--accent-color, #7C6EF7)'};
 
     /* ── Surfaces ── */
     --hdp-bg: ${bgOverride || 'var(--lovelace-background, var(--primary-background-color, #F4F6FA))'};
@@ -91,29 +103,29 @@ export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
     /* ── Text ── */
     --hdp-text: ${textOverride || 'var(--primary-text-color, #1A1D26)'};
     --hdp-text-secondary: ${textSecOverride || 'var(--secondary-text-color, #6B7280)'};
-    --hdp-text-muted: var(--disabled-text-color, #9CA3AF);
+    --hdp-text-muted: ${textMutedOverride || 'var(--disabled-text-color, #9CA3AF)'};
     --hdp-text-inverse: var(--text-primary-color, #FFFFFF);
 
     /* ── Borders & Dividers ── */
     --hdp-border: ${borderOverride || 'var(--divider-color, rgba(0,0,0,0.06))'};
     --hdp-divider: var(--divider-color, rgba(0,0,0,0.04));
 
-    /* ── Semantic Colors ── */
-    --hdp-success: var(--success-color, #22C55E);
+    /* ── Semantic Colors (palette-generated when seed active) ── */
+    --hdp-success: ${successOverride || 'var(--success-color, #22C55E)'};
     --hdp-success-light: rgba(34, 197, 94, 0.12);
-    --hdp-warning: var(--warning-color, #F59E0B);
+    --hdp-warning: ${warningOverride || 'var(--warning-color, #F59E0B)'};
     --hdp-warning-light: rgba(245, 158, 11, 0.12);
-    --hdp-danger: var(--error-color, #EF4444);
+    --hdp-danger: ${dangerOverride || 'var(--error-color, #EF4444)'};
     --hdp-danger-light: rgba(239, 68, 68, 0.12);
-    --hdp-info: var(--info-color, #3B82F6);
+    --hdp-info: ${infoOverride || 'var(--info-color, #3B82F6)'};
     --hdp-info-light: rgba(59, 130, 246, 0.12);
 
-    /* ── Shadows ── */
-    --hdp-shadow-card: var(--ha-card-box-shadow, 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03));
-    --hdp-shadow-elevated: 0 4px 24px rgba(0,0,0,0.08);
+    /* ── Shadows (palette-generated when seed active) ── */
+    --hdp-shadow-card: ${shadowCardOverride || 'var(--ha-card-box-shadow, 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03))'};
+    --hdp-shadow-elevated: ${shadowElevatedOverride || '0 4px 24px rgba(0,0,0,0.08)'};
 
-    /* ── Gradients (defined after semantic colors they reference) ── */
-    --hdp-gradient-primary: linear-gradient(135deg, var(--hdp-primary) 0%, var(--hdp-info) 100%);
+    /* ── Gradients (palette-generated when seed active) ── */
+    --hdp-gradient-primary: ${gradientOverride || 'linear-gradient(135deg, var(--hdp-primary) 0%, var(--hdp-info) 100%)'};
     --hdp-gradient-green: linear-gradient(135deg, var(--hdp-success) 0%, #16A34A 100%);
 
     /* ── Shape (html-pro-card spec: 10px) ── */

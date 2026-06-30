@@ -12,6 +12,7 @@
 
 import type { StrategyConfig } from '../types';
 import { THEME_PRESETS } from '../types';
+import { generateFromMood, generateFromSeed, paletteToTokens, resolveMode, type MoodPaletteResult } from '../themes/palette-generator';
 
 // ─── localStorage key ─────────────────────────────────────────────────────
 
@@ -36,6 +37,21 @@ export interface ResolvedTokens {
   font_family?: string;
   shadows?: boolean;
   card_style?: string;
+  // Seed color engine
+  seed_color?: string;
+  mood_preset?: string;
+  auto_dark?: boolean;
+  // Palette-generated semantic colors
+  accent?: string;
+  text_muted?: string;
+  success?: string;
+  warning?: string;
+  danger?: string;
+  info?: string;
+  primary_light?: string;
+  gradient_primary?: string;
+  shadow_card?: string;
+  shadow_elevated?: string;
 }
 
 /**
@@ -63,7 +79,52 @@ export function resolveTokens(config: StrategyConfig): ResolvedTokens {
     if (preset.shadows === false) result.shadows = false;
   }
 
-  // 2. Apply per-field YAML overrides
+  // 1b. Apply seed color / mood preset palette (if active in localStorage)
+  //     This generates a full palette from a seed color and sets it as the
+  //     base color layer. Explicit YAML/localStorage overrides below still
+  //     take precedence for individual fields.
+  const storedForPalette = loadStoredConfig();
+  if (storedForPalette) {
+    let palette: MoodPaletteResult | null = null;
+
+    if (storedForPalette.mood_preset && storedForPalette.mood_preset !== 'custom') {
+      const autoDark = storedForPalette.auto_dark !== false; // default true
+      palette = generateFromMood(storedForPalette.mood_preset, autoDark);
+    } else if (storedForPalette.seed_color) {
+      const mode = storedForPalette.auto_dark !== false ? 'auto' : 'light';
+      palette = generateFromSeed(storedForPalette.seed_color, mode);
+    }
+
+    if (palette) {
+      const tokens = paletteToTokens(palette);
+      // Apply palette as base layer (only if not already overridden by theme preset)
+      if (tokens.primary) result.primary = tokens.primary;
+      if (tokens.page_bg) result.page_bg = tokens.page_bg;
+      if (tokens.card_bg) result.card_bg = tokens.card_bg;
+      if (tokens.text_primary) result.text_primary = tokens.text_primary;
+      if (tokens.text_secondary) result.text_secondary = tokens.text_secondary;
+      if (tokens.border) result.border = tokens.border;
+      if (tokens.card_style) result.card_style = tokens.card_style;
+      if (tokens.border_radius != null) result.border_radius = tokens.border_radius;
+      // Store palette metadata
+      result.seed_color = palette.seed;
+      result.mood_preset = palette.mood_id;
+      result.auto_dark = storedForPalette.auto_dark !== false;
+      // Store semantic/derived colors
+      result.accent = palette.accent;
+      result.text_muted = palette.text_muted;
+      result.success = palette.success;
+      result.warning = palette.warning;
+      result.danger = palette.danger;
+      result.info = palette.info;
+      result.primary_light = palette.primary_light;
+      result.gradient_primary = palette.gradient_primary;
+      result.shadow_card = palette.shadow_card;
+      result.shadow_elevated = palette.shadow_elevated;
+    }
+  }
+
+  // 2. Apply per-field YAML overrides (these take precedence over palette)
   if (visual?.colors) {
     const c = visual.colors;
     if (c.page_bg) result.page_bg = c.page_bg;
@@ -115,6 +176,10 @@ export interface StoredVisualConfig {
   shadows?: boolean;
   card_style?: string;
   theme?: string;
+  // Seed color engine
+  seed_color?: string;
+  mood_preset?: string;
+  auto_dark?: boolean;
 }
 
 export function loadStoredConfig(): StoredVisualConfig | null {

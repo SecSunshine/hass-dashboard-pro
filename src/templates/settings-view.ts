@@ -17,6 +17,7 @@ import { THEME_PRESETS } from '../types';
 import { generateDesignTokenCSS } from '../styles/design-tokens';
 import type { ResolvedTokens, StoredVisualConfig } from '../utils/visual-config';
 import { loadStoredConfig, saveStoredConfig, clearStoredConfig } from '../utils/visual-config';
+import { generatePaletteGeneratorJS, MOOD_PRESETS } from '../themes/palette-generator';
 import {
   getSettingsSectionsCSS,
   generateSettingsSectionsJS,
@@ -40,6 +41,7 @@ export function buildSettingsView(config: StrategyConfig, tokens?: ResolvedToken
   return [
     buildSettingsHeader(tokens),
     buildThemePresetCard(preset, tokens),
+    buildSeedColorCard(stored, tokens),
     buildCardStyleCard(stored, tokens),
     buildColorPickerCard(stored, tokens),
     buildShapeCard(stored, tokens),
@@ -111,6 +113,7 @@ export function generateSettingsJS(config: StrategyConfig, tokens?: ResolvedToke
 
   return `
 ${generateSettingsSectionsJS()}
+${generatePaletteGeneratorJS()}
 ${scripts}`;
 }
 
@@ -301,6 +304,295 @@ ${generateDesignTokenCSS(tokens)}
         location.reload();
       });
     });
+  })();
+</script>`,
+  };
+}
+
+// ─── Seed Color Engine Card ───────────────────────────────────────────────
+
+function buildSeedColorCard(stored: StoredVisualConfig, tokens?: ResolvedTokens): LovelaceCardConfig {
+  const currentMood = (stored.mood_preset as string) || '';
+  const currentSeed = (stored.seed_color as string) || '';
+  const autoDark = stored.auto_dark !== false;
+
+  const moodCards = MOOD_PRESETS.map(m => {
+    const isActive = currentMood === m.id;
+    return `<button class="mood-card ${isActive ? 'mood-card--active' : ''}" data-mood="${m.id}" data-component="mood-card">
+      <div class="mood-preview" style="background: linear-gradient(135deg, ${m.seed} 0%, ${m.seed}99 100%);">
+        <span class="mood-icon">${m.icon}</span>
+      </div>
+      <div class="mood-meta">
+        <span class="mood-name">${m.name}</span>
+        <span class="mood-name-en">${m.name_en}</span>
+      </div>
+      ${isActive ? '<div class="mood-check"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="white"/></svg></div>' : ''}
+    </button>`;
+  }).join('');
+
+  return {
+    type: 'custom:html-pro-card',
+    title: '',
+    do_not_parse: true,
+    content: /* html */ `
+${generateDesignTokenCSS(tokens)}
+<style>
+  .settings-section {
+    background: var(--hdp-card-bg);
+    border-radius: var(--hdp-radius);
+    padding: var(--hdp-card-padding);
+    box-shadow: var(--hdp-shadow-card);
+    border: 1px solid var(--hdp-border);
+  }
+  .settings-title {
+    font-size: 15px; font-weight: 700;
+    color: var(--hdp-text);
+    margin-bottom: 6px;
+  }
+  .settings-subtitle {
+    font-size: 12px; color: var(--hdp-text-muted);
+    margin-bottom: 14px;
+  }
+  .mood-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 480px) {
+    .mood-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  .mood-card {
+    display: flex; flex-direction: column;
+    border: 2px solid var(--hdp-border);
+    border-radius: var(--hdp-radius);
+    overflow: hidden; cursor: pointer;
+    background: var(--hdp-card-bg);
+    position: relative;
+    transition: var(--hdp-transition);
+    padding: 0;
+  }
+  .mood-card:hover { border-color: var(--hdp-primary); transform: translateY(-2px); }
+  .mood-card--active {
+    border-color: var(--hdp-primary);
+    box-shadow: 0 0 0 3px var(--hdp-primary-glow);
+  }
+  .mood-preview {
+    height: 48px; display: flex;
+    align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  .mood-meta {
+    padding: 8px 10px;
+    display: flex; flex-direction: column; gap: 2px;
+    border-top: 1px solid var(--hdp-divider);
+  }
+  .mood-name {
+    font-size: 13px; font-weight: 600; color: var(--hdp-text);
+    text-align: left;
+  }
+  .mood-name-en {
+    font-size: 10px; color: var(--hdp-text-muted);
+    text-align: left;
+  }
+  .mood-check {
+    position: absolute;
+    top: 6px; right: 6px;
+    width: 18px; height: 18px;
+    background: var(--hdp-primary);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .seed-custom-row {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-top: 1px solid var(--hdp-divider);
+  }
+  .seed-custom-info {
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .seed-custom-label {
+    font-size: 14px; font-weight: 500; color: var(--hdp-text);
+  }
+  .seed-custom-desc {
+    font-size: 11px; color: var(--hdp-text-muted);
+  }
+  .seed-custom-input {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .seed-color-picker {
+    width: 36px; height: 36px;
+    border: 2px solid var(--hdp-border);
+    border-radius: 10px;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    background: none;
+    padding: 0;
+  }
+  .seed-color-picker::-webkit-color-swatch-wrapper {
+    padding: 2px;
+  }
+  .seed-color-picker::-webkit-color-swatch {
+    border: none;
+    border-radius: 8px;
+  }
+  .seed-hex {
+    font-size: 12px; font-family: 'SF Mono', 'Cascadia Code', monospace;
+    color: var(--hdp-text-secondary); min-width: 70px;
+  }
+  .seed-toggle-row {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-top: 1px solid var(--hdp-divider);
+  }
+  .seed-clear-row {
+    margin-top: 10px;
+    text-align: center;
+  }
+  .seed-clear-btn {
+    font-size: 12px; color: var(--hdp-text-muted);
+    background: none; border: none; cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.2s;
+  }
+  .seed-clear-btn:hover { color: var(--hdp-danger); }
+</style>
+<div class="settings-section" data-component="seed-color-engine">
+  <div class="settings-title">一色生万象</div>
+  <div class="settings-subtitle">选择一个氛围或自定义种子色，自动生成完整色板</div>
+  <div class="mood-grid">${moodCards}</div>
+  <div class="seed-custom-row">
+    <div class="seed-custom-info">
+      <span class="seed-custom-label">自定义种子色</span>
+      <span class="seed-custom-desc">从任意颜色生成主题</span>
+    </div>
+    <div class="seed-custom-input">
+      <input type="color" class="seed-color-picker" id="seed-color-input" value="${currentSeed || '#4F6EF7'}" aria-label="自定义种子色" />
+      <span class="seed-hex" id="seed-color-hex">${currentSeed || '#4F6EF7'}</span>
+    </div>
+  </div>
+  <div class="seed-toggle-row">
+    <div class="seed-custom-info">
+      <span class="seed-custom-label">自动明暗模式</span>
+      <span class="seed-custom-desc">20:00-06:00 自动切换暗色色板</span>
+    </div>
+    <div class="toggle-switch ${autoDark ? 'toggle-switch--on' : 'toggle-switch--off'}" id="auto-dark-toggle" data-component="auto-dark-toggle">
+      <div class="toggle-switch-knob"></div>
+    </div>
+  </div>
+  ${(currentMood || currentSeed) ? '<div class="seed-clear-row"><button class="seed-clear-btn" id="seed-clear-btn">清除种子色，恢复主题预设</button></div>' : ''}
+</div>
+<script>
+  (function() {
+    // Mood preset selection
+    document.querySelectorAll('.mood-card').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var moodId = this.getAttribute('data-mood');
+        var autoDark = document.getElementById('auto-dark-toggle');
+        var isAutoDark = autoDark ? autoDark.className.indexOf('toggle-switch--on') !== -1 : true;
+        var palette = window.HDP_Palette.generateFromMood(moodId, isAutoDark);
+        if (!palette) return;
+        window.HDP_Palette.applyPaletteToCSS(palette);
+        palette.mood_id = moodId;
+        palette.seed = this.querySelector('.mood-preview') ? undefined : palette.seed;
+        // Save to localStorage
+        var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
+        cfg.mood_preset = moodId;
+        cfg.seed_color = undefined;
+        delete cfg.seed_color;
+        cfg.card_style = palette.card_style;
+        cfg.border_radius = palette.border_radius;
+        cfg.primary = palette.primary;
+        cfg.page_bg = palette.page_bg;
+        cfg.card_bg = palette.card_bg;
+        cfg.text_primary = palette.text_primary;
+        cfg.text_secondary = palette.text_secondary;
+        cfg.border = palette.border;
+        cfg.auto_dark = isAutoDark;
+        localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+        location.reload();
+      });
+    });
+
+    // Custom seed color picker
+    var seedInput = document.getElementById('seed-color-input');
+    var seedHex = document.getElementById('seed-color-hex');
+    if (seedInput) {
+      seedInput.addEventListener('input', function() {
+        var val = this.value;
+        if (seedHex) seedHex.textContent = val;
+        var autoDarkEl = document.getElementById('auto-dark-toggle');
+        var isAutoDark = autoDarkEl ? autoDarkEl.className.indexOf('toggle-switch--on') !== -1 : true;
+        var mode = isAutoDark ? 'auto' : 'light';
+        var palette = window.HDP_Palette.generate(val, mode);
+        palette.card_style = 'glass';
+        palette.border_radius = 14;
+        palette.mood_id = 'custom';
+        palette.mood_name = '自定义';
+        palette.seed = val;
+        window.HDP_Palette.applyPaletteToCSS(palette);
+      });
+      seedInput.addEventListener('change', function() {
+        var val = this.value;
+        var autoDarkEl = document.getElementById('auto-dark-toggle');
+        var isAutoDark = autoDarkEl ? autoDarkEl.className.indexOf('toggle-switch--on') !== -1 : true;
+        var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
+        cfg.seed_color = val;
+        cfg.mood_preset = 'custom';
+        cfg.auto_dark = isAutoDark;
+        // Generate and save all palette colors
+        var mode = isAutoDark ? 'auto' : 'light';
+        var palette = window.HDP_Palette.generate(val, mode);
+        cfg.card_style = 'glass';
+        cfg.border_radius = 14;
+        cfg.primary = palette.primary;
+        cfg.page_bg = palette.page_bg;
+        cfg.card_bg = palette.card_bg;
+        cfg.text_primary = palette.text_primary;
+        cfg.text_secondary = palette.text_secondary;
+        cfg.border = palette.border;
+        localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+        location.reload();
+      });
+    }
+
+    // Auto dark mode toggle
+    var darkToggle = document.getElementById('auto-dark-toggle');
+    if (darkToggle) {
+      darkToggle.addEventListener('click', function() {
+        var isOn = this.className.indexOf('toggle-switch--on') !== -1;
+        this.className = 'toggle-switch ' + (isOn ? 'toggle-switch--off' : 'toggle-switch--on');
+        var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
+        cfg.auto_dark = !isOn;
+        localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+        location.reload();
+      });
+    }
+
+    // Clear seed color
+    var clearBtn = document.getElementById('seed-clear-btn');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function() {
+        var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
+        delete cfg.mood_preset;
+        delete cfg.seed_color;
+        delete cfg.auto_dark;
+        // Clear palette-generated colors too
+        delete cfg.primary;
+        delete cfg.page_bg;
+        delete cfg.card_bg;
+        delete cfg.text_primary;
+        delete cfg.text_secondary;
+        delete cfg.border;
+        delete cfg.card_style;
+        delete cfg.border_radius;
+        localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+        location.reload();
+      });
+    }
   })();
 </script>`,
   };
