@@ -22,6 +22,7 @@ import { generateServiceScript } from '../services/hass-websocket';
 import { generateStorageJS } from '../services/storage';
 import { generateBlueprintJS } from '../blueprints/blueprint-storage';
 import { buildImportModalHTML, generateBlueprintModalJS } from '../blueprints/blueprint-gallery';
+import { buildThemeStudioHTML, generateThemeStudioJS } from '../templates/theme-studio';
 
 export interface LayoutCardOptions {
   hass: Hass;
@@ -144,6 +145,7 @@ ${generateDesignTokenCSS(tokens)}
   </main>
   ${bottomNavHTML}
   ${buildImportModalHTML()}
+  ${buildThemeStudioHTML(tokens)}
 </div>
 <script>
 ${generateServiceScript()}
@@ -152,6 +154,7 @@ ${generateBlueprintJS()}
 ${generateBlueprintModalJS()}
 ${devicesJS || ''}
 ${settingsJS || ''}
+${generateThemeStudioJS()}
 ${buildNavigationScript()}
 </script>`;
 

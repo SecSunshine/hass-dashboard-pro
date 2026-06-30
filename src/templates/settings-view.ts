@@ -141,7 +141,50 @@ ${generateDesignTokenCSS(tokens)}
 <div class="settings-header" data-component="settings-header">
   <div class="settings-header-title">视觉设置</div>
   <div class="settings-header-sub">自定义仪表盘外观，所有更改实时生效</div>
-</div>`,
+  <button class="settings-studio-btn" id="settings-studio-btn" data-component="studio-entry">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+    主题工作室
+  </button>
+</div>
+<style>
+  .settings-studio-btn {
+    margin-top: 14px;
+    padding: 10px 20px;
+    border-radius: var(--hdp-radius);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--hdp-font);
+    border: none;
+    background: var(--hdp-gradient-primary);
+    color: white;
+    box-shadow: 0 4px 12px var(--hdp-primary-glow);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: var(--hdp-transition);
+  }
+  .settings-studio-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px var(--hdp-primary-glow);
+  }
+  .settings-studio-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+</style>
+<script>
+  (function() {
+    var btn = document.getElementById('settings-studio-btn');
+    if (btn) {
+      btn.addEventListener('click', function() {
+        if (typeof window.hdpOpenStudio === 'function') {
+          window.hdpOpenStudio();
+        }
+      });
+    }
+  })();
+</script>`,
   };
 }
 
