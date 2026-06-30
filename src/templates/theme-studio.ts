@@ -16,6 +16,8 @@
  */
 
 import type { ResolvedTokens } from '../utils/visual-config';
+import type { Hass, StrategyConfig } from '../types';
+import { buildHomeHTML } from './home-view';
 import { MOOD_PRESETS } from '../themes/palette-generator';
 
 // ─── HTML + CSS ─────────────────────────────────────────────────────────────
@@ -24,7 +26,7 @@ import { MOOD_PRESETS } from '../themes/palette-generator';
  * Build the Theme Studio overlay HTML (no JS — JS is generated separately).
  * The overlay is hidden by default and shown via hdpOpenStudio().
  */
-export function buildThemeStudioHTML(tokens?: ResolvedTokens): string {
+export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, config?: StrategyConfig): string {
   const currentMood = (tokens?.mood_preset as string) || '';
   const currentSeed = (tokens?.seed_color as string) || '#4F6EF7';
   const currentSkin = (tokens?.card_style as string) || 'classic';
@@ -65,6 +67,19 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens): string {
     </button>`;
   }).join('');
 
+  // Generate preview content — use real dashboard HTML when hass is available
+  let previewHTML: string;
+  if (hass && config) {
+    try {
+      const homeContent = buildHomeHTML(hass, config, tokens);
+      previewHTML = `<div class="hdp-home-content ts-preview-real">${homeContent}</div>`;
+    } catch {
+      previewHTML = buildFallbackPreview(currentSkin);
+    }
+  } else {
+    previewHTML = buildFallbackPreview(currentSkin);
+  }
+
   return `
 <style>
   /* ── Theme Studio Overlay ── */
@@ -98,6 +113,10 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens): string {
     letter-spacing: 0.5px;
     margin-bottom: 4px;
   }
+  .ts-preview-container {
+    min-width: 0;
+  }
+  /* Fallback sample cards grid */
   .ts-preview-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -105,6 +124,13 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens): string {
     max-width: 640px;
   }
   .ts-preview-grid .ts-preview-card--wide { grid-column: 1 / -1; }
+  /* Real dashboard content */
+  .ts-preview-real {
+    max-width: 900px;
+  }
+  .ts-preview-real .hdp-bento {
+    min-width: 0;
+  }
 
   /* ── Control Panel (right) ── */
   .hdp-studio-panel {
@@ -554,54 +580,8 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens): string {
   <!-- Preview Area -->
   <div class="hdp-studio-preview">
     <div class="hdp-studio-preview-title">实时预览</div>
-    <div class="ts-preview-grid" id="ts-preview-grid">
-      <!-- Welcome Card (wide) -->
-      <div class="ts-preview-card ts-preview-card--wide hdp-card hdp-card--${currentSkin}" style="padding: 20px; border-radius: var(--hdp-radius, 14px);">
-        <div style="font-size: 20px; font-weight: 700; color: var(--hdp-text); margin-bottom: 4px;">你好，上午好</div>
-        <div style="font-size: 13px; color: var(--hdp-text-secondary);">今天有 3 个设备需要关注</div>
-      </div>
-      <!-- Temperature Card -->
-      <div class="ts-preview-card hdp-card hdp-card--${currentSkin}" style="padding: 16px; border-radius: var(--hdp-radius, 14px);">
-        <div style="font-size: 12px; color: var(--hdp-text-muted); margin-bottom: 8px;">客厅温度</div>
-        <div style="font-size: 28px; font-weight: 700; color: var(--hdp-primary);">23.5°</div>
-        <div style="font-size: 11px; color: var(--hdp-text-secondary); margin-top: 4px;">湿度 45%</div>
-      </div>
-      <!-- Light Switch Card -->
-      <div class="ts-preview-card hdp-card hdp-card--${currentSkin}" style="padding: 16px; border-radius: var(--hdp-radius, 14px); display: flex; flex-direction: column; gap: 10px;">
-        <div style="font-size: 12px; color: var(--hdp-text-muted);">客厅灯</div>
-        <div style="display: flex; align-items: center; justify-content: space-between;">
-          <span style="font-size: 14px; font-weight: 600; color: var(--hdp-text);">已开启</span>
-          <div style="width: 40px; height: 24px; border-radius: 12px; background: var(--hdp-primary); position: relative;">
-            <div style="position: absolute; width: 20px; height: 20px; border-radius: 50%; background: white; top: 2px; right: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);"></div>
-          </div>
-        </div>
-      </div>
-      <!-- Power Card -->
-      <div class="ts-preview-card hdp-card hdp-card--${currentSkin}" style="padding: 16px; border-radius: var(--hdp-radius, 14px);">
-        <div style="font-size: 12px; color: var(--hdp-text-muted); margin-bottom: 8px;">实时功率</div>
-        <div style="font-size: 24px; font-weight: 700; color: var(--hdp-text);">1.2 kW</div>
-        <div style="height: 4px; border-radius: 2px; background: var(--hdp-divider); margin-top: 8px; overflow: hidden;">
-          <div style="width: 60%; height: 100%; border-radius: 2px; background: var(--hdp-gradient-primary, var(--hdp-primary));"></div>
-        </div>
-      </div>
-      <!-- Summary Card -->
-      <div class="ts-preview-card hdp-card hdp-card--${currentSkin}" style="padding: 16px; border-radius: var(--hdp-radius, 14px);">
-        <div style="font-size: 12px; color: var(--hdp-text-muted); margin-bottom: 10px;">设备概览</div>
-        <div style="display: flex; justify-content: space-around; text-align: center;">
-          <div>
-            <div style="font-size: 20px; font-weight: 700; color: var(--hdp-success);">12</div>
-            <div style="font-size: 10px; color: var(--hdp-text-muted);">在线</div>
-          </div>
-          <div>
-            <div style="font-size: 20px; font-weight: 700; color: var(--hdp-warning);">2</div>
-            <div style="font-size: 10px; color: var(--hdp-text-muted);">离线</div>
-          </div>
-          <div>
-            <div style="font-size: 20px; font-weight: 700; color: var(--hdp-info);">5</div>
-            <div style="font-size: 10px; color: var(--hdp-text-muted);">区域</div>
-          </div>
-        </div>
-      </div>
+    <div class="ts-preview-container" id="ts-preview-grid">
+      ${previewHTML}
     </div>
   </div>
 
@@ -742,6 +722,58 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens): string {
 `;
 }
 
+/**
+ * Build fallback preview cards when real dashboard data is unavailable.
+ * Uses the same card skin as the current theme.
+ */
+function buildFallbackPreview(skin: string): string {
+  const skinCls = `hdp-card hdp-card--${skin}`;
+  return `<div class="ts-preview-grid">
+    <div class="ts-preview-card ts-preview-card--wide ${skinCls}" style="padding: 20px; border-radius: var(--hdp-radius, 14px);">
+      <div style="font-size: 20px; font-weight: 700; color: var(--hdp-text); margin-bottom: 4px;">你好，上午好</div>
+      <div style="font-size: 13px; color: var(--hdp-text-secondary);">今天有 3 个设备需要关注</div>
+    </div>
+    <div class="ts-preview-card ${skinCls}" style="padding: 16px; border-radius: var(--hdp-radius, 14px);">
+      <div style="font-size: 12px; color: var(--hdp-text-muted); margin-bottom: 8px;">客厅温度</div>
+      <div style="font-size: 28px; font-weight: 700; color: var(--hdp-primary);">23.5°</div>
+      <div style="font-size: 11px; color: var(--hdp-text-secondary); margin-top: 4px;">湿度 45%</div>
+    </div>
+    <div class="ts-preview-card ${skinCls}" style="padding: 16px; border-radius: var(--hdp-radius, 14px); display: flex; flex-direction: column; gap: 10px;">
+      <div style="font-size: 12px; color: var(--hdp-text-muted);">客厅灯</div>
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <span style="font-size: 14px; font-weight: 600; color: var(--hdp-text);">已开启</span>
+        <div style="width: 40px; height: 24px; border-radius: 12px; background: var(--hdp-primary); position: relative;">
+          <div style="position: absolute; width: 20px; height: 20px; border-radius: 50%; background: white; top: 2px; right: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);"></div>
+        </div>
+      </div>
+    </div>
+    <div class="ts-preview-card ${skinCls}" style="padding: 16px; border-radius: var(--hdp-radius, 14px);">
+      <div style="font-size: 12px; color: var(--hdp-text-muted); margin-bottom: 8px;">实时功率</div>
+      <div style="font-size: 24px; font-weight: 700; color: var(--hdp-text);">1.2 kW</div>
+      <div style="height: 4px; border-radius: 2px; background: var(--hdp-divider); margin-top: 8px; overflow: hidden;">
+        <div style="width: 60%; height: 100%; border-radius: 2px; background: var(--hdp-gradient-primary, var(--hdp-primary));"></div>
+      </div>
+    </div>
+    <div class="ts-preview-card ${skinCls}" style="padding: 16px; border-radius: var(--hdp-radius, 14px);">
+      <div style="font-size: 12px; color: var(--hdp-text-muted); margin-bottom: 10px;">设备概览</div>
+      <div style="display: flex; justify-content: space-around; text-align: center;">
+        <div>
+          <div style="font-size: 20px; font-weight: 700; color: var(--hdp-success);">12</div>
+          <div style="font-size: 10px; color: var(--hdp-text-muted);">在线</div>
+        </div>
+        <div>
+          <div style="font-size: 20px; font-weight: 700; color: var(--hdp-warning);">2</div>
+          <div style="font-size: 10px; color: var(--hdp-text-muted);">离线</div>
+        </div>
+        <div>
+          <div style="font-size: 20px; font-weight: 700; color: var(--hdp-info);">5</div>
+          <div style="font-size: 10px; color: var(--hdp-text-muted);">区域</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
 // ─── Client-Side JS ─────────────────────────────────────────────────────────
 
 /**
@@ -780,6 +812,7 @@ export function generateThemeStudioJS(): string {
       state.gap = cfg.card_gap != null ? cfg.card_gap : 12;
       state.padding = cfg.card_padding != null ? cfg.card_padding : 18;
       state.mode = cfg.auto_dark === false ? 'light' : 'auto';
+      state.density = cfg.layout_density || 'standard';
       // If mood is set and not custom, get seed from mood
       if (state.mood && state.mood !== 'custom') {
         var mood = window.HDP_Palette.MOOD_PRESETS.find(function(m){ return m.id === state.mood; });
@@ -1024,13 +1057,28 @@ export function generateThemeStudioJS(): string {
     root.style.setProperty('--hdp-card-gap', state.gap + 'px');
     root.style.setProperty('--hdp-card-padding', state.padding + 'px');
 
-    // Update preview card skins
-    document.querySelectorAll('.ts-preview-card').forEach(function(card) {
-      // Remove old skin classes
-      card.className = card.className.replace(/hdp-card--\\S+/g, '').trim();
-      card.classList.add('hdp-card');
-      card.classList.add('hdp-card--' + state.skin);
-    });
+    // Apply density CSS variables
+    var densityMap = {
+      compact:  { gap: 8,  padding: 12, rowHeight: 100, entityPadding: 10 },
+      standard: { gap: 14, padding: 18, rowHeight: 120, entityPadding: 14 },
+      spacious: { gap: 20, padding: 24, rowHeight: 140, entityPadding: 18 }
+    };
+    var dp = densityMap[state.density] || densityMap.standard;
+    root.style.setProperty('--hdp-density', state.density);
+    root.style.setProperty('--hdp-density-gap', dp.gap + 'px');
+    root.style.setProperty('--hdp-density-padding', dp.padding + 'px');
+    root.style.setProperty('--hdp-density-row-height', dp.rowHeight + 'px');
+    root.style.setProperty('--hdp-density-entity-padding', dp.entityPadding + 'px');
+
+    // Update preview card skins (both fallback sample cards and real content)
+    var previewContainer = document.getElementById('ts-preview-grid');
+    if (previewContainer) {
+      previewContainer.querySelectorAll('.hdp-card').forEach(function(card) {
+        card.className = card.className.replace(/hdp-card--\\S+/g, '').trim();
+        card.classList.add('hdp-card');
+        card.classList.add('hdp-card--' + state.skin);
+      });
+    }
 
     // Update slider value displays
     var rEl = document.getElementById('ts-radius-val');
@@ -1273,6 +1321,7 @@ export function generateThemeStudioJS(): string {
     cfg.card_gap = state.gap;
     cfg.card_padding = state.padding;
     cfg.auto_dark = state.mode !== 'light';  // true for 'auto' and 'dark'
+    cfg.layout_density = state.density;
 
     // Generate and save palette colors
     var resolvedMode = state.mode === 'auto' ? (window.HDP_Palette.shouldUseDarkMode() ? 'dark' : 'light') : state.mode;

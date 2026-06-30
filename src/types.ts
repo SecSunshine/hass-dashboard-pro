@@ -110,6 +110,12 @@ export interface VisualConfig {
   /** Enable/disable page transitions */
   animations?: boolean;
 
+  /** Per-card Bento size overrides (card_id → 'sm' | 'md' | 'lg' | 'wide' | 'tall') */
+  card_sizes?: Record<string, string>;
+
+  /** Layout density preset: compact | standard | spacious */
+  layout_density?: 'compact' | 'standard' | 'spacious';
+
   /** Phase 6: Auto mood switching based on time of day */
   auto_mood?: boolean;
 
@@ -167,7 +173,7 @@ export interface StrategyConfig {
 
 // ─── Theme Preset Definitions ─────────────────────────────────────────────
 
-export const THEME_PRESETS: Record<ThemePreset, Omit<Required<VisualConfig>, 'theme' | 'auto_mood' | 'time_moods' | 'area_skins'>> = {
+export const THEME_PRESETS: Record<ThemePreset, Omit<Required<VisualConfig>, 'theme' | 'auto_mood' | 'time_moods' | 'area_skins' | 'card_sizes' | 'layout_density'>> = {
   light: {
     colors: {
       page_bg: '#F4F6FA',
@@ -416,6 +422,8 @@ export interface StoredVisualConfig {
   card_gap: number;
   font_family: string;
   shadows: boolean;
+  card_sizes?: Record<string, string>;
+  layout_density?: 'compact' | 'standard' | 'spacious';
 }
 
 // ─── v4.0: Blueprint Types ────────────────────────────────────────────────

@@ -22,7 +22,7 @@
 import type { Hass, LovelaceCardConfig, StrategyConfig } from '../types';
 import { generateDesignTokenCSS } from '../styles/design-tokens';
 import type { ResolvedTokens } from '../utils/visual-config';
-import { bentoWrap } from '../utils/bento-layout';
+import { bentoWrap, resolveCardSize } from '../utils/bento-layout';
 import { buildHousePowerUsage } from '../utils/power-usage';
 import {
   getPersons,
@@ -81,39 +81,40 @@ export function buildHomeView(hass: Hass, config: StrategyConfig, tokens?: Resol
  */
 export function buildHomeHTML(hass: Hass, config: StrategyConfig, tokens?: ResolvedTokens): string {
   const sections: string[] = [];
+  const cs = tokens?.card_sizes;
 
   // Welcome hero — large 2x2 card
-  sections.push(bentoWrap(extractCardHTML(buildWelcomeCard(hass, config, tokens)), 'lg'));
+  sections.push(bentoWrap(extractCardHTML(buildWelcomeCard(hass, config, tokens)), resolveCardSize('home_welcome', 'lg', cs)));
 
   // Status badges — full width banner
   const domains = getStatusDomains(hass);
   if (domains.length > 0) {
-    sections.push(bentoWrap(extractCardHTML(buildStatusBadges(domains, tokens)), 'wide'));
+    sections.push(bentoWrap(extractCardHTML(buildStatusBadges(domains, tokens)), resolveCardSize('home_status_badges', 'wide', cs)));
   }
 
   // People — medium card
   const persons = getPersons(hass, config.hidden_persons);
   if (persons.length > 0) {
-    sections.push(bentoWrap(extractCardHTML(buildPeopleCard(persons, tokens)), 'md'));
+    sections.push(bentoWrap(extractCardHTML(buildPeopleCard(persons, tokens)), resolveCardSize('home_people', 'md', cs)));
   }
 
   // Environment — medium card
-  sections.push(bentoWrap(extractCardHTML(buildEnvironmentCard(hass, config, tokens)), 'md'));
+  sections.push(bentoWrap(extractCardHTML(buildEnvironmentCard(hass, config, tokens)), resolveCardSize('home_environment', 'md', cs)));
 
   // Power — medium card
   const power = buildHousePowerUsage(hass);
   if (power.has_data) {
-    sections.push(bentoWrap(extractCardHTML(buildPowerCard(power, tokens)), 'md'));
+    sections.push(bentoWrap(extractCardHTML(buildPowerCard(power, tokens)), resolveCardSize('home_power', 'md', cs)));
   }
 
   // Favorites — full width
   const favorites = getFavorites(hass, config);
   if (favorites.length > 0) {
-    sections.push(bentoWrap(extractCardHTML(buildFavoritesCard(favorites, tokens)), 'wide'));
+    sections.push(bentoWrap(extractCardHTML(buildFavoritesCard(favorites, tokens)), resolveCardSize('home_favorites', 'wide', cs)));
   }
 
   // Summary — medium card
-  sections.push(bentoWrap(extractCardHTML(buildSummaryCard(hass, tokens)), 'md'));
+  sections.push(bentoWrap(extractCardHTML(buildSummaryCard(hass, tokens)), resolveCardSize('home_summary', 'md', cs)));
 
   return sections.join('\n');
 }

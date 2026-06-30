@@ -23,6 +23,7 @@
  */
 
 import type { ResolvedTokens } from '../utils/visual-config';
+import { DENSITY_PRESETS, type LayoutDensity } from '../utils/bento-layout';
 
 // ─── Spacing & Layout Constants ───────────────────────────────────────────
 
@@ -87,6 +88,10 @@ export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
   const shadowCardOverride = tokens?.shadow_card || '';
   const shadowElevatedOverride = tokens?.shadow_elevated || '';
 
+  // Layout density preset (compact | standard | spacious)
+  const density: LayoutDensity = (tokens?.layout_density as LayoutDensity) || 'standard';
+  const densityPreset = DENSITY_PRESETS[density] || DENSITY_PRESETS.standard;
+
   // Build CSS: HA theme tokens with hardcoded fallbacks
   return /* css */ `
 <style>
@@ -135,8 +140,15 @@ export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
     --hdp-radius-pill: ${SHAPE.radius_pill}px;
 
     /* ── Spacing ── */
-    --hdp-card-padding: ${tokens?.card_padding != null ? tokens.card_padding : LAYOUT.card_padding}px;
-    --hdp-card-gap: ${tokens?.card_gap != null ? tokens.card_gap : LAYOUT.card_gap}px;
+    --hdp-card-padding: ${tokens?.card_padding != null ? tokens.card_padding : densityPreset.padding}px;
+    --hdp-card-gap: ${tokens?.card_gap != null ? tokens.card_gap : densityPreset.gap}px;
+
+    /* ── Layout Density (compact | standard | spacious) ── */
+    --hdp-density: ${density};
+    --hdp-density-gap: ${densityPreset.gap}px;
+    --hdp-density-padding: ${densityPreset.padding}px;
+    --hdp-density-row-height: ${densityPreset.rowHeight}px;
+    --hdp-density-entity-padding: ${densityPreset.entityPadding}px;
 
     /* ── Typography ── */
     --hdp-font: ${tokens?.font_family || 'inherit'};
@@ -152,7 +164,7 @@ export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
     /* ── v4.0: Sidebar & Layout ── */
     --hdp-sidebar-bg: var(--ha-card-background, var(--card-background-color, #FFFFFF));
     --hdp-sidebar-width: 72px;
-    --hdp-content-padding: ${tokens?.card_padding != null ? tokens.card_padding : LAYOUT.card_padding}px;
+    --hdp-content-padding: ${tokens?.card_padding != null ? tokens.card_padding : densityPreset.padding}px;
 
     /* ── v4.0: Focus & Interaction ── */
     --hdp-primary-glow: rgba(79, 110, 247, 0.15);

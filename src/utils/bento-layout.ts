@@ -52,18 +52,18 @@ export function generateBentoCSS(): string {
   .hdp-home-content {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    grid-auto-rows: minmax(120px, auto);
+    grid-auto-rows: minmax(var(--hdp-density-row-height, 120px), auto);
     grid-auto-flow: dense;
-    gap: var(--hdp-card-gap, 12px);
+    gap: var(--hdp-card-gap, var(--hdp-density-gap, 12px));
   }
 
   /* ── Bento Grid: Area & Device Content (2 columns) ── */
   .hdp-area-content {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    grid-auto-rows: minmax(80px, auto);
+    grid-auto-rows: minmax(calc(var(--hdp-density-row-height, 120px) - 20px), auto);
     grid-auto-flow: dense;
-    gap: var(--hdp-card-gap, 12px);
+    gap: var(--hdp-card-gap, var(--hdp-density-gap, 12px));
   }
 
   /* ── Bento Card Size Classes (Desktop) ── */
@@ -130,4 +130,70 @@ export function generateBentoCSS(): string {
  */
 export function bentoWrap(html: string, size: BentoSize): string {
   return `<div class="hdp-bento hdp-bento--${size}">${html}</div>`;
+}
+
+// ─── Card Size Resolution ──────────────────────────────────────────────────
+
+/**
+ * Valid Bento sizes as a Set for quick validation.
+ */
+const VALID_SIZES = new Set<BentoSize>(['sm', 'md', 'lg', 'wide', 'tall']);
+
+/**
+ * Resolve a card's Bento size from user configuration.
+ *
+ * @param cardId      Stable card identifier (e.g. 'home_welcome', 'area_header')
+ * @param defaultSize The default size used when no override exists
+ * @param cardSizes   Optional user-configured size map (card_id → size string)
+ * @returns           The resolved BentoSize (validated, falls back to default)
+ */
+export function resolveCardSize(
+  cardId: string,
+  defaultSize: BentoSize,
+  cardSizes?: Record<string, string>,
+): BentoSize {
+  if (!cardSizes) return defaultSize;
+  const override = cardSizes[cardId];
+  if (override && VALID_SIZES.has(override as BentoSize)) {
+    return override as BentoSize;
+  }
+  return defaultSize;
+}
+
+// ─── Layout Density Presets ────────────────────────────────────────────────
+
+export type LayoutDensity = 'compact' | 'standard' | 'spacious';
+
+export interface DensityPreset {
+  /** Card gap in px */
+  gap: number;
+  /** Card padding in px */
+  padding: number;
+  /** Bento grid auto row min height in px */
+  rowHeight: number;
+  /** Entity card padding in px (inside domain sections) */
+  entityPadding: number;
+}
+
+export const DENSITY_PRESETS: Record<LayoutDensity, DensityPreset> = {
+  compact:  { gap: 8,  padding: 12, rowHeight: 100, entityPadding: 10 },
+  standard: { gap: 14, padding: 18, rowHeight: 120, entityPadding: 14 },
+  spacious: { gap: 20, padding: 24, rowHeight: 140, entityPadding: 18 },
+};
+
+/**
+ * Generate CSS variables for the given layout density.
+ * These variables are consumed by the Bento grid and card components.
+ */
+export function generateDensityCSS(density?: LayoutDensity): string {
+  const preset = density ? DENSITY_PRESETS[density] : DENSITY_PRESETS.standard;
+  return /* css */ `
+  :root, :host {
+    --hdp-density-gap: ${preset.gap}px;
+    --hdp-density-padding: ${preset.padding}px;
+    --hdp-density-row-height: ${preset.rowHeight}px;
+    --hdp-density-entity-padding: ${preset.entityPadding}px;
+    --hdp-density: ${density || 'standard'};
+  }
+  `;
 }

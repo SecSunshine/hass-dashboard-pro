@@ -16,7 +16,7 @@
 import type { Hass, LovelaceCardConfig, EntityInfo } from '../types';
 import { generateDesignTokenCSS } from '../styles/design-tokens';
 import type { ResolvedTokens } from '../utils/visual-config';
-import { bentoWrap } from '../utils/bento-layout';
+import { bentoWrap, resolveCardSize } from '../utils/bento-layout';
 import { DOMAIN_GROUPS } from '../types';
 import { formatState, isEntityOn } from '../utils/area-entities';
 
@@ -90,16 +90,17 @@ export function buildAreaHTML(areaName: string, entities: EntityInfo[], hass: Ha
   const sections: string[] = [];
   const globalSkin = tokens?.card_style;
   const areaSkin = areaId ? resolveAreaSkin(areaId, areaName, tokens?.area_skins, globalSkin) : globalSkin;
+  const cs = tokens?.card_sizes;
 
-  sections.push(bentoWrap(extractAreaHTML(buildAreaHeader(areaName, entities, hass, tokens)), 'wide'));
+  sections.push(bentoWrap(extractAreaHTML(buildAreaHeader(areaName, entities, hass, tokens)), resolveCardSize('area_header', 'wide', cs)));
 
   if (groups.length <= 1) {
-    sections.push(bentoWrap(extractAreaHTML(buildEntityGrid(entities, tokens, areaSkin)), 'wide'));
+    sections.push(bentoWrap(extractAreaHTML(buildEntityGrid(entities, tokens, areaSkin)), resolveCardSize('area_grid', 'wide', cs)));
   } else {
     for (const group of groups) {
       // Small domain sections (≤4 entities) take half width, large ones full width
-      const size = group.entities.length <= 4 ? 'md' : 'wide';
-      sections.push(bentoWrap(extractAreaHTML(buildDomainSection(group, tokens, areaSkin)), size));
+      const defaultSize = group.entities.length <= 4 ? 'md' : 'wide';
+      sections.push(bentoWrap(extractAreaHTML(buildDomainSection(group, tokens, areaSkin)), resolveCardSize(`area_domain_${group.domain}`, defaultSize, cs)));
     }
   }
 
@@ -272,7 +273,7 @@ const ENTITY_CARD_CSS = /* css */ `
   .ec {
     background: var(--hdp-card-bg);
     border-radius: var(--hdp-radius);
-    padding: 14px;
+    padding: var(--hdp-density-entity-padding, 14px);
     border: 1px solid var(--hdp-border);
     box-shadow: var(--hdp-shadow-card);
     transition: all 0.2s ease;

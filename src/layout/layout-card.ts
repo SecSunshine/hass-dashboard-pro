@@ -145,7 +145,7 @@ ${generateDesignTokenCSS(tokens)}
   </main>
   ${bottomNavHTML}
   ${buildImportModalHTML()}
-  ${buildThemeStudioHTML(tokens)}
+  ${buildThemeStudioHTML(tokens, hass, config)}
 </div>
 <script>
 ${generateServiceScript()}

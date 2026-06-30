@@ -51,6 +51,10 @@ export interface ResolvedTokens {
     midnight?: string;
   };
   area_skins?: Record<string, string>;
+  // card_sizes: per-card Bento size overrides
+  card_sizes?: Record<string, string>;
+  // layout_density: compact | standard | spacious
+  layout_density?: 'compact' | 'standard' | 'spacious';
   // Palette-generated semantic colors
   accent?: string;
   text_muted?: string;
@@ -128,6 +132,8 @@ export function resolveTokens(config: StrategyConfig): ResolvedTokens {
       result.auto_mood = storedForPalette.auto_mood === true;
       result.time_moods = storedForPalette.time_moods as ResolvedTokens['time_moods'];
       result.area_skins = storedForPalette.area_skins as ResolvedTokens['area_skins'];
+      result.card_sizes = storedForPalette.card_sizes as ResolvedTokens['card_sizes'];
+      result.layout_density = storedForPalette.layout_density as ResolvedTokens['layout_density'];
       // Store semantic/derived colors
       result.accent = palette.accent;
       result.text_muted = palette.text_muted;
@@ -173,6 +179,8 @@ export function resolveTokens(config: StrategyConfig): ResolvedTokens {
     if (stored.font_family) result.font_family = stored.font_family;
     if (stored.shadows === false) result.shadows = false;
     if (stored.card_style) result.card_style = stored.card_style;
+    if (stored.card_sizes) result.card_sizes = stored.card_sizes as ResolvedTokens['card_sizes'];
+    if (stored.layout_density) result.layout_density = stored.layout_density as ResolvedTokens['layout_density'];
   }
 
   return result;
@@ -208,6 +216,8 @@ export interface StoredVisualConfig {
     midnight?: string;
   };
   area_skins?: Record<string, string>;
+  card_sizes?: Record<string, string>;
+  layout_density?: 'compact' | 'standard' | 'spacious';
 }
 
 export function loadStoredConfig(): StoredVisualConfig | null {
