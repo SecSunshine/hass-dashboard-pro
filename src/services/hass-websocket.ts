@@ -293,8 +293,9 @@ function hdpSaveHDPConfig(data) {
       var cached = localStorage.getItem('hdp_config');
       if (cached) existing = JSON.parse(cached);
     } catch(e) {}
-    // Deep merge
-    var merged = Object.assign({}, existing, data);
+    var merged = typeof hdpDeepMerge === 'function'
+      ? hdpDeepMerge(existing, data)
+      : Object.assign({}, existing, data);
     localStorage.setItem('hdp_config', JSON.stringify(merged));
     return Promise.resolve(merged);
   } catch(e) {

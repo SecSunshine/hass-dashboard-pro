@@ -20,11 +20,13 @@ import { buildDevicesHTML, generateDevicesJS } from '../templates/devices-view';
 import { buildSettingsHTML, generateSettingsJS } from '../templates/settings-view';
 import { buildBlueprintPagesHTML } from '../blueprints/blueprint-page';
 import { buildLayoutCard } from '../layout/layout-card';
+import { getEffectiveStrategyConfig } from '../utils/effective-config';
 
 export class HassDashboardProViewStrategy {
   static async generate(config: StrategyConfig, hass: Hass): Promise<ViewStrategyResult> {
-    const tokens = resolveTokens(config, hass);
-    const viewPath = config.view_path || 'home';
+    const effectiveConfig = getEffectiveStrategyConfig(config);
+    const tokens = resolveTokens(effectiveConfig, hass);
+    const viewPath = effectiveConfig.view_path || 'home';
 
     console.debug(
       '%c[HDPro View v4]%c path=%s',
@@ -35,7 +37,7 @@ export class HassDashboardProViewStrategy {
 
     // Home view → build the full monolithic layout card
     if (viewPath === 'home') {
-      const card = buildFullLayoutCard(hass, config, tokens);
+      const card = buildFullLayoutCard(hass, effectiveConfig, tokens);
       return { cards: [card] };
     }
 

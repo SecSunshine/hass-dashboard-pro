@@ -66,6 +66,11 @@ export function buildSettingsHTML(config: StrategyConfig, tokens?: ResolvedToken
   // Extract visual settings HTML from existing card builders
   // Strip both <style> and <script> tags — scripts are handled separately
   const visualCards = buildSettingsView(config, tokens, hass);
+  const visualStyles = visualCards.map(card => {
+    const content = (card.content as string) || '';
+    return (content.match(/<style>[\s\S]*?<\/style>/g) || []).join('\n');
+  }).filter(Boolean).join('\n');
+
   const visualHTML = visualCards.map(card => {
     const content = (card.content as string) || '';
     return content
@@ -88,9 +93,10 @@ export function buildSettingsHTML(config: StrategyConfig, tokens?: ResolvedToken
 
   return `
 <style>${getSettingsSectionsCSS()}</style>
+${visualStyles}
 <style>
   /* Visual settings card spacing & wrappers */
-  .st-section-body > div {
+  #st-visual-body > div {
     padding: 16px;
     margin-bottom: 12px;
     border-radius: var(--hdp-radius, 14px);
@@ -98,18 +104,18 @@ export function buildSettingsHTML(config: StrategyConfig, tokens?: ResolvedToken
     border: 1px solid var(--hdp-border, rgba(0,0,0,0.06));
     transition: border-color 0.2s ease;
   }
-  .st-section-body > div:last-child { margin-bottom: 0; }
-  .st-section-body > div:hover { border-color: var(--hdp-primary, #4F6EF7); }
+  #st-visual-body > div:last-child { margin-bottom: 0; }
+  #st-visual-body > div:hover { border-color: var(--hdp-primary, #4F6EF7); }
   /* Settings header doesn't need card wrapper */
-  .st-section-body > div[data-component="settings-header"] {
+  #st-visual-body > div[data-component="settings-header"] {
     padding: 4px 0 0 0;
     margin-bottom: 16px;
     background: transparent;
     border: none;
   }
-  .st-section-body > div[data-component="settings-header"]:hover { border: none; }
+  #st-visual-body > div[data-component="settings-header"]:hover { border: none; }
   /* Action card full width */
-  .st-section-body > div[data-component="settings-actions"] {
+  #st-visual-body > div[data-component="settings-actions"] {
     display: flex;
     gap: 12px;
   }

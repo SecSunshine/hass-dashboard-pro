@@ -13,13 +13,15 @@
 import type { Hass, StrategyConfig, DashboardStrategyResult, LovelaceViewConfig, AreaSummary, BlueprintInstance } from '../types';
 import { buildAreaEntityMap, groupAreasByFloor, isEntityOn } from '../utils/area-entities';
 import { safeBlueprintViewId } from '../utils/dom-id';
+import { getEffectiveStrategyConfig } from '../utils/effective-config';
 
 const VIEW_STRATEGY_TYPE = 'custom:hass-dashboard-pro-view';
 
 export class HassDashboardProStrategy {
   static async generate(config: StrategyConfig, hass: Hass): Promise<DashboardStrategyResult> {
-    const hiddenAreas = config.hdp_config?.areas?.hidden_areas || config.hidden_areas || [];
-    const hiddenDomains = config.hdp_config?.devices?.hidden_domains || config.hidden_domains || [];
+    const effectiveConfig = getEffectiveStrategyConfig(config);
+    const hiddenAreas = effectiveConfig.hdp_config?.areas?.hidden_areas || effectiveConfig.hidden_areas || [];
+    const hiddenDomains = effectiveConfig.hdp_config?.devices?.hidden_domains || effectiveConfig.hidden_domains || [];
     const areaEntityMap = buildAreaEntityMap(hass, hiddenAreas, hiddenDomains);
 
     // Pre-compute area summaries (for sidebar display)
@@ -27,7 +29,7 @@ export class HassDashboardProStrategy {
 
     // Inject pre-computed data into config for the view strategy
     const enrichedConfig: StrategyConfig = {
-      ...config,
+      ...effectiveConfig,
       area_summaries: areaSummaries,
     };
 
@@ -35,7 +37,7 @@ export class HassDashboardProStrategy {
 
     // 1. Home View (panel: true — takes full width for sidebar layout)
     views.push({
-      title: config.title || '首页',
+      title: effectiveConfig.title || '首页',
       path: 'home',
       icon: 'mdi:home',
       badges: [],
@@ -66,7 +68,7 @@ export class HassDashboardProStrategy {
     });
 
     // 3. Blueprint Page Views — read from hdp_config (where runtime saves them)
-    const blueprintPages = config.hdp_config?.blueprints?.pages || config.blueprint_pages || [];
+    const blueprintPages = effectiveConfig.hdp_config?.blueprints?.pages || effectiveConfig.blueprint_pages || [];
     for (const page of blueprintPages) {
       const path = safeBlueprintViewId(page.id);
       views.push({

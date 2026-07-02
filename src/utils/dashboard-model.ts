@@ -8,6 +8,7 @@
 import type { EntityInfo, Hass, HassArea, HassEntity, StrategyConfig } from '../types';
 import { HIDDEN_DOMAINS } from '../types';
 import { isEntityOn } from './area-entities';
+import { getEffectiveHDPConfig } from './effective-config';
 
 export interface DashboardFilters {
   hiddenAreas: string[];
@@ -45,9 +46,10 @@ export interface HomeProfile {
 }
 
 export function getDashboardFilters(config: StrategyConfig): DashboardFilters {
+  const hdpConfig = getEffectiveHDPConfig(config);
   return {
-    hiddenAreas: config.hdp_config?.areas?.hidden_areas || config.hidden_areas || [],
-    hiddenDomains: config.hdp_config?.devices?.hidden_domains || config.hidden_domains || [],
+    hiddenAreas: hdpConfig?.areas?.hidden_areas || config.hidden_areas || [],
+    hiddenDomains: hdpConfig?.devices?.hidden_domains || config.hidden_domains || [],
   };
 }
 
@@ -193,4 +195,3 @@ export function buildHomeProfile(hass: Hass, config: StrategyConfig): HomeProfil
     density: entityCount > 120 || visibleAreaCount > 12 ? 'compact' : entityCount < 30 ? 'spacious' : 'standard',
   };
 }
-

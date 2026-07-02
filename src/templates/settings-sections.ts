@@ -364,17 +364,24 @@ window.hdpSaveSetting = function(path, value) {
 window.hdpToggleArrayItem = function(path, item) {
   var config = hdpLoadConfig();
   var parts = path.split('.');
-  var arr = config;
-  for (var i = 0; i < parts.length; i++) {
-    arr = arr[parts[i]];
+  var current = config;
+  for (var i = 0; i < parts.length - 1; i++) {
+    if (!current[parts[i]] || typeof current[parts[i]] !== 'object' || Array.isArray(current[parts[i]])) {
+      current[parts[i]] = {};
+    }
+    current = current[parts[i]];
   }
+  var key = parts[parts.length - 1];
+  var arr = current[key];
   if (!Array.isArray(arr)) arr = [];
   var idx = arr.indexOf(item);
   if (idx >= 0) arr.splice(idx, 1);
   else arr.push(item);
-  hdpSaveSetting(path, arr);
+  current[key] = arr;
+  hdpSaveConfig(config);
   // Re-render chip state
-  var chip = event.target.closest('.st-chip');
+  var evt = arguments.length > 2 ? arguments[2] : window.event;
+  var chip = evt && evt.target && evt.target.closest ? evt.target.closest('.st-chip') : null;
   if (chip) chip.classList.toggle('st-chip--active');
   // Persist to Lovelace and reload so entity filtering takes effect
   if (typeof hdpSaveToLovelace === 'function') {
@@ -795,7 +802,7 @@ export function buildHomeSection(config: StrategyConfig): string {
   const chips = sectionKeys.map(key => {
     const active = !hiddenSections.includes(key);
     const label = HOME_SECTION_LABELS[key] || key;
-    return `<div class="st-chip ${active ? 'st-chip--active' : ''}" data-action="toggle-home-section" onclick="hdpToggleArrayItem('home.hidden_sections', ${jsArg(key)})">${escapeHTML(label)}</div>`;
+    return `<div class="st-chip ${active ? 'st-chip--active' : ''}" data-action="toggle-home-section" onclick="hdpToggleArrayItem('home.hidden_sections', ${jsArg(key)}, event)">${escapeHTML(label)}</div>`;
   }).join('');
 
   return sectionCard('home', '首页', iconHome(), `
@@ -870,7 +877,7 @@ export function buildPeopleSection(hass: any, config: StrategyConfig): string {
 
   const chips = persons.map(p => {
     const hidden = hiddenPersons.includes(p.id);
-    return `<div class="st-chip ${hidden ? 'st-chip--active' : ''}" data-action="toggle-hidden-person" onclick="hdpToggleArrayItem('people.hidden_persons', ${jsArg(p.id)})">${escapeHTML(p.name)}</div>`;
+    return `<div class="st-chip ${hidden ? 'st-chip--active' : ''}" data-action="toggle-hidden-person" onclick="hdpToggleArrayItem('people.hidden_persons', ${jsArg(p.id)}, event)">${escapeHTML(p.name)}</div>`;
   }).join('') || '<span class="st-row-desc">未找到 person 实体</span>';
 
   return sectionCard('people', '家庭成员', iconPeople(), `
@@ -888,7 +895,7 @@ export function buildAreasSection(hass: any, config: StrategyConfig): string {
 
   const areaChips = Object.entries(hass.areas || {}).map(([id, area]: [string, any]) => {
     const hidden = hiddenAreas.includes(id);
-    return `<div class="st-chip ${hidden ? 'st-chip--active' : ''}" data-action="toggle-hidden-area" onclick="hdpToggleArrayItem('areas.hidden_areas', ${jsArg(id)})">${escapeHTML(area.name)}</div>`;
+    return `<div class="st-chip ${hidden ? 'st-chip--active' : ''}" data-action="toggle-hidden-area" onclick="hdpToggleArrayItem('areas.hidden_areas', ${jsArg(id)}, event)">${escapeHTML(area.name)}</div>`;
   }).join('') || '<span class="st-row-desc">未找到区域</span>';
 
   return sectionCard('areas', '区域', iconAreas(), `
@@ -922,7 +929,7 @@ export function buildDevicesSection(config: StrategyConfig): string {
 
   const chips = domains.map(d => {
     const hidden = hiddenDomains.includes(d);
-    return `<div class="st-chip ${hidden ? 'st-chip--active' : ''}" data-action="toggle-hidden-domain" onclick="hdpToggleArrayItem('devices.hidden_domains', ${jsArg(d)})">${escapeHTML(domainLabels[d] || d)}</div>`;
+    return `<div class="st-chip ${hidden ? 'st-chip--active' : ''}" data-action="toggle-hidden-domain" onclick="hdpToggleArrayItem('devices.hidden_domains', ${jsArg(d)}, event)">${escapeHTML(domainLabels[d] || d)}</div>`;
   }).join('');
 
   return sectionCard('devices', '设备类型', iconDevices(), `
