@@ -23,6 +23,7 @@ import {
   getSettingsSectionsCSS,
   generateSettingsSectionsJS,
   buildDashboardSection,
+  buildQuickGenerateSection,
   buildHomeSection,
   buildHeaderSection,
   buildPeopleSection,
@@ -142,6 +143,7 @@ export function buildSettingsHTML(config: StrategyConfig, tokens?: ResolvedToken
   .toggle-switch--off::after { transform: translateX(2px); border: 1px solid var(--hdp-border); }
 </style>
 ${buildDashboardSection(config)}
+${hass ? buildQuickGenerateSection(hass, config) : ''}
 ${buildHomeSection(config)}
 ${buildHeaderSection(config)}
 ${hass ? buildPeopleSection(hass, config) : ''}

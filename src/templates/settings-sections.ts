@@ -19,13 +19,18 @@
  * Settings are saved via client-side hdpSaveConfig() (from storage.ts).
  */
 
-import type { StrategyConfig, BlueprintInstance, HomeSectionKey } from '../types';
+import type { Hass, StrategyConfig, BlueprintInstance, HomeSectionKey } from '../types';
 import { HOME_SECTION_LABELS } from '../types';
 import { buildBlueprintGalleryHTML } from '../blueprints/blueprint-gallery';
+import { buildDashboardDesignPlan, buildPlanAlternatives, type DashboardDesignPlan } from '../utils/design-plan';
 import { escapeAttribute, escapeHTML } from '../utils/html';
 
 function jsArg(value: unknown): string {
   return escapeAttribute(JSON.stringify(String(value ?? '')));
+}
+
+function jsValue(value: unknown): string {
+  return escapeAttribute(JSON.stringify(value ?? null));
 }
 
 // ─── Section Container ──────────────────────────────────────────────────────
@@ -232,6 +237,98 @@ export function getSettingsSectionsCSS(): string {
     color: var(--hdp-text-muted);
     margin: 16px 0 8px 0;
   }
+  .st-plan-hero {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 14px;
+    align-items: center;
+    padding: 14px;
+    border-radius: var(--hdp-radius, 14px);
+    background: var(--hdp-primary-light, rgba(79,110,247,0.08));
+    border: 1px solid var(--hdp-border);
+  }
+  .st-plan-title {
+    font: inherit;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--hdp-text);
+    margin-bottom: 4px;
+  }
+  .st-plan-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .st-plan-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 3px 9px;
+    border-radius: var(--hdp-radius-pill, 20px);
+    background: var(--hdp-card-bg);
+    border: 1px solid var(--hdp-border);
+    color: var(--hdp-text-secondary);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .st-plan-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .st-plan-choice {
+    min-height: 92px;
+    text-align: left;
+    border-radius: var(--hdp-radius, 14px);
+    border: 1px solid var(--hdp-border);
+    background: var(--hdp-card-bg);
+    color: var(--hdp-text);
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font: inherit;
+  }
+  .st-plan-choice:hover {
+    transform: translateY(-2px);
+    border-color: var(--hdp-primary);
+  }
+  .st-plan-choice--active {
+    border-color: var(--hdp-primary);
+    box-shadow: 0 0 0 3px var(--hdp-primary-glow, rgba(79,110,247,0.12));
+  }
+  .st-plan-swatch {
+    height: 28px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border: 1px solid var(--hdp-border);
+  }
+  .st-plan-choice-name {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--hdp-text);
+  }
+  .st-plan-choice-desc {
+    font-size: 10px;
+    color: var(--hdp-text-muted);
+    margin-top: 2px;
+  }
+  .st-plan-reasons {
+    margin-top: 12px;
+    display: grid;
+    gap: 6px;
+  }
+  .st-plan-reason {
+    font: inherit;
+    font-size: 12px;
+    color: var(--hdp-text-secondary);
+  }
+  @media (max-width: 720px) {
+    .st-plan-hero { grid-template-columns: 1fr; }
+    .st-plan-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
   `;
 }
 
@@ -346,6 +443,52 @@ window.hdpRefreshThemes = function() {
   }
   location.reload();
 };
+
+window.hdpApplyDesignPlan = function(plan) {
+  if (!plan || !plan.visual) return;
+  var visual = plan.visual;
+  var hdpVisual = {
+    theme_id: plan.pack_id,
+    card_style: visual.card_style || 'classic',
+    colors: {
+      page_bg: visual.page_bg,
+      card_bg: visual.card_bg,
+      primary: visual.primary,
+      text_primary: visual.text_primary,
+      text_secondary: visual.text_secondary,
+      border: visual.border
+    },
+    border_radius: visual.border_radius,
+    card_padding: visual.card_padding,
+    card_gap: visual.card_gap,
+    font_family: visual.font_family || '',
+    shadows: visual.shadows !== false,
+    layout_density: visual.layout_density
+  };
+
+  try {
+    localStorage.setItem('hdp_visual_config', JSON.stringify(visual));
+  } catch(e) {}
+
+  hdpSaveConfig({ visual: hdpVisual });
+
+  if (typeof hdpShowToast === 'function') {
+    hdpShowToast('正在应用自动生成方案...', 'info');
+  }
+
+  if (typeof hdpSaveToLovelace === 'function') {
+    hdpSaveToLovelace(hdpLoadConfig()).then(function() {
+      if (typeof hdpShowToast === 'function') hdpShowToast('方案已应用，正在刷新...', 'success');
+      setTimeout(function() { location.reload(); }, 600);
+    }).catch(function(err) {
+      console.warn('[HDP] Lovelace sync failed, saved locally only', err);
+      if (typeof hdpShowToast === 'function') hdpShowToast('已保存到本地，正在刷新...', 'success');
+      setTimeout(function() { location.reload(); }, 900);
+    });
+  } else {
+    setTimeout(function() { location.reload(); }, 600);
+  }
+};
 `;
 }
 
@@ -358,6 +501,9 @@ function iconDashboard(): string {
 }
 function iconHome(): string {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`;
+}
+function iconSparkles(): string {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3z"/><path d="M19 14l.9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9L19 14z"/><path d="M5 14l.9 2.1L8 17l-2.1.9L5 20l-.9-2.1L2 17l2.1-.9L5 14z"/></svg>`;
 }
 function iconHeader(): string {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><rect x="2" y="3" width="20" height="6" rx="2"/><path d="M2 13h20M2 17h12"/></svg>`;
@@ -407,6 +553,46 @@ export function buildDashboardSection(config: StrategyConfig): string {
 }
 
 // ─── 2. Home ────────────────────────────────────────────────────────────────
+
+export function buildQuickGenerateSection(hass: Hass, config: StrategyConfig): string {
+  const recommended = buildDashboardDesignPlan(hass, config);
+  const alternatives = buildPlanAlternatives(hass, config);
+  const focus = recommended.focus.map(item => `<span class="st-plan-pill">${escapeHTML(item.label)}</span>`).join('');
+  const reasons = recommended.rationale.map(reason => `<div class="st-plan-reason">- ${escapeHTML(reason)}</div>`).join('');
+
+  const choices = alternatives.map((plan: DashboardDesignPlan) => {
+    const colors = plan.visual;
+    const swatch = `linear-gradient(135deg, ${colors.page_bg || '#fff'} 0%, ${colors.card_bg || '#fff'} 48%, ${colors.primary || '#4F6EF7'} 100%)`;
+    return `<button class="st-plan-choice ${plan.pack_id === recommended.pack_id ? 'st-plan-choice--active' : ''}"
+      data-action="apply-design-plan"
+      data-plan="${escapeAttribute(plan.pack_id)}"
+      onclick="hdpApplyDesignPlan(${jsValue(plan)})">
+      <div class="st-plan-swatch" style="background: ${escapeAttribute(swatch)};"></div>
+      <div class="st-plan-choice-name">${escapeHTML(plan.pack_label)}</div>
+      <div class="st-plan-choice-desc">${escapeHTML(plan.density)} · ${plan.profile.entity_count} entities</div>
+    </button>`;
+  }).join('');
+
+  return sectionCard('quick-generate', '一键生成', iconSparkles(), `
+    <div class="st-plan-hero">
+      <div>
+        <div class="st-plan-title">${escapeHTML(recommended.headline)}</div>
+        <div class="st-row-desc">根据区域、实体数量、深色模式和设备语义自动生成视觉方案。</div>
+        <div class="st-plan-meta">
+          <span class="st-plan-pill">${escapeHTML(recommended.pack_label)}</span>
+          <span class="st-plan-pill">${escapeHTML(recommended.density)}</span>
+          ${focus}
+        </div>
+      </div>
+      <button class="st-btn st-btn--primary" data-action="apply-recommended-design" onclick="hdpApplyDesignPlan(${jsValue(recommended)})">
+        应用推荐方案
+      </button>
+    </div>
+    <div class="st-plan-reasons">${reasons}</div>
+    <div class="st-section-subtitle">换一种风格</div>
+    <div class="st-plan-grid">${choices}</div>
+  `);
+}
 
 export function buildHomeSection(config: StrategyConfig): string {
   const hiddenSections: string[] = (config as any).hdp_config?.home?.hidden_sections || [];
