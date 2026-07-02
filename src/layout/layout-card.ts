@@ -23,6 +23,8 @@ import { generateStorageJS } from '../services/storage';
 import { generateBlueprintJS } from '../blueprints/blueprint-storage';
 import { buildImportModalHTML, generateBlueprintModalJS } from '../blueprints/blueprint-gallery';
 import { buildThemeStudioHTML, generateThemeStudioJS } from '../templates/theme-studio';
+import { escapeAttribute, escapeHTML } from '../utils/html';
+import { safeBlueprintViewId } from '../utils/dom-id';
 
 export interface LayoutCardOptions {
   hass: Hass;
@@ -63,9 +65,9 @@ export function buildLayoutCard(opts: LayoutCardOptions): LovelaceCardConfig {
 
   // Build area view sections
   const areaViewSections = areaSections.map(a =>
-    `<div class="hdp-view" data-view="${a.area_id}" style="display:none">
+    `<div class="hdp-view" data-view="${escapeAttribute(a.area_id)}" style="display:none">
       <div class="hdp-area-header-bar">
-        <span class="hdp-area-title">${a.area_name}</span>
+        <span class="hdp-area-title">${escapeHTML(a.area_name)}</span>
       </div>
       <div class="hdp-area-content">${a.html}</div>
     </div>`
@@ -73,7 +75,7 @@ export function buildLayoutCard(opts: LayoutCardOptions): LovelaceCardConfig {
 
   // Build blueprint view sections
   const blueprintSections = (opts.blueprintHTML || []).map(bp =>
-    `<div class="hdp-view" data-view="bp-${bp.id}" style="display:none">
+    `<div class="hdp-view" data-view="${escapeAttribute(safeBlueprintViewId(bp.id))}" style="display:none">
       <div class="hdp-area-content">${bp.html}</div>
     </div>`
   ).join('');

@@ -13,6 +13,11 @@
  */
 
 import type { Hass, HassEntity, EntityInfo } from '../types';
+import { escapeAttribute, escapeHTML } from '../utils/html';
+
+function jsArg(value: unknown): string {
+  return escapeAttribute(JSON.stringify(String(value ?? '')));
+}
 
 // ─── CSS (shared, injected by views) ─────────────────────────────────────────
 
@@ -540,7 +545,7 @@ function buildClimateCard(entity: EntityInfo, stateObj: HassEntity, skin?: strin
     const label = HVAC_MODE_LABELS[mode] || mode;
     const active = currentState === mode;
     return `<div class="dc-climate-mode ${active ? 'dc-climate-mode--active' : ''}"
-      onclick="hdpSetClimateMode('${entity.entity_id}', '${mode}')">${label}</div>`;
+      data-action="climate-mode" onclick="hdpSetClimateMode(${jsArg(entity.entity_id)}, ${jsArg(mode)})">${escapeHTML(label)}</div>`;
   }).join('');
 
   // Fan mode pills (only if fan modes available)
@@ -551,22 +556,22 @@ function buildClimateCard(entity: EntityInfo, stateObj: HassEntity, skin?: strin
           const label = FAN_MODE_LABELS[fm] || fm;
           const active = fanMode === fm;
           return `<div class="dc-climate-fan-btn ${active ? 'dc-climate-fan-btn--active' : ''}"
-            onclick="hdpSetClimateFanMode('${entity.entity_id}', '${fm}')">${label}</div>`;
+            data-action="climate-fan" onclick="hdpSetClimateFanMode(${jsArg(entity.entity_id)}, ${jsArg(fm)})">${escapeHTML(label)}</div>`;
         }).join('')}
       </div>`
     : '';
 
-  return `<div class="dvc dc-climate ${skinCls}" data-entity="${entity.entity_id}" data-no-toggle>
+  return `<div class="dvc dc-climate ${skinCls}" data-entity="${escapeAttribute(entity.entity_id)}" data-no-toggle>
     <div class="dvc-bar"></div>
     <div class="dc-climate-top">
       <div class="dvc-ico ${currentState !== 'off' ? 'dvc-ico--on' : 'dvc-ico--off'}">
         ${getClimateIcon(currentState !== 'off')}
       </div>
       <div class="dvc-info">
-        <div class="dvc-name">${entity.name}</div>
+        <div class="dvc-name">${escapeHTML(entity.name)}</div>
         <div class="dvc-state">
           <span class="dvc-dot ${currentState !== 'off' ? 'dvc-dot--on' : 'dvc-dot--off'}"></span>
-          ${HVAC_MODE_LABELS[currentState] || currentState}
+          ${escapeHTML(HVAC_MODE_LABELS[currentState] || currentState)}
         </div>
       </div>
       ${currentTempHTML}
@@ -574,10 +579,10 @@ function buildClimateCard(entity: EntityInfo, stateObj: HassEntity, skin?: strin
     <div class="dc-climate-target-row">
       <span class="dc-climate-target-label">目标温度</span>
       <div class="dc-climate-temp-btn"
-        onclick="hdpSetClimateTemp('${entity.entity_id}', ${tempDownDelta}, ${minTemp}, ${maxTemp})">−</div>
-      <div class="dc-climate-target-val">${targetTempVal}</div>
+        data-action="climate-temp" onclick="hdpSetClimateTemp(${jsArg(entity.entity_id)}, ${tempDownDelta}, ${minTemp}, ${maxTemp})">−</div>
+      <div class="dc-climate-target-val">${escapeHTML(targetTempVal)}</div>
       <div class="dc-climate-temp-btn"
-        onclick="hdpSetClimateTemp('${entity.entity_id}', ${tempUpDelta}, ${minTemp}, ${maxTemp})">+</div>
+        data-action="climate-temp" onclick="hdpSetClimateTemp(${jsArg(entity.entity_id)}, ${tempUpDelta}, ${minTemp}, ${maxTemp})">+</div>
     </div>
     <div class="dc-climate-modes">${modePills}</div>
     ${fanPills}
@@ -588,7 +593,8 @@ function buildClimateCard(entity: EntityInfo, stateObj: HassEntity, skin?: strin
 
 function buildCoverCard(entity: EntityInfo, stateObj: HassEntity, skin?: string): string {
   const attrs = stateObj.attributes || {};
-  const position = attrs.current_position as number | undefined;
+  const rawPosition = Number(attrs.current_position);
+  const position = Number.isFinite(rawPosition) ? Math.max(0, Math.min(100, rawPosition)) : null;
   const currentState = stateObj.state;
   const isActive = currentState === 'open' || currentState === 'opening';
   const skinCls = skin ? `hdp-card hdp-card--${skin}` : '';
@@ -597,15 +603,15 @@ function buildCoverCard(entity: EntityInfo, stateObj: HassEntity, skin?: string)
   const barWidth = position != null ? position : (isActive ? 100 : 0);
   const positionText = position != null ? `${position}%` : (isActive ? '开启' : '关闭');
 
-  return `<div class="dvc dc-cover ${skinCls}" data-entity="${entity.entity_id}" data-no-toggle>
+  return `<div class="dvc dc-cover ${skinCls}" data-entity="${escapeAttribute(entity.entity_id)}" data-no-toggle>
     <div class="dvc-bar"></div>
     <div class="dvc-row">
       <div class="dvc-ico ${isActive ? 'dvc-ico--on' : 'dvc-ico--off'}">${getCoverIcon(isActive)}</div>
       <div class="dvc-info">
-        <div class="dvc-name">${entity.name}</div>
+        <div class="dvc-name">${escapeHTML(entity.name)}</div>
         <div class="dvc-state">
           <span class="dvc-dot ${isActive ? 'dvc-dot--on' : 'dvc-dot--off'}"></span>
-          ${positionText}
+          ${escapeHTML(positionText)}
         </div>
       </div>
     </div>
@@ -613,15 +619,15 @@ function buildCoverCard(entity: EntityInfo, stateObj: HassEntity, skin?: string)
       <div class="dc-cover-bar-fill" style="width: ${barWidth}%"></div>
     </div>
     <div class="dc-cover-actions">
-      <button class="dc-cover-btn" onclick="hdpCoverAction('${entity.entity_id}', 'open')">
+      <button class="dc-cover-btn" data-action="cover-open" onclick="hdpCoverAction(${jsArg(entity.entity_id)}, 'open')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
         打开
       </button>
-      <button class="dc-cover-btn" onclick="hdpCoverAction('${entity.entity_id}', 'stop')">
+      <button class="dc-cover-btn" data-action="cover-stop" onclick="hdpCoverAction(${jsArg(entity.entity_id)}, 'stop')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
         停止
       </button>
-      <button class="dc-cover-btn" onclick="hdpCoverAction('${entity.entity_id}', 'close')">
+      <button class="dc-cover-btn" data-action="cover-close" onclick="hdpCoverAction(${jsArg(entity.entity_id)}, 'close')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         关闭
       </button>
@@ -643,19 +649,19 @@ function buildLockCard(entity: EntityInfo, stateObj: HassEntity, skin?: string):
     ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`
     : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>`;
 
-  return `<div class="dvc ${skinCls}" data-entity="${entity.entity_id}" data-no-toggle>
+  return `<div class="dvc ${skinCls}" data-entity="${escapeAttribute(entity.entity_id)}" data-no-toggle>
     <div class="dvc-bar"></div>
     <div class="dvc-row">
       <div class="dvc-ico ${!isLocked ? 'dvc-ico--on' : 'dvc-ico--off'}">${getLockIcon(isLocked)}</div>
       <div class="dvc-info">
-        <div class="dvc-name">${entity.name}</div>
+        <div class="dvc-name">${escapeHTML(entity.name)}</div>
         <div class="dvc-state">
           <span class="dvc-dot ${!isLocked ? 'dvc-dot--on' : 'dvc-dot--off'}"></span>
           ${isLocked ? '已锁' : '已开锁'}
         </div>
       </div>
       <div class="dc-lock-action">
-        <button class="${btnCls}" onclick="hdpLockAction('${entity.entity_id}', '${btnAction}')">
+        <button class="${btnCls}" data-action="lock-${btnAction}" onclick="hdpLockAction(${jsArg(entity.entity_id)}, ${jsArg(btnAction)})">
           ${btnIcon}
           ${btnLabel}
         </button>
@@ -682,15 +688,15 @@ function buildMediaPlayerCard(entity: EntityInfo, stateObj: HassEntity, skin?: s
     : `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
 
   const mediaInfo = mediaTitle
-    ? `<div class="dvc-state">${mediaArtist ? mediaArtist + ' — ' : ''}${mediaTitle}</div>`
+    ? `<div class="dvc-state">${escapeHTML(mediaArtist ? mediaArtist + ' - ' : '')}${escapeHTML(mediaTitle)}</div>`
     : `<div class="dvc-state">${isPlaying ? '正在播放' : isActive ? '已暂停' : '关闭'}</div>`;
 
-  return `<div class="dvc dc-media ${skinCls}" data-entity="${entity.entity_id}" data-no-toggle>
+  return `<div class="dvc dc-media ${skinCls}" data-entity="${escapeAttribute(entity.entity_id)}" data-no-toggle>
     <div class="dvc-bar"></div>
     <div class="dvc-row">
       <div class="dvc-ico ${isActive ? 'dvc-ico--on' : 'dvc-ico--off'}">${getMediaIcon(isActive)}</div>
       <div class="dvc-info">
-        <div class="dvc-name">${entity.name}</div>
+        <div class="dvc-name">${escapeHTML(entity.name)}</div>
         ${mediaInfo}
       </div>
     </div>
@@ -700,17 +706,17 @@ function buildMediaPlayerCard(entity: EntityInfo, stateObj: HassEntity, skin?: s
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
       </div>
       <input type="range" class="dc-media-vol-slider" min="0" max="100" value="${volumePct}"
-        oninput="hdpSetMediaVolume('${entity.entity_id}', this.value / 100)" />
+        data-action="media-volume" oninput="hdpSetMediaVolume(${jsArg(entity.entity_id)}, this.value / 100)" />
       <span class="dc-media-vol-val">${volumePct}%</span>
     </div>
     <div class="dc-media-controls">
-      <button class="dc-media-btn" onclick="hdpMediaAction('${entity.entity_id}', 'previous')">
+      <button class="dc-media-btn" data-action="media-previous" onclick="hdpMediaAction(${jsArg(entity.entity_id)}, 'previous')">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
       </button>
-      <button class="dc-media-btn dc-media-btn--play" onclick="hdpMediaAction('${entity.entity_id}', 'play_pause')">
+      <button class="dc-media-btn dc-media-btn--play" data-action="media-play-pause" onclick="hdpMediaAction(${jsArg(entity.entity_id)}, 'play_pause')">
         ${playPauseIcon}
       </button>
-      <button class="dc-media-btn" onclick="hdpMediaAction('${entity.entity_id}', 'next')">
+      <button class="dc-media-btn" data-action="media-next" onclick="hdpMediaAction(${jsArg(entity.entity_id)}, 'next')">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zm-9.5 6l8.5-6v12z"/></svg>
       </button>
     </div>
@@ -736,28 +742,28 @@ function buildVacuumCard(entity: EntityInfo, stateObj: HassEntity, skin?: string
   };
   const stateLabel = stateLabels[currentState] || currentState;
 
-  return `<div class="dvc ${skinCls}" data-entity="${entity.entity_id}" data-no-toggle>
+  return `<div class="dvc ${skinCls}" data-entity="${escapeAttribute(entity.entity_id)}" data-no-toggle>
     <div class="dvc-bar"></div>
     <div class="dvc-row">
       <div class="dvc-ico ${isActive ? 'dvc-ico--on' : 'dvc-ico--off'}">${getVacuumIcon(isActive)}</div>
       <div class="dvc-info">
-        <div class="dvc-name">${entity.name}</div>
+        <div class="dvc-name">${escapeHTML(entity.name)}</div>
         <div class="dvc-state">
           <span class="dvc-dot ${isActive ? 'dvc-dot--on' : 'dvc-dot--off'}"></span>
-          ${stateLabel}
+          ${escapeHTML(stateLabel)}
         </div>
       </div>
     </div>
     <div class="dc-vacuum-actions">
-      <button class="dc-vacuum-btn" onclick="hdpVacuumAction('${entity.entity_id}', 'start')">
+      <button class="dc-vacuum-btn" data-action="vacuum-start" onclick="hdpVacuumAction(${jsArg(entity.entity_id)}, 'start')">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
         开始
       </button>
-      <button class="dc-vacuum-btn" onclick="hdpVacuumAction('${entity.entity_id}', 'pause')">
+      <button class="dc-vacuum-btn" data-action="vacuum-pause" onclick="hdpVacuumAction(${jsArg(entity.entity_id)}, 'pause')">
         <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
         暂停
       </button>
-      <button class="dc-vacuum-btn" onclick="hdpVacuumAction('${entity.entity_id}', 'dock')">
+      <button class="dc-vacuum-btn" data-action="vacuum-dock" onclick="hdpVacuumAction(${jsArg(entity.entity_id)}, 'dock')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
         回充
       </button>

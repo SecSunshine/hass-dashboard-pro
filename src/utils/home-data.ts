@@ -7,6 +7,7 @@
 
 import type { Hass, EntityInfo, StrategyConfig } from '../types';
 import { isEntityOn } from './area-entities';
+import { collectVisibleEntities, getDashboardFilters, shouldIncludeDomain } from './dashboard-model';
 
 // ─── Person Tracking ───────────────────────────────────────────────────────
 
@@ -74,15 +75,21 @@ export interface ClimateSummary {
  * Compute averaged indoor temperature and humidity across all areas.
  * Uses sensor entities with °C/°F or % units.
  */
-export function getClimateSummary(hass: Hass): ClimateSummary {
+export function getClimateSummary(hass: Hass, config?: StrategyConfig): ClimateSummary {
   let tempSum = 0, tempCount = 0;
   let humSum = 0, humCount = 0;
+  const entries = config
+    ? collectVisibleEntities(hass, getDashboardFilters(config)).filter(entity => entity.domain === 'sensor')
+    : Object.entries(hass.states)
+      .filter(([entityId]) => entityId.startsWith('sensor.'))
+      .map(([entity_id, stateObj]) => ({ entity_id, state: stateObj.state, attributes: stateObj.attributes }));
 
-  for (const [entityId, stateObj] of Object.entries(hass.states)) {
-    if (!entityId.startsWith('sensor.')) continue;
-
-    const uom = stateObj.attributes.unit_of_measurement as string | undefined;
-    const value = parseFloat(stateObj.state);
+  for (const entry of entries) {
+    const entityId = entry.entity_id;
+    const attrs = 'attributes' in entry ? entry.attributes : hass.states[entityId]?.attributes || {};
+    const state = 'state' in entry ? entry.state : hass.states[entityId]?.state;
+    const uom = attrs.unit_of_measurement as string | undefined;
+    const value = parseFloat(state);
     if (isNaN(value)) continue;
 
     if (uom === '°C' || uom === '°F') {
@@ -90,7 +97,7 @@ export function getClimateSummary(hass: Hass): ClimateSummary {
       if (entityId.includes('outdoor') || entityId.includes('weather') || entityId.includes('external')) continue;
       tempSum += value;
       tempCount++;
-    } else if (uom === '%' && (stateObj.attributes.device_class === 'humidity' || entityId.includes('humidity'))) {
+    } else if (uom === '%' && (attrs.device_class === 'humidity' || entityId.includes('humidity'))) {
       if (entityId.includes('outdoor') || entityId.includes('weather')) continue;
       humSum += value;
       humCount++;
@@ -125,8 +132,9 @@ export interface DomainStatus {
  * Comprehensive domain status tracking — counts active/total for each
  * controllable domain and key binary_sensor device classes.
  */
-export function getStatusDomains(hass: Hass): DomainStatus[] {
+export function getStatusDomains(hass: Hass, config?: StrategyConfig): DomainStatus[] {
   const domains: DomainStatus[] = [];
+  const visibleEntities = config ? collectVisibleEntities(hass, getDashboardFilters(config)) : null;
 
   // Controllable domains
   const domainDefs: Array<{
@@ -145,10 +153,14 @@ export function getStatusDomains(hass: Hass): DomainStatus[] {
 
   for (const def of domainDefs) {
     let active = 0, total = 0;
-    for (const [eid, s] of Object.entries(hass.states)) {
-      if (!eid.startsWith(`${def.domain}.`)) continue;
+    const entities = visibleEntities
+      ? visibleEntities.filter(entity => entity.domain === def.domain)
+      : Object.entries(hass.states)
+        .filter(([eid]) => eid.startsWith(`${def.domain}.`))
+        .map(([entity_id, state]) => ({ entity_id, state: state.state, domain: def.domain }));
+    for (const entity of entities) {
       total++;
-      if (isEntityOn(s.state, def.domain)) active++;
+      if (isEntityOn(entity.state, def.domain)) active++;
     }
     if (total > 0) {
       domains.push({
@@ -173,12 +185,16 @@ export function getStatusDomains(hass: Hass): DomainStatus[] {
 
   for (const bsDef of bsClasses) {
     let active = 0, total = 0;
-    for (const [eid, s] of Object.entries(hass.states)) {
-      if (!eid.startsWith('binary_sensor.')) continue;
-      const dc = s.attributes.device_class as string | undefined;
+    const entities = visibleEntities
+      ? visibleEntities.filter(entity => entity.domain === 'binary_sensor')
+      : Object.entries(hass.states)
+        .filter(([eid]) => eid.startsWith('binary_sensor.'))
+        .map(([entity_id, state]) => ({ entity_id, state: state.state, attributes: state.attributes }));
+    for (const entity of entities) {
+      const dc = ('attributes' in entity ? entity.attributes : hass.states[entity.entity_id]?.attributes)?.device_class as string | undefined;
       if (dc !== bsDef.cls) continue;
       total++;
-      if (s.state === 'on') active++;
+      if (entity.state === 'on') active++;
     }
     if (total > 0) {
       domains.push({
@@ -213,12 +229,14 @@ export interface FavoriteEntity {
 export function getFavorites(hass: Hass, config: StrategyConfig): FavoriteEntity[] {
   const ids = config.favorite_entities || [];
   const favorites: FavoriteEntity[] = [];
+  const filters = getDashboardFilters(config);
 
   for (const eid of ids) {
     const stateObj = hass.states[eid];
     if (!stateObj) continue;
 
     const domain = eid.split('.')[0];
+    if (!shouldIncludeDomain(domain, filters.hiddenDomains)) continue;
     const name = (stateObj.attributes.friendly_name as string) || eid.replace(`${domain}.`, '').replace(/_/g, ' ');
     const unit = (stateObj.attributes.unit_of_measurement as string) || null;
     const isActive = isEntityOn(stateObj.state, domain);
@@ -261,7 +279,7 @@ export interface HomeSummary {
 /**
  * Collect summary statistics for the home page footer.
  */
-export function getHomeSummaries(hass: Hass): HomeSummary {
+export function getHomeSummaries(hass: Hass, config?: StrategyConfig): HomeSummary {
   let repairsCount = 0;
   let updatesCount = 0;
   let automationsCount = 0;
@@ -281,7 +299,7 @@ export function getHomeSummaries(hass: Hass): HomeSummary {
     repairs_count: repairsCount,
     updates_count: updatesCount,
     automations_count: automationsCount,
-    total_entities: Object.keys(hass.states).length,
+    total_entities: config ? collectVisibleEntities(hass, getDashboardFilters(config)).length : Object.keys(hass.states).length,
     total_devices: Object.keys(hass.devices || {}).length,
   };
 }

@@ -11,6 +11,11 @@
  */
 
 import type { BlueprintInstance } from '../types';
+import { escapeAttribute, escapeHTML } from '../utils/html';
+
+function jsArg(value: unknown): string {
+  return escapeAttribute(JSON.stringify(String(value ?? '')));
+}
 
 // ─── Gallery HTML Builder ───────────────────────────────────────────────────
 
@@ -190,25 +195,25 @@ function buildBlueprintItemHTML(page: BlueprintInstance): string {
   const c = 'currentColor';
   const inputCount = Object.keys(page.inputs || {}).length;
 
-  return `<div class="bp-item" data-bp-id="${page.id}">
+  return `<div class="bp-item" data-bp-id="${escapeAttribute(page.id)}">
     <div class="bp-item-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
     </div>
     <div class="bp-item-info">
-      <div class="bp-item-name">${page.name}</div>
+      <div class="bp-item-name">${escapeHTML(page.name)}</div>
       <div class="bp-item-meta">
         <span>${inputCount} 个输入</span>
         ${page.source ? '<span>来源: URL</span>' : '<span>本地导入</span>'}
       </div>
     </div>
     <div class="bp-item-actions">
-      <button class="bp-item-btn" title="编辑输入" onclick="hdpShowInputEditor('${page.id}')">
+      <button class="bp-item-btn" title="编辑输入" data-action="edit-blueprint" onclick="hdpShowInputEditor(${jsArg(page.id)})">
         <svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       </button>
-      ${page.source ? `<button class="bp-item-btn" title="检查更新" onclick="hdpCheckBlueprintUpdate('${page.id}')">
+      ${page.source ? `<button class="bp-item-btn" title="检查更新" data-action="check-blueprint-update" onclick="hdpCheckBlueprintUpdate(${jsArg(page.id)})">
         <svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
       </button>` : ''}
-      <button class="bp-item-btn bp-item-btn--danger" title="删除" onclick="hdpRemoveBlueprint('${page.id}')">
+      <button class="bp-item-btn bp-item-btn--danger" title="删除" data-action="remove-blueprint" onclick="hdpRemoveBlueprint(${jsArg(page.id)})">
         <svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
       </button>
     </div>
@@ -367,6 +372,34 @@ export function generateBlueprintModalJS(): string {
   var currentMode = '';
   var editingPageId = '';
 
+  function hdpEscapeHTML(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function(char) {
+      return {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char];
+    });
+  }
+
+  function hdpEscapeAttribute(value) {
+    return hdpEscapeHTML(value);
+  }
+
+  function hdpSafeDomIdSegment(value) {
+    return String(value || 'page').replace(/[^a-zA-Z0-9_-]/g, '-').replace(/-+/g, '-').slice(0, 64) || 'page';
+  }
+
+  function hdpBlueprintViewId(id) {
+    return 'bp-' + hdpSafeDomIdSegment(id);
+  }
+
+  function hdpShowBlueprintView(id) {
+    hdpShowView(hdpBlueprintViewId(id));
+  }
+
   window.hdpShowImportModal = function(mode) {
     currentMode = mode;
     editingPageId = '';
@@ -409,7 +442,7 @@ export function generateBlueprintModalJS(): string {
         if (page) {
           hdpCloseImportModal();
           alert('蓝图 "' + page.name + '" 导入成功！');
-          hdpShowView('bp-' + page.id);
+          hdpShowBlueprintView(page.id);
           // Re-render gallery in settings
           hdpRefreshBlueprintGallery();
         } else {
@@ -424,7 +457,7 @@ export function generateBlueprintModalJS(): string {
         hdpBlueprintAdd(page);
         hdpCloseImportModal();
         alert('蓝图 "' + page.name + '" 导入成功！');
-        hdpShowView('bp-' + page.id);
+        hdpShowBlueprintView(page.id);
         hdpRefreshBlueprintGallery();
       }
     } else if (currentMode === 'edit') {
@@ -461,11 +494,12 @@ export function generateBlueprintModalJS(): string {
       if (!meta.inputs.hasOwnProperty(key)) continue;
       var inp = meta.inputs[key];
       var val = inputs[key] !== undefined ? inputs[key] : (inp['default'] || '');
+      var safeKey = hdpEscapeAttribute(key);
 
       fieldsHTML += '<div class="bp-input-row">' +
-        '<label class="bp-input-label">' + (inp.name || key) + '</label>' +
-        (inp.description ? '<span class="bp-input-desc">' + inp.description + '</span>' : '') +
-        '<input class="bp-modal-input" data-input-key="' + key + '" value="' + String(val).replace(/"/g, '&quot;') + '" placeholder="' + key + '" />' +
+        '<label class="bp-input-label">' + hdpEscapeHTML(inp.name || key) + '</label>' +
+        (inp.description ? '<span class="bp-input-desc">' + hdpEscapeHTML(inp.description) + '</span>' : '') +
+        '<input class="bp-modal-input" data-input-key="' + safeKey + '" value="' + hdpEscapeAttribute(val) + '" placeholder="' + safeKey + '" />' +
         '</div>';
     }
 
@@ -487,7 +521,7 @@ export function generateBlueprintModalJS(): string {
     }
     hdpBlueprintUpdateInputs(editingPageId, inputs);
     hdpCloseImportModal();
-    hdpShowView('bp-' + editingPageId);
+    hdpShowBlueprintView(editingPageId);
     hdpRefreshBlueprintGallery();
   };
 
@@ -520,7 +554,7 @@ export function generateBlueprintModalJS(): string {
             if (allPages[i].id === id) { allPages[i] = page; break; }
           }
           hdpBlueprintSave(allPages);
-          hdpShowView('bp-' + id);
+          hdpShowBlueprintView(id);
           hdpRefreshBlueprintGallery();
           alert('蓝图已更新到 ' + result.remoteVersion);
         }

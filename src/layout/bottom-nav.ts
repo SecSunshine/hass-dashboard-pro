@@ -6,6 +6,8 @@
  */
 
 import type { BlueprintInstance } from '../types';
+import { escapeAttribute, escapeHTML } from '../utils/html';
+import { safeBlueprintViewId } from '../utils/dom-id';
 
 export interface BottomNavOptions {
   blueprintPages: BlueprintInstance[];
@@ -20,14 +22,16 @@ export function buildBottomNavHTML(opts: BottomNavOptions): string {
   // Blueprint pages button
   let pagesHTML = '';
   if (pages.length === 1) {
-    pagesHTML = `<button class="bn-btn" data-view="bp-${pages[0].id}" onclick="hdpShowView('bp-${pages[0].id}')">
+    const viewId = escapeAttribute(safeBlueprintViewId(pages[0].id));
+    pagesHTML = `<button class="bn-btn" data-view="${viewId}" data-action="show-view" onclick="hdpShowView('${viewId}')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      <span>${pages[0].name}</span>
+      <span>${escapeHTML(pages[0].name)}</span>
     </button>`;
   } else if (pages.length > 1) {
-    const items = pages.map(p =>
-      `<div class="bn-sheet-item" onclick="hdpShowView('bp-${p.id}');hdpCloseSheet()">${p.name}</div>`
-    ).join('');
+    const items = pages.map(p => {
+      const viewId = escapeAttribute(safeBlueprintViewId(p.id));
+      return `<div class="bn-sheet-item" data-view="${viewId}" data-action="show-view" onclick="hdpShowView('${viewId}');hdpCloseSheet()">${escapeHTML(p.name)}</div>`;
+    }).join('');
     pagesHTML = `<button class="bn-btn" onclick="hdpToggleSheet()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
       <span>页面</span>

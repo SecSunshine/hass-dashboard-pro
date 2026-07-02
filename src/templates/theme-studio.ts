@@ -19,6 +19,7 @@ import type { ResolvedTokens } from '../utils/visual-config';
 import type { Hass, StrategyConfig } from '../types';
 import { buildHomeHTML } from './home-view';
 import { MOOD_PRESETS } from '../themes/palette-generator';
+import { escapeAttribute, escapeHTML, escapeInlineStyleValue } from '../utils/html';
 
 // ─── HTML + CSS ─────────────────────────────────────────────────────────────
 
@@ -28,8 +29,10 @@ import { MOOD_PRESETS } from '../themes/palette-generator';
  */
 export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, config?: StrategyConfig): string {
   const currentMood = (tokens?.mood_preset as string) || '';
-  const currentSeed = (tokens?.seed_color as string) || '#4F6EF7';
-  const currentSkin = (tokens?.card_style as string) || 'classic';
+  const currentSeedRaw = (tokens?.seed_color as string) || '#4F6EF7';
+  const currentSeed = escapeAttribute(currentSeedRaw);
+  const currentSeedStyle = escapeInlineStyleValue(currentSeedRaw);
+  const currentSkin = escapeAttribute((tokens?.card_style as string) || 'classic');
   const currentRadius = tokens?.border_radius ?? 14;
   const currentPadding = (tokens as any)?.card_padding ?? 18;
   const currentGap = (tokens as any)?.card_gap ?? 12;
@@ -38,11 +41,12 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
   // Build mood preset buttons
   const moodButtons = MOOD_PRESETS.map(m => {
     const isActive = currentMood === m.id;
-    return `<button class="ts-mood-btn ${isActive ? 'ts-mood-btn--active' : ''}" data-mood="${m.id}" title="${m.name} ${m.name_en}">
-      <div class="ts-mood-color" style="background: linear-gradient(135deg, ${m.seed} 0%, ${m.seed}99 100%);">
-        <span class="ts-mood-icon">${m.icon}</span>
+    const seed = escapeInlineStyleValue(m.seed);
+    return `<button class="ts-mood-btn ${isActive ? 'ts-mood-btn--active' : ''}" data-mood="${escapeAttribute(m.id)}" title="${escapeAttribute(`${m.name} ${m.name_en}`)}">
+      <div class="ts-mood-color" style="background: linear-gradient(135deg, ${seed} 0%, ${seed}99 100%);">
+        <span class="ts-mood-icon">${escapeHTML(m.icon)}</span>
       </div>
-      <span class="ts-mood-name">${m.name}</span>
+      <span class="ts-mood-name">${escapeHTML(m.name)}</span>
     </button>`;
   }).join('');
 
@@ -58,12 +62,12 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
 
   const skinButtons = skins.map(s => {
     const isActive = currentSkin === s.key;
-    return `<button class="ts-skin-btn ${isActive ? 'ts-skin-btn--active' : ''}" data-skin="${s.key}">
+    return `<button class="ts-skin-btn ${isActive ? 'ts-skin-btn--active' : ''}" data-skin="${escapeAttribute(s.key)}">
       <div class="ts-skin-preview" style="${s.preview} border-radius: 6px;">
         <div style="width: 50%; height: 3px; border-radius: 2px; background: var(--hdp-text-muted); opacity: 0.4;"></div>
         <div style="width: 35%; height: 3px; border-radius: 2px; background: var(--hdp-text-muted); opacity: 0.25;"></div>
       </div>
-      <span class="ts-skin-label">${s.label}</span>
+      <span class="ts-skin-label">${escapeHTML(s.label)}</span>
     </button>`;
   }).join('');
 
@@ -608,7 +612,7 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
             <div class="ts-wheel-sv-marker" id="ts-sv-marker" style="left: 180px; top: 60px;"></div>
           </div>
           <div class="ts-color-display">
-            <div class="ts-color-swatch" id="ts-color-swatch" style="background: ${currentSeed};"></div>
+            <div class="ts-color-swatch" id="ts-color-swatch" style="background: ${currentSeedStyle};"></div>
             <input type="text" class="ts-color-hex" id="ts-color-hex" value="${currentSeed}" readonly />
           </div>
         </div>

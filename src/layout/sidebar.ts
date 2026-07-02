@@ -12,6 +12,7 @@
 import type { Hass, AreaSummary, StrategyConfig } from '../types';
 import { groupAreasByFloor } from '../utils/area-entities';
 import { getAreaIcon } from '../strategies/dashboard-strategy';
+import { escapeAttribute, escapeHTML } from '../utils/html';
 
 export interface SidebarOptions {
   title: string;
@@ -43,25 +44,26 @@ export function buildSidebarHTML(opts: SidebarOptions): string {
 
     const areaItems = floorAreas.map(a => {
       const icon = getAreaIcon(a.area_name);
-      const tempHTML = a.temp ? `<span class="sb-temp">${a.temp}</span>` : '';
-      return `<button class="sb-area-btn" data-area="${a.area_id}" onclick="hdpShowView('${a.area_id}')">
+      const tempHTML = a.temp ? `<span class="sb-temp">${escapeHTML(a.temp)}</span>` : '';
+      const areaId = escapeAttribute(a.area_id);
+      return `<button class="sb-area-btn" data-area="${areaId}" data-action="show-view" onclick="hdpShowView('${areaId}')">
         <span class="sb-area-icon">${getAreaIconSVG(icon)}</span>
         <span class="sb-area-info">
-          <span class="sb-area-name">${a.area_name}</span>
+          <span class="sb-area-name">${escapeHTML(a.area_name)}</span>
           <span class="sb-area-meta">${a.entity_count} 设备${tempHTML}</span>
         </span>
       </button>`;
     }).join('');
 
     const sectionTitle = floorName
-      ? `<div class="sb-floor-label">${floorName}</div>`
+      ? `<div class="sb-floor-label">${escapeHTML(floorName)}</div>`
       : '';
 
     floorSections.push(`${sectionTitle}<div class="sb-floor-group">${areaItems}</div>`);
   }
 
   return `<div class="sb-header">
-    <div class="sb-title">${title}</div>
+    <div class="sb-title">${escapeHTML(title)}</div>
   </div>
   <nav class="sb-nav">
     <button class="sb-nav-btn sb-nav-btn--active" data-view="home" onclick="hdpShowView('home')">

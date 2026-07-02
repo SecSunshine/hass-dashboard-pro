@@ -34,6 +34,7 @@ import {
   getAlarmStatus,
 } from '../utils/home-data';
 import type { PersonInfo, DomainStatus, FavoriteEntity } from '../utils/home-data';
+import { escapeAttribute, escapeHTML, escapeInlineStyleValue, escapeURLAttribute } from '../utils/html';
 
 export function buildHomeView(hass: Hass, config: StrategyConfig, tokens?: ResolvedTokens): LovelaceCardConfig[] {
   const cards: LovelaceCardConfig[] = [];
@@ -42,7 +43,7 @@ export function buildHomeView(hass: Hass, config: StrategyConfig, tokens?: Resol
   cards.push(buildWelcomeCard(hass, config, tokens));
 
   // 2. Status domain badges (only if domains exist)
-  const domains = getStatusDomains(hass);
+  const domains = getStatusDomains(hass, config);
   if (domains.length > 0) {
     cards.push(buildStatusBadges(domains, tokens));
   }
@@ -57,7 +58,7 @@ export function buildHomeView(hass: Hass, config: StrategyConfig, tokens?: Resol
   cards.push(buildEnvironmentCard(hass, config, tokens));
 
   // 5. Power usage card
-  const power = buildHousePowerUsage(hass);
+  const power = buildHousePowerUsage(hass, config);
   if (power.has_data) {
     cards.push(buildPowerCard(power, tokens));
   }
@@ -69,7 +70,7 @@ export function buildHomeView(hass: Hass, config: StrategyConfig, tokens?: Resol
   }
 
   // 7. Summary
-  cards.push(buildSummaryCard(hass, tokens));
+  cards.push(buildSummaryCard(hass, tokens, config));
 
   return cards;
 }
@@ -87,7 +88,7 @@ export function buildHomeHTML(hass: Hass, config: StrategyConfig, tokens?: Resol
   sections.push(bentoWrap(extractCardHTML(buildWelcomeCard(hass, config, tokens)), resolveCardSize('home_welcome', 'lg', cs)));
 
   // Status badges — full width banner
-  const domains = getStatusDomains(hass);
+  const domains = getStatusDomains(hass, config);
   if (domains.length > 0) {
     sections.push(bentoWrap(extractCardHTML(buildStatusBadges(domains, tokens)), resolveCardSize('home_status_badges', 'wide', cs)));
   }
@@ -102,7 +103,7 @@ export function buildHomeHTML(hass: Hass, config: StrategyConfig, tokens?: Resol
   sections.push(bentoWrap(extractCardHTML(buildEnvironmentCard(hass, config, tokens)), resolveCardSize('home_environment', 'md', cs)));
 
   // Power — medium card
-  const power = buildHousePowerUsage(hass);
+  const power = buildHousePowerUsage(hass, config);
   if (power.has_data) {
     sections.push(bentoWrap(extractCardHTML(buildPowerCard(power, tokens)), resolveCardSize('home_power', 'md', cs)));
   }
@@ -114,7 +115,7 @@ export function buildHomeHTML(hass: Hass, config: StrategyConfig, tokens?: Resol
   }
 
   // Summary — medium card
-  sections.push(bentoWrap(extractCardHTML(buildSummaryCard(hass, tokens)), resolveCardSize('home_summary', 'md', cs)));
+  sections.push(bentoWrap(extractCardHTML(buildSummaryCard(hass, tokens, config)), resolveCardSize('home_summary', 'md', cs)));
 
   return sections.join('\n');
 }
@@ -154,6 +155,7 @@ function buildWelcomeCard(hass: Hass, config: StrategyConfig, tokens?: ResolvedT
   const dateStr = getDateString();
   const weather = getWeather(hass, config.weather_entity);
   const alarm = getAlarmStatus(hass);
+  const alarmDisplay = escapeHTML(alarm.display);
 
   const weatherHTML = weather.has_data
     ? `<div class="hw-weather">
@@ -166,7 +168,7 @@ function buildWelcomeCard(hass: Hass, config: StrategyConfig, tokens?: ResolvedT
   const alarmHTML = alarm.has_alarm
     ? `<div class="hw-alarm hw-alarm--${alarm.badge_class}">
         <span class="hw-a-dot"></span>
-        <span class="hw-a-text">${alarm.display}</span>
+        <span class="hw-a-text">${alarmDisplay}</span>
       </div>`
     : '';
 
@@ -293,7 +295,7 @@ ${generateDesignTokenCSS(tokens)}
     <div class="hw-top">
       <span class="hw-date">${dateStr}</span>
     </div>
-    <div class="hw-greeting">${greeting}<span class="hw-greeting-name">${userName ? '，' + userName : ''}</span></div>
+    <div class="hw-greeting">${escapeHTML(greeting)}<span class="hw-greeting-name">${userName ? '，' + escapeHTML(userName) : ''}</span></div>
     <div class="hw-meta">
       ${weatherHTML}
       ${alarmHTML}
@@ -382,15 +384,15 @@ function buildPeopleCard(persons: PersonInfo[], tokens?: ResolvedTokens): Lovela
   const homeCount = persons.filter(p => p.is_home).length;
   const people = persons.map(p => {
     const avatarHTML = p.picture
-      ? `<div class="pp-avatar" style="background-image: url('${p.picture}')"></div>`
+      ? `<div class="pp-avatar" style="background-image: url('${escapeInlineStyleValue(escapeURLAttribute(p.picture))}')"></div>`
       : `<div class="pp-avatar pp-avatar--fallback">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
         </div>`;
     const stateCls = p.is_home ? 'pp-state--home' : 'pp-state--away';
     return `<div class="pp-item">
       ${avatarHTML}
-      <div class="pp-name">${p.name}</div>
-      <div class="pp-state ${stateCls}">${p.display}</div>
+      <div class="pp-name">${escapeHTML(p.name)}</div>
+      <div class="pp-state ${stateCls}">${escapeHTML(p.display)}</div>
     </div>`;
   }).join('');
 
@@ -481,8 +483,9 @@ ${generateDesignTokenCSS(tokens)}
 // ─── 4. Environment Card (Climate + Security) ──────────────────────────────
 
 function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: ResolvedTokens): LovelaceCardConfig {
-  const climate = getClimateSummary(hass);
+  const climate = getClimateSummary(hass, config);
   const alarm = getAlarmStatus(hass);
+  const alarmDisplay = escapeHTML(alarm.display);
   const skin = tokens?.card_style || 'classic';
   const skinCls = `hdp-card hdp-card--${skin}`;
 
@@ -523,7 +526,7 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
       ${secIcon}
     </div>
     <div class="env-data">
-      <div class="env-val">${alarm.display}</div>
+      <div class="env-val">${alarmDisplay}</div>
       <div class="env-lbl">安防状态</div>
     </div>
   </div>`);
@@ -618,18 +621,21 @@ ${generateDesignTokenCSS(tokens)}
 // ─── 5. Power Usage Card ───────────────────────────────────────────────────
 
 function buildPowerCard(power: ReturnType<typeof buildHousePowerUsage>, tokens?: ResolvedTokens): LovelaceCardConfig {
-  const roomRows = power.rooms.slice(0, 6).map(r => `
-    <div class="pw-room">
-      <div class="pw-room-top">
-        <span class="pw-room-name">${r.area_name}</span>
-        <span class="pw-room-val">${r.display}</span>
+  const roomRows = power.rooms.slice(0, 6).map(r => {
+    const percent = Number.isFinite(Number(r.percent)) ? Math.max(0, Math.min(100, Number(r.percent))) : 0;
+    return `
+      <div class="pw-room">
+        <div class="pw-room-top">
+          <span class="pw-room-name">${escapeHTML(r.area_name)}</span>
+          <span class="pw-room-val">${escapeHTML(r.display)}</span>
+        </div>
+        <div class="pw-bar">
+          <div class="pw-bar-fill" style="width: ${Math.max(percent, 2)}%"></div>
+        </div>
+        <div class="pw-room-pct">${percent}%</div>
       </div>
-      <div class="pw-bar">
-        <div class="pw-bar-fill" style="width: ${Math.max(r.percent, 2)}%"></div>
-      </div>
-      <div class="pw-room-pct">${r.percent}%</div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 
   return {
     type: 'custom:html-pro-card',
@@ -733,11 +739,11 @@ function buildFavoritesCard(favorites: FavoriteEntity[], tokens?: ResolvedTokens
   const items = favorites.map(f => {
     const iconSVG = getFavoriteIcon(f.domain, f.is_active);
     const stateCls = f.is_active ? 'fav--active' : '';
-    return `<div class="fav-item ${stateCls} ${skinCls}" data-entity="${f.entity_id}">
+    return `<div class="fav-item ${stateCls} ${skinCls}" data-entity="${escapeAttribute(f.entity_id)}" data-action="toggle">
       <div class="fav-icon">${iconSVG}</div>
       <div class="fav-info">
-        <div class="fav-name">${f.name}</div>
-        <div class="fav-state">${f.display}</div>
+        <div class="fav-name">${escapeHTML(f.name)}</div>
+        <div class="fav-state">${escapeHTML(f.display)}</div>
       </div>
     </div>`;
   }).join('');
@@ -848,8 +854,8 @@ function getFavoriteIcon(domain: string, active: boolean): string {
 
 // ─── 7. Summary Card ───────────────────────────────────────────────────────
 
-function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens): LovelaceCardConfig {
-  const summaries = getHomeSummaries(hass);
+function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: StrategyConfig): LovelaceCardConfig {
+  const summaries = getHomeSummaries(hass, config);
   const skin = tokens?.card_style || 'classic';
   const skinCls = `hdp-card hdp-card--${skin}`;
 

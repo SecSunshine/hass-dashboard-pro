@@ -23,7 +23,7 @@ import { buildLayoutCard } from '../layout/layout-card';
 
 export class HassDashboardProViewStrategy {
   static async generate(config: StrategyConfig, hass: Hass): Promise<ViewStrategyResult> {
-    const tokens = resolveTokens(config);
+    const tokens = resolveTokens(config, hass);
     const viewPath = config.view_path || 'home';
 
     console.debug(
@@ -49,7 +49,8 @@ export class HassDashboardProViewStrategy {
 
 function buildFullLayoutCard(hass: Hass, config: StrategyConfig, tokens: ReturnType<typeof resolveTokens>): LovelaceCardConfig {
   const hiddenAreas = config.hdp_config?.areas?.hidden_areas || config.hidden_areas || [];
-  const areaEntityMap = buildAreaEntityMap(hass, hiddenAreas);
+  const hiddenDomains = config.hdp_config?.devices?.hidden_domains || config.hidden_domains || [];
+  const areaEntityMap = buildAreaEntityMap(hass, hiddenAreas, hiddenDomains);
   const areaSummaries = config.area_summaries || [];
   const blueprintPages = config.hdp_config?.blueprints?.pages || config.blueprint_pages || [];
 

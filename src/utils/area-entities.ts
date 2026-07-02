@@ -8,12 +8,17 @@ import { HIDDEN_DOMAINS } from '../types';
 /**
  * Build a map of area_id → EntityInfo[]
  */
-export function buildAreaEntityMap(hass: Hass, hiddenAreas: string[] = []): Map<string, EntityInfo[]> {
+export function buildAreaEntityMap(
+  hass: Hass,
+  hiddenAreas: string[] = [],
+  hiddenDomains: string[] = [],
+): Map<string, EntityInfo[]> {
   const map = new Map<string, EntityInfo[]>();
 
   for (const [entityId, stateObj] of Object.entries(hass.states)) {
     const domain = entityId.split('.')[0];
     if (HIDDEN_DOMAINS.has(domain)) continue;
+    if (hiddenDomains.includes(domain)) continue;
 
     // Resolve area: entity registry → device registry → state attribute
     const registryEntry = hass.entities?.[entityId];

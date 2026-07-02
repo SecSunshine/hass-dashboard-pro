@@ -10,9 +10,10 @@
  * HA native theme tokens (var(--primary-color, #fallback)).
  */
 
-import type { StrategyConfig } from '../types';
+import type { Hass, StrategyConfig } from '../types';
 import { THEME_PRESETS } from '../types';
 import { generateFromMood, generateFromSeed, generateFromTimeMood, paletteToTokens, resolveMode, type MoodPaletteResult } from '../themes/palette-generator';
+import { applyDefaultStylePack } from './style-packs';
 
 // ─── localStorage key ─────────────────────────────────────────────────────
 
@@ -71,7 +72,7 @@ export interface ResolvedTokens {
 /**
  * Resolve the merged token overrides from strategy config + localStorage.
  */
-export function resolveTokens(config: StrategyConfig): ResolvedTokens {
+export function resolveTokens(config: StrategyConfig, hass?: Hass): ResolvedTokens {
   const result: ResolvedTokens = {};
 
   // 1. Apply theme preset (only color overrides, not HA-native values)
@@ -183,7 +184,7 @@ export function resolveTokens(config: StrategyConfig): ResolvedTokens {
     if (stored.layout_density) result.layout_density = stored.layout_density as ResolvedTokens['layout_density'];
   }
 
-  return result;
+  return hass ? applyDefaultStylePack(result, hass, config) : result;
 }
 
 // ─── localStorage Persistence ──────────────────────────────────────────────

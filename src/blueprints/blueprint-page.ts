@@ -8,6 +8,12 @@
 
 import type { BlueprintInstance, LovelaceCardConfig } from '../types';
 import { cardConfigToHTML } from './blueprint-parser';
+import { escapeAttribute, escapeHTML } from '../utils/html';
+import { safeDomIdSegment } from '../utils/dom-id';
+
+function jsArg(value: unknown): string {
+  return escapeAttribute(JSON.stringify(String(value ?? '')));
+}
 
 // ─── Page Renderer ──────────────────────────────────────────────────────────
 
@@ -17,7 +23,7 @@ import { cardConfigToHTML } from './blueprint-parser';
  */
 export function buildBlueprintPagesHTML(pages: BlueprintInstance[]): Array<{ id: string; html: string }> {
   return pages.map(page => ({
-    id: page.id,
+    id: safeDomIdSegment(page.id),
     html: buildBlueprintPageHTML(page),
   }));
 }
@@ -87,8 +93,8 @@ function buildBlueprintPageHTML(page: BlueprintInstance): string {
     <div class="bp-page-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
     </div>
-    <span class="bp-page-name">${page.name}</span>
-    <button class="bp-page-edit" title="编辑输入" onclick="hdpShowInputEditor('${page.id}')">
+    <span class="bp-page-name">${escapeHTML(page.name)}</span>
+    <button class="bp-page-edit" title="编辑输入" data-action="edit-blueprint" onclick="hdpShowInputEditor(${jsArg(page.id)})">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
     </button>
   </div>
@@ -107,9 +113,9 @@ function buildEmptyBlueprintHTML(page: BlueprintInstance): string {
       <rect x="3" y="3" width="18" height="18" rx="4"/>
       <path d="M12 8v8M8 12h8"/>
     </svg>
-    <span class="bp-empty-title">${page.name}</span>
+    <span class="bp-empty-title">${escapeHTML(page.name)}</span>
     <span class="bp-empty-desc">蓝图配置为空，请点击编辑按钮配置输入参数</span>
-    <button class="bp-btn bp-btn--primary" onclick="hdpShowInputEditor('${page.id}')">
+    <button class="bp-btn bp-btn--primary" data-action="edit-blueprint" onclick="hdpShowInputEditor(${jsArg(page.id)})">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       配置输入
     </button>

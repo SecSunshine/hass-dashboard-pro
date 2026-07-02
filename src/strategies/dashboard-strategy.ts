@@ -12,13 +12,15 @@
 
 import type { Hass, StrategyConfig, DashboardStrategyResult, LovelaceViewConfig, AreaSummary, BlueprintInstance } from '../types';
 import { buildAreaEntityMap, groupAreasByFloor, isEntityOn } from '../utils/area-entities';
+import { safeBlueprintViewId } from '../utils/dom-id';
 
 const VIEW_STRATEGY_TYPE = 'custom:hass-dashboard-pro-view';
 
 export class HassDashboardProStrategy {
   static async generate(config: StrategyConfig, hass: Hass): Promise<DashboardStrategyResult> {
     const hiddenAreas = config.hdp_config?.areas?.hidden_areas || config.hidden_areas || [];
-    const areaEntityMap = buildAreaEntityMap(hass, hiddenAreas);
+    const hiddenDomains = config.hdp_config?.devices?.hidden_domains || config.hidden_domains || [];
+    const areaEntityMap = buildAreaEntityMap(hass, hiddenAreas, hiddenDomains);
 
     // Pre-compute area summaries (for sidebar display)
     const areaSummaries = buildAreaSummaries(hass, areaEntityMap, hiddenAreas);
@@ -66,16 +68,17 @@ export class HassDashboardProStrategy {
     // 3. Blueprint Page Views — read from hdp_config (where runtime saves them)
     const blueprintPages = config.hdp_config?.blueprints?.pages || config.blueprint_pages || [];
     for (const page of blueprintPages) {
+      const path = safeBlueprintViewId(page.id);
       views.push({
         title: page.name,
-        path: `bp-${page.id}`,
+        path,
         icon: page.icon || 'mdi:puzzle',
         badges: [],
         cards: [],
         strategy: {
           ...enrichedConfig,
           type: VIEW_STRATEGY_TYPE,
-          view_path: `bp-${page.id}`,
+          view_path: path,
         } as StrategyConfig,
         subview: false,
       });

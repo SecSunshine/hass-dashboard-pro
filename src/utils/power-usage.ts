@@ -9,7 +9,8 @@
  *   5. Sort descending, compute percentage bars
  */
 
-import type { Hass } from '../types';
+import type { Hass, StrategyConfig } from '../types';
+import { getDashboardFilters, resolveEntityAreaId, shouldIncludeDomain } from './dashboard-model';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -35,12 +36,14 @@ export interface HousePowerUsage {
  * Build a complete house power usage summary from HA state.
  * Groups power sensors by area, sums watts, sorts descending.
  */
-export function buildHousePowerUsage(hass: Hass): HousePowerUsage {
+export function buildHousePowerUsage(hass: Hass, config?: StrategyConfig): HousePowerUsage {
   const roomMap = new Map<string, { watts: number; count: number; name: string }>();
+  const filters = config ? getDashboardFilters(config) : { hiddenAreas: [], hiddenDomains: [] };
 
   for (const [entityId, stateObj] of Object.entries(hass.states)) {
     // Only sensor domain
     if (!entityId.startsWith('sensor.')) continue;
+    if (!shouldIncludeDomain('sensor', filters.hiddenDomains)) continue;
 
     const attrs = stateObj.attributes;
     const deviceClass = attrs.device_class as string | undefined;
@@ -57,8 +60,8 @@ export function buildHousePowerUsage(hass: Hass): HousePowerUsage {
     const watts = uom === 'kW' ? value * 1000 : value;
 
     // Resolve area
-    const areaId = resolveArea(entityId, hass);
-    if (!areaId) continue;
+    const areaId = resolveEntityAreaId(hass, entityId);
+    if (!areaId || filters.hiddenAreas.includes(areaId)) continue;
 
     const area = hass.areas[areaId];
     const areaName = area?.name || areaId;
@@ -114,25 +117,6 @@ export function buildHousePowerUsage(hass: Hass): HousePowerUsage {
  *   2. Device's area_id (via device registry)
  *   3. State attributes area_id
  */
-function resolveArea(entityId: string, hass: Hass): string | null {
-  // 1. Entity registry
-  const reg = hass.entities?.[entityId];
-  if (reg?.area_id) return reg.area_id;
-
-  // 2. Device area
-  if (reg?.device_id) {
-    const device = hass.devices?.[reg.device_id];
-    if (device?.area_id) return device.area_id;
-  }
-
-  // 3. State attribute fallback
-  const stateObj = hass.states[entityId];
-  const attrArea = stateObj?.attributes?.area_id as string | undefined;
-  if (attrArea) return attrArea;
-
-  return null;
-}
-
 function formatWatts(watts: number): string {
   if (watts >= 1000) {
     return `${(watts / 1000).toFixed(1)} kW`;

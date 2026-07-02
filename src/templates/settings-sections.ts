@@ -22,6 +22,11 @@
 import type { StrategyConfig, BlueprintInstance, HomeSectionKey } from '../types';
 import { HOME_SECTION_LABELS } from '../types';
 import { buildBlueprintGalleryHTML } from '../blueprints/blueprint-gallery';
+import { escapeAttribute, escapeHTML } from '../utils/html';
+
+function jsArg(value: unknown): string {
+  return escapeAttribute(JSON.stringify(String(value ?? '')));
+}
 
 // ─── Section Container ──────────────────────────────────────────────────────
 
@@ -410,7 +415,7 @@ export function buildHomeSection(config: StrategyConfig): string {
   const chips = sectionKeys.map(key => {
     const active = !hiddenSections.includes(key);
     const label = HOME_SECTION_LABELS[key] || key;
-    return `<div class="st-chip ${active ? 'st-chip--active' : ''}" onclick="hdpToggleArrayItem('home.hidden_sections', '${key}')">${label}</div>`;
+    return `<div class="st-chip ${active ? 'st-chip--active' : ''}" data-action="toggle-home-section" onclick="hdpToggleArrayItem('home.hidden_sections', ${jsArg(key)})">${escapeHTML(label)}</div>`;
   }).join('');
 
   return sectionCard('home', '首页', iconHome(), `
@@ -485,7 +490,7 @@ export function buildPeopleSection(hass: any, config: StrategyConfig): string {
 
   const chips = persons.map(p => {
     const hidden = hiddenPersons.includes(p.id);
-    return `<div class="st-chip ${hidden ? 'st-chip--active' : ''}" onclick="hdpToggleArrayItem('people.hidden_persons', '${p.id}')">${p.name}</div>`;
+    return `<div class="st-chip ${hidden ? 'st-chip--active' : ''}" data-action="toggle-hidden-person" onclick="hdpToggleArrayItem('people.hidden_persons', ${jsArg(p.id)})">${escapeHTML(p.name)}</div>`;
   }).join('') || '<span class="st-row-desc">未找到 person 实体</span>';
 
   return sectionCard('people', '家庭成员', iconPeople(), `
@@ -503,7 +508,7 @@ export function buildAreasSection(hass: any, config: StrategyConfig): string {
 
   const areaChips = Object.entries(hass.areas || {}).map(([id, area]: [string, any]) => {
     const hidden = hiddenAreas.includes(id);
-    return `<div class="st-chip ${hidden ? 'st-chip--active' : ''}" onclick="hdpToggleArrayItem('areas.hidden_areas', '${id}')">${area.name}</div>`;
+    return `<div class="st-chip ${hidden ? 'st-chip--active' : ''}" data-action="toggle-hidden-area" onclick="hdpToggleArrayItem('areas.hidden_areas', ${jsArg(id)})">${escapeHTML(area.name)}</div>`;
   }).join('') || '<span class="st-row-desc">未找到区域</span>';
 
   return sectionCard('areas', '区域', iconAreas(), `
@@ -537,7 +542,7 @@ export function buildDevicesSection(config: StrategyConfig): string {
 
   const chips = domains.map(d => {
     const hidden = hiddenDomains.includes(d);
-    return `<div class="st-chip ${hidden ? 'st-chip--active' : ''}" onclick="hdpToggleArrayItem('devices.hidden_domains', '${d}')">${domainLabels[d] || d}</div>`;
+    return `<div class="st-chip ${hidden ? 'st-chip--active' : ''}" data-action="toggle-hidden-domain" onclick="hdpToggleArrayItem('devices.hidden_domains', ${jsArg(d)})">${escapeHTML(domainLabels[d] || d)}</div>`;
   }).join('');
 
   return sectionCard('devices', '设备类型', iconDevices(), `

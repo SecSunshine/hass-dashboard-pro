@@ -20,6 +20,7 @@ import { bentoWrap, resolveCardSize } from '../utils/bento-layout';
 import { DOMAIN_GROUPS } from '../types';
 import { formatState, isEntityOn } from '../utils/area-entities';
 import { buildDomainCard, getDomainCardCSS } from './entity-cards';
+import { escapeAttribute, escapeHTML } from '../utils/html';
 
 // ─── Area-specific Skin Resolution (Phase 6) ────────────────────────────────
 
@@ -47,7 +48,7 @@ const AREA_SKIN_KEYWORDS: Array<{ keywords: string[]; skin: string }> = [
 function resolveAreaSkin(areaId: string, areaName: string, areaSkins: Record<string, string> | undefined, globalSkin: string | undefined): string {
   // 1. User's explicit override for this area_id
   if (areaSkins && areaSkins[areaId]) {
-    return areaSkins[areaId];
+    return sanitizeSkin(areaSkins[areaId]);
   }
   // 2. Keyword-based default (match area name)
   const lowerName = areaName.toLowerCase();
@@ -57,7 +58,11 @@ function resolveAreaSkin(areaId: string, areaName: string, areaSkins: Record<str
     }
   }
   // 3. Fall back to global card_style
-  return globalSkin || 'classic';
+  return sanitizeSkin(globalSkin || 'classic');
+}
+
+function sanitizeSkin(skin: string): string {
+  return ['classic', 'glass', 'gradient', 'aurora', 'soft', 'neon'].includes(skin) ? skin : 'classic';
 }
 
 export function buildAreaView(areaName: string, entities: EntityInfo[], hass: Hass, tokens?: ResolvedTokens): LovelaceCardConfig[] {
@@ -199,9 +204,9 @@ function buildAreaHeader(areaName: string, entities: EntityInfo[], hass: Hass, t
   metaItems.push(`<span class="ah-stat"><span class="ah-dot ah-dot--off"></span>${totalCount} 设备</span>`);
 
   const envItems: string[] = [];
-  if (roomTemp) envItems.push(`<span class="ah-env">${roomTemp}</span>`);
-  if (roomHum) envItems.push(`<span class="ah-env">${roomHum}</span>`);
-  if (roomPower) envItems.push(`<span class="ah-env ah-env--power">${roomPower}</span>`);
+  if (roomTemp) envItems.push(`<span class="ah-env">${escapeHTML(roomTemp)}</span>`);
+  if (roomHum) envItems.push(`<span class="ah-env">${escapeHTML(roomHum)}</span>`);
+  if (roomPower) envItems.push(`<span class="ah-env ah-env--power">${escapeHTML(roomPower)}</span>`);
 
   return {
     type: 'custom:html-pro-card',
@@ -261,7 +266,7 @@ ${generateDesignTokenCSS(tokens)}
   }
 </style>
 <div class="ah">
-  <div class="ah-name">${areaName}</div>
+  <div class="ah-name">${escapeHTML(areaName)}</div>
   <div class="ah-stats">${metaItems.join('')}</div>
   ${envItems.length > 0 ? `<div class="ah-env-row">${envItems.join('')}</div>` : ''}
 </div>`,
@@ -386,11 +391,12 @@ function buildEntityCard(entity: EntityInfo, skin?: string, hass?: Hass): string
 
   // Default card for light, switch, fan, sensor, etc.
   const active = isEntityOn(entity.state, entity.domain);
-  const stateText = formatState(entity);
+  const stateText = escapeHTML(formatState(entity));
   const iconSVG = getEntityIcon(entity.domain, active);
   const isSensor = entity.domain === 'sensor' || entity.domain === 'binary_sensor';
   const skinCls = skin ? `hdp-card hdp-card--${skin}` : '';
   const cardCls = active ? `ec ec--on ${skinCls}` : `ec ${skinCls}`;
+  const entityId = escapeAttribute(entity.entity_id);
 
   const rightHTML = isSensor
     ? `<span class="ec-val">${stateText}</span>`
@@ -400,12 +406,12 @@ function buildEntityCard(entity: EntityInfo, skin?: string, hass?: Hass): string
         </div>
       </div>`;
 
-  return `<div class="${cardCls}" data-entity="${entity.entity_id}">
+  return `<div class="${cardCls}" data-entity="${entityId}" data-action="toggle">
     <div class="ec-bar"></div>
     <div class="ec-row">
       <div class="ec-ico ${active ? 'ec-ico--on' : 'ec-ico--off'}">${iconSVG}</div>
       <div class="ec-info">
-        <div class="ec-name">${entity.name}</div>
+        <div class="ec-name">${escapeHTML(entity.name)}</div>
         <div class="ec-state">
           <span class="ec-dot ${active ? 'ec-dot--on' : 'ec-dot--off'}"></span>
           ${stateText}
@@ -482,7 +488,7 @@ ${generateDesignTokenCSS(tokens)}
 </style>
 <div class="ds-hdr">
   <div class="ds-icon ds-icon--${group.color_class}">${getSectionIcon(group.domain)}</div>
-  <span class="ds-label">${group.label}</span>
+  <span class="ds-label">${escapeHTML(group.label)}</span>
   ${countBadge}
 </div>
 <div class="ds-grid">${cards}</div>`,

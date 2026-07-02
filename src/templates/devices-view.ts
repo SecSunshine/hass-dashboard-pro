@@ -15,11 +15,13 @@
  */
 
 import type { Hass, EntityInfo, StrategyConfig } from '../types';
-import { DOMAIN_GROUPS, HIDDEN_DOMAINS } from '../types';
+import { DOMAIN_GROUPS } from '../types';
 import type { ResolvedTokens } from '../utils/visual-config';
 import { bentoWrap, resolveCardSize } from '../utils/bento-layout';
 import { isEntityOn, formatState } from '../utils/area-entities';
 import { buildDomainCard, getDomainCardCSS } from './entity-cards';
+import { collectVisibleEntities, getDashboardFilters } from '../utils/dashboard-model';
+import { escapeAttribute, escapeHTML } from '../utils/html';
 
 // ─── Main Export ────────────────────────────────────────────────────────────
 
@@ -28,37 +30,7 @@ import { buildDomainCard, getDomainCardCSS } from './entity-cards';
  * Returns raw HTML string without outer <style> token block (layout card provides tokens).
  */
 export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: ResolvedTokens): string {
-  const hiddenAreas = config.hdp_config?.areas?.hidden_areas || config.hidden_areas || [];
-  const hiddenDomains = config.hdp_config?.devices?.hidden_domains || config.hidden_domains || [];
-
-  // Collect all visible entities
-  const allEntities: EntityInfo[] = [];
-  for (const [entityId, stateObj] of Object.entries(hass.states)) {
-    const domain = entityId.split('.')[0];
-    if (HIDDEN_DOMAINS.has(domain)) continue;
-    if (hiddenDomains.includes(domain)) continue;
-
-    const registryEntry = hass.entities?.[entityId];
-    const areaId = registryEntry?.area_id ?? (stateObj.attributes?.area_id as string | undefined);
-    if (!areaId || hiddenAreas.includes(areaId)) continue;
-
-    const area = hass.areas[areaId];
-    if (!area) continue;
-
-    const friendlyName = (stateObj.attributes.friendly_name as string) || entityId.replace(`${domain}.`, '').replace(/_/g, ' ');
-    const unit = (stateObj.attributes.unit_of_measurement as string) || null;
-    const icon = (stateObj.attributes.icon as string) || null;
-
-    allEntities.push({
-      entity_id: entityId,
-      name: friendlyName,
-      domain,
-      icon,
-      state: stateObj.state,
-      unit,
-      area_name: area.name,
-    });
-  }
+  const allEntities: EntityInfo[] = collectVisibleEntities(hass, getDashboardFilters(config));
 
   // Group by domain
   const domainMap = new Map<string, EntityInfo[]>();
@@ -79,8 +51,9 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
   const chipsHTML = sorted.map(([domain, entities]) => {
     const label = DOMAIN_GROUPS[domain]?.label || domain;
     const activeCount = entities.filter(e => isEntityOn(e.state, e.domain)).length;
-    return `<div class="dv-chip" data-domain="${domain}" onclick="hdpScrollToDomain('${domain}')">
-      <span class="dv-chip-label">${label}</span>
+    const safeDomain = escapeAttribute(domain);
+    return `<div class="dv-chip" data-domain="${safeDomain}" data-action="scroll-domain" onclick="hdpScrollToDomain('${safeDomain}')">
+      <span class="dv-chip-label">${escapeHTML(label)}</span>
       <span class="dv-chip-count">${activeCount}/${entities.length}</span>
     </div>`;
   }).join('');
@@ -205,12 +178,14 @@ function buildDomainSection(domain: string, entities: EntityInfo[], skin?: strin
 
   const cardsHTML = entities.map(e => buildDeviceEntityCard(e, skin, hass)).join('');
 
-  return `<div class="dv-section" id="dv-domain-${domain}">
+  const safeDomain = escapeAttribute(domain);
+
+  return `<div class="dv-section" id="dv-domain-${safeDomain}">
     <div class="dv-section-hdr">
       <div class="dv-section-icon" style="background: ${iconColor.bg}; color: ${iconColor.fg};">
         ${getDomainIconSVG(domain)}
       </div>
-      <span class="dv-section-label">${label}</span>
+      <span class="dv-section-label">${escapeHTML(label)}</span>
       <span class="dv-section-cnt">${activeCount}/${entities.length}</span>
     </div>
     <div class="dv-grid">${cardsHTML}</div>
@@ -340,11 +315,12 @@ function buildDeviceEntityCard(entity: EntityInfo, skin?: string, hass?: Hass): 
 
   // Default card for light, switch, fan, sensor, etc.
   const active = isEntityOn(entity.state, entity.domain);
-  const stateText = formatState(entity);
+  const stateText = escapeHTML(formatState(entity));
   const iconSVG = getEntityIconSVG(entity.domain, active);
   const isSensor = entity.domain === 'sensor' || entity.domain === 'binary_sensor';
   const skinCls = skin ? `hdp-card hdp-card--${skin}` : '';
   const cardCls = active ? `dvc dvc--on ${skinCls}` : `dvc ${skinCls}`;
+  const entityId = escapeAttribute(entity.entity_id);
 
   const rightHTML = isSensor
     ? `<span class="dvc-val">${stateText}</span>`
@@ -354,17 +330,17 @@ function buildDeviceEntityCard(entity: EntityInfo, skin?: string, hass?: Hass): 
         </div>
       </div>`;
 
-  return `<div class="${cardCls}" data-entity="${entity.entity_id}">
+  return `<div class="${cardCls}" data-entity="${entityId}" data-action="toggle">
     <div class="dvc-bar"></div>
     <div class="dvc-row">
       <div class="dvc-ico ${active ? 'dvc-ico--on' : 'dvc-ico--off'}">${iconSVG}</div>
       <div class="dvc-info">
-        <div class="dvc-name">${entity.name}</div>
+        <div class="dvc-name">${escapeHTML(entity.name)}</div>
         <div class="dvc-state">
           <span class="dvc-dot ${active ? 'dvc-dot--on' : 'dvc-dot--off'}"></span>
           ${stateText}
         </div>
-        <div class="dvc-area">${entity.area_name}</div>
+        <div class="dvc-area">${escapeHTML(entity.area_name)}</div>
       </div>
       ${rightHTML}
     </div>

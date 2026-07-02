@@ -18,6 +18,7 @@ import { generateDesignTokenCSS } from '../styles/design-tokens';
 import type { ResolvedTokens, StoredVisualConfig } from '../utils/visual-config';
 import { loadStoredConfig, saveStoredConfig, clearStoredConfig } from '../utils/visual-config';
 import { generatePaletteGeneratorJS, MOOD_PRESETS } from '../themes/palette-generator';
+import { escapeAttribute, escapeHTML, escapeInlineStyleValue } from '../utils/html';
 import {
   getSettingsSectionsCSS,
   generateSettingsSectionsJS,
@@ -412,18 +413,20 @@ ${generateDesignTokenCSS(tokens)}
 
 function buildSeedColorCard(stored: StoredVisualConfig, tokens?: ResolvedTokens): LovelaceCardConfig {
   const currentMood = (stored.mood_preset as string) || '';
-  const currentSeed = (stored.seed_color as string) || '';
+  const currentSeed = escapeAttribute((stored.seed_color as string) || '');
+  const currentSeedValue = currentSeed || '#4F6EF7';
   const autoDark = stored.auto_dark !== false;
 
   const moodCards = MOOD_PRESETS.map(m => {
     const isActive = currentMood === m.id;
-    return `<button class="mood-card ${isActive ? 'mood-card--active' : ''}" data-mood="${m.id}" data-component="mood-card">
-      <div class="mood-preview" style="background: linear-gradient(135deg, ${m.seed} 0%, ${m.seed}99 100%);">
-        <span class="mood-icon">${m.icon}</span>
+    const seed = escapeInlineStyleValue(m.seed);
+    return `<button class="mood-card ${isActive ? 'mood-card--active' : ''}" data-mood="${escapeAttribute(m.id)}" data-component="mood-card">
+      <div class="mood-preview" style="background: linear-gradient(135deg, ${seed} 0%, ${seed}99 100%);">
+        <span class="mood-icon">${escapeHTML(m.icon)}</span>
       </div>
       <div class="mood-meta">
-        <span class="mood-name">${m.name}</span>
-        <span class="mood-name-en">${m.name_en}</span>
+        <span class="mood-name">${escapeHTML(m.name)}</span>
+        <span class="mood-name-en">${escapeHTML(m.name_en)}</span>
       </div>
       ${isActive ? '<div class="mood-check"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="white"/></svg></div>' : ''}
     </button>`;
@@ -570,7 +573,7 @@ ${generateDesignTokenCSS(tokens)}
     </div>
     <div class="seed-custom-input">
       <input type="color" class="seed-color-picker" id="seed-color-input" value="${currentSeed || '#4F6EF7'}" aria-label="自定义种子色" />
-      <span class="seed-hex" id="seed-color-hex">${currentSeed || '#4F6EF7'}</span>
+      <span class="seed-hex" id="seed-color-hex">${escapeHTML(currentSeedValue)}</span>
     </div>
   </div>
   <div class="seed-toggle-row">
@@ -723,24 +726,24 @@ function buildAutoMoodCard(stored: StoredVisualConfig, tokens?: ResolvedTokens):
   else currentPeriod = 'midnight';
 
   const moodOptions = MOOD_PRESETS.map(m =>
-    `<option value="${m.id}">${m.name} ${m.name_en}</option>`
+    `<option value="${escapeAttribute(m.id)}">${escapeHTML(m.name)} ${escapeHTML(m.name_en)}</option>`
   ).join('');
 
   const periodRows = periods.map(p => {
     const currentMood = (timeMoods as any)[p.key] || p.default;
     const isCurrent = p.key === currentPeriod;
     const options = MOOD_PRESETS.map(m =>
-      `<option value="${m.id}" ${m.id === currentMood ? 'selected' : ''}>${m.name} ${m.name_en}</option>`
+      `<option value="${escapeAttribute(m.id)}" ${m.id === currentMood ? 'selected' : ''}>${escapeHTML(m.name)} ${escapeHTML(m.name_en)}</option>`
     ).join('');
-    return `<div class="am-period-row ${isCurrent ? 'am-period-row--current' : ''}" data-period="${p.key}">
+    return `<div class="am-period-row ${isCurrent ? 'am-period-row--current' : ''}" data-period="${escapeAttribute(p.key)}">
       <div class="am-period-info">
-        <span class="am-period-icon">${p.icon}</span>
+        <span class="am-period-icon">${escapeHTML(p.icon)}</span>
         <div class="am-period-text">
           <span class="am-period-label">${p.label} ${isCurrent ? '<span class="am-now-badge">当前</span>' : ''}</span>
-          <span class="am-period-time">${p.time}</span>
+          <span class="am-period-time">${escapeHTML(p.time)}</span>
         </div>
       </div>
-      <select class="am-mood-select" data-period="${p.key}" ${autoMood ? '' : 'disabled'}>
+      <select class="am-mood-select" data-period="${escapeAttribute(p.key)}" ${autoMood ? '' : 'disabled'}>
         ${options}
       </select>
     </div>`;
@@ -1086,11 +1089,11 @@ function buildLayoutConfigCard(stored: StoredVisualConfig, tokens?: ResolvedToke
   const sizeRows = homeCards.map(c => {
     const current = cardSizes[c.id] || c.default;
     const options = sizeOptions.map(o =>
-      `<option value="${o.val}" ${o.val === current ? 'selected' : ''}>${o.label} (${o.hint})</option>`
+      `<option value="${escapeAttribute(o.val)}" ${o.val === current ? 'selected' : ''}>${escapeHTML(o.label)} (${escapeHTML(o.hint)})</option>`
     ).join('');
     return `<div class="lc-size-row">
-      <span class="lc-size-label">${c.label}</span>
-      <select class="lc-size-select" data-card-id="${c.id}" data-default="${c.default}">
+      <span class="lc-size-label">${escapeHTML(c.label)}</span>
+      <select class="lc-size-select" data-card-id="${escapeAttribute(c.id)}" data-default="${escapeAttribute(c.default)}">
         ${options}
       </select>
     </div>`;
@@ -1103,9 +1106,9 @@ function buildLayoutConfigCard(stored: StoredVisualConfig, tokens?: ResolvedToke
     { val: 'spacious', label: '宽松', desc: '更多留白' },
   ];
   const densityBtns = densities.map(d =>
-    `<button class="lc-density-btn ${d.val === currentDensity ? 'lc-density-btn--active' : ''}" data-density="${d.val}">
-      <span class="lc-density-label">${d.label}</span>
-      <span class="lc-density-desc">${d.desc}</span>
+    `<button class="lc-density-btn ${d.val === currentDensity ? 'lc-density-btn--active' : ''}" data-density="${escapeAttribute(d.val)}">
+      <span class="lc-density-label">${escapeHTML(d.label)}</span>
+      <span class="lc-density-desc">${escapeHTML(d.desc)}</span>
     </button>`
   ).join('');
 
@@ -1130,11 +1133,11 @@ function buildLayoutConfigCard(stored: StoredVisualConfig, tokens?: ResolvedToke
     const areaRows = areas.map(([areaId, area]) => {
       const current = areaSkins[areaId] || '';
       const opts = skinOptions.map(o =>
-        `<option value="${o.val}" ${o.val === current ? 'selected' : ''}>${o.label}</option>`
+        `<option value="${escapeAttribute(o.val)}" ${o.val === current ? 'selected' : ''}>${escapeHTML(o.label)}</option>`
       ).join('');
       return `<div class="lc-skin-row">
-        <span class="lc-skin-label">${area.name}</span>
-        <select class="lc-skin-select" data-area-id="${areaId}">
+        <span class="lc-skin-label">${escapeHTML(area.name)}</span>
+        <select class="lc-skin-select" data-area-id="${escapeAttribute(areaId)}">
           ${opts}
         </select>
       </div>`;
@@ -1342,18 +1345,19 @@ function buildColorPickerCard(stored: StoredVisualConfig, tokens?: ResolvedToken
 
   const rows = colorFields
     .map((f) => {
-      const val = (stored[f.id] as string) || f.defaultVal;
+      const val = escapeAttribute((stored[f.id] as string) || f.defaultVal);
+      const safeValStyle = escapeInlineStyleValue(val);
       return `<div class="color-row" data-component="color-row">
         <div class="color-info">
-          <span class="color-label">${f.label}</span>
-          <span class="color-desc">${f.desc}</span>
+          <span class="color-label">${escapeHTML(f.label)}</span>
+          <span class="color-desc">${escapeHTML(f.desc)}</span>
         </div>
         <div class="color-input-group">
           <div class="color-swatch-wrap">
             <input type="color" class="color-picker" data-key="${f.id}" value="${val}" aria-label="${f.label}颜色选择" />
-            <div class="color-swatch" style="background: ${val};"></div>
+            <div class="color-swatch" style="background: ${safeValStyle};"></div>
           </div>
-          <span class="color-hex">${val}</span>
+          <span class="color-hex">${escapeHTML(val)}</span>
         </div>
       </div>`;
     })

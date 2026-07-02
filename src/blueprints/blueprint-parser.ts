@@ -27,6 +27,7 @@
  */
 
 import type { BlueprintDefinition, BlueprintMeta, BlueprintInput, BlueprintInputType, LovelaceCardConfig } from '../types';
+import { escapeHTML, escapeJSONAttribute } from '../utils/html';
 
 // ─── YAML Parser (Simple Subset) ────────────────────────────────────────────
 
@@ -269,13 +270,13 @@ export function cardConfigToHTML(card: LovelaceCardConfig, pageName: string): st
   }
 
   // For non-html-pro cards, wrap in a container that HA can render
-  return `<div class="bp-native-card" data-card-config='${JSON.stringify(card)}'>
+  return `<div class="bp-native-card" data-card-config='${escapeJSONAttribute(card)}'>
     <div class="bp-card-placeholder">
       <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5">
         <rect x="3" y="3" width="18" height="18" rx="4"/>
         <path d="M9 9h6v6H9z"/>
       </svg>
-      <span class="bp-card-type">${card.type}</span>
+      <span class="bp-card-type">${escapeHTML(card.type)}</span>
       <span class="bp-card-hint">此卡片需要在 Home Assistant 中渲染</span>
     </div>
   </div>
