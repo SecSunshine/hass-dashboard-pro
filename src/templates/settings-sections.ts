@@ -433,6 +433,150 @@ window.hdpImportConfig = function() {
   input.click();
 };
 
+function hdpBase64UrlEncode(value) {
+  return btoa(unescape(encodeURIComponent(value))).replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/g, '');
+}
+
+function hdpBase64UrlDecode(value) {
+  var normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+  while (normalized.length % 4) normalized += '=';
+  return decodeURIComponent(escape(atob(normalized)));
+}
+
+function hdpExtractEntityIds(value) {
+  var found = {};
+  var re = /\\b([a-z_]+\\.[a-z0-9_]+)\\b/g;
+  function walk(item) {
+    if (typeof item === 'string') {
+      var match;
+      while ((match = re.exec(item))) found[match[1]] = true;
+      re.lastIndex = 0;
+    } else if (Array.isArray(item)) {
+      item.forEach(walk);
+    } else if (item && typeof item === 'object') {
+      Object.keys(item).forEach(function(key) { walk(item[key]); });
+    }
+  }
+  walk(value);
+  return Object.keys(found).sort();
+}
+
+function hdpApplyEntityMapping(value, mapping) {
+  if (typeof value === 'string') {
+    var result = value;
+    Object.keys(mapping).forEach(function(from) {
+      result = result.split(from).join(mapping[from]);
+    });
+    return result;
+  }
+  if (Array.isArray(value)) return value.map(function(item) { return hdpApplyEntityMapping(item, mapping); });
+  if (value && typeof value === 'object') {
+    var mapped = {};
+    Object.keys(value).forEach(function(key) { mapped[key] = hdpApplyEntityMapping(value[key], mapping); });
+    return mapped;
+  }
+  return value;
+}
+
+function hdpBuildEntityMapping(sourceEntities) {
+  var hass = hdpFindHass && hdpFindHass();
+  var states = hass && hass.states ? hass.states : {};
+  var mapping = {};
+  var unmapped = [];
+  var used = {};
+
+  function tokens(value) {
+    return String(value || '').toLowerCase().replace(/[^a-z0-9_]+/g, '_').split(/[_\\s]+/).filter(function(t) { return t.length > 1; });
+  }
+  function score(source, target) {
+    var sourceTokens = tokens(source);
+    var targetTokens = tokens(target);
+    var targetSet = {};
+    targetTokens.forEach(function(t) { targetSet[t] = true; });
+    return sourceTokens.reduce(function(total, t) { return total + (targetSet[t] ? t.length : 0); }, 0);
+  }
+
+  sourceEntities.forEach(function(sourceId) {
+    if (states[sourceId] && !used[sourceId]) {
+      mapping[sourceId] = sourceId;
+      used[sourceId] = true;
+      return;
+    }
+    var domain = sourceId.split('.')[0];
+    var best = null;
+    Object.keys(states).forEach(function(entityId) {
+      if (used[entityId] || entityId.split('.')[0] !== domain) return;
+      var friendly = states[entityId].attributes && states[entityId].attributes.friendly_name || '';
+      var s = score(sourceId, entityId + ' ' + friendly);
+      if (!best || s > best.score) best = { id: entityId, score: s };
+    });
+    if (best && best.score > 0) {
+      mapping[sourceId] = best.id;
+      used[best.id] = true;
+    } else {
+      unmapped.push(sourceId);
+    }
+  });
+
+  return { mapping: mapping, unmapped: unmapped };
+}
+
+window.hdpExportShareCode = function() {
+  var config = hdpLoadConfig();
+  var visual = {};
+  try { visual = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}'); } catch(e) {}
+  var blueprints = typeof hdpBlueprintLoad === 'function' ? hdpBlueprintLoad() : ((config.blueprints && config.blueprints.pages) || []);
+  var source = { hdp_config: config, visual_config: visual, blueprints: blueprints };
+  var bundle = {
+    schema: 'hass-dashboard-pro.share.v1',
+    version: 1,
+    exported_at: new Date().toISOString(),
+    name: config.dashboard && config.dashboard.name,
+    hdp_config: config,
+    visual_config: visual,
+    blueprints: blueprints,
+    source_entities: hdpExtractEntityIds(source)
+  };
+  var code = 'HDP1.' + hdpBase64UrlEncode(JSON.stringify(bundle));
+  prompt('复制分享码', code);
+};
+
+window.hdpImportShareCode = function() {
+  var code = prompt('粘贴分享码');
+  if (!code) return;
+  try {
+    if (code.indexOf('HDP1.') !== 0) throw new Error('分享码格式不正确');
+    var bundle = JSON.parse(hdpBase64UrlDecode(code.slice(5)));
+    if (bundle.schema !== 'hass-dashboard-pro.share.v1' || bundle.version !== 1) {
+      throw new Error('分享码版本不支持');
+    }
+    var mapping = hdpBuildEntityMapping(bundle.source_entities || hdpExtractEntityIds(bundle));
+    var config = hdpApplyEntityMapping(bundle.hdp_config || {}, mapping.mapping);
+    var visual = bundle.visual_config || {};
+    var blueprints = hdpApplyEntityMapping(bundle.blueprints || [], mapping.mapping);
+
+    hdpSaveConfig(config);
+    try { localStorage.setItem('hdp_visual_config', JSON.stringify(visual)); } catch(e) {}
+    if (typeof hdpBlueprintSave === 'function') hdpBlueprintSave(blueprints);
+
+    var finish = function() {
+      var msg = mapping.unmapped.length
+        ? '已导入，' + mapping.unmapped.length + ' 个实体需要手动确认'
+        : '已导入并自动适配实体';
+      if (typeof hdpShowToast === 'function') hdpShowToast(msg, 'success');
+      setTimeout(function() { location.reload(); }, 900);
+    };
+
+    if (typeof hdpSaveToLovelace === 'function') {
+      hdpSaveToLovelace(hdpLoadConfig()).then(finish).catch(finish);
+    } else {
+      finish();
+    }
+  } catch(err) {
+    alert('导入失败: ' + (err && err.message ? err.message : err));
+  }
+};
+
 window.hdpRefreshThemes = function() {
   // Clear cached theme file list so it re-scans on next load
   try { localStorage.removeItem('hdp_theme_files'); } catch(e) {}

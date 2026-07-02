@@ -177,6 +177,14 @@ export function buildBlueprintGalleryHTML(pages: BlueprintInstance[]): string {
   <div class="bp-gallery-hdr">
     <span class="bp-gallery-title">蓝图页面</span>
     <div class="bp-gallery-actions">
+      <button class="bp-btn" data-action="import-built-in-template" onclick="hdpImportBuiltInTemplate()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        模板库
+      </button>
+      <button class="bp-btn" data-action="import-online-template" onclick="hdpImportOnlineTemplate()">在线库</button>
+      <button class="bp-btn" data-action="import-screenshot-draft" onclick="hdpImportScreenshotDraft()">截图复刻</button>
+      <button class="bp-btn" data-action="export-share-code" onclick="hdpExportShareCode()">分享</button>
+      <button class="bp-btn" data-action="import-share-code" onclick="hdpImportShareCode()">复刻</button>
       <button class="bp-btn" onclick="hdpShowImportModal('url')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
         URL 导入

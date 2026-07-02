@@ -291,6 +291,172 @@ export function generateBlueprintJS(): string {
     }
   };
 
+  window.hdpImportBuiltInTemplate = function() {
+    var yaml = [
+      'meta:',
+      '  name: Family Overview',
+      '  description: Built-in html-card-pro overview template',
+      '  version: 1.0.0',
+      'inputs:',
+      '    main_light:',
+      '      name: Main Light',
+      '      type: entity-picker',
+      '      domain: light',
+      '      default: light.living_room',
+      '    temp_sensor:',
+      '      name: Temperature Sensor',
+      '      type: entity-picker',
+      '      domain: sensor',
+      '      default: sensor.living_temperature',
+      'card:',
+      '  type: custom:html-pro-card',
+      '  title: Family Overview',
+      '  do_not_parse: true',
+      '  content: |',
+      '    <section class="hdp-imported-template" data-view="template-family-overview">',
+      '      <button data-entity="$main_light$" data-action="toggle">Main light</button>',
+      '      <div data-entity="$temp_sensor$">Temperature</div>',
+      '    </section>'
+    ].join('\\n');
+
+    var page = hdpBlueprintImportYAML(yaml);
+    if (!page) return;
+
+    if (typeof hdpBuildEntityMapping === 'function' && typeof hdpApplyEntityMapping === 'function') {
+      var sourceEntities = ['light.living_room', 'sensor.living_temperature'];
+      var result = hdpBuildEntityMapping(sourceEntities);
+      page.inputs = hdpApplyEntityMapping(page.inputs || {}, result.mapping);
+      page.card = hdpBlueprintResolveCard(page);
+    }
+
+    hdpBlueprintAdd(page);
+    if (typeof hdpShowToast === 'function') hdpShowToast('内置模板已导入并尝试自动适配实体', 'success');
+    if (typeof hdpRefreshBlueprintGallery === 'function') hdpRefreshBlueprintGallery();
+  };
+
+  window.hdpImportOnlineTemplate = function() {
+    var catalogUrl = prompt('输入模板库 JSON URL', '/local/hass-dashboard-pro/templates/catalog.json');
+    if (!catalogUrl) return;
+    fetch(catalogUrl)
+      .then(function(r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function(catalog) {
+        var templates = Array.isArray(catalog) ? catalog : (catalog.templates || []);
+        templates = templates.filter(function(item) { return item && item.name && item.url; });
+        if (!templates.length) throw new Error('模板库为空或格式不正确');
+
+        var menu = templates.map(function(item, index) {
+          return (index + 1) + '. ' + item.name + (item.description ? ' - ' + item.description : '');
+        }).join('\\n');
+        var choice = prompt('选择要导入的模板编号:\\n' + menu, '1');
+        var idx = parseInt(choice || '1', 10) - 1;
+        if (idx < 0 || idx >= templates.length) return;
+
+        return fetch(templates[idx].url).then(function(r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.text();
+        }).then(function(yaml) {
+          var page = hdpBlueprintImportYAML(yaml);
+          if (!page) return;
+          page.source = templates[idx].url;
+
+          if (typeof hdpBuildEntityMapping === 'function' && typeof hdpApplyEntityMapping === 'function') {
+            var refs = [];
+            var re = /\\b([a-z_]+\\.[a-z0-9_]+)\\b/g;
+            var match;
+            while ((match = re.exec(yaml))) refs.push(match[1]);
+            var result = hdpBuildEntityMapping(refs);
+            page.inputs = hdpApplyEntityMapping(page.inputs || {}, result.mapping);
+            page.card = hdpBlueprintResolveCard(page);
+          }
+
+          hdpBlueprintAdd(page);
+          if (typeof hdpShowToast === 'function') hdpShowToast('在线模板已导入并尝试自动适配实体', 'success');
+          if (typeof hdpRefreshBlueprintGallery === 'function') hdpRefreshBlueprintGallery();
+        });
+      })
+      .catch(function(err) {
+        alert('在线模板库导入失败: ' + (err && err.message ? err.message : err));
+      });
+  };
+
+  function hdpSanitizeImageUrl(url) {
+    url = String(url || '').trim();
+    if (!url) return '';
+    try {
+      var parsed = new URL(url, window.location.origin);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') return url;
+      if (parsed.protocol === 'data:' && url.indexOf('data:image/') === 0) return url;
+    } catch(e) {
+      if (url.indexOf('/') === 0 || url.indexOf('./') === 0 || url.indexOf('../') === 0) return url;
+    }
+    return '';
+  }
+
+  function hdpFirstEntityByDomain(domain) {
+    var hass = typeof hdpFindHass === 'function' ? hdpFindHass() : null;
+    var states = hass && hass.states ? hass.states : {};
+    var ids = Object.keys(states).filter(function(id) { return id.split('.')[0] === domain; });
+    return ids[0] || '';
+  }
+
+  window.hdpImportScreenshotDraft = function() {
+    var rawUrl = prompt('粘贴截图 URL 或 /local 图片路径');
+    var imageUrl = hdpSanitizeImageUrl(rawUrl);
+    if (!imageUrl) {
+      alert('截图地址无效，仅支持 http(s)、data:image 或相对路径');
+      return;
+    }
+
+    var mainLight = hdpFirstEntityByDomain('light') || 'light.living_room';
+    var tempSensor = hdpFirstEntityByDomain('sensor') || 'sensor.living_temperature';
+    var safeImage = imageUrl.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    var yaml = [
+      'meta:',
+      '  name: Screenshot Replication Draft',
+      '  description: Screenshot-guided replication draft',
+      '  version: 1.0.0',
+      'inputs:',
+      '    screenshot_url:',
+      '      name: Screenshot URL',
+      '      type: text-field',
+      '      default: "' + safeImage + '"',
+      '    main_light:',
+      '      name: Main Light',
+      '      type: entity-picker',
+      '      domain: light',
+      '      default: ' + mainLight,
+      '    temp_sensor:',
+      '      name: Temperature Sensor',
+      '      type: entity-picker',
+      '      domain: sensor',
+      '      default: ' + tempSensor,
+      'card:',
+      '  type: custom:html-pro-card',
+      '  title: Screenshot Draft',
+      '  do_not_parse: true',
+      '  content: |',
+      '    <section class="hdp-screenshot-draft" data-view="screenshot-replication">',
+      '      <div style="border-radius:16px; overflow:hidden; border:1px solid var(--hdp-border); margin-bottom:12px;">',
+      '        <img src="$screenshot_url$" alt="dashboard reference" style="width:100%; display:block;" />',
+      '      </div>',
+      '      <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px;">',
+      '        <button data-entity="$main_light$" data-action="toggle" style="min-height:72px; border-radius:14px; border:1px solid var(--hdp-border); background:var(--hdp-card-bg); color:var(--hdp-text);">Main light</button>',
+      '        <div data-entity="$temp_sensor$" style="min-height:72px; border-radius:14px; border:1px solid var(--hdp-border); background:var(--hdp-card-bg); color:var(--hdp-text); display:flex; align-items:center; justify-content:center;">Temperature</div>',
+      '      </div>',
+      '    </section>'
+    ].join('\\n');
+
+    var page = hdpBlueprintImportYAML(yaml);
+    if (!page) return;
+    hdpBlueprintAdd(page);
+    if (typeof hdpShowToast === 'function') hdpShowToast('截图复刻草稿已生成', 'success');
+    if (typeof hdpRefreshBlueprintGallery === 'function') hdpRefreshBlueprintGallery();
+  };
+
   // Check for blueprint updates (compare version with remote)
   window.hdpBlueprintCheckUpdate = function(page, callback) {
     if (!page.source) {
