@@ -7,12 +7,13 @@
 
 import type { EntityInfo, Hass, HassArea, HassEntity, StrategyConfig } from '../types';
 import { HIDDEN_DOMAINS } from '../types';
-import { isEntityOn } from './area-entities';
+import { isEntityOn, isUnavailableState } from './area-entities';
 import { getEffectiveHDPConfig } from './effective-config';
 
 export interface DashboardFilters {
   hiddenAreas: string[];
   hiddenDomains: string[];
+  hideUnavailable: boolean;
 }
 
 export type EntitySemanticType =
@@ -50,6 +51,7 @@ export function getDashboardFilters(config: StrategyConfig): DashboardFilters {
   return {
     hiddenAreas: hdpConfig?.areas?.hidden_areas || config.hidden_areas || [],
     hiddenDomains: hdpConfig?.devices?.hidden_domains || config.hidden_domains || [],
+    hideUnavailable: hdpConfig?.areas?.hide_unavailable || false,
   };
 }
 
@@ -98,6 +100,7 @@ export function collectVisibleEntities(hass: Hass, filters: DashboardFilters): D
   for (const [entityId, stateObj] of Object.entries(hass.states)) {
     const domain = entityId.split('.')[0];
     if (!shouldIncludeDomain(domain, filters.hiddenDomains)) continue;
+    if (filters.hideUnavailable && isUnavailableState(stateObj.state)) continue;
 
     const areaId = resolveEntityAreaId(hass, entityId);
     if (!areaId || filters.hiddenAreas.includes(areaId)) continue;

@@ -38,7 +38,7 @@ export interface HousePowerUsage {
  */
 export function buildHousePowerUsage(hass: Hass, config?: StrategyConfig): HousePowerUsage {
   const roomMap = new Map<string, { watts: number; count: number; name: string }>();
-  const filters = config ? getDashboardFilters(config) : { hiddenAreas: [], hiddenDomains: [] };
+  const filters = config ? getDashboardFilters(config) : { hiddenAreas: [], hiddenDomains: [], hideUnavailable: false };
 
   for (const [entityId, stateObj] of Object.entries(hass.states)) {
     // Only sensor domain

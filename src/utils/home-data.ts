@@ -374,21 +374,27 @@ export interface AlarmStatus {
   has_alarm: boolean;
 }
 
-export function getAlarmStatus(hass: Hass): AlarmStatus {
+export function getAlarmStatus(hass: Hass, alarmEntity?: string): AlarmStatus {
+  if (alarmEntity && hass.states[alarmEntity]) {
+    const stateObj = hass.states[alarmEntity];
+    if (alarmEntity.startsWith('alarm_control_panel.')) {
+      return formatAlarmControlState(stateObj.state);
+    }
+    if (alarmEntity.startsWith('lock.')) {
+      const locked = stateObj.state === 'locked';
+      return {
+        state: stateObj.state,
+        display: locked ? '1/1 已锁' : '0/1 已锁',
+        badge: locked ? '安全' : '未锁定',
+        badge_class: locked ? 'ok' : 'warn',
+        has_alarm: true,
+      };
+    }
+  }
+
   for (const [eid, s] of Object.entries(hass.states)) {
     if (!eid.startsWith('alarm_control_panel.')) continue;
-    const st = s.state;
-
-    if (st === 'armed_away' || st === 'armed_home' || st === 'armed_night' || st === 'armed_custom_bypass') {
-      return { state: st, display: '已布防', badge: '安全', badge_class: 'ok', has_alarm: true };
-    }
-    if (st === 'triggered') {
-      return { state: st, display: '报警中', badge: '警报', badge_class: 'danger', has_alarm: true };
-    }
-    if (st === 'arming' || st === 'pending') {
-      return { state: st, display: '布防中', badge: '等待', badge_class: 'warn', has_alarm: true };
-    }
-    return { state: st, display: '已撤防', badge: '未布防', badge_class: 'info', has_alarm: true };
+    return formatAlarmControlState(s.state);
   }
 
   // Fallback: check locks
@@ -410,6 +416,19 @@ export function getAlarmStatus(hass: Hass): AlarmStatus {
   }
 
   return { state: 'none', display: '--', badge: '无设备', badge_class: 'info', has_alarm: false };
+}
+
+function formatAlarmControlState(state: string): AlarmStatus {
+  if (state === 'armed_away' || state === 'armed_home' || state === 'armed_night' || state === 'armed_custom_bypass') {
+    return { state, display: '已布防', badge: '安全', badge_class: 'ok', has_alarm: true };
+  }
+  if (state === 'triggered') {
+    return { state, display: '报警中', badge: '警报', badge_class: 'danger', has_alarm: true };
+  }
+  if (state === 'arming' || state === 'pending') {
+    return { state, display: '布防中', badge: '等待', badge_class: 'warn', has_alarm: true };
+  }
+  return { state, display: '已撤防', badge: '未布防', badge_class: 'info', has_alarm: true };
 }
 
 // ─── SVG Icon Maps ─────────────────────────────────────────────────────────

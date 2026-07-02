@@ -91,6 +91,41 @@ describe('dashboard model', () => {
     expect(entities.map(entity => entity.entity_id)).toEqual(['light.kitchen']);
   });
 
+  it('applies hide unavailable consistently', () => {
+    const hassWithUnavailable: Hass = {
+      ...hass,
+      states: {
+        ...hass.states,
+        'light.offline': {
+          entity_id: 'light.offline',
+          state: 'unavailable',
+          attributes: {},
+          last_changed: '',
+          last_updated: '',
+        },
+      },
+      entities: {
+        ...hass.entities,
+        'light.offline': {
+          entity_id: 'light.offline',
+          device_id: null,
+          area_id: 'kitchen',
+          platform: 'demo',
+          disabled_by: null,
+          hidden_by: null,
+        },
+      },
+    };
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        areas: { hide_unavailable: true },
+      } as any,
+    };
+    const entities = collectVisibleEntities(hassWithUnavailable, getDashboardFilters(config));
+    expect(entities.map(entity => entity.entity_id)).not.toContain('light.offline');
+  });
+
   it('builds a home profile from visible entities', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const profile = buildHomeProfile(hass, config);
@@ -99,4 +134,3 @@ describe('dashboard model', () => {
     expect(profile.dominant_semantics).toContain('lighting');
   });
 });
-

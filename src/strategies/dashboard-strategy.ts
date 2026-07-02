@@ -22,7 +22,8 @@ export class HassDashboardProStrategy {
     const effectiveConfig = getEffectiveStrategyConfig(config);
     const hiddenAreas = effectiveConfig.hdp_config?.areas?.hidden_areas || effectiveConfig.hidden_areas || [];
     const hiddenDomains = effectiveConfig.hdp_config?.devices?.hidden_domains || effectiveConfig.hidden_domains || [];
-    const areaEntityMap = buildAreaEntityMap(hass, hiddenAreas, hiddenDomains);
+    const hideUnavailable = effectiveConfig.hdp_config?.areas?.hide_unavailable || false;
+    const areaEntityMap = buildAreaEntityMap(hass, hiddenAreas, hiddenDomains, hideUnavailable);
 
     // Pre-compute area summaries (for sidebar display)
     const areaSummaries = buildAreaSummaries(hass, areaEntityMap, hiddenAreas);

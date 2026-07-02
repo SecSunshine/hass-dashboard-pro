@@ -52,7 +52,8 @@ export class HassDashboardProViewStrategy {
 function buildFullLayoutCard(hass: Hass, config: StrategyConfig, tokens: ReturnType<typeof resolveTokens>): LovelaceCardConfig {
   const hiddenAreas = config.hdp_config?.areas?.hidden_areas || config.hidden_areas || [];
   const hiddenDomains = config.hdp_config?.devices?.hidden_domains || config.hidden_domains || [];
-  const areaEntityMap = buildAreaEntityMap(hass, hiddenAreas, hiddenDomains);
+  const hideUnavailable = config.hdp_config?.areas?.hide_unavailable || false;
+  const areaEntityMap = buildAreaEntityMap(hass, hiddenAreas, hiddenDomains, hideUnavailable);
   const areaSummaries = config.area_summaries || [];
   const blueprintPages = config.hdp_config?.blueprints?.pages || config.blueprint_pages || [];
 
