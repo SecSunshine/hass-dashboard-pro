@@ -37,6 +37,10 @@ describe('entity mapper', () => {
     const result = buildEntityMapping(['light.old_kitchen_ceiling', 'sensor.living_temp'], hass);
     expect(result.mapping['light.old_kitchen_ceiling']).toBe('light.kitchen_ceiling');
     expect(result.mapping['sensor.living_temp']).toBe('sensor.living_temperature');
+    expect(result.matches).toEqual(expect.arrayContaining([
+      expect.objectContaining({ source: 'light.old_kitchen_ceiling', target: 'light.kitchen_ceiling' }),
+      expect.objectContaining({ source: 'sensor.living_temp', target: 'sensor.living_temperature' }),
+    ]));
   });
 
   it('applies mappings deeply', () => {

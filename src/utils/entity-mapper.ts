@@ -6,7 +6,15 @@ import type { Hass } from '../types';
 
 export interface EntityMappingResult {
   mapping: Record<string, string>;
+  matches: EntityMappingMatch[];
   unmapped: string[];
+}
+
+export interface EntityMappingMatch {
+  source: string;
+  target: string;
+  score: number;
+  confidence: 'exact' | 'high' | 'medium' | 'low';
 }
 
 const ENTITY_ID_RE = /\b([a-z_]+\.[a-z0-9_]+)\b/g;
@@ -24,26 +32,34 @@ export function extractEntityIds(value: unknown): string[] {
 
 export function buildEntityMapping(sourceEntityIds: string[], hass: Hass): EntityMappingResult {
   const mapping: Record<string, string> = {};
+  const matches: EntityMappingMatch[] = [];
   const unmapped: string[] = [];
   const used = new Set<string>();
 
   for (const sourceId of sourceEntityIds) {
     if (hass.states[sourceId] && !used.has(sourceId)) {
       mapping[sourceId] = sourceId;
+      matches.push({ source: sourceId, target: sourceId, score: 999, confidence: 'exact' });
       used.add(sourceId);
       continue;
     }
 
     const candidate = findBestCandidate(sourceId, hass, used);
     if (candidate) {
-      mapping[sourceId] = candidate;
-      used.add(candidate);
+      mapping[sourceId] = candidate.id;
+      matches.push({
+        source: sourceId,
+        target: candidate.id,
+        score: candidate.score,
+        confidence: toConfidence(candidate.score),
+      });
+      used.add(candidate.id);
     } else {
       unmapped.push(sourceId);
     }
   }
 
-  return { mapping, unmapped };
+  return { mapping, matches, unmapped };
 }
 
 export function applyEntityMapping<T>(value: T, mapping: Record<string, string>): T {
@@ -72,7 +88,7 @@ export function applyEntityMapping<T>(value: T, mapping: Record<string, string>)
   return value;
 }
 
-function findBestCandidate(sourceId: string, hass: Hass, used: Set<string>): string | null {
+function findBestCandidate(sourceId: string, hass: Hass, used: Set<string>): { id: string; score: number } | null {
   const sourceDomain = sourceId.split('.')[0];
   const sourceTokens = tokenize(sourceId);
   let best: { id: string; score: number } | null = null;
@@ -89,7 +105,7 @@ function findBestCandidate(sourceId: string, hass: Hass, used: Set<string>): str
     if (!best || score > best.score) best = { id: entityId, score };
   }
 
-  return best && best.score > 0 ? best.id : null;
+  return best && best.score > 0 ? best : null;
 }
 
 function walk(value: unknown, visit: (value: unknown) => void): void {
@@ -112,4 +128,10 @@ function similarity(a: Set<string>, b: Set<string>): number {
     if (b.has(token)) score += token.length;
   }
   return score;
+}
+
+function toConfidence(score: number): EntityMappingMatch['confidence'] {
+  if (score >= 12) return 'high';
+  if (score >= 6) return 'medium';
+  return 'low';
 }

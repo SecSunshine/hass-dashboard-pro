@@ -482,6 +482,7 @@ function hdpBuildEntityMapping(sourceEntities) {
   var hass = hdpFindHass && hdpFindHass();
   var states = hass && hass.states ? hass.states : {};
   var mapping = {};
+  var matches = [];
   var unmapped = [];
   var used = {};
 
@@ -499,6 +500,7 @@ function hdpBuildEntityMapping(sourceEntities) {
   sourceEntities.forEach(function(sourceId) {
     if (states[sourceId] && !used[sourceId]) {
       mapping[sourceId] = sourceId;
+      matches.push({ source: sourceId, target: sourceId, score: 999, confidence: 'exact' });
       used[sourceId] = true;
       return;
     }
@@ -512,14 +514,61 @@ function hdpBuildEntityMapping(sourceEntities) {
     });
     if (best && best.score > 0) {
       mapping[sourceId] = best.id;
+      matches.push({
+        source: sourceId,
+        target: best.id,
+        score: best.score,
+        confidence: best.score >= 12 ? 'high' : (best.score >= 6 ? 'medium' : 'low')
+      });
       used[best.id] = true;
     } else {
       unmapped.push(sourceId);
     }
   });
 
-  return { mapping: mapping, unmapped: unmapped };
+  return { mapping: mapping, matches: matches, unmapped: unmapped };
 }
+
+function hdpSaveImportReport(kind, mapping) {
+  var report = {
+    kind: kind,
+    imported_at: new Date().toISOString(),
+    mapped_count: mapping && mapping.matches ? mapping.matches.length : 0,
+    unmapped_count: mapping && mapping.unmapped ? mapping.unmapped.length : 0,
+    matches: mapping && mapping.matches ? mapping.matches : [],
+    unmapped: mapping && mapping.unmapped ? mapping.unmapped : []
+  };
+  try { localStorage.setItem('hdp_last_import_report', JSON.stringify(report)); } catch(e) {}
+  return report;
+}
+
+window.hdpShowImportReport = function() {
+  var report = null;
+  try { report = JSON.parse(localStorage.getItem('hdp_last_import_report') || 'null'); } catch(e) {}
+  if (!report) {
+    alert('暂无复刻/导入报告');
+    return;
+  }
+  var lines = [
+    '导入类型: ' + report.kind,
+    '导入时间: ' + report.imported_at,
+    '已映射: ' + report.mapped_count,
+    '未匹配: ' + report.unmapped_count,
+    ''
+  ];
+  if (report.matches && report.matches.length) {
+    lines.push('映射明细:');
+    report.matches.slice(0, 20).forEach(function(item) {
+      lines.push('- ' + item.source + ' -> ' + item.target + ' (' + item.confidence + ')');
+    });
+  }
+  if (report.unmapped && report.unmapped.length) {
+    lines.push('');
+    lines.push('需手动确认:');
+    report.unmapped.slice(0, 20).forEach(function(id) { lines.push('- ' + id); });
+  }
+  alert(lines.join('\\n'));
+};
 
 window.hdpExportShareCode = function() {
   var config = hdpLoadConfig();
@@ -551,6 +600,7 @@ window.hdpImportShareCode = function() {
       throw new Error('分享码版本不支持');
     }
     var mapping = hdpBuildEntityMapping(bundle.source_entities || hdpExtractEntityIds(bundle));
+    hdpSaveImportReport('share-code', mapping);
     var config = hdpApplyEntityMapping(bundle.hdp_config || {}, mapping.mapping);
     var visual = bundle.visual_config || {};
     var blueprints = hdpApplyEntityMapping(bundle.blueprints || [], mapping.mapping);

@@ -325,6 +325,7 @@ export function generateBlueprintJS(): string {
     if (typeof hdpBuildEntityMapping === 'function' && typeof hdpApplyEntityMapping === 'function') {
       var sourceEntities = ['light.living_room', 'sensor.living_temperature'];
       var result = hdpBuildEntityMapping(sourceEntities);
+      if (typeof hdpSaveImportReport === 'function') hdpSaveImportReport('built-in-template', result);
       page.inputs = hdpApplyEntityMapping(page.inputs || {}, result.mapping);
       page.card = hdpBlueprintResolveCard(page);
     }
@@ -368,6 +369,7 @@ export function generateBlueprintJS(): string {
             var match;
             while ((match = re.exec(yaml))) refs.push(match[1]);
             var result = hdpBuildEntityMapping(refs);
+            if (typeof hdpSaveImportReport === 'function') hdpSaveImportReport('online-template', result);
             page.inputs = hdpApplyEntityMapping(page.inputs || {}, result.mapping);
             page.card = hdpBlueprintResolveCard(page);
           }
@@ -410,8 +412,10 @@ export function generateBlueprintJS(): string {
       return;
     }
 
-    var mainLight = hdpFirstEntityByDomain('light') || 'light.living_room';
-    var tempSensor = hdpFirstEntityByDomain('sensor') || 'sensor.living_temperature';
+    var detectedLight = hdpFirstEntityByDomain('light');
+    var detectedSensor = hdpFirstEntityByDomain('sensor');
+    var mainLight = detectedLight || 'light.living_room';
+    var tempSensor = detectedSensor || 'sensor.living_temperature';
     var safeImage = imageUrl.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
     var yaml = [
@@ -452,6 +456,22 @@ export function generateBlueprintJS(): string {
 
     var page = hdpBlueprintImportYAML(yaml);
     if (!page) return;
+    if (typeof hdpSaveImportReport === 'function') {
+      hdpSaveImportReport('screenshot-draft', {
+        mapping: {
+          'light.living_room': mainLight,
+          'sensor.living_temperature': tempSensor
+        },
+        matches: [
+          { source: 'light.living_room', target: mainLight, score: detectedLight ? 999 : 0, confidence: detectedLight ? 'exact' : 'low' },
+          { source: 'sensor.living_temperature', target: tempSensor, score: detectedSensor ? 999 : 0, confidence: detectedSensor ? 'exact' : 'low' }
+        ].filter(function(item) { return item.score > 0; }),
+        unmapped: [
+          detectedLight ? '' : 'light.living_room',
+          detectedSensor ? '' : 'sensor.living_temperature'
+        ].filter(Boolean)
+      });
+    }
     hdpBlueprintAdd(page);
     if (typeof hdpShowToast === 'function') hdpShowToast('截图复刻草稿已生成', 'success');
     if (typeof hdpRefreshBlueprintGallery === 'function') hdpRefreshBlueprintGallery();
