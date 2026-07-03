@@ -774,37 +774,6 @@ export function buildQuickGenerateSection(hass: Hass, config: StrategyConfig): s
       <div class="st-plan-choice-desc">${escapeHTML(plan.density)} · ${plan.profile.entity_count} entities</div>
     </button>`;
   }).join('');
-  /*
-  const hiddenDomains: string[] = config.hdp_config?.devices?.hidden_domains || config.hidden_domains || [];
-  const hiddenDeviceTypes: string[] = config.hdp_config?.devices?.hidden_device_types || [];
-
-  const deviceTypeLabels: Record<string, string> = {
-    'sensor.temperature': '温度传感器',
-    'sensor.humidity': '湿度传感器',
-    'sensor.power': '功率传感器',
-    'sensor.energy': '电量传感器',
-    'sensor.illuminance': '照度传感器',
-    'binary_sensor.motion': '人体/运动',
-    'binary_sensor.door': '门磁',
-    'binary_sensor.window': '窗磁',
-    'binary_sensor.smoke': '烟雾',
-    'binary_sensor.moisture': '漏水',
-    'binary_sensor.occupancy': '占用',
-    'binary_sensor.presence': '存在',
-  };
-  const deviceTypes = Array.from(new Set(Object.entries(hass?.states || {})
-    .map(([entityId, stateObj]) => getEntityDeviceType(entityId, (stateObj as any).attributes || {}))
-    .filter(type => type.includes('.') && !hiddenDomains.includes(type.split('.')[0]))))
-    .sort();
-  const deviceTypeChips = deviceTypes.map(type => {
-    const hidden = hiddenDeviceTypes.includes(type);
-    return `<div class="st-chip ${hidden ? 'st-chip--active' : ''}" data-action="toggle-hidden-device-type" onclick="hdpToggleArrayItem('devices.hidden_device_types', ${jsArg(type)}, event)">${escapeHTML(deviceTypeLabels[type] || type)}</div>`;
-  }).join('');
-  const deviceTypeHTML = deviceTypes.length
-    ? `<div class="st-section-subtitle">传感器/设备子类型</div><div class="st-chip-list">${deviceTypeChips}</div>`
-    : '';
-
-  */
   return sectionCard('quick-generate', '一键生成', iconSparkles(), `
     <div class="st-plan-hero">
       <div>
