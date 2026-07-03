@@ -59,4 +59,22 @@ describe('visual config', () => {
     expect(tokens.primary).toBe('#ff3366');
     expect(tokens.card_gap).toBe(22);
   });
+
+  it('applies stored theme presets to resolved tokens', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => key === 'hdp_visual_config'
+        ? JSON.stringify({ theme: 'dark' })
+        : null,
+    });
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      visual: { theme: 'light' },
+    };
+
+    const tokens = resolveTokens(config);
+
+    expect(tokens.page_bg).toBe('#0C0E14');
+    expect(tokens.card_bg).toBe('#161922');
+    expect(tokens.primary).toBe('#6B85F9');
+  });
 });

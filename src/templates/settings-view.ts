@@ -16,7 +16,7 @@ import type { LovelaceCardConfig, StrategyConfig, ThemePreset, Hass } from '../t
 import { THEME_PRESETS } from '../types';
 import { generateDesignTokenCSS } from '../styles/design-tokens';
 import type { ResolvedTokens, StoredVisualConfig } from '../utils/visual-config';
-import { loadStoredConfig, saveStoredConfig, clearStoredConfig } from '../utils/visual-config';
+import { getEffectiveStoredVisualConfig, loadStoredConfig, saveStoredConfig, clearStoredConfig } from '../utils/visual-config';
 import { generatePaletteGeneratorJS, MOOD_PRESETS } from '../themes/palette-generator';
 import { escapeAttribute, escapeHTML, escapeInlineStyleValue } from '../utils/html';
 import {
@@ -37,8 +37,8 @@ import {
 } from './settings-sections';
 
 export function buildSettingsView(config: StrategyConfig, tokens?: ResolvedTokens, hass?: Hass): LovelaceCardConfig[] {
-  const stored: StoredVisualConfig = loadStoredConfig() || {};
-  const preset = (config.visual?.theme || 'light') as string;
+  const stored: StoredVisualConfig = getEffectiveStoredVisualConfig(config) || {};
+  const preset = (stored.theme || config.visual?.theme || 'light') as string;
 
   return [
     buildSettingsHeader(tokens),

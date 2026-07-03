@@ -74,14 +74,13 @@ export interface ResolvedTokens {
  */
 export function resolveTokens(config: StrategyConfig, hass?: Hass): ResolvedTokens {
   const result: ResolvedTokens = {};
-  const persistedVisual = normalizePersistedVisualConfig(config);
-  const localVisual = loadStoredConfig();
-  const storedVisual = mergeStoredVisualConfig(persistedVisual, localVisual);
+  const storedVisual = getEffectiveStoredVisualConfig(config);
 
   // 1. Apply theme preset (only color overrides, not HA-native values)
   const visual = config.visual;
-  if (visual?.theme) {
-    const preset = THEME_PRESETS[visual.theme];
+  const theme = asThemePreset(storedVisual?.theme) || visual?.theme;
+  if (theme) {
+    const preset = THEME_PRESETS[theme];
     if (preset?.colors) {
       result.page_bg = preset.colors.page_bg;
       result.card_bg = preset.colors.card_bg;
@@ -187,6 +186,18 @@ export function resolveTokens(config: StrategyConfig, hass?: Hass): ResolvedToke
   }
 
   return hass ? applyDefaultStylePack(result, hass, config) : result;
+}
+
+export function getEffectiveStoredVisualConfig(config: StrategyConfig): StoredVisualConfig | null {
+  const persistedVisual = normalizePersistedVisualConfig(config);
+  const localVisual = loadStoredConfig();
+  return mergeStoredVisualConfig(persistedVisual, localVisual);
+}
+
+function asThemePreset(value: unknown): keyof typeof THEME_PRESETS | undefined {
+  return typeof value === 'string' && value in THEME_PRESETS
+    ? value as keyof typeof THEME_PRESETS
+    : undefined;
 }
 
 function mergeStoredVisualConfig(

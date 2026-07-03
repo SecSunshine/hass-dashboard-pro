@@ -58,4 +58,16 @@ describe('settings view', () => {
     expect(js).toContain('hdpPersistSettingsAndReload();');
     expect(html).toContain("hdpSaveSetting('areas.hide_unavailable'");
   });
+
+  it('marks persisted theme presets as active', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        visual: { theme_id: 'dark' },
+      } as any,
+    };
+    const html = buildSettingsHTML(config, undefined, hass);
+
+    expect(html).toContain('theme-card theme-card--active" data-preset="dark"');
+  });
 });
