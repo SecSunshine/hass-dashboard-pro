@@ -32,4 +32,16 @@ describe('settings view', () => {
     expect(html).toContain("hdpToggleArrayItem('devices.hidden_device_types'");
     expect(html).toContain(', event)');
   });
+
+  it('escapes dashboard setting input values', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        dashboard: { name: '"><script>alert(1)</script>', icon: 'mdi:home' },
+      } as any,
+    };
+    const html = buildSettingsHTML(config, undefined, hass);
+    expect(html).toContain('value="&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;"');
+    expect(html).not.toContain('value=""><script>');
+  });
 });

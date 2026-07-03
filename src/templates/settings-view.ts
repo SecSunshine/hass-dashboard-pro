@@ -580,7 +580,7 @@ ${generateDesignTokenCSS(tokens)}
       <span class="seed-custom-desc">从任意颜色生成主题</span>
     </div>
     <div class="seed-custom-input">
-      <input type="color" class="seed-color-picker" id="seed-color-input" value="${currentSeed || '#4F6EF7'}" aria-label="自定义种子色" />
+      <input type="color" class="seed-color-picker" id="seed-color-input" value="${escapeAttribute(currentSeed || '#4F6EF7')}" aria-label="自定义种子色" />
       <span class="seed-hex" id="seed-color-hex">${escapeHTML(currentSeedValue)}</span>
     </div>
   </div>
@@ -1362,7 +1362,7 @@ function buildColorPickerCard(stored: StoredVisualConfig, tokens?: ResolvedToken
         </div>
         <div class="color-input-group">
           <div class="color-swatch-wrap">
-            <input type="color" class="color-picker" data-key="${f.id}" value="${val}" aria-label="${f.label}颜色选择" />
+            <input type="color" class="color-picker" data-key="${escapeAttribute(f.id)}" value="${escapeAttribute(val)}" aria-label="${escapeAttribute(`${f.label}颜色选择`)}" />
             <div class="color-swatch" style="background: ${safeValStyle};"></div>
           </div>
           <span class="color-hex">${escapeHTML(val)}</span>

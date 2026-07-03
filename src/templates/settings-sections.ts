@@ -742,14 +742,14 @@ function toggleHTML(settingPath: string, value: boolean): string {
 // ─── 1. Dashboard ──────────────────────────────────────────────────────────
 
 export function buildDashboardSection(config: StrategyConfig): string {
-  const name = config.title || '智能家居';
+  const name = config.hdp_config?.dashboard?.name || config.title || '智能家居';
   return sectionCard('dashboard', '仪表盘', iconDashboard(), `
     <div class="st-row">
       <div>
         <div class="st-row-label">名称</div>
         <div class="st-row-desc">仪表盘显示名称</div>
       </div>
-      <input class="st-input" value="${name}" onchange="hdpSaveSetting('dashboard.name', this.value)" />
+      <input class="st-input" value="${escapeAttribute(name)}" onchange="hdpSaveSetting('dashboard.name', this.value)" />
     </div>
   `);
 }
