@@ -147,6 +147,119 @@ ${visualStyles}
   }
   .toggle-switch--on::after { transform: translateX(20px); }
   .toggle-switch--off::after { transform: translateX(2px); border: 1px solid var(--hdp-border); }
+
+  /* Stable visual-settings layout when individual html-card bodies are merged */
+  #st-visual-body .settings-section {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  #st-visual-body .theme-grid,
+  #st-visual-body .mood-grid,
+  #st-visual-body .style-grid,
+  #st-visual-body .font-grid,
+  #st-visual-body .lc-density-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
+    gap: 10px;
+    width: 100%;
+    align-items: stretch;
+  }
+  #st-visual-body .mood-grid {
+    grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  }
+  #st-visual-body .theme-card,
+  #st-visual-body .mood-card,
+  #st-visual-body .style-card,
+  #st-visual-body .font-card,
+  #st-visual-body .lc-density-btn {
+    width: 100%;
+    min-width: 0;
+    min-height: 104px;
+    box-sizing: border-box;
+    appearance: none;
+    line-height: 1.25;
+  }
+  #st-visual-body .theme-label,
+  #st-visual-body .theme-desc,
+  #st-visual-body .mood-name,
+  #st-visual-body .mood-name-en,
+  #st-visual-body .style-label,
+  #st-visual-body .style-desc,
+  #st-visual-body .font-name,
+  #st-visual-body .font-desc,
+  #st-visual-body .lc-density-label,
+  #st-visual-body .lc-density-desc {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  #st-visual-body .theme-preview,
+  #st-visual-body .mood-preview,
+  #st-visual-body .style-preview {
+    flex-shrink: 0;
+  }
+  #st-visual-body .color-row,
+  #st-visual-body .seed-custom-row,
+  #st-visual-body .seed-toggle-row,
+  #st-visual-body .toggle-row,
+  #st-visual-body .slider-header,
+  #st-visual-body .am-period-row,
+  #st-visual-body .lc-skin-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+  #st-visual-body .color-row,
+  #st-visual-body .seed-custom-row,
+  #st-visual-body .seed-toggle-row,
+  #st-visual-body .toggle-row,
+  #st-visual-body .slider-header,
+  #st-visual-body .lc-skin-row {
+    justify-content: space-between;
+  }
+  #st-visual-body .color-info,
+  #st-visual-body .seed-custom-info,
+  #st-visual-body .am-period-info {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  #st-visual-body .color-input-group,
+  #st-visual-body .seed-custom-input,
+  #st-visual-body .toggle-switch,
+  #st-visual-body .lc-skin-select {
+    flex: 0 0 auto;
+  }
+  @media (max-width: 720px) {
+    #st-visual-body .theme-grid,
+    #st-visual-body .mood-grid,
+    #st-visual-body .style-grid,
+    #st-visual-body .font-grid,
+    #st-visual-body .lc-density-row {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    #st-visual-body .color-row,
+    #st-visual-body .seed-custom-row,
+    #st-visual-body .seed-toggle-row,
+    #st-visual-body .toggle-row,
+    #st-visual-body .slider-header,
+    #st-visual-body .am-period-row,
+    #st-visual-body .lc-skin-row {
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+  }
+  @media (max-width: 420px) {
+    #st-visual-body .theme-grid,
+    #st-visual-body .mood-grid,
+    #st-visual-body .style-grid,
+    #st-visual-body .font-grid,
+    #st-visual-body .lc-density-row {
+      grid-template-columns: 1fr;
+    }
+  }
 </style>
 ${buildDashboardSection(config)}
 ${hass ? buildQuickGenerateSection(hass, config) : ''}
