@@ -70,4 +70,14 @@ describe('settings view', () => {
 
     expect(html).toContain('theme-card theme-card--active" data-preset="dark"');
   });
+
+  it('syncs visual setting changes into persisted dashboard config', () => {
+    const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
+    const js = generateSettingsJS(config, undefined, hass);
+
+    expect(js).toContain('window.hdpSaveVisualConfig = function');
+    expect(js).toContain('hdpSaveConfig({ visual: cfg });');
+    expect(js).toContain('cfg.theme = preset;');
+    expect(js).toContain('hdpSaveVisualConfig(cfg);');
+  });
 });

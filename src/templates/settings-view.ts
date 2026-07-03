@@ -292,7 +292,30 @@ export function generateSettingsJS(config: StrategyConfig, tokens?: ResolvedToke
   return `
 ${generateSettingsSectionsJS()}
 ${generatePaletteGeneratorJS()}
+${generateVisualConfigPersistenceJS()}
 ${scripts}`;
+}
+
+function generateVisualConfigPersistenceJS(): string {
+  return `
+window.hdpSaveVisualConfig = function(config) {
+  var cfg = config || {};
+  try {
+    localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+  } catch(e) {
+    console.warn('[HDP] Failed to save visual config locally', e);
+  }
+  if (typeof hdpSaveConfig === 'function') {
+    hdpSaveConfig({ visual: cfg });
+  }
+  if (typeof hdpSaveToLovelace === 'function' && typeof hdpLoadConfig === 'function') {
+    hdpSaveToLovelace(hdpLoadConfig()).catch(function(err) {
+      console.warn('[HDP] Lovelace visual sync failed, saved locally only', err);
+    });
+  }
+  return cfg;
+};
+`;
 }
 
 // ─── Settings Header ──────────────────────────────────────────────────────
@@ -521,7 +544,7 @@ ${generateDesignTokenCSS(tokens)}
         var preset = this.getAttribute('data-preset');
         var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
         cfg.theme = preset;
-        localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+        hdpSaveVisualConfig(cfg);
         location.reload();
       });
     });
@@ -735,7 +758,7 @@ ${generateDesignTokenCSS(tokens)}
         cfg.text_secondary = palette.text_secondary;
         cfg.border = palette.border;
         cfg.auto_dark = isAutoDark;
-        localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+        hdpSaveVisualConfig(cfg);
         location.reload();
       });
     });
@@ -779,7 +802,7 @@ ${generateDesignTokenCSS(tokens)}
         cfg.text_primary = palette.text_primary;
         cfg.text_secondary = palette.text_secondary;
         cfg.border = palette.border;
-        localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+        hdpSaveVisualConfig(cfg);
         location.reload();
       });
     }
@@ -792,7 +815,7 @@ ${generateDesignTokenCSS(tokens)}
         this.className = 'toggle-switch ' + (isOn ? 'toggle-switch--off' : 'toggle-switch--on');
         var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
         cfg.auto_dark = !isOn;
-        localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+        hdpSaveVisualConfig(cfg);
         location.reload();
       });
     }
@@ -814,7 +837,7 @@ ${generateDesignTokenCSS(tokens)}
         delete cfg.border;
         delete cfg.card_style;
         delete cfg.border_radius;
-        localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+        hdpSaveVisualConfig(cfg);
         location.reload();
       });
     }
@@ -1016,7 +1039,7 @@ ${generateDesignTokenCSS(tokens)}
         this.className = 'toggle-switch ' + (isOn ? 'toggle-switch--off' : 'toggle-switch--on');
         var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
         cfg.auto_mood = !isOn;
-        localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+        hdpSaveVisualConfig(cfg);
         if (periodsEl) {
           periodsEl.className = 'am-periods' + (!isOn ? '' : ' am-periods--disabled');
         }
@@ -1036,7 +1059,7 @@ ${generateDesignTokenCSS(tokens)}
         var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
         if (!cfg.time_moods) cfg.time_moods = {};
         cfg.time_moods[period] = mood;
-        localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+        hdpSaveVisualConfig(cfg);
         location.reload();
       });
     });
@@ -1172,7 +1195,7 @@ ${generateDesignTokenCSS(tokens)}
         var style = this.getAttribute('data-style');
         var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
         cfg.card_style = style;
-        localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+        hdpSaveVisualConfig(cfg);
         location.reload();
       });
     });
@@ -1394,7 +1417,7 @@ ${generateDesignTokenCSS(tokens)}
         } else {
           cfg.card_sizes[cardId] = size;
         }
-        localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+        hdpSaveVisualConfig(cfg);
         if (typeof hdpShowToast === 'function') hdpShowToast('卡片尺寸已保存', 'success');
         setTimeout(function() { location.reload(); }, 600);
       });
@@ -1414,7 +1437,7 @@ ${generateDesignTokenCSS(tokens)}
         var dp = dmap[density] || dmap.standard;
         cfg.card_gap = dp[0];
         cfg.card_padding = dp[1];
-        localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+        hdpSaveVisualConfig(cfg);
         // Apply density CSS vars in real-time
         var root = document.documentElement;
         var dcss = { compact: [8,12,100,10], standard: [14,18,120,14], spacious: [20,24,140,18] };
@@ -1442,7 +1465,7 @@ ${generateDesignTokenCSS(tokens)}
         } else {
           delete cfg.area_skins[areaId];
         }
-        localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+        hdpSaveVisualConfig(cfg);
         if (typeof hdpShowToast === 'function') hdpShowToast('区域皮肤已保存', 'success');
         setTimeout(function() { location.reload(); }, 600);
       });
@@ -1559,7 +1582,7 @@ ${generateDesignTokenCSS(tokens)}
         if (hexEl) hexEl.textContent = val;
         var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
         cfg[key] = val;
-        localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+        hdpSaveVisualConfig(cfg);
         var cssKey = '--hdp-' + (key === 'primary' ? 'primary' : key === 'page_bg' ? 'bg' :
           key === 'card_bg' ? 'card-bg' : key === 'text_primary' ? 'text' :
           key === 'text_secondary' ? 'text-secondary' : key);
@@ -1735,7 +1758,7 @@ ${generateDesignTokenCSS(tokens)}
     function saveSlider(key, val) {
       var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
       cfg[key] = Number(val);
-      localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+      hdpSaveVisualConfig(cfg);
       updatePreview();
     }
     document.querySelectorAll('.slider-input').forEach(function(slider) {
@@ -1749,7 +1772,7 @@ ${generateDesignTokenCSS(tokens)}
       this.className = 'toggle-switch ' + (shadowOn ? 'toggle-switch--on' : 'toggle-switch--off');
       var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
       cfg.shadows = shadowOn;
-      localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+      hdpSaveVisualConfig(cfg);
       document.documentElement.style.setProperty('--hdp-shadow-card',
         shadowOn ? '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)' : 'none');
     });
@@ -1879,7 +1902,7 @@ ${generateDesignTokenCSS(tokens)}
         var font = this.getAttribute('data-font').replace(/&quot;/g, '"');
         var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
         cfg.font_family = font;
-        localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
+        hdpSaveVisualConfig(cfg);
         document.documentElement.style.setProperty('--hdp-font', font);
         location.reload();
       });
