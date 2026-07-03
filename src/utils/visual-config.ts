@@ -74,6 +74,9 @@ export interface ResolvedTokens {
  */
 export function resolveTokens(config: StrategyConfig, hass?: Hass): ResolvedTokens {
   const result: ResolvedTokens = {};
+  const persistedVisual = normalizePersistedVisualConfig(config);
+  const localVisual = loadStoredConfig();
+  const storedVisual = mergeStoredVisualConfig(persistedVisual, localVisual);
 
   // 1. Apply theme preset (only color overrides, not HA-native values)
   const visual = config.visual;
@@ -98,20 +101,19 @@ export function resolveTokens(config: StrategyConfig, hass?: Hass): ResolvedToke
   //     This generates a full palette from a seed color and sets it as the
   //     base color layer. Explicit YAML/localStorage overrides below still
   //     take precedence for individual fields.
-  const storedForPalette = loadStoredConfig();
-  if (storedForPalette) {
+  if (storedVisual) {
     let palette: MoodPaletteResult | null = null;
 
     // Phase 6: Auto mood switching — time-based mood takes priority
-    if (storedForPalette.auto_mood) {
-      const autoDark = storedForPalette.auto_dark !== false;
-      palette = generateFromTimeMood(storedForPalette.time_moods, autoDark);
-    } else if (storedForPalette.mood_preset && storedForPalette.mood_preset !== 'custom') {
-      const autoDark = storedForPalette.auto_dark !== false; // default true
-      palette = generateFromMood(storedForPalette.mood_preset, autoDark);
-    } else if (storedForPalette.seed_color) {
-      const mode = storedForPalette.auto_dark !== false ? 'auto' : 'light';
-      palette = generateFromSeed(storedForPalette.seed_color, mode);
+    if (storedVisual.auto_mood) {
+      const autoDark = storedVisual.auto_dark !== false;
+      palette = generateFromTimeMood(storedVisual.time_moods, autoDark);
+    } else if (storedVisual.mood_preset && storedVisual.mood_preset !== 'custom') {
+      const autoDark = storedVisual.auto_dark !== false; // default true
+      palette = generateFromMood(storedVisual.mood_preset, autoDark);
+    } else if (storedVisual.seed_color) {
+      const mode = storedVisual.auto_dark !== false ? 'auto' : 'light';
+      palette = generateFromSeed(storedVisual.seed_color, mode);
     }
 
     if (palette) {
@@ -128,13 +130,13 @@ export function resolveTokens(config: StrategyConfig, hass?: Hass): ResolvedToke
       // Store palette metadata
       result.seed_color = palette.seed;
       result.mood_preset = palette.mood_id;
-      result.auto_dark = storedForPalette.auto_dark !== false;
+      result.auto_dark = storedVisual.auto_dark !== false;
       // Phase 6: Context-aware adaptation
-      result.auto_mood = storedForPalette.auto_mood === true;
-      result.time_moods = storedForPalette.time_moods as ResolvedTokens['time_moods'];
-      result.area_skins = storedForPalette.area_skins as ResolvedTokens['area_skins'];
-      result.card_sizes = storedForPalette.card_sizes as ResolvedTokens['card_sizes'];
-      result.layout_density = storedForPalette.layout_density as ResolvedTokens['layout_density'];
+      result.auto_mood = storedVisual.auto_mood === true;
+      result.time_moods = storedVisual.time_moods as ResolvedTokens['time_moods'];
+      result.area_skins = storedVisual.area_skins as ResolvedTokens['area_skins'];
+      result.card_sizes = storedVisual.card_sizes as ResolvedTokens['card_sizes'];
+      result.layout_density = storedVisual.layout_density as ResolvedTokens['layout_density'];
       // Store semantic/derived colors
       result.accent = palette.accent;
       result.text_muted = palette.text_muted;
@@ -166,25 +168,79 @@ export function resolveTokens(config: StrategyConfig, hass?: Hass): ResolvedToke
   if (visual?.shadows === false) result.shadows = false;
   if (visual?.card_style) result.card_style = visual.card_style;
 
-  // 3. Apply localStorage overrides (Settings page)
-  const stored = loadStoredConfig();
-  if (stored) {
-    if (stored.page_bg) result.page_bg = stored.page_bg;
-    if (stored.card_bg) result.card_bg = stored.card_bg;
-    if (stored.primary) result.primary = stored.primary;
-    if (stored.text_primary) result.text_primary = stored.text_primary;
-    if (stored.text_secondary) result.text_secondary = stored.text_secondary;
-    if (stored.border) result.border = stored.border;
-    if (stored.border_radius !== undefined) result.border_radius = stored.border_radius;
-    if (stored.card_padding !== undefined) result.card_padding = stored.card_padding;
-    if (stored.font_family) result.font_family = stored.font_family;
-    if (stored.shadows === false) result.shadows = false;
-    if (stored.card_style) result.card_style = stored.card_style;
-    if (stored.card_sizes) result.card_sizes = stored.card_sizes as ResolvedTokens['card_sizes'];
-    if (stored.layout_density) result.layout_density = stored.layout_density as ResolvedTokens['layout_density'];
+  // 3. Apply persisted + localStorage overrides (Settings page)
+  if (storedVisual) {
+    if (storedVisual.page_bg) result.page_bg = storedVisual.page_bg;
+    if (storedVisual.card_bg) result.card_bg = storedVisual.card_bg;
+    if (storedVisual.primary) result.primary = storedVisual.primary;
+    if (storedVisual.text_primary) result.text_primary = storedVisual.text_primary;
+    if (storedVisual.text_secondary) result.text_secondary = storedVisual.text_secondary;
+    if (storedVisual.border) result.border = storedVisual.border;
+    if (storedVisual.border_radius !== undefined) result.border_radius = storedVisual.border_radius;
+    if (storedVisual.card_padding !== undefined) result.card_padding = storedVisual.card_padding;
+    if (storedVisual.card_gap !== undefined) result.card_gap = storedVisual.card_gap as number;
+    if (storedVisual.font_family) result.font_family = storedVisual.font_family;
+    if (storedVisual.shadows === false) result.shadows = false;
+    if (storedVisual.card_style) result.card_style = storedVisual.card_style;
+    if (storedVisual.card_sizes) result.card_sizes = storedVisual.card_sizes as ResolvedTokens['card_sizes'];
+    if (storedVisual.layout_density) result.layout_density = storedVisual.layout_density as ResolvedTokens['layout_density'];
   }
 
   return hass ? applyDefaultStylePack(result, hass, config) : result;
+}
+
+function mergeStoredVisualConfig(
+  persisted: StoredVisualConfig | null,
+  local: StoredVisualConfig | null,
+): StoredVisualConfig | null {
+  if (!persisted && !local) return null;
+  return { ...(persisted || {}), ...(local || {}) };
+}
+
+function normalizePersistedVisualConfig(config: StrategyConfig): StoredVisualConfig | null {
+  const visual = config.hdp_config?.visual as Record<string, unknown> | undefined;
+  if (!visual || typeof visual !== 'object' || Array.isArray(visual)) return null;
+
+  const normalized: StoredVisualConfig = {};
+  const colors = visual.colors && typeof visual.colors === 'object' && !Array.isArray(visual.colors)
+    ? visual.colors as Record<string, unknown>
+    : {};
+
+  for (const key of ['page_bg', 'card_bg', 'primary', 'text_primary', 'text_secondary', 'border']) {
+    const value = colors[key] ?? visual[key];
+    if (typeof value === 'string') normalized[key] = value;
+  }
+
+  for (const key of ['card_style', 'font_family', 'seed_color', 'mood_preset', 'theme']) {
+    const value = visual[key];
+    if (typeof value === 'string') normalized[key] = value;
+  }
+
+  if (typeof visual.theme_id === 'string') normalized.theme = visual.theme_id;
+
+  for (const key of ['border_radius', 'card_padding', 'card_gap']) {
+    const value = visual[key];
+    if (typeof value === 'number' && Number.isFinite(value)) normalized[key] = value;
+  }
+
+  if (typeof visual.shadows === 'boolean') normalized.shadows = visual.shadows;
+  if (typeof visual.auto_dark === 'boolean') normalized.auto_dark = visual.auto_dark;
+  if (typeof visual.auto_mood === 'boolean') normalized.auto_mood = visual.auto_mood;
+
+  if (visual.time_moods && typeof visual.time_moods === 'object' && !Array.isArray(visual.time_moods)) {
+    normalized.time_moods = visual.time_moods as StoredVisualConfig['time_moods'];
+  }
+  if (visual.area_skins && typeof visual.area_skins === 'object' && !Array.isArray(visual.area_skins)) {
+    normalized.area_skins = visual.area_skins as Record<string, string>;
+  }
+  if (visual.card_sizes && typeof visual.card_sizes === 'object' && !Array.isArray(visual.card_sizes)) {
+    normalized.card_sizes = visual.card_sizes as Record<string, string>;
+  }
+  if (visual.layout_density === 'compact' || visual.layout_density === 'standard' || visual.layout_density === 'spacious') {
+    normalized.layout_density = visual.layout_density;
+  }
+
+  return Object.keys(normalized).length ? normalized : null;
 }
 
 // ─── localStorage Persistence ──────────────────────────────────────────────
@@ -199,6 +255,7 @@ export interface StoredVisualConfig {
   border?: string;
   border_radius?: number;
   card_padding?: number;
+  card_gap?: number;
   font_family?: string;
   shadows?: boolean;
   card_style?: string;
