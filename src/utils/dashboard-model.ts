@@ -7,13 +7,14 @@
 
 import type { EntityInfo, Hass, HassArea, HassEntity, StrategyConfig } from '../types';
 import { HIDDEN_DOMAINS } from '../types';
-import { isEntityOn, isUnavailableState } from './area-entities';
+import { getEntityDeviceType, isEntityOn, isUnavailableState } from './area-entities';
 import { getEffectiveHDPConfig } from './effective-config';
 
 export interface DashboardFilters {
   hiddenAreas: string[];
   hiddenDomains: string[];
   hideUnavailable: boolean;
+  hiddenDeviceTypes: string[];
 }
 
 export type EntitySemanticType =
@@ -52,6 +53,7 @@ export function getDashboardFilters(config: StrategyConfig): DashboardFilters {
     hiddenAreas: hdpConfig?.areas?.hidden_areas || config.hidden_areas || [],
     hiddenDomains: hdpConfig?.devices?.hidden_domains || config.hidden_domains || [],
     hideUnavailable: hdpConfig?.areas?.hide_unavailable || false,
+    hiddenDeviceTypes: hdpConfig?.devices?.hidden_device_types || [],
   };
 }
 
@@ -101,6 +103,7 @@ export function collectVisibleEntities(hass: Hass, filters: DashboardFilters): D
     const domain = entityId.split('.')[0];
     if (!shouldIncludeDomain(domain, filters.hiddenDomains)) continue;
     if (filters.hideUnavailable && isUnavailableState(stateObj.state)) continue;
+    if (filters.hiddenDeviceTypes.includes(getEntityDeviceType(entityId, stateObj.attributes))) continue;
 
     const areaId = resolveEntityAreaId(hass, entityId);
     if (!areaId || filters.hiddenAreas.includes(areaId)) continue;

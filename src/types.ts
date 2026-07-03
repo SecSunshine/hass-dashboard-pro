@@ -56,7 +56,7 @@ export interface Hass {
   devices: Record<string, HassDevice>;
   floors: Record<string, HassFloor>;
   entities: Record<string, HassEntityRegistryEntry>;
-  user?: { name: string };
+  user?: { name: string; is_admin?: boolean };
   themes?: { darkMode: boolean };
 }
 

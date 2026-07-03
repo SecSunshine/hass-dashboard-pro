@@ -126,6 +126,18 @@ describe('dashboard model', () => {
     expect(entities.map(entity => entity.entity_id)).not.toContain('light.offline');
   });
 
+  it('applies hidden device types consistently', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        devices: { hidden_device_types: ['sensor.power'] },
+      } as any,
+    };
+    const entities = collectVisibleEntities(hass, getDashboardFilters(config));
+    expect(entities.map(entity => entity.entity_id)).not.toContain('sensor.kitchen_power');
+    expect(entities.map(entity => entity.entity_id)).toContain('light.kitchen');
+  });
+
   it('builds a home profile from visible entities', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const profile = buildHomeProfile(hass, config);

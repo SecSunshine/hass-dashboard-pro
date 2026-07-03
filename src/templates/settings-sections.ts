@@ -24,6 +24,7 @@ import { HOME_SECTION_LABELS } from '../types';
 import { buildBlueprintGalleryHTML } from '../blueprints/blueprint-gallery';
 import { buildDashboardDesignPlan, buildPlanAlternatives, type DashboardDesignPlan } from '../utils/design-plan';
 import { escapeAttribute, escapeHTML } from '../utils/html';
+import { getEntityDeviceType } from '../utils/area-entities';
 
 function jsArg(value: unknown): string {
   return escapeAttribute(JSON.stringify(String(value ?? '')));
@@ -773,7 +774,37 @@ export function buildQuickGenerateSection(hass: Hass, config: StrategyConfig): s
       <div class="st-plan-choice-desc">${escapeHTML(plan.density)} · ${plan.profile.entity_count} entities</div>
     </button>`;
   }).join('');
+  /*
+  const hiddenDomains: string[] = config.hdp_config?.devices?.hidden_domains || config.hidden_domains || [];
+  const hiddenDeviceTypes: string[] = config.hdp_config?.devices?.hidden_device_types || [];
 
+  const deviceTypeLabels: Record<string, string> = {
+    'sensor.temperature': '温度传感器',
+    'sensor.humidity': '湿度传感器',
+    'sensor.power': '功率传感器',
+    'sensor.energy': '电量传感器',
+    'sensor.illuminance': '照度传感器',
+    'binary_sensor.motion': '人体/运动',
+    'binary_sensor.door': '门磁',
+    'binary_sensor.window': '窗磁',
+    'binary_sensor.smoke': '烟雾',
+    'binary_sensor.moisture': '漏水',
+    'binary_sensor.occupancy': '占用',
+    'binary_sensor.presence': '存在',
+  };
+  const deviceTypes = Array.from(new Set(Object.entries(hass?.states || {})
+    .map(([entityId, stateObj]) => getEntityDeviceType(entityId, (stateObj as any).attributes || {}))
+    .filter(type => type.includes('.') && !hiddenDomains.includes(type.split('.')[0]))))
+    .sort();
+  const deviceTypeChips = deviceTypes.map(type => {
+    const hidden = hiddenDeviceTypes.includes(type);
+    return `<div class="st-chip ${hidden ? 'st-chip--active' : ''}" data-action="toggle-hidden-device-type" onclick="hdpToggleArrayItem('devices.hidden_device_types', ${jsArg(type)}, event)">${escapeHTML(deviceTypeLabels[type] || type)}</div>`;
+  }).join('');
+  const deviceTypeHTML = deviceTypes.length
+    ? `<div class="st-section-subtitle">传感器/设备子类型</div><div class="st-chip-list">${deviceTypeChips}</div>`
+    : '';
+
+  */
   return sectionCard('quick-generate', '一键生成', iconSparkles(), `
     <div class="st-plan-hero">
       <div>
@@ -819,8 +850,8 @@ export function buildHeaderSection(config: StrategyConfig): string {
   const showTime = hdpConfig?.header?.show_time !== false;
   const showWeather = hdpConfig?.header?.show_weather !== false;
   const showNotif = hdpConfig?.header?.show_notifications !== false;
-  const weatherEntity = config.weather_entity || hdpConfig?.header?.weather_entity || '';
-  const alarmEntity = config.alarm_entity || hdpConfig?.header?.alarm_entity || '';
+  const weatherEntity = hdpConfig?.header?.weather_entity || config.weather_entity || '';
+  const alarmEntity = hdpConfig?.header?.alarm_entity || config.alarm_entity || '';
 
   return sectionCard('header', '页眉', iconHeader(), `
     <div class="st-row">
@@ -849,14 +880,14 @@ export function buildHeaderSection(config: StrategyConfig): string {
         <div class="st-row-label">天气实体</div>
         <div class="st-row-desc">weather.* 实体 ID（留空自动检测）</div>
       </div>
-      <input class="st-input" value="${weatherEntity}" placeholder="自动检测" onchange="hdpSaveSetting('header.weather_entity', this.value)" />
+      <input class="st-input" value="${escapeAttribute(weatherEntity)}" placeholder="自动检测" onchange="hdpSaveSetting('header.weather_entity', this.value)" />
     </div>
     <div class="st-row">
       <div>
         <div class="st-row-label">报警实体</div>
         <div class="st-row-desc">alarm_control_panel.* 实体 ID</div>
       </div>
-      <input class="st-input" value="${alarmEntity}" placeholder="自动检测" onchange="hdpSaveSetting('header.alarm_entity', this.value)" />
+      <input class="st-input" value="${escapeAttribute(alarmEntity)}" placeholder="自动检测" onchange="hdpSaveSetting('header.alarm_entity', this.value)" />
     </div>
   `);
 }
@@ -918,8 +949,9 @@ export function buildAreasSection(hass: any, config: StrategyConfig): string {
 
 // ─── 6. Devices ─────────────────────────────────────────────────────────────
 
-export function buildDevicesSection(config: StrategyConfig): string {
+export function buildDevicesSection(config: StrategyConfig, hass?: Hass): string {
   const hiddenDomains: string[] = config.hdp_config?.devices?.hidden_domains || config.hidden_domains || [];
+  const hiddenDeviceTypes: string[] = config.hdp_config?.devices?.hidden_device_types || [];
   const domains = ['light', 'switch', 'climate', 'fan', 'cover', 'lock', 'sensor', 'binary_sensor', 'media_player', 'camera', 'vacuum', 'button'];
   const domainLabels: Record<string, string> = {
     light: '灯光', switch: '开关', climate: '空调', fan: '风扇', cover: '窗帘',
@@ -932,14 +964,46 @@ export function buildDevicesSection(config: StrategyConfig): string {
     return `<div class="st-chip ${hidden ? 'st-chip--active' : ''}" data-action="toggle-hidden-domain" onclick="hdpToggleArrayItem('devices.hidden_domains', ${jsArg(d)}, event)">${escapeHTML(domainLabels[d] || d)}</div>`;
   }).join('');
 
+  const deviceTypeHTML = buildHiddenDeviceTypeChips(hass, hiddenDomains, hiddenDeviceTypes);
+
   return sectionCard('devices', '设备类型', iconDevices(), `
     <div class="st-row-label">隐藏设备类型</div>
     <div class="st-row-desc">点击切换设备类型是否显示（高亮=隐藏）</div>
     <div class="st-chip-list">${chips}</div>
+    ${deviceTypeHTML}
   `);
 }
 
 // ─── 7. Blueprints ──────────────────────────────────────────────────────────
+
+function buildHiddenDeviceTypeChips(hass: Hass | undefined, hiddenDomains: string[], hiddenDeviceTypes: string[]): string {
+  const deviceTypeLabels: Record<string, string> = {
+    'sensor.temperature': '温度传感器',
+    'sensor.humidity': '湿度传感器',
+    'sensor.power': '功率传感器',
+    'sensor.energy': '电量传感器',
+    'sensor.illuminance': '照度传感器',
+    'binary_sensor.motion': '人体/运动',
+    'binary_sensor.door': '门磁',
+    'binary_sensor.window': '窗磁',
+    'binary_sensor.smoke': '烟雾',
+    'binary_sensor.moisture': '漏水',
+    'binary_sensor.occupancy': '占用',
+    'binary_sensor.presence': '存在',
+  };
+  const deviceTypes = Array.from(new Set(Object.entries(hass?.states || {})
+    .map(([entityId, stateObj]) => getEntityDeviceType(entityId, stateObj.attributes || {}))
+    .filter(type => type.includes('.') && !hiddenDomains.includes(type.split('.')[0]))))
+    .sort();
+  if (!deviceTypes.length) return '';
+
+  const chips = deviceTypes.map(type => {
+    const hidden = hiddenDeviceTypes.includes(type);
+    return `<div class="st-chip ${hidden ? 'st-chip--active' : ''}" data-action="toggle-hidden-device-type" onclick="hdpToggleArrayItem('devices.hidden_device_types', ${jsArg(type)}, event)">${escapeHTML(deviceTypeLabels[type] || type)}</div>`;
+  }).join('');
+
+  return `<div class="st-section-subtitle">传感器/设备子类型</div><div class="st-chip-list">${chips}</div>`;
+}
 
 export function buildBlueprintsSection(blueprintPages: BlueprintInstance[]): string {
   const galleryHTML = buildBlueprintGalleryHTML(blueprintPages);

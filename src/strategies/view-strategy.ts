@@ -53,7 +53,8 @@ function buildFullLayoutCard(hass: Hass, config: StrategyConfig, tokens: ReturnT
   const hiddenAreas = config.hdp_config?.areas?.hidden_areas || config.hidden_areas || [];
   const hiddenDomains = config.hdp_config?.devices?.hidden_domains || config.hidden_domains || [];
   const hideUnavailable = config.hdp_config?.areas?.hide_unavailable || false;
-  const areaEntityMap = buildAreaEntityMap(hass, hiddenAreas, hiddenDomains, hideUnavailable);
+  const hiddenDeviceTypes = config.hdp_config?.devices?.hidden_device_types || [];
+  const areaEntityMap = buildAreaEntityMap(hass, hiddenAreas, hiddenDomains, hideUnavailable, hiddenDeviceTypes);
   const areaSummaries = config.area_summaries || [];
   const blueprintPages = config.hdp_config?.blueprints?.pages || config.blueprint_pages || [];
 

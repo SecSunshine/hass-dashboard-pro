@@ -13,6 +13,7 @@ export function buildAreaEntityMap(
   hiddenAreas: string[] = [],
   hiddenDomains: string[] = [],
   hideUnavailable = false,
+  hiddenDeviceTypes: string[] = [],
 ): Map<string, EntityInfo[]> {
   const map = new Map<string, EntityInfo[]>();
 
@@ -21,6 +22,7 @@ export function buildAreaEntityMap(
     if (HIDDEN_DOMAINS.has(domain)) continue;
     if (hiddenDomains.includes(domain)) continue;
     if (hideUnavailable && isUnavailableState(stateObj.state)) continue;
+    if (hiddenDeviceTypes.includes(getEntityDeviceType(entityId, stateObj.attributes))) continue;
 
     // Resolve area: entity registry → device registry → state attribute
     const registryEntry = hass.entities?.[entityId];
@@ -49,6 +51,14 @@ export function buildAreaEntityMap(
 
 export function isUnavailableState(state: string): boolean {
   return state === 'unavailable' || state === 'unknown';
+}
+
+export function getEntityDeviceType(entityId: string, attributes: Record<string, unknown> = {}): string {
+  const domain = entityId.split('.')[0];
+  const deviceClass = attributes.device_class;
+  return typeof deviceClass === 'string' && deviceClass
+    ? `${domain}.${deviceClass}`
+    : domain;
 }
 
 function extractEntityInfo(entityId: string, stateObj: { state: string; attributes: Record<string, unknown> }, area: HassArea): EntityInfo {

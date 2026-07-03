@@ -154,7 +154,7 @@ ${buildHomeSection(config)}
 ${buildHeaderSection(config)}
 ${hass ? buildPeopleSection(hass, config) : ''}
 ${hass ? buildAreasSection(hass, config) : ''}
-${buildDevicesSection(config)}
+${buildDevicesSection(config, hass)}
 ${buildBlueprintsSection(blueprintPages)}
 ${visualSection}
 ${buildThemeFilesSection()}
