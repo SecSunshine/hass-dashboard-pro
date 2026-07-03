@@ -48,7 +48,7 @@ export function buildLayoutCard(opts: LayoutCardOptions): LovelaceCardConfig {
   const { hass, config, tokens, homeHTML, areaSections, devicesHTML, devicesJS, settingsHTML,
           settingsJS, areaSummaries, blueprintPages } = opts;
 
-  const title = config.title || '智能家居';
+  const title = config.hdp_config?.dashboard?.name || config.sidebar_title || config.title || '智能家居';
   const hiddenAreas = config.hdp_config?.areas?.hidden_areas || config.hidden_areas || [];
 
   // Build sidebar

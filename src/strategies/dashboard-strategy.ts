@@ -39,7 +39,7 @@ export class HassDashboardProStrategy {
 
     // 1. Home View (panel: true — takes full width for sidebar layout)
     views.push({
-      title: effectiveConfig.title || '首页',
+      title: effectiveConfig.hdp_config?.dashboard?.name || effectiveConfig.title || '首页',
       path: 'home',
       icon: 'mdi:home',
       badges: [],
