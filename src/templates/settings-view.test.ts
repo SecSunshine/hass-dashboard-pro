@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Hass, StrategyConfig } from '../types';
-import { buildSettingsHTML } from './settings-view';
+import { buildSettingsHTML, generateSettingsJS } from './settings-view';
 
 const hass: Hass = {
   states: {
@@ -46,5 +46,16 @@ describe('settings view', () => {
     const html = buildSettingsHTML(config, undefined, hass);
     expect(html).toContain('value="&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;"');
     expect(html).not.toContain('value=""><script>');
+  });
+
+  it('persists scalar setting changes with a reload', () => {
+    const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
+    const js = generateSettingsJS(config, undefined, hass);
+    const html = buildSettingsHTML(config, undefined, hass);
+
+    expect(js).toContain('window.hdpPersistSettingsAndReload = function');
+    expect(js).toContain('hdpSaveConfig(obj);');
+    expect(js).toContain('hdpPersistSettingsAndReload();');
+    expect(html).toContain("hdpSaveSetting('areas.hide_unavailable'");
   });
 });

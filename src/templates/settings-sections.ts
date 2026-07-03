@@ -344,6 +344,26 @@ window.hdpToggleSection = function(id) {
   if (el) el.classList.toggle('st-section--open');
 };
 
+window.hdpPersistSettingsAndReload = function(successDelay, fallbackDelay) {
+  successDelay = successDelay || 800;
+  fallbackDelay = fallbackDelay || 1200;
+  var showToast = typeof hdpShowToast === 'function' ? hdpShowToast : function() {};
+  if (typeof hdpSaveToLovelace === 'function') {
+    showToast('正在保存设置...', 'info');
+    hdpSaveToLovelace(hdpLoadConfig()).then(function() {
+      showToast('设置已保存，正在刷新...', 'success');
+      setTimeout(function() { location.reload(); }, successDelay);
+    }).catch(function(err) {
+      console.warn('[HDP] Lovelace sync failed, saved to localStorage only', err);
+      showToast('已保存到本地，正在刷新...', 'info');
+      setTimeout(function() { location.reload(); }, fallbackDelay);
+    });
+  } else {
+    showToast('已保存，正在刷新...', 'success');
+    setTimeout(function() { location.reload(); }, successDelay);
+  }
+};
+
 window.hdpSaveSetting = function(path, value) {
   var parts = path.split('.');
   var obj = {};
@@ -354,12 +374,7 @@ window.hdpSaveSetting = function(path, value) {
   }
   current[parts[parts.length - 1]] = value;
   hdpSaveConfig(obj);
-  // Persist to Lovelace config (async, non-blocking)
-  if (typeof hdpSaveToLovelace === 'function') {
-    hdpSaveToLovelace(hdpLoadConfig()).catch(function(err) {
-      console.warn('[HDP] Lovelace sync failed, saved to localStorage only', err);
-    });
-  }
+  hdpPersistSettingsAndReload();
 };
 
 window.hdpToggleArrayItem = function(path, item) {
@@ -385,19 +400,7 @@ window.hdpToggleArrayItem = function(path, item) {
   var chip = evt && evt.target && evt.target.closest ? evt.target.closest('.st-chip') : null;
   if (chip) chip.classList.toggle('st-chip--active');
   // Persist to Lovelace and reload so entity filtering takes effect
-  if (typeof hdpSaveToLovelace === 'function') {
-    hdpShowToast('正在保存设置...', 'info');
-    hdpSaveToLovelace(hdpLoadConfig()).then(function() {
-      hdpShowToast('设置已保存，正在刷新...', 'success');
-      setTimeout(function() { location.reload(); }, 800);
-    }).catch(function() {
-      hdpShowToast('已保存到本地，正在刷新...', 'info');
-      setTimeout(function() { location.reload(); }, 1200);
-    });
-  } else {
-    hdpShowToast('已保存，正在刷新...', 'success');
-    setTimeout(function() { location.reload(); }, 800);
-  }
+  hdpPersistSettingsAndReload();
 };
 
 window.hdpResetConfig = function() {
