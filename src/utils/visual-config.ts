@@ -211,6 +211,7 @@ function mergeStoredVisualConfig(
 function normalizePersistedVisualConfig(config: StrategyConfig): StoredVisualConfig | null {
   const visual = config.hdp_config?.visual as Record<string, unknown> | undefined;
   if (!visual || typeof visual !== 'object' || Array.isArray(visual)) return null;
+  if (isDefaultPersistedVisualConfig(visual)) return null;
 
   const normalized: StoredVisualConfig = {};
   const colors = visual.colors && typeof visual.colors === 'object' && !Array.isArray(visual.colors)
@@ -252,6 +253,27 @@ function normalizePersistedVisualConfig(config: StrategyConfig): StoredVisualCon
   }
 
   return Object.keys(normalized).length ? normalized : null;
+}
+
+function isDefaultPersistedVisualConfig(visual: Record<string, unknown>): boolean {
+  const keys = Object.keys(visual).sort();
+  const defaultKeys = ['border_radius', 'card_gap', 'card_padding', 'card_style', 'colors', 'font_family', 'shadows', 'theme_id'].sort();
+  if (keys.length !== defaultKeys.length || keys.some((key, index) => key !== defaultKeys[index])) return false;
+
+  const colors = visual.colors;
+  const hasEmptyColors = Boolean(colors)
+    && typeof colors === 'object'
+    && !Array.isArray(colors)
+    && Object.keys(colors as Record<string, unknown>).length === 0;
+
+  return visual.theme_id === 'light'
+    && visual.card_style === 'classic'
+    && visual.border_radius === 10
+    && visual.card_padding === 16
+    && visual.card_gap === 12
+    && visual.font_family === ''
+    && visual.shadows === true
+    && hasEmptyColors;
 }
 
 // ─── localStorage Persistence ──────────────────────────────────────────────

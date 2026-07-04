@@ -1,6 +1,35 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { StrategyConfig } from '../types';
+import type { Hass, StrategyConfig } from '../types';
 import { resolveTokens } from './visual-config';
+
+const hass: Hass = {
+  states: {
+    'light.kitchen': {
+      entity_id: 'light.kitchen',
+      state: 'on',
+      attributes: {},
+      last_changed: '',
+      last_updated: '',
+    },
+  },
+  areas: {
+    kitchen: { area_id: 'kitchen', name: 'Kitchen', picture: null },
+  },
+  devices: {
+    dev_light: { id: 'dev_light', area_id: 'kitchen', name: 'Light' },
+  },
+  floors: {},
+  entities: {
+    'light.kitchen': {
+      entity_id: 'light.kitchen',
+      device_id: 'dev_light',
+      area_id: null,
+      platform: 'demo',
+      disabled_by: null,
+      hidden_by: null,
+    },
+  },
+};
 
 describe('visual config', () => {
   afterEach(() => {
@@ -76,5 +105,26 @@ describe('visual config', () => {
     expect(tokens.page_bg).toBe('#0C0E14');
     expect(tokens.card_bg).toBe('#161922');
     expect(tokens.primary).toBe('#6B85F9');
+  });
+
+  it('ignores default persisted visual placeholders', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        visual: {
+          theme_id: 'light',
+          card_style: 'classic',
+          colors: {},
+          border_radius: 10,
+          card_padding: 16,
+          card_gap: 12,
+          font_family: '',
+          shadows: true,
+        },
+      } as any,
+    };
+
+    expect(resolveTokens(config)).toEqual({});
+    expect(resolveTokens(config, hass).mood_preset).toBe('warm-home');
   });
 });
