@@ -78,9 +78,10 @@ describe('settings view', () => {
     expect(js).toContain('window.hdpSaveVisualConfig = function');
     expect(js).toContain('window.hdpSaveVisualConfigAndReload = function');
     expect(js).toContain('window.hdpClearVisualConfigAndReload = function');
-    expect(js).toContain('hdpSaveConfig({ visual: cfg });');
+    expect(js).toContain('window.hdpReplaceVisualConfig = function');
+    expect(js).toContain('current.visual = cfg;');
     expect(js).toContain('cfg.theme = preset;');
     expect(js).toContain('hdpSaveVisualConfigAndReload(cfg);');
-    expect(js).toContain('hdpSaveConfig({ visual: {} });');
+    expect(js).toContain('hdpReplaceVisualConfig({});');
   });
 });

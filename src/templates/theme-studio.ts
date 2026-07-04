@@ -834,9 +834,13 @@ export function generateThemeStudioJS(): string {
     try {
       localStorage.setItem('hdp_visual_config', JSON.stringify(cfg || {}));
     } catch(e) {}
-    if (typeof hdpSaveConfig === 'function') hdpSaveConfig({ visual: cfg || {} });
-    if (typeof hdpSaveToLovelace === 'function' && typeof hdpLoadConfig === 'function') {
-      return hdpSaveToLovelace(hdpLoadConfig()).catch(function(err) {
+    var fullConfig = typeof hdpLoadConfig === 'function' ? hdpLoadConfig() : {};
+    fullConfig.visual = cfg || {};
+    try {
+      localStorage.setItem('hdp_config', JSON.stringify(fullConfig));
+    } catch(e) {}
+    if (typeof hdpSaveToLovelace === 'function') {
+      return hdpSaveToLovelace(fullConfig).catch(function(err) {
         console.warn('[HDP] Lovelace visual sync failed, saved locally only', err);
         return cfg;
       });
@@ -848,9 +852,13 @@ export function generateThemeStudioJS(): string {
     try {
       localStorage.removeItem('hdp_visual_config');
     } catch(e) {}
-    if (typeof hdpSaveConfig === 'function') hdpSaveConfig({ visual: {} });
-    if (typeof hdpSaveToLovelace === 'function' && typeof hdpLoadConfig === 'function') {
-      return hdpSaveToLovelace(hdpLoadConfig()).catch(function(err) {
+    var fullConfig = typeof hdpLoadConfig === 'function' ? hdpLoadConfig() : {};
+    fullConfig.visual = {};
+    try {
+      localStorage.setItem('hdp_config', JSON.stringify(fullConfig));
+    } catch(e) {}
+    if (typeof hdpSaveToLovelace === 'function') {
+      return hdpSaveToLovelace(fullConfig).catch(function(err) {
         console.warn('[HDP] Lovelace visual reset sync failed, cleared locally only', err);
       });
     }

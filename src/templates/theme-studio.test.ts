@@ -7,10 +7,10 @@ describe('theme studio', () => {
 
     expect(js).toContain('function saveVisualConfig(cfg)');
     expect(js).toContain('hdpSaveVisualConfig(cfg)');
-    expect(js).toContain('hdpSaveConfig({ visual: cfg || {} })');
+    expect(js).toContain('fullConfig.visual = cfg || {}');
     expect(js).toContain('function clearVisualConfig()');
-    expect(js).toContain('hdpSaveConfig({ visual: {} })');
-    expect(js).toContain('hdpSaveToLovelace(hdpLoadConfig())');
+    expect(js).toContain('fullConfig.visual = {}');
+    expect(js).toContain('hdpSaveToLovelace(fullConfig)');
     expect(js).toContain('saveVisualConfig(cfg).then(function()');
     expect(js).toContain('clearVisualConfig().then(function()');
   });

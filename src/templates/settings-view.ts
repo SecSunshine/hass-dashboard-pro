@@ -298,6 +298,18 @@ ${scripts}`;
 
 function generateVisualConfigPersistenceJS(): string {
   return `
+window.hdpReplaceVisualConfig = function(config) {
+  var cfg = config || {};
+  var current = typeof hdpLoadConfig === 'function' ? hdpLoadConfig() : {};
+  current.visual = cfg;
+  try {
+    localStorage.setItem('hdp_config', JSON.stringify(current));
+  } catch(e) {
+    console.warn('[HDP] Failed to save HDP visual config', e);
+  }
+  return current;
+};
+
 window.hdpSaveVisualConfig = function(config) {
   var cfg = config || {};
   try {
@@ -305,11 +317,11 @@ window.hdpSaveVisualConfig = function(config) {
   } catch(e) {
     console.warn('[HDP] Failed to save visual config locally', e);
   }
-  if (typeof hdpSaveConfig === 'function') {
-    hdpSaveConfig({ visual: cfg });
-  }
-  if (typeof hdpSaveToLovelace === 'function' && typeof hdpLoadConfig === 'function') {
-    return hdpSaveToLovelace(hdpLoadConfig()).catch(function(err) {
+  var fullConfig = typeof hdpReplaceVisualConfig === 'function'
+    ? hdpReplaceVisualConfig(cfg)
+    : (typeof hdpSaveConfig === 'function' ? hdpSaveConfig({ visual: cfg }) : null);
+  if (typeof hdpSaveToLovelace === 'function' && fullConfig) {
+    return hdpSaveToLovelace(fullConfig).catch(function(err) {
       console.warn('[HDP] Lovelace visual sync failed, saved locally only', err);
       return cfg;
     });
@@ -333,11 +345,12 @@ window.hdpClearVisualConfigAndReload = function(delay) {
   try {
     localStorage.removeItem('hdp_visual_config');
   } catch(e) {}
-  if (typeof hdpSaveConfig === 'function') {
-    hdpSaveConfig({ visual: {} });
+  if (typeof hdpReplaceVisualConfig === 'function') {
+    hdpReplaceVisualConfig({});
   }
-  if (typeof hdpSaveToLovelace === 'function' && typeof hdpLoadConfig === 'function') {
-    return hdpSaveToLovelace(hdpLoadConfig()).then(reload).catch(function(err) {
+  var fullConfig = typeof hdpLoadConfig === 'function' ? hdpLoadConfig() : null;
+  if (typeof hdpSaveToLovelace === 'function' && fullConfig) {
+    return hdpSaveToLovelace(fullConfig).then(reload).catch(function(err) {
       console.warn('[HDP] Lovelace visual reset sync failed, cleared locally only', err);
       reload();
     });
