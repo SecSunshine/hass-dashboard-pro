@@ -836,11 +836,12 @@ export function generateThemeStudioJS(): string {
     } catch(e) {}
     if (typeof hdpSaveConfig === 'function') hdpSaveConfig({ visual: cfg || {} });
     if (typeof hdpSaveToLovelace === 'function' && typeof hdpLoadConfig === 'function') {
-      hdpSaveToLovelace(hdpLoadConfig()).catch(function(err) {
+      return hdpSaveToLovelace(hdpLoadConfig()).catch(function(err) {
         console.warn('[HDP] Lovelace visual sync failed, saved locally only', err);
+        return cfg;
       });
     }
-    return cfg;
+    return Promise.resolve(cfg);
   }
 
   function clearVisualConfig() {
@@ -849,10 +850,11 @@ export function generateThemeStudioJS(): string {
     } catch(e) {}
     if (typeof hdpSaveConfig === 'function') hdpSaveConfig({ visual: {} });
     if (typeof hdpSaveToLovelace === 'function' && typeof hdpLoadConfig === 'function') {
-      hdpSaveToLovelace(hdpLoadConfig()).catch(function(err) {
+      return hdpSaveToLovelace(hdpLoadConfig()).catch(function(err) {
         console.warn('[HDP] Lovelace visual reset sync failed, cleared locally only', err);
       });
     }
+    return Promise.resolve();
   }
 
   // ── Color Conversions ──
@@ -1365,21 +1367,29 @@ export function generateThemeStudioJS(): string {
     cfg.text_secondary = palette.text_secondary;
     cfg.border = palette.border;
 
-    saveVisualConfig(cfg);
-    closeStudio();
-    location.reload();
+    saveVisualConfig(cfg).then(function() {
+      closeStudio();
+      location.reload();
+    }).catch(function() {
+      closeStudio();
+      location.reload();
+    });
   });
 
   // ── Reset ──
   var resetBtn = document.getElementById('ts-reset-btn');
   if (resetBtn) resetBtn.addEventListener('click', function() {
     if (!confirm('确定重置为默认主题吗？所有视觉设置将被清除。')) return;
-    clearVisualConfig();
+    clearVisualConfig().then(function() {
+      closeStudio();
+      location.reload();
+    }).catch(function() {
+      closeStudio();
+      location.reload();
+    });
     // Remove palette override style
     var existing = document.getElementById('hdp-palette-override');
     if (existing) existing.remove();
-    closeStudio();
-    location.reload();
   });
 
   // ── Open / Close ──

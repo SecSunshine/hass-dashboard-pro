@@ -309,11 +309,41 @@ window.hdpSaveVisualConfig = function(config) {
     hdpSaveConfig({ visual: cfg });
   }
   if (typeof hdpSaveToLovelace === 'function' && typeof hdpLoadConfig === 'function') {
-    hdpSaveToLovelace(hdpLoadConfig()).catch(function(err) {
+    return hdpSaveToLovelace(hdpLoadConfig()).catch(function(err) {
       console.warn('[HDP] Lovelace visual sync failed, saved locally only', err);
+      return cfg;
     });
   }
-  return cfg;
+  return Promise.resolve(cfg);
+};
+
+window.hdpSaveVisualConfigAndReload = function(config, delay) {
+  var wait = delay == null ? 0 : delay;
+  var reload = function() {
+    setTimeout(function() { location.reload(); }, wait);
+  };
+  return hdpSaveVisualConfig(config).then(reload).catch(reload);
+};
+
+window.hdpClearVisualConfigAndReload = function(delay) {
+  var wait = delay == null ? 0 : delay;
+  var reload = function() {
+    setTimeout(function() { location.reload(); }, wait);
+  };
+  try {
+    localStorage.removeItem('hdp_visual_config');
+  } catch(e) {}
+  if (typeof hdpSaveConfig === 'function') {
+    hdpSaveConfig({ visual: {} });
+  }
+  if (typeof hdpSaveToLovelace === 'function' && typeof hdpLoadConfig === 'function') {
+    return hdpSaveToLovelace(hdpLoadConfig()).then(reload).catch(function(err) {
+      console.warn('[HDP] Lovelace visual reset sync failed, cleared locally only', err);
+      reload();
+    });
+  }
+  reload();
+  return Promise.resolve();
 };
 `;
 }
@@ -544,8 +574,7 @@ ${generateDesignTokenCSS(tokens)}
         var preset = this.getAttribute('data-preset');
         var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
         cfg.theme = preset;
-        hdpSaveVisualConfig(cfg);
-        location.reload();
+        hdpSaveVisualConfigAndReload(cfg);
       });
     });
   })();
@@ -758,8 +787,7 @@ ${generateDesignTokenCSS(tokens)}
         cfg.text_secondary = palette.text_secondary;
         cfg.border = palette.border;
         cfg.auto_dark = isAutoDark;
-        hdpSaveVisualConfig(cfg);
-        location.reload();
+        hdpSaveVisualConfigAndReload(cfg);
       });
     });
 
@@ -802,8 +830,7 @@ ${generateDesignTokenCSS(tokens)}
         cfg.text_primary = palette.text_primary;
         cfg.text_secondary = palette.text_secondary;
         cfg.border = palette.border;
-        hdpSaveVisualConfig(cfg);
-        location.reload();
+        hdpSaveVisualConfigAndReload(cfg);
       });
     }
 
@@ -815,8 +842,7 @@ ${generateDesignTokenCSS(tokens)}
         this.className = 'toggle-switch ' + (isOn ? 'toggle-switch--off' : 'toggle-switch--on');
         var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
         cfg.auto_dark = !isOn;
-        hdpSaveVisualConfig(cfg);
-        location.reload();
+        hdpSaveVisualConfigAndReload(cfg);
       });
     }
 
@@ -837,8 +863,7 @@ ${generateDesignTokenCSS(tokens)}
         delete cfg.border;
         delete cfg.card_style;
         delete cfg.border_radius;
-        hdpSaveVisualConfig(cfg);
-        location.reload();
+        hdpSaveVisualConfigAndReload(cfg);
       });
     }
   })();
@@ -1039,7 +1064,6 @@ ${generateDesignTokenCSS(tokens)}
         this.className = 'toggle-switch ' + (isOn ? 'toggle-switch--off' : 'toggle-switch--on');
         var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
         cfg.auto_mood = !isOn;
-        hdpSaveVisualConfig(cfg);
         if (periodsEl) {
           periodsEl.className = 'am-periods' + (!isOn ? '' : ' am-periods--disabled');
         }
@@ -1047,7 +1071,7 @@ ${generateDesignTokenCSS(tokens)}
         document.querySelectorAll('.am-mood-select').forEach(function(sel) {
           sel.disabled = isOn;
         });
-        location.reload();
+        hdpSaveVisualConfigAndReload(cfg);
       });
     }
 
@@ -1059,8 +1083,7 @@ ${generateDesignTokenCSS(tokens)}
         var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
         if (!cfg.time_moods) cfg.time_moods = {};
         cfg.time_moods[period] = mood;
-        hdpSaveVisualConfig(cfg);
-        location.reload();
+        hdpSaveVisualConfigAndReload(cfg);
       });
     });
   })();
@@ -1195,8 +1218,7 @@ ${generateDesignTokenCSS(tokens)}
         var style = this.getAttribute('data-style');
         var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
         cfg.card_style = style;
-        hdpSaveVisualConfig(cfg);
-        location.reload();
+        hdpSaveVisualConfigAndReload(cfg);
       });
     });
   })();
@@ -1417,9 +1439,8 @@ ${generateDesignTokenCSS(tokens)}
         } else {
           cfg.card_sizes[cardId] = size;
         }
-        hdpSaveVisualConfig(cfg);
         if (typeof hdpShowToast === 'function') hdpShowToast('卡片尺寸已保存', 'success');
-        setTimeout(function() { location.reload(); }, 600);
+        hdpSaveVisualConfigAndReload(cfg, 600);
       });
     });
 
@@ -1465,9 +1486,8 @@ ${generateDesignTokenCSS(tokens)}
         } else {
           delete cfg.area_skins[areaId];
         }
-        hdpSaveVisualConfig(cfg);
         if (typeof hdpShowToast === 'function') hdpShowToast('区域皮肤已保存', 'success');
-        setTimeout(function() { location.reload(); }, 600);
+        hdpSaveVisualConfigAndReload(cfg, 600);
       });
     });
   })();
@@ -1902,9 +1922,8 @@ ${generateDesignTokenCSS(tokens)}
         var font = this.getAttribute('data-font').replace(/&quot;/g, '"');
         var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
         cfg.font_family = font;
-        hdpSaveVisualConfig(cfg);
         document.documentElement.style.setProperty('--hdp-font', font);
-        location.reload();
+        hdpSaveVisualConfigAndReload(cfg);
       });
     });
   })();
@@ -1973,8 +1992,7 @@ ${generateDesignTokenCSS(tokens)}
   (function() {
     document.getElementById('reset-btn').addEventListener('click', function() {
       if (confirm('确定恢复默认视觉设置吗？')) {
-        localStorage.removeItem('hdp_visual_config');
-        location.reload();
+        hdpClearVisualConfigAndReload();
       }
     });
     document.getElementById('done-btn').addEventListener('click', function() {

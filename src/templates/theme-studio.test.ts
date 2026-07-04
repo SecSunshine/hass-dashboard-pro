@@ -11,5 +11,7 @@ describe('theme studio', () => {
     expect(js).toContain('function clearVisualConfig()');
     expect(js).toContain('hdpSaveConfig({ visual: {} })');
     expect(js).toContain('hdpSaveToLovelace(hdpLoadConfig())');
+    expect(js).toContain('saveVisualConfig(cfg).then(function()');
+    expect(js).toContain('clearVisualConfig().then(function()');
   });
 });
