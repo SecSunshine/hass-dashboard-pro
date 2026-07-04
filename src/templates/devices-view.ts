@@ -22,6 +22,7 @@ import { isEntityOn, formatState } from '../utils/area-entities';
 import { buildDomainCard, getDomainCardCSS } from './entity-cards';
 import { collectVisibleEntities, getDashboardFilters } from '../utils/dashboard-model';
 import { escapeAttribute, escapeHTML } from '../utils/html';
+import { cardSkinClass, sanitizeCardSkin } from '../utils/card-skin';
 
 // ─── Main Export ────────────────────────────────────────────────────────────
 
@@ -59,7 +60,7 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
   }).join('');
 
   // Domain sections
-  const skin = tokens?.card_style;
+  const skin = sanitizeCardSkin(tokens?.card_style);
   const cs = tokens?.card_sizes;
   const sectionsHTML = sorted.map(([domain, entities]) => {
     const sectionHTML = buildDomainSection(domain, entities, skin, hass);
@@ -318,7 +319,7 @@ function buildDeviceEntityCard(entity: EntityInfo, skin?: string, hass?: Hass): 
   const stateText = escapeHTML(formatState(entity));
   const iconSVG = getEntityIconSVG(entity.domain, active);
   const isSensor = entity.domain === 'sensor' || entity.domain === 'binary_sensor';
-  const skinCls = skin ? `hdp-card hdp-card--${skin}` : '';
+  const skinCls = cardSkinClass(skin);
   const cardCls = active ? `dvc dvc--on ${skinCls}` : `dvc ${skinCls}`;
   const entityId = escapeAttribute(entity.entity_id);
 

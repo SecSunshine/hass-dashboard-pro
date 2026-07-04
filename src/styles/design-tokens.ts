@@ -23,6 +23,7 @@
  */
 
 import type { ResolvedTokens } from '../utils/visual-config';
+import { sanitizeCardSkin } from '../utils/card-skin';
 import { DENSITY_PRESETS, type LayoutDensity } from '../utils/bento-layout';
 
 // ─── Spacing & Layout Constants ───────────────────────────────────────────
@@ -68,6 +69,7 @@ export const GRADIENTS = {
  * precedence over HA theme tokens.
  */
 export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
+  const cardSkin = sanitizeCardSkin(tokens?.card_style);
   // User overrides from settings (if any)
   const primaryOverride = tokens?.primary || '';
   const bgOverride = tokens?.page_bg || '';
@@ -170,7 +172,7 @@ export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
     --hdp-primary-glow: rgba(79, 110, 247, 0.15);
 
     /* ── Card Skin (classic | glass | gradient | aurora | soft | neon) ── */
-    --hdp-card-skin: ${tokens?.card_style || 'classic'};
+    --hdp-card-skin: ${cardSkin};
   }
 
   /* ── Card Skin Classes (compound selectors for specificity) ── */

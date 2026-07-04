@@ -68,7 +68,9 @@ export function buildSettingsHTML(config: StrategyConfig, tokens?: ResolvedToken
   const visualCards = buildSettingsView(config, tokens, hass);
   const visualStyles = visualCards.map(card => {
     const content = (card.content as string) || '';
-    return (content.match(/<style>[\s\S]*?<\/style>/g) || []).join('\n');
+    return (content.match(/<style>[\s\S]*?<\/style>/g) || [])
+      .map(style => style.replace(/^<style>/, '').replace(/<\/style>$/, ''))
+      .join('\n');
   }).filter(Boolean).join('\n');
 
   const visualHTML = visualCards.map(card => {
@@ -92,9 +94,9 @@ export function buildSettingsHTML(config: StrategyConfig, tokens?: ResolvedToken
   </div>`;
 
   return `
-<style>${getSettingsSectionsCSS()}</style>
-${visualStyles}
 <style>
+${getSettingsSectionsCSS()}
+${visualStyles}
   /* Visual settings card spacing & wrappers */
   #st-visual-body > div {
     padding: 16px;

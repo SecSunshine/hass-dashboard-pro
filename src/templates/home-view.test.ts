@@ -105,4 +105,12 @@ describe('home view settings', () => {
     expect(html).not.toContain('<div class="hw-weather">');
     expect(html).not.toContain('<div class="hw-alarm');
   });
+
+  it('sanitizes persisted card skin classes', () => {
+    const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
+    const html = buildHomeHTML(hass, config, { card_style: 'bad" onclick="evil()' } as any);
+
+    expect(html).toContain('hdp-card--classic');
+    expect(html).not.toContain('onclick="evil()');
+  });
 });

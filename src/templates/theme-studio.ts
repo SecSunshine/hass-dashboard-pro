@@ -20,6 +20,7 @@ import type { Hass, StrategyConfig } from '../types';
 import { buildHomeHTML } from './home-view';
 import { MOOD_PRESETS } from '../themes/palette-generator';
 import { escapeAttribute, escapeHTML, escapeInlineStyleValue } from '../utils/html';
+import { cardSkinClass, sanitizeCardSkin } from '../utils/card-skin';
 
 // ─── HTML + CSS ─────────────────────────────────────────────────────────────
 
@@ -32,7 +33,7 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
   const currentSeedRaw = (tokens?.seed_color as string) || '#4F6EF7';
   const currentSeed = escapeAttribute(currentSeedRaw);
   const currentSeedStyle = escapeInlineStyleValue(currentSeedRaw);
-  const currentSkin = escapeAttribute((tokens?.card_style as string) || 'classic');
+  const currentSkin = escapeAttribute(sanitizeCardSkin(tokens?.card_style));
   const currentRadius = tokens?.border_radius ?? 14;
   const currentPadding = (tokens as any)?.card_padding ?? 18;
   const currentGap = (tokens as any)?.card_gap ?? 12;
@@ -731,7 +732,7 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
  * Uses the same card skin as the current theme.
  */
 function buildFallbackPreview(skin: string): string {
-  const skinCls = `hdp-card hdp-card--${skin}`;
+  const skinCls = cardSkinClass(skin);
   return `<div class="ts-preview-grid">
     <div class="ts-preview-card ts-preview-card--wide ${skinCls}" style="padding: 20px; border-radius: var(--hdp-radius, 14px);">
       <div style="font-size: 20px; font-weight: 700; color: var(--hdp-text); margin-bottom: 4px;">你好，上午好</div>
@@ -811,7 +812,7 @@ export function generateThemeStudioJS(): string {
       var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
       state.seed = cfg.seed_color || '#4F6EF7';
       state.mood = cfg.mood_preset || '';
-      state.skin = cfg.card_style || 'classic';
+      state.skin = sanitizeSkin(cfg.card_style);
       state.radius = cfg.border_radius != null ? cfg.border_radius : 14;
       state.gap = cfg.card_gap != null ? cfg.card_gap : 12;
       state.padding = cfg.card_padding != null ? cfg.card_padding : 18;
@@ -825,6 +826,11 @@ export function generateThemeStudioJS(): string {
       // Convert seed hex to HSV for wheel position
       state.hsv = hexToHsv(state.seed);
     } catch(e) {}
+  }
+
+  function sanitizeSkin(value) {
+    var skins = ['classic', 'glass', 'gradient', 'aurora', 'soft', 'neon'];
+    return skins.indexOf(value) !== -1 ? value : 'classic';
   }
 
   function saveVisualConfig(cfg) {
@@ -1086,6 +1092,7 @@ export function generateThemeStudioJS(): string {
     var mode = state.mode;
     var resolvedMode = mode === 'auto' ? (window.HDP_Palette.shouldUseDarkMode() ? 'dark' : 'light') : mode;
     var palette = window.HDP_Palette.generate(state.seed, resolvedMode);
+    state.skin = sanitizeSkin(state.skin);
     palette.card_style = state.skin;
     palette.border_radius = state.radius;
     palette.mood_id = state.mood || 'custom';
@@ -1151,7 +1158,7 @@ export function generateThemeStudioJS(): string {
       if (!mood) return;
       state.mood = moodId;
       state.seed = mood.seed;
-      state.skin = mood.card_skin;
+      state.skin = sanitizeSkin(mood.card_skin);
       state.radius = mood.radius;
       state.hsv = hexToHsv(state.seed);
 
@@ -1168,7 +1175,7 @@ export function generateThemeStudioJS(): string {
   // ── Skin Selection ──
   document.querySelectorAll('.ts-skin-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
-      state.skin = this.getAttribute('data-skin');
+      state.skin = sanitizeSkin(this.getAttribute('data-skin'));
       applyRealTime();
     });
   });
@@ -1236,7 +1243,7 @@ export function generateThemeStudioJS(): string {
     var config = {
       seed: state.seed,
       mood: state.mood,
-      skin: state.skin,
+      skin: sanitizeSkin(state.skin),
       radius: state.radius,
       gap: state.gap,
       padding: state.padding,
@@ -1312,7 +1319,7 @@ export function generateThemeStudioJS(): string {
     // Apply decoded config
     if (config.seed) { state.seed = config.seed; state.hsv = hexToHsv(config.seed); }
     if (config.mood) state.mood = config.mood;
-    if (config.skin) state.skin = config.skin;
+    if (config.skin) state.skin = sanitizeSkin(config.skin);
     if (config.radius != null) state.radius = config.radius;
     if (config.gap != null) state.gap = config.gap;
     if (config.padding != null) state.padding = config.padding;
@@ -1358,7 +1365,7 @@ export function generateThemeStudioJS(): string {
     var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
     cfg.seed_color = state.seed;
     cfg.mood_preset = state.mood || 'custom';
-    cfg.card_style = state.skin;
+    cfg.card_style = sanitizeSkin(state.skin);
     cfg.border_radius = state.radius;
     cfg.card_gap = state.gap;
     cfg.card_padding = state.padding;

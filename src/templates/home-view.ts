@@ -35,6 +35,7 @@ import {
 } from '../utils/home-data';
 import type { PersonInfo, DomainStatus, FavoriteEntity } from '../utils/home-data';
 import { escapeAttribute, escapeHTML, escapeInlineStyleValue, escapeURLAttribute } from '../utils/html';
+import { cardSkinClass } from '../utils/card-skin';
 
 export function buildHomeView(hass: Hass, config: StrategyConfig, tokens?: ResolvedTokens): LovelaceCardConfig[] {
   const cards: LovelaceCardConfig[] = [];
@@ -530,8 +531,7 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
   const climate = getClimateSummary(hass, config);
   const alarm = header.showNotifications ? getAlarmStatus(hass, header.alarmEntity) : null;
   const alarmDisplay = alarm ? escapeHTML(alarm.display) : '';
-  const skin = tokens?.card_style || 'classic';
-  const skinCls = `hdp-card hdp-card--${skin}`;
+  const skinCls = cardSkinClass(tokens?.card_style);
 
   // Build stat items
   const items: string[] = [];
@@ -780,8 +780,7 @@ ${roomRows}`,
 // ─── 6. Favorites Card ─────────────────────────────────────────────────────
 
 function buildFavoritesCard(favorites: FavoriteEntity[], tokens?: ResolvedTokens): LovelaceCardConfig {
-  const skin = tokens?.card_style || 'classic';
-  const skinCls = `hdp-card hdp-card--${skin}`;
+  const skinCls = cardSkinClass(tokens?.card_style);
   const items = favorites.map(f => {
     const iconSVG = getFavoriteIcon(f.domain, f.is_active);
     const stateCls = f.is_active ? 'fav--active' : '';
@@ -902,8 +901,7 @@ function getFavoriteIcon(domain: string, active: boolean): string {
 
 function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: StrategyConfig): LovelaceCardConfig {
   const summaries = getHomeSummaries(hass, config);
-  const skin = tokens?.card_style || 'classic';
-  const skinCls = `hdp-card hdp-card--${skin}`;
+  const skinCls = cardSkinClass(tokens?.card_style);
 
   const items: string[] = [];
 

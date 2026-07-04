@@ -14,4 +14,13 @@ describe('theme studio', () => {
     expect(js).toContain('saveVisualConfig(cfg).then(function()');
     expect(js).toContain('clearVisualConfig().then(function()');
   });
+
+  it('sanitizes imported and persisted card skins', () => {
+    const js = generateThemeStudioJS();
+
+    expect(js).toContain('function sanitizeSkin(value)');
+    expect(js).toContain('state.skin = sanitizeSkin(cfg.card_style);');
+    expect(js).toContain('if (config.skin) state.skin = sanitizeSkin(config.skin);');
+    expect(js).toContain('cfg.card_style = sanitizeSkin(state.skin);');
+  });
 });

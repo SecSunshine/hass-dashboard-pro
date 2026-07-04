@@ -14,6 +14,7 @@
 
 import type { Hass, HassEntity, EntityInfo } from '../types';
 import { escapeAttribute, escapeHTML } from '../utils/html';
+import { cardSkinClass } from '../utils/card-skin';
 
 function jsArg(value: unknown): string {
   return escapeAttribute(JSON.stringify(String(value ?? '')));
@@ -522,7 +523,7 @@ function buildClimateCard(entity: EntityInfo, stateObj: HassEntity, skin?: strin
   const fanModes = (attrs.fan_modes as string[]) || [];
   const fanMode = attrs.fan_mode as string | undefined;
   const currentState = stateObj.state;
-  const skinCls = skin ? `hdp-card hdp-card--${skin}` : '';
+  const skinCls = skin ? cardSkinClass(skin) : '';
   const step = (attrs.target_temp_step as number) || 0.5;
   const minTemp = (attrs.min_temp as number) || 16;
   const maxTemp = (attrs.max_temp as number) || 30;
@@ -597,7 +598,7 @@ function buildCoverCard(entity: EntityInfo, stateObj: HassEntity, skin?: string)
   const position = Number.isFinite(rawPosition) ? Math.max(0, Math.min(100, rawPosition)) : null;
   const currentState = stateObj.state;
   const isActive = currentState === 'open' || currentState === 'opening';
-  const skinCls = skin ? `hdp-card hdp-card--${skin}` : '';
+  const skinCls = skin ? cardSkinClass(skin) : '';
 
   // Position bar: 0% = closed, 100% = open
   const barWidth = position != null ? position : (isActive ? 100 : 0);
@@ -640,7 +641,7 @@ function buildCoverCard(entity: EntityInfo, stateObj: HassEntity, skin?: string)
 function buildLockCard(entity: EntityInfo, stateObj: HassEntity, skin?: string): string {
   const currentState = stateObj.state;
   const isLocked = currentState === 'locked';
-  const skinCls = skin ? `hdp-card hdp-card--${skin}` : '';
+  const skinCls = skin ? cardSkinClass(skin) : '';
 
   const btnCls = isLocked ? 'dc-lock-btn dc-lock-btn--locked' : 'dc-lock-btn dc-lock-btn--unlocked';
   const btnLabel = isLocked ? '已锁' : '已解锁';
@@ -681,7 +682,7 @@ function buildMediaPlayerCard(entity: EntityInfo, stateObj: HassEntity, skin?: s
   const volumePct = Math.round(volumeLevel * 100);
   const mediaTitle = (attrs.media_title as string) || '';
   const mediaArtist = (attrs.media_artist as string) || '';
-  const skinCls = skin ? `hdp-card hdp-card--${skin}` : '';
+  const skinCls = skin ? cardSkinClass(skin) : '';
 
   const playPauseIcon = isPlaying
     ? `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>`
@@ -729,7 +730,7 @@ function buildMediaPlayerCard(entity: EntityInfo, stateObj: HassEntity, skin?: s
 function buildVacuumCard(entity: EntityInfo, stateObj: HassEntity, skin?: string): string {
   const currentState = stateObj.state;
   const isActive = currentState === 'cleaning' || currentState === 'returning';
-  const skinCls = skin ? `hdp-card hdp-card--${skin}` : '';
+  const skinCls = skin ? cardSkinClass(skin) : '';
 
   const stateLabels: Record<string, string> = {
     cleaning: '清扫中',

@@ -28,6 +28,8 @@ describe('settings view', () => {
     expect(html).toContain('#st-visual-body > div');
     expect(html).not.toContain('.st-section-body > div {');
     expect(html).toContain('.theme-grid');
+    expect(html).toContain('<style>\n');
+    expect(html).toContain('.settings-header');
     expect(html).toContain('#st-visual-body .theme-grid');
     expect(html).toContain('repeat(auto-fit, minmax(136px, 1fr))');
     expect(html).toContain('#st-visual-body .color-row');

@@ -21,6 +21,7 @@ import { DOMAIN_GROUPS } from '../types';
 import { formatState, isEntityOn } from '../utils/area-entities';
 import { buildDomainCard, getDomainCardCSS } from './entity-cards';
 import { escapeAttribute, escapeHTML } from '../utils/html';
+import { cardSkinClass, sanitizeCardSkin } from '../utils/card-skin';
 
 // ─── Area-specific Skin Resolution (Phase 6) ────────────────────────────────
 
@@ -48,7 +49,7 @@ const AREA_SKIN_KEYWORDS: Array<{ keywords: string[]; skin: string }> = [
 function resolveAreaSkin(areaId: string, areaName: string, areaSkins: Record<string, string> | undefined, globalSkin: string | undefined): string {
   // 1. User's explicit override for this area_id
   if (areaSkins && areaSkins[areaId]) {
-    return sanitizeSkin(areaSkins[areaId]);
+    return sanitizeCardSkin(areaSkins[areaId]);
   }
   // 2. Keyword-based default (match area name)
   const lowerName = areaName.toLowerCase();
@@ -58,11 +59,7 @@ function resolveAreaSkin(areaId: string, areaName: string, areaSkins: Record<str
     }
   }
   // 3. Fall back to global card_style
-  return sanitizeSkin(globalSkin || 'classic');
-}
-
-function sanitizeSkin(skin: string): string {
-  return ['classic', 'glass', 'gradient', 'aurora', 'soft', 'neon'].includes(skin) ? skin : 'classic';
+  return sanitizeCardSkin(globalSkin);
 }
 
 export function buildAreaView(areaName: string, entities: EntityInfo[], hass: Hass, tokens?: ResolvedTokens): LovelaceCardConfig[] {
@@ -95,7 +92,7 @@ export function buildAreaHTML(areaName: string, entities: EntityInfo[], hass: Ha
   const groups = groupByDomain(entities);
   const sections: string[] = [];
   const globalSkin = tokens?.card_style;
-  const areaSkin = areaId ? resolveAreaSkin(areaId, areaName, tokens?.area_skins, globalSkin) : globalSkin;
+  const areaSkin = areaId ? resolveAreaSkin(areaId, areaName, tokens?.area_skins, globalSkin) : sanitizeCardSkin(globalSkin);
   const cs = tokens?.card_sizes;
 
   sections.push(bentoWrap(extractAreaHTML(buildAreaHeader(areaName, entities, hass, tokens)), resolveCardSize('area_header', 'wide', cs)));
@@ -394,7 +391,7 @@ function buildEntityCard(entity: EntityInfo, skin?: string, hass?: Hass): string
   const stateText = escapeHTML(formatState(entity));
   const iconSVG = getEntityIcon(entity.domain, active);
   const isSensor = entity.domain === 'sensor' || entity.domain === 'binary_sensor';
-  const skinCls = skin ? `hdp-card hdp-card--${skin}` : '';
+  const skinCls = skin ? cardSkinClass(skin) : '';
   const cardCls = active ? `ec ec--on ${skinCls}` : `ec ${skinCls}`;
   const entityId = escapeAttribute(entity.entity_id);
 
