@@ -99,6 +99,7 @@ describe('settings view', () => {
   it('scopes visual card wrappers and keeps visual card styles', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const html = buildSettingsHTML(config, undefined, hass);
+    const js = generateSettingsJS(config, undefined, hass);
 
     expect(html).toContain('#st-visual-body > div');
     expect(html).toContain('.hdp-view[data-view="settings"] .hdp-area-content');
@@ -130,6 +131,13 @@ describe('settings view', () => {
     expect(html).toContain("hdpToggleArrayItem('areas.hidden_areas'");
     expect(html).toContain("hdpToggleArrayItem('devices.hidden_device_types'");
     expect(html).toContain(', event)');
+    expect(html).toContain('data-action="toggle-section" data-section="st-dashboard" role="button" aria-expanded="false" tabindex="0"');
+    expect(html).toContain('data-action="toggle-section" data-section="st-visual" role="button" aria-expanded="true" tabindex="0"');
+    expect(js).toContain("hdr.setAttribute('aria-expanded'");
+    expect(html).toContain('data-action="refresh-themes"');
+    expect(html).toContain('data-action="export-config"');
+    expect(html).toContain('data-action="import-config"');
+    expect(html).toContain('data-action="reset-config"');
     expect(html).not.toMatch(/[^<]\/(div|span|button|option|a|textarea|label|select|input)>/);
     expect(html).not.toMatch(/(^|[{}])\s*\.settings-section\s*\{/);
     expect(html).not.toMatch(/(^|[{}])\s*\.theme-card\s*\{/);

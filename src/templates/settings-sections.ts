@@ -51,7 +51,7 @@ function isVisibleRegistryEntity(hass: Hass | undefined, entityId: string): bool
 
 function sectionCard(id: string, title: string, icon: string, content: string): string {
   return `<div class="st-section" id="st-${id}" data-component="settings-${id}">
-    <div class="st-section-hdr" onclick="hdpToggleSection('st-${id}')">
+    <div class="st-section-hdr" data-action="toggle-section" data-section="st-${id}" role="button" aria-expanded="false" tabindex="0" onclick="hdpToggleSection('st-${id}')" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); this.click(); }">
       <div class="st-section-icon">${icon}</div>
       <span class="st-section-title">${title}</span>
       <svg class="st-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
@@ -395,7 +395,11 @@ export function generateSettingsSectionsJS(): string {
 
 window.hdpToggleSection = function(id) {
   var el = document.getElementById(id);
-  if (el) el.classList.toggle('st-section--open');
+  if (el) {
+    el.classList.toggle('st-section--open');
+    var hdr = el.querySelector('.st-section-hdr');
+    if (hdr) hdr.setAttribute('aria-expanded', el.classList.contains('st-section--open') ? 'true' : 'false');
+  }
 };
 
 window.hdpPersistSettingsAndReload = function(successDelay, fallbackDelay) {
@@ -1301,7 +1305,7 @@ export function buildThemeFilesSection(): string {
       <span class="st-about-val">JSON</span>
     </div>
     <div style="margin-top: 12px;">
-      <button class="st-btn" onclick="hdpRefreshThemes()">
+      <button class="st-btn" data-action="refresh-themes" onclick="hdpRefreshThemes()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         刷新主题列表
       </button>
@@ -1372,21 +1376,21 @@ export function buildResetSection(): string {
         <div class="st-row-label">导出配置</div>
         <div class="st-row-desc">将所有设置导出为 JSON 文件</div>
       </div>
-      <button class="st-btn" onclick="hdpExportConfig()">导出</button>
+      <button class="st-btn" data-action="export-config" onclick="hdpExportConfig()">导出</button>
     </div>
     <div class="st-row">
       <div>
         <div class="st-row-label">导入配置</div>
         <div class="st-row-desc">从 JSON 文件恢复设置</div>
       </div>
-      <button class="st-btn" onclick="hdpImportConfig()">导入</button>
+      <button class="st-btn" data-action="import-config" onclick="hdpImportConfig()">导入</button>
     </div>
     <div class="st-row">
       <div>
         <div class="st-row-label">重置所有设置</div>
         <div class="st-row-desc">恢复到默认配置，此操作不可撤销</div>
       </div>
-      <button class="st-btn st-btn--danger" onclick="hdpResetConfig()">重置</button>
+      <button class="st-btn st-btn--danger" data-action="reset-config" onclick="hdpResetConfig()">重置</button>
     </div>
   `);
 }
