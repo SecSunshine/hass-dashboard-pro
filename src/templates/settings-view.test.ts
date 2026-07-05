@@ -113,6 +113,8 @@ describe('settings view', () => {
     expect(html).toContain('#st-visual-body .settings-studio-btn svg');
     expect(html).toContain('#st-visual-body .toggle-switch::after');
     expect(html).toContain('#st-visual-body .toggle-switch-knob');
+    expect(html).toContain('#st-visual-body .lc-size-row');
+    expect(html).toContain('#st-visual-body .am-toggle-row');
     expect(html).toContain('#st-visual-body input[type="color"]');
     expect(html).toContain('.st-row > div');
     expect(html).toContain('overflow-wrap: anywhere');
@@ -123,6 +125,7 @@ describe('settings view', () => {
     expect(html).not.toMatch(/(^|[{}])\s*\.settings-section\s*\{/);
     expect(html).not.toMatch(/(^|[{}])\s*\.theme-card\s*\{/);
     expect(html).not.toContain(':host, :root');
+    expect(html.indexOf('Stable visual-settings layout')).toBeLessThan(html.indexOf('#st-visual-body .settings-header'));
   });
 
   it('adds detected HA domains to the hidden domain controls', () => {
@@ -133,6 +136,22 @@ describe('settings view', () => {
     expect(html).toContain('数字');
     expect(html).not.toContain("hdpToggleArrayItem('devices.hidden_domains', &quot;select&quot;, event)");
     expect(html).not.toContain("hdpToggleArrayItem('devices.hidden_domains', &quot;automation&quot;, event)");
+  });
+
+  it('marks legacy hidden area and domain settings as active', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hidden_areas: ['kitchen'],
+      hidden_domains: ['number'],
+      hdp_config: {
+        areas: { hidden_areas: [] },
+        devices: { hidden_domains: [], hidden_device_types: [] },
+      } as any,
+    };
+    const html = buildSettingsHTML(config, undefined, hass);
+
+    expect(html).toContain('st-chip st-chip--active" data-action="toggle-hidden-area" onclick="hdpToggleArrayItem(\'areas.hidden_areas\', &quot;kitchen&quot;, event)">Kitchen');
+    expect(html).toContain('st-chip st-chip--active" data-action="toggle-hidden-domain" onclick="hdpToggleArrayItem(\'devices.hidden_domains\', &quot;number&quot;, event)');
   });
 
   it('ignores hidden or disabled registry entities in device type controls', () => {

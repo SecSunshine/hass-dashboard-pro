@@ -3,6 +3,9 @@ import type { Hass, StrategyConfig } from '../types';
 import {
   buildHomeProfile,
   collectVisibleEntities,
+  getConfiguredHiddenAreas,
+  getConfiguredHiddenDeviceTypes,
+  getConfiguredHiddenDomains,
   getDashboardFilters,
   resolveEntityAreaId,
   UNASSIGNED_AREA_ID,
@@ -121,6 +124,23 @@ describe('dashboard model', () => {
     };
     const entities = collectVisibleEntities(hass, getDashboardFilters(config));
     expect(entities.map(entity => entity.entity_id)).toEqual(['light.kitchen']);
+  });
+
+  it('merges legacy top-level hidden filters with persisted HDP config', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hidden_areas: ['closet'],
+      hidden_domains: ['sensor'],
+      hidden_device_types: ['binary_sensor.motion'],
+      hdp_config: {
+        areas: { hidden_areas: [] },
+        devices: { hidden_domains: ['switch'], hidden_device_types: [] },
+      } as any,
+    };
+
+    expect(getConfiguredHiddenAreas(config)).toEqual(['closet']);
+    expect(getConfiguredHiddenDomains(config)).toEqual(['switch', 'sensor']);
+    expect(getConfiguredHiddenDeviceTypes(config)).toEqual(['binary_sensor.motion']);
   });
 
   it('applies hide unavailable consistently', () => {

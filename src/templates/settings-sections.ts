@@ -25,7 +25,14 @@ import { buildBlueprintGalleryHTML } from '../blueprints/blueprint-gallery';
 import { buildDashboardDesignPlan, buildPlanAlternatives, type DashboardDesignPlan } from '../utils/design-plan';
 import { escapeAttribute, escapeHTML } from '../utils/html';
 import { getEntityDeviceType } from '../utils/area-entities';
-import { resolveEntityAreaId, UNASSIGNED_AREA_ID, UNASSIGNED_AREA_NAME } from '../utils/dashboard-model';
+import {
+  getConfiguredHiddenAreas,
+  getConfiguredHiddenDeviceTypes,
+  getConfiguredHiddenDomains,
+  resolveEntityAreaId,
+  UNASSIGNED_AREA_ID,
+  UNASSIGNED_AREA_NAME,
+} from '../utils/dashboard-model';
 
 function jsArg(value: unknown): string {
   return escapeAttribute(JSON.stringify(String(value ?? '')));
@@ -973,7 +980,7 @@ export function buildPeopleSection(hass: any, config: StrategyConfig): string {
 // ─── 5. Areas ───────────────────────────────────────────────────────────────
 
 export function buildAreasSection(hass: any, config: StrategyConfig): string {
-  const hiddenAreas: string[] = config.hdp_config?.areas?.hidden_areas || config.hidden_areas || [];
+  const hiddenAreas: string[] = getConfiguredHiddenAreas(config);
   const hideUnavailable = config.hdp_config?.areas?.hide_unavailable || false;
 
   const areaEntries = Object.entries(hass.areas || {});
@@ -1010,8 +1017,8 @@ export function buildAreasSection(hass: any, config: StrategyConfig): string {
 // ─── 6. Devices ─────────────────────────────────────────────────────────────
 
 export function buildDevicesSection(config: StrategyConfig, hass?: Hass): string {
-  const hiddenDomains: string[] = config.hdp_config?.devices?.hidden_domains || config.hidden_domains || [];
-  const hiddenDeviceTypes: string[] = config.hdp_config?.devices?.hidden_device_types || [];
+  const hiddenDomains: string[] = getConfiguredHiddenDomains(config);
+  const hiddenDeviceTypes: string[] = getConfiguredHiddenDeviceTypes(config);
   const defaultDomains = ['light', 'switch', 'climate', 'fan', 'cover', 'lock', 'sensor', 'binary_sensor', 'media_player', 'camera', 'vacuum', 'button'];
   const detectedDomains = Object.keys(hass?.states || {})
     .filter(entityId => isVisibleRegistryEntity(hass, entityId))

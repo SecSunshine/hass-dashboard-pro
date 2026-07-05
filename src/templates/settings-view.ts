@@ -19,7 +19,7 @@ import type { ResolvedTokens, StoredVisualConfig } from '../utils/visual-config'
 import { getEffectiveStoredVisualConfig, loadStoredConfig, saveStoredConfig, clearStoredConfig } from '../utils/visual-config';
 import { generatePaletteGeneratorJS, MOOD_PRESETS } from '../themes/palette-generator';
 import { escapeAttribute, escapeHTML, escapeInlineStyleValue } from '../utils/html';
-import { resolveEntityAreaId, UNASSIGNED_AREA_ID, UNASSIGNED_AREA_NAME } from '../utils/dashboard-model';
+import { getConfiguredHiddenAreas, resolveEntityAreaId, UNASSIGNED_AREA_ID, UNASSIGNED_AREA_NAME } from '../utils/dashboard-model';
 import {
   getSettingsSectionsCSS,
   generateSettingsSectionsJS,
@@ -104,7 +104,6 @@ export function buildSettingsHTML(config: StrategyConfig, tokens?: ResolvedToken
   return `
 <style>
 ${getSettingsSectionsCSS()}
-${visualStyles}
   /* Visual settings card spacing & wrappers */
   #st-visual-body > div {
     padding: 16px;
@@ -162,6 +161,27 @@ ${visualStyles}
   #st-visual-body .settings-section {
     width: 100%;
     box-sizing: border-box;
+  }
+  #st-visual-body .settings-title,
+  #st-visual-body .lc-title {
+    font: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--hdp-text, #1A1D26);
+    margin: 0 0 10px 0;
+  }
+  #st-visual-body .settings-subtitle,
+  #st-visual-body .lc-subtitle {
+    font: inherit;
+    font-size: 12px;
+    color: var(--hdp-text-muted, #9CA3AF);
+    margin: 0 0 14px 0;
+  }
+  #st-visual-body .lc-sub-section {
+    margin-bottom: 18px;
+  }
+  #st-visual-body .lc-sub-section:last-child {
+    margin-bottom: 0;
   }
   #st-visual-body .theme-grid,
   #st-visual-body .mood-grid,
@@ -367,6 +387,8 @@ ${visualStyles}
   #st-visual-body .toggle-row,
   #st-visual-body .slider-header,
   #st-visual-body .am-period-row,
+  #st-visual-body .am-toggle-row,
+  #st-visual-body .lc-size-row,
   #st-visual-body .lc-skin-row {
     display: flex;
     align-items: center;
@@ -378,6 +400,8 @@ ${visualStyles}
   #st-visual-body .seed-toggle-row,
   #st-visual-body .toggle-row,
   #st-visual-body .slider-header,
+  #st-visual-body .am-toggle-row,
+  #st-visual-body .lc-size-row,
   #st-visual-body .lc-skin-row {
     justify-content: space-between;
   }
@@ -407,6 +431,8 @@ ${visualStyles}
     #st-visual-body .toggle-row,
     #st-visual-body .slider-header,
     #st-visual-body .am-period-row,
+    #st-visual-body .am-toggle-row,
+    #st-visual-body .lc-size-row,
     #st-visual-body .lc-skin-row {
       align-items: flex-start;
       flex-wrap: wrap;
@@ -421,6 +447,7 @@ ${visualStyles}
       grid-template-columns: 1fr;
     }
   }
+${visualStyles}
 </style>
 ${buildDashboardSection(config)}
 ${hass ? buildQuickGenerateSection(hass, config) : ''}
@@ -1502,7 +1529,7 @@ function buildLayoutConfigCard(stored: StoredVisualConfig, config: StrategyConfi
       { val: 'soft', label: '柔影' },
       { val: 'neon', label: '霓虹' },
     ];
-    const hiddenAreas = new Set(config.hdp_config?.areas?.hidden_areas || config.hidden_areas || []);
+    const hiddenAreas = new Set(getConfiguredHiddenAreas(config));
     const areas = Object.entries(hass.areas)
       .filter(([, a]) => a && a.name)
       .filter(([areaId]) => !hiddenAreas.has(areaId))

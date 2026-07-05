@@ -53,11 +53,37 @@ export interface HomeProfile {
 export function getDashboardFilters(config: StrategyConfig): DashboardFilters {
   const hdpConfig = getEffectiveHDPConfig(config);
   return {
-    hiddenAreas: hdpConfig?.areas?.hidden_areas || config.hidden_areas || [],
-    hiddenDomains: hdpConfig?.devices?.hidden_domains || config.hidden_domains || [],
+    hiddenAreas: getConfiguredHiddenAreas(config),
+    hiddenDomains: getConfiguredHiddenDomains(config),
     hideUnavailable: hdpConfig?.areas?.hide_unavailable || false,
-    hiddenDeviceTypes: hdpConfig?.devices?.hidden_device_types || [],
+    hiddenDeviceTypes: getConfiguredHiddenDeviceTypes(config),
   };
+}
+
+export function getConfiguredHiddenAreas(config: StrategyConfig): string[] {
+  const hdpConfig = getEffectiveHDPConfig(config);
+  return mergeStringArrays(hdpConfig?.areas?.hidden_areas, config.hidden_areas);
+}
+
+export function getConfiguredHiddenDomains(config: StrategyConfig): string[] {
+  const hdpConfig = getEffectiveHDPConfig(config);
+  return mergeStringArrays(hdpConfig?.devices?.hidden_domains, config.hidden_domains);
+}
+
+export function getConfiguredHiddenDeviceTypes(config: StrategyConfig): string[] {
+  const hdpConfig = getEffectiveHDPConfig(config);
+  return mergeStringArrays(hdpConfig?.devices?.hidden_device_types, config.hidden_device_types);
+}
+
+function mergeStringArrays(...values: Array<unknown>): string[] {
+  const seen = new Set<string>();
+  for (const value of values) {
+    if (!Array.isArray(value)) continue;
+    for (const item of value) {
+      if (typeof item === 'string' && item) seen.add(item);
+    }
+  }
+  return Array.from(seen);
 }
 
 export function shouldIncludeDomain(domain: string, hiddenDomains: string[] = []): boolean {

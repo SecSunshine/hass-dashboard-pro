@@ -17,6 +17,7 @@ import { getEffectiveStrategyConfig } from '../utils/effective-config';
 import {
   buildAreaEntityMapFromModel,
   collectVisibleEntities,
+  getConfiguredHiddenAreas,
   getDashboardFilters,
   UNASSIGNED_AREA_ID,
   UNASSIGNED_AREA_NAME,
@@ -27,7 +28,7 @@ const VIEW_STRATEGY_TYPE = 'custom:hass-dashboard-pro-view';
 export class HassDashboardProStrategy {
   static async generate(config: StrategyConfig, hass: Hass): Promise<DashboardStrategyResult> {
     const effectiveConfig = getEffectiveStrategyConfig(config);
-    const hiddenAreas = effectiveConfig.hdp_config?.areas?.hidden_areas || effectiveConfig.hidden_areas || [];
+    const hiddenAreas = getConfiguredHiddenAreas(effectiveConfig);
     const visibleEntities = collectVisibleEntities(hass, getDashboardFilters(effectiveConfig));
     const areaEntityMap = buildAreaEntityMapFromModel(visibleEntities);
 

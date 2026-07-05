@@ -145,6 +145,7 @@ export interface StrategyConfig {
   // Area filtering
   hidden_areas?: string[];
   hidden_domains?: string[];
+  hidden_device_types?: string[];
   // Floor grouping
   floor_grouping?: boolean;
   // Favorites

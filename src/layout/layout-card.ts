@@ -25,6 +25,7 @@ import { buildImportModalHTML, generateBlueprintModalJS } from '../blueprints/bl
 import { buildThemeStudioHTML, generateThemeStudioJS } from '../templates/theme-studio';
 import { escapeAttribute, escapeHTML } from '../utils/html';
 import { safeBlueprintViewId } from '../utils/dom-id';
+import { getConfiguredHiddenAreas } from '../utils/dashboard-model';
 
 export interface LayoutCardOptions {
   hass: Hass;
@@ -49,7 +50,7 @@ export function buildLayoutCard(opts: LayoutCardOptions): LovelaceCardConfig {
           settingsJS, areaSummaries, blueprintPages } = opts;
 
   const title = config.hdp_config?.dashboard?.name || config.sidebar_title || config.title || '智能家居';
-  const hiddenAreas = config.hdp_config?.areas?.hidden_areas || config.hidden_areas || [];
+  const hiddenAreas = getConfiguredHiddenAreas(config);
   const showSettings = shouldShowSettings(hass, config);
 
   // Build sidebar
