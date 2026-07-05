@@ -15,7 +15,7 @@ import type { Hass, LovelaceCardConfig, StrategyConfig, AreaSummary, BlueprintIn
 import { generateDesignTokenCSS } from '../styles/design-tokens';
 import { generateBentoCSS } from '../utils/bento-layout';
 import type { ResolvedTokens } from '../utils/visual-config';
-import { buildSidebarHTML, getSidebarCSS } from './sidebar';
+import { buildSidebarHTML, getSidebarCSS, shouldShowSettings } from './sidebar';
 import { buildBottomNavHTML, getBottomNavCSS } from './bottom-nav';
 import { buildNavigationScript } from './navigation';
 import { generateServiceScript } from '../services/hass-websocket';
@@ -50,6 +50,7 @@ export function buildLayoutCard(opts: LayoutCardOptions): LovelaceCardConfig {
 
   const title = config.hdp_config?.dashboard?.name || config.sidebar_title || config.title || '智能家居';
   const hiddenAreas = config.hdp_config?.areas?.hidden_areas || config.hidden_areas || [];
+  const showSettings = shouldShowSettings(hass, config);
 
   // Build sidebar
   const sidebarHTML = buildSidebarHTML({
@@ -61,7 +62,7 @@ export function buildLayoutCard(opts: LayoutCardOptions): LovelaceCardConfig {
   });
 
   // Build bottom nav
-  const bottomNavHTML = buildBottomNavHTML({ blueprintPages });
+  const bottomNavHTML = buildBottomNavHTML({ blueprintPages, showSettings });
 
   // Build area view sections
   const areaViewSections = areaSections.map(a =>

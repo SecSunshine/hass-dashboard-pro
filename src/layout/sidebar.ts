@@ -88,7 +88,7 @@ export function buildSidebarHTML(opts: SidebarOptions): string {
   </div>`;
 }
 
-function shouldShowSettings(hass: Hass, config: StrategyConfig): boolean {
+export function shouldShowSettings(hass: Hass, config: StrategyConfig): boolean {
   const permissions = config.hdp_config?.permissions;
   if (permissions?.restrict_settings) return false;
   if (permissions?.restrict_non_admin && hass.user?.is_admin === false) return false;
