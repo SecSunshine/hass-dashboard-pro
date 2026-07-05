@@ -471,14 +471,28 @@ export function generateSettingsJS(config: StrategyConfig, tokens?: ResolvedToke
     const content = (card.content as string) || '';
     const matches = content.match(/<script>([\s\S]*?)<\/script>/g);
     if (!matches) return '';
-    return matches.map(m => m.replace(/<\/?script>/g, '')).join('\n');
+    return matches.map(m => scopeVisualScript(m.replace(/<\/?script>/g, ''))).join('\n');
   }).filter(Boolean).join('\n');
 
   return `
 ${generateSettingsSectionsJS()}
 ${generatePaletteGeneratorJS()}
 ${generateVisualConfigPersistenceJS()}
+${generateVisualQueryScopeJS()}
 ${scripts}`;
+}
+
+function scopeVisualScript(script: string): string {
+  return script.replace(/document\.querySelectorAll\(/g, 'hdpVisualQueryAll(');
+}
+
+function generateVisualQueryScopeJS(): string {
+  return `
+function hdpVisualQueryAll(selector) {
+  var root = document.getElementById('st-visual-body');
+  return (root || document).querySelectorAll(selector);
+}
+`;
 }
 
 function generateVisualConfigPersistenceJS(): string {

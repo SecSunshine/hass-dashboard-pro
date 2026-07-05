@@ -184,6 +184,11 @@ describe('settings view', () => {
     expect(js).toContain('window.hdpSaveVisualConfigAndReload = function');
     expect(js).toContain('window.hdpClearVisualConfigAndReload = function');
     expect(js).toContain('window.hdpReplaceVisualConfig = function');
+    expect(js).toContain('function hdpVisualQueryAll(selector)');
+    expect(js).toContain("hdpVisualQueryAll('.theme-card')");
+    expect(js).toContain("hdpVisualQueryAll('.lc-density-btn')");
+    expect(js).not.toContain("document.querySelectorAll('.theme-card')");
+    expect(js).not.toContain("document.querySelectorAll('.lc-density-btn')");
     expect(js).toContain('current.visual = cfg;');
     expect(js).toContain('cfg.theme = preset;');
     expect(js).toContain('hdpSaveVisualConfigAndReload(cfg);');
