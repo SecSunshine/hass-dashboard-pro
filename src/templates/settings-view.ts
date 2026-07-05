@@ -109,6 +109,7 @@ ${getSettingsSectionsCSS()}
     width: min(100%, 1040px);
     margin: 0 auto;
   }
+${visualStyles}
   /* Visual settings card spacing & wrappers */
   #st-visual-body > div {
     padding: 16px;
@@ -452,7 +453,6 @@ ${getSettingsSectionsCSS()}
       grid-template-columns: 1fr;
     }
   }
-${visualStyles}
 </style>
 ${buildDashboardSection(config)}
 ${hass ? buildQuickGenerateSection(hass, config) : ''}
@@ -754,11 +754,11 @@ ${generateDesignTokenCSS(tokens)}
   }
   .theme-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
   }
   @media (max-width: 480px) {
-    .theme-grid { grid-template-columns: repeat(2, 1fr); }
+    .theme-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   .theme-card {
     display: flex; flex-direction: column;
@@ -880,12 +880,12 @@ ${generateDesignTokenCSS(tokens)}
   }
   .mood-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
     margin-bottom: 16px;
   }
   @media (max-width: 480px) {
-    .mood-grid { grid-template-columns: repeat(2, 1fr); }
+    .mood-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   .mood-card {
     display: flex; flex-direction: column;
@@ -1422,11 +1422,11 @@ ${generateDesignTokenCSS(tokens)}
   }
   .style-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
   }
   @media (max-width: 480px) {
-    .style-grid { grid-template-columns: repeat(2, 1fr); }
+    .style-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   .style-card {
     display: flex; flex-direction: column; gap: 10px;
@@ -1620,7 +1620,7 @@ ${generateDesignTokenCSS(tokens)}
 
   /* Density buttons */
   .lc-density-row {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
   }
   .lc-density-btn {
     display: flex; flex-direction: column; align-items: center; gap: 4px;
@@ -2126,7 +2126,7 @@ ${generateDesignTokenCSS(tokens)}
   }
   .font-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
   }
   @media (max-width: 480px) {

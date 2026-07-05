@@ -130,7 +130,8 @@ describe('settings view', () => {
     expect(html).not.toMatch(/(^|[{}])\s*\.settings-section\s*\{/);
     expect(html).not.toMatch(/(^|[{}])\s*\.theme-card\s*\{/);
     expect(html).not.toContain(':host, :root');
-    expect(html.indexOf('Stable visual-settings layout')).toBeLessThan(html.indexOf('#st-visual-body .settings-header'));
+    expect(html.indexOf('Stable visual-settings layout')).toBeGreaterThan(html.indexOf('#st-visual-body .settings-header'));
+    expect(html).not.toContain('grid-template-columns: repeat(4, 1fr)');
   });
 
   it('adds detected HA domains to the hidden domain controls', () => {

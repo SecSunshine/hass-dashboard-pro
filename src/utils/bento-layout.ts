@@ -52,19 +52,25 @@ export function generateBentoCSS(): string {
   /* ── Bento Grid: Home Content (4 columns desktop) ── */
   .hdp-home-content {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     grid-auto-rows: minmax(var(--hdp-density-row-height, 120px), auto);
     grid-auto-flow: dense;
     gap: var(--hdp-card-gap, var(--hdp-density-gap, 12px));
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   /* ── Bento Grid: Area & Device Content (2 columns) ── */
   .hdp-area-content {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-auto-rows: minmax(calc(var(--hdp-density-row-height, 120px) - 20px), auto);
     grid-auto-flow: dense;
     gap: var(--hdp-card-gap, var(--hdp-density-gap, 12px));
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   /* ── Bento Card Size Classes (Desktop) ── */
@@ -91,7 +97,7 @@ export function generateBentoCSS(): string {
   /* ── Tablet Responsive (≤1023px): Home → 2 columns ── */
   @media (max-width: 1023px) {
     .hdp-home-content {
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     .hdp-bento--sm   { grid-column: span 1; grid-row: span 1; }
     .hdp-bento--md   { grid-column: span 2; grid-row: span 1; }
@@ -103,10 +109,10 @@ export function generateBentoCSS(): string {
   /* ── Mobile Responsive (≤639px): Home → 1 column, Area → 1 column ── */
   @media (max-width: 639px) {
     .hdp-home-content {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
     }
     .hdp-area-content {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
     }
     .hdp-bento--sm,
     .hdp-bento--md,

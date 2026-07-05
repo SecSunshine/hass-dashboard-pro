@@ -124,9 +124,10 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
   /* Fallback sample cards grid */
   .ts-preview-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--hdp-card-gap, 12px);
     max-width: 640px;
+    min-width: 0;
   }
   .ts-preview-grid .ts-preview-card--wide { grid-column: 1 / -1; }
   /* Real dashboard content */
@@ -139,8 +140,9 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
 
   /* ── Control Panel (right) ── */
   .hdp-studio-panel {
-    width: 380px;
-    min-width: 380px;
+    width: clamp(320px, 32vw, 380px);
+    min-width: 0;
+    max-width: 100vw;
     background: var(--hdp-card-bg, #fff);
     border-left: 1px solid var(--hdp-border, #e5e7eb);
     overflow-y: auto;
@@ -166,6 +168,8 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
     display: flex;
     align-items: center;
     gap: 8px;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .ts-panel-title svg {
     width: 20px; height: 20px;
@@ -195,6 +199,7 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
     flex: 1;
     overflow-y: auto;
     padding: 16px 20px;
+    min-width: 0;
   }
   .ts-panel-section {
     margin-bottom: 24px;
@@ -218,10 +223,12 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
   }
   .ts-wheel-canvas-wrap {
     position: relative;
-    width: 240px; height: 240px;
+    width: min(240px, 100%);
+    aspect-ratio: 1;
   }
   #ts-color-wheel {
-    width: 240px; height: 240px;
+    width: 100%;
+    height: 100%;
     cursor: crosshair;
     display: block;
   }
@@ -251,6 +258,8 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
     gap: 10px;
     width: 100%;
     justify-content: center;
+    min-width: 0;
+    flex-wrap: wrap;
   }
   .ts-color-swatch {
     width: 32px; height: 32px;
@@ -273,7 +282,7 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
   /* ── Mood Presets ── */
   .ts-mood-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
   }
   .ts-mood-btn {
@@ -288,6 +297,7 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
     cursor: pointer;
     transition: var(--hdp-transition, 0.2s ease);
     position: relative;
+    min-width: 0;
   }
   .ts-mood-btn:hover {
     border-color: var(--hdp-primary);
@@ -309,12 +319,14 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
     font-size: 11px;
     font-weight: 600;
     color: var(--hdp-text);
+    max-width: 100%;
+    overflow-wrap: anywhere;
   }
 
   /* ── Skin Selector ── */
   .ts-skin-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
   }
   .ts-skin-btn {
@@ -328,6 +340,7 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
     background: var(--hdp-card-bg);
     cursor: pointer;
     transition: var(--hdp-transition, 0.2s ease);
+    min-width: 0;
   }
   .ts-skin-btn:hover {
     border-color: var(--hdp-primary);
@@ -348,6 +361,8 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
     font-size: 11px;
     font-weight: 600;
     color: var(--hdp-text);
+    max-width: 100%;
+    overflow-wrap: anywhere;
   }
 
   /* ── Sliders ── */
@@ -406,7 +421,7 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
   /* ── Density Selector ── */
   .ts-density-row {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
   }
   .ts-density-btn {
@@ -420,6 +435,8 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
     color: var(--hdp-text-secondary);
     transition: var(--hdp-transition, 0.2s ease);
     text-align: center;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .ts-density-btn:hover { border-color: var(--hdp-primary); }
   .ts-density-btn--active {
@@ -431,7 +448,7 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
   /* ── Mode Toggle ── */
   .ts-mode-row {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
   }
   .ts-mode-btn {
@@ -449,6 +466,8 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
     align-items: center;
     justify-content: center;
     gap: 4px;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .ts-mode-btn:hover { border-color: var(--hdp-primary); }
   .ts-mode-btn--active {
@@ -485,6 +504,8 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
     align-items: center;
     justify-content: center;
     gap: 6px;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .ts-btn svg { width: 16px; height: 16px; }
   .ts-btn--secondary {
@@ -576,7 +597,13 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
       border-left: none;
       border-top: 1px solid var(--hdp-border);
     }
-    .ts-preview-grid { grid-template-columns: 1fr; }
+    .ts-preview-grid { grid-template-columns: minmax(0, 1fr); }
+    .ts-mood-grid,
+    .ts-skin-grid,
+    .ts-density-row,
+    .ts-mode-row {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 </style>
 
