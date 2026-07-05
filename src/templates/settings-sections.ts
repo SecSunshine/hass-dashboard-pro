@@ -20,7 +20,7 @@
  */
 
 import type { Hass, StrategyConfig, BlueprintInstance, HomeSectionKey } from '../types';
-import { HOME_SECTION_LABELS } from '../types';
+import { HIDDEN_DOMAINS, HOME_SECTION_LABELS } from '../types';
 import { buildBlueprintGalleryHTML } from '../blueprints/blueprint-gallery';
 import { buildDashboardDesignPlan, buildPlanAlternatives, type DashboardDesignPlan } from '../utils/design-plan';
 import { escapeAttribute, escapeHTML } from '../utils/html';
@@ -964,11 +964,24 @@ export function buildAreasSection(hass: any, config: StrategyConfig): string {
 export function buildDevicesSection(config: StrategyConfig, hass?: Hass): string {
   const hiddenDomains: string[] = config.hdp_config?.devices?.hidden_domains || config.hidden_domains || [];
   const hiddenDeviceTypes: string[] = config.hdp_config?.devices?.hidden_device_types || [];
-  const domains = ['light', 'switch', 'climate', 'fan', 'cover', 'lock', 'sensor', 'binary_sensor', 'media_player', 'camera', 'vacuum', 'button'];
+  const defaultDomains = ['light', 'switch', 'climate', 'fan', 'cover', 'lock', 'sensor', 'binary_sensor', 'media_player', 'camera', 'vacuum', 'button'];
+  const detectedDomains = Object.keys(hass?.states || {})
+    .map(entityId => entityId.split('.')[0])
+    .filter(domain => domain && !HIDDEN_DOMAINS.has(domain));
+  const domains = Array.from(new Set([...defaultDomains, ...detectedDomains, ...hiddenDomains]))
+    .filter(domain => !HIDDEN_DOMAINS.has(domain))
+    .sort((a, b) => {
+      const ai = defaultDomains.indexOf(a);
+      const bi = defaultDomains.indexOf(b);
+      if (ai !== -1 || bi !== -1) return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      return a.localeCompare(b);
+    });
   const domainLabels: Record<string, string> = {
     light: '灯光', switch: '开关', climate: '空调', fan: '风扇', cover: '窗帘',
     lock: '门锁', sensor: '传感器', binary_sensor: '二进传感器', media_player: '媒体',
     camera: '摄像头', vacuum: '扫地机', button: '按钮',
+    input_boolean: '布尔开关', input_button: '输入按钮', number: '数字', select: '选择器',
+    humidifier: '加湿器', remote: '遥控器', siren: '警报器', alarm_control_panel: '安防面板',
   };
 
   const chips = domains.map(d => {

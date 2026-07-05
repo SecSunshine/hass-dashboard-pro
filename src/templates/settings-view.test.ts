@@ -11,6 +11,20 @@ const hass: Hass = {
       last_changed: '',
       last_updated: '',
     },
+    'number.speaker_volume': {
+      entity_id: 'number.speaker_volume',
+      state: '30',
+      attributes: { friendly_name: 'Speaker Volume' },
+      last_changed: '',
+      last_updated: '',
+    },
+    'automation.hidden_system': {
+      entity_id: 'automation.hidden_system',
+      state: 'on',
+      attributes: { friendly_name: 'Hidden System' },
+      last_changed: '',
+      last_updated: '',
+    },
   },
   areas: {
     kitchen: { area_id: 'kitchen', name: 'Kitchen', picture: null },
@@ -39,6 +53,15 @@ describe('settings view', () => {
     expect(html).toContain("hdpToggleArrayItem('areas.hidden_areas'");
     expect(html).toContain("hdpToggleArrayItem('devices.hidden_device_types'");
     expect(html).toContain(', event)');
+  });
+
+  it('adds detected HA domains to the hidden domain controls', () => {
+    const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
+    const html = buildSettingsHTML(config, undefined, hass);
+
+    expect(html).toContain("hdpToggleArrayItem('devices.hidden_domains', &quot;number&quot;, event)");
+    expect(html).toContain('数字');
+    expect(html).not.toContain("hdpToggleArrayItem('devices.hidden_domains', &quot;automation&quot;, event)");
   });
 
   it('escapes dashboard setting input values', () => {
