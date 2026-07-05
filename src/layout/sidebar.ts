@@ -33,6 +33,7 @@ export function buildSidebarHTML(opts: SidebarOptions): string {
 
   // Build floor sections
   const floorSections: string[] = [];
+  const groupedAreaIds = new Set<string>();
   const floors = Array.from(floorGroups.entries()).sort((a, b) => {
     if (a[0] === null) return 1;
     if (b[0] === null) return -1;
@@ -42,6 +43,7 @@ export function buildSidebarHTML(opts: SidebarOptions): string {
   for (const [floorId, { floorName, areas: floorAreaIds }] of floors) {
     const floorAreas = visibleAreas.filter(a => floorAreaIds.includes(a.area_id));
     if (floorAreas.length === 0) continue;
+    floorAreas.forEach(area => groupedAreaIds.add(area.area_id));
 
     const areaItems = floorAreas.map(a => {
       const icon = getAreaIcon(a.area_name);
@@ -62,6 +64,24 @@ export function buildSidebarHTML(opts: SidebarOptions): string {
       : '';
 
     floorSections.push(`${sectionTitle}<div class="sb-floor-group">${areaItems}</div>`);
+  }
+
+  const ungroupedAreas = visibleAreas.filter(area => !groupedAreaIds.has(area.area_id));
+  if (ungroupedAreas.length) {
+    const areaItems = ungroupedAreas.map(a => {
+      const icon = getAreaIcon(a.area_name);
+      const tempHTML = a.temp ? `<span class="sb-temp">${escapeHTML(a.temp)}</span>` : '';
+      const areaId = escapeAttribute(a.area_id);
+      const areaArg = escapeJSONAttribute(a.area_id);
+      return `<button class="sb-area-btn" data-area="${areaId}" data-action="show-view" onclick="hdpShowView(${areaArg})">
+        <span class="sb-area-icon">${getAreaIconSVG(icon)}</span>
+        <span class="sb-area-info">
+          <span class="sb-area-name">${escapeHTML(a.area_name)}</span>
+          <span class="sb-area-meta">${a.entity_count} 设备${tempHTML}</span>
+        </span>
+      </button>`;
+    }).join('');
+    floorSections.push(`<div class="sb-floor-label">其他</div><div class="sb-floor-group">${areaItems}</div>`);
   }
 
   return `<div class="sb-header">

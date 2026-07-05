@@ -25,6 +25,7 @@ import { buildBlueprintGalleryHTML } from '../blueprints/blueprint-gallery';
 import { buildDashboardDesignPlan, buildPlanAlternatives, type DashboardDesignPlan } from '../utils/design-plan';
 import { escapeAttribute, escapeHTML } from '../utils/html';
 import { getEntityDeviceType } from '../utils/area-entities';
+import { resolveEntityAreaId, UNASSIGNED_AREA_ID, UNASSIGNED_AREA_NAME } from '../utils/dashboard-model';
 
 function jsArg(value: unknown): string {
   return escapeAttribute(JSON.stringify(String(value ?? '')));
@@ -941,7 +942,15 @@ export function buildAreasSection(hass: any, config: StrategyConfig): string {
   const hiddenAreas: string[] = config.hdp_config?.areas?.hidden_areas || config.hidden_areas || [];
   const hideUnavailable = config.hdp_config?.areas?.hide_unavailable || false;
 
-  const areaChips = Object.entries(hass.areas || {}).map(([id, area]: [string, any]) => {
+  const areaEntries = Object.entries(hass.areas || {});
+  const hasUnassignedEntities = Object.keys(hass.states || {})
+    .filter(entityId => isVisibleRegistryEntity(hass, entityId))
+    .some(entityId => !resolveEntityAreaId(hass, entityId));
+  if (hasUnassignedEntities) {
+    areaEntries.push([UNASSIGNED_AREA_ID, { area_id: UNASSIGNED_AREA_ID, name: UNASSIGNED_AREA_NAME, picture: null }]);
+  }
+
+  const areaChips = areaEntries.map(([id, area]: [string, any]) => {
     const hidden = hiddenAreas.includes(id);
     return `<div class="st-chip ${hidden ? 'st-chip--active' : ''}" data-action="toggle-hidden-area" onclick="hdpToggleArrayItem('areas.hidden_areas', ${jsArg(id)}, event)">${escapeHTML(area.name)}</div>`;
   }).join('') || '<span class="st-row-desc">未找到区域</span>';

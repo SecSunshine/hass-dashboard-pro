@@ -5,6 +5,8 @@ import {
   collectVisibleEntities,
   getDashboardFilters,
   resolveEntityAreaId,
+  UNASSIGNED_AREA_ID,
+  UNASSIGNED_AREA_NAME,
 } from './dashboard-model';
 
 const hass: Hass = {
@@ -168,6 +170,15 @@ describe('dashboard model', () => {
     expect(entities.map(entity => entity.entity_id)).toContain('light.kitchen');
   });
 
+  it('keeps entities without an area in a virtual unassigned area', () => {
+    const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
+    const entities = collectVisibleEntities(hass, getDashboardFilters(config));
+    const entity = entities.find(item => item.entity_id === 'sensor.no_area');
+
+    expect(entity?.area_id).toBe(UNASSIGNED_AREA_ID);
+    expect(entity?.area_name).toBe(UNASSIGNED_AREA_NAME);
+  });
+
   it('skips entities hidden or disabled in the HA registry', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const entities = collectVisibleEntities(hass, getDashboardFilters(config));
@@ -180,8 +191,8 @@ describe('dashboard model', () => {
   it('builds a home profile from visible entities', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const profile = buildHomeProfile(hass, config);
-    expect(profile.area_count).toBe(2);
-    expect(profile.entity_count).toBe(3);
+    expect(profile.area_count).toBe(3);
+    expect(profile.entity_count).toBe(4);
     expect(profile.dominant_semantics).toContain('lighting');
   });
 });

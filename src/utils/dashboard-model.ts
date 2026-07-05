@@ -10,6 +10,9 @@ import { HIDDEN_DOMAINS } from '../types';
 import { getEntityDeviceType, isEntityOn, isUnavailableState } from './area-entities';
 import { getEffectiveHDPConfig } from './effective-config';
 
+export const UNASSIGNED_AREA_ID = '__unassigned';
+export const UNASSIGNED_AREA_NAME = '未分配区域';
+
 export interface DashboardFilters {
   hiddenAreas: string[];
   hiddenDomains: string[];
@@ -74,6 +77,13 @@ export function resolveEntityAreaId(hass: Hass, entityId: string): string | null
   return stateArea || null;
 }
 
+export function getEntityArea(hass: Hass, areaId: string): HassArea | null {
+  if (areaId === UNASSIGNED_AREA_ID) {
+    return { area_id: UNASSIGNED_AREA_ID, name: UNASSIGNED_AREA_NAME, picture: null };
+  }
+  return hass.areas[areaId] || null;
+}
+
 export function createEntityInfo(
   entityId: string,
   stateObj: HassEntity | { state: string; attributes: Record<string, unknown> },
@@ -106,10 +116,10 @@ export function collectVisibleEntities(hass: Hass, filters: DashboardFilters): D
     if (filters.hideUnavailable && isUnavailableState(stateObj.state)) continue;
     if (filters.hiddenDeviceTypes.includes(getEntityDeviceType(entityId, stateObj.attributes))) continue;
 
-    const areaId = resolveEntityAreaId(hass, entityId);
-    if (!areaId || filters.hiddenAreas.includes(areaId)) continue;
+    const areaId = resolveEntityAreaId(hass, entityId) || UNASSIGNED_AREA_ID;
+    if (filters.hiddenAreas.includes(areaId)) continue;
 
-    const area = hass.areas[areaId];
+    const area = getEntityArea(hass, areaId);
     if (!area) continue;
 
     const entity = createEntityInfo(entityId, stateObj, area);
@@ -193,17 +203,18 @@ export function buildHomeProfile(hass: Hass, config: StrategyConfig): HomeProfil
     .slice(0, 3)
     .map(([semantic]) => semantic);
 
-  const visibleAreaCount = Object.keys(hass.areas || {})
-    .filter(areaId => !filters.hiddenAreas.includes(areaId)).length;
+  const visibleAreaIds = new Set(Object.keys(hass.areas || {})
+    .filter(areaId => !filters.hiddenAreas.includes(areaId)));
+  for (const entity of entities) visibleAreaIds.add(entity.area_id);
   const entityCount = entities.length;
 
   return {
-    area_count: visibleAreaCount,
+    area_count: visibleAreaIds.size,
     entity_count: entityCount,
     device_count: Object.keys(hass.devices || {}).length,
     floor_count: Object.keys(hass.floors || {}).length,
     active_count: entities.filter(entity => entity.active).length,
     dominant_semantics: dominantSemantics,
-    density: entityCount > 120 || visibleAreaCount > 12 ? 'compact' : entityCount < 30 ? 'spacious' : 'standard',
+    density: entityCount > 120 || visibleAreaIds.size > 12 ? 'compact' : entityCount < 30 ? 'spacious' : 'standard',
   };
 }

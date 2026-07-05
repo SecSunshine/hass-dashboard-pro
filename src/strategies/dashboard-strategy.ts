@@ -14,7 +14,13 @@ import type { Hass, StrategyConfig, DashboardStrategyResult, LovelaceViewConfig,
 import { isEntityOn } from '../utils/area-entities';
 import { safeBlueprintViewId } from '../utils/dom-id';
 import { getEffectiveStrategyConfig } from '../utils/effective-config';
-import { buildAreaEntityMapFromModel, collectVisibleEntities, getDashboardFilters } from '../utils/dashboard-model';
+import {
+  buildAreaEntityMapFromModel,
+  collectVisibleEntities,
+  getDashboardFilters,
+  UNASSIGNED_AREA_ID,
+  UNASSIGNED_AREA_NAME,
+} from '../utils/dashboard-model';
 
 const VIEW_STRATEGY_TYPE = 'custom:hass-dashboard-pro-view';
 
@@ -148,6 +154,26 @@ function buildAreaSummaries(
       active_count: activeCount,
       temp,
       humidity,
+      domain_counts: domainCounts,
+    });
+  }
+
+  for (const [areaId, entities] of areaEntityMap.entries()) {
+    if (hass.areas[areaId] || hiddenAreas.includes(areaId)) continue;
+    const activeCount = entities.filter(e => isEntityOn(e.state, e.domain)).length;
+    const domainCounts: Record<string, number> = {};
+    for (const e of entities) {
+      domainCounts[e.domain] = (domainCounts[e.domain] || 0) + 1;
+    }
+
+    summaries.push({
+      area_id: areaId,
+      area_name: areaId === UNASSIGNED_AREA_ID ? UNASSIGNED_AREA_NAME : areaId,
+      icon: 'mdi:home-outline',
+      entity_count: entities.length,
+      active_count: activeCount,
+      temp: null,
+      humidity: null,
       domain_counts: domainCounts,
     });
   }

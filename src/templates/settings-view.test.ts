@@ -151,6 +151,14 @@ describe('settings view', () => {
     expect(html).not.toContain('data-area-id="kitchen"');
   });
 
+  it('offers the virtual unassigned area in visibility settings', () => {
+    const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
+    const html = buildSettingsHTML(config, undefined, hass);
+
+    expect(html).toContain("hdpToggleArrayItem('areas.hidden_areas', &quot;__unassigned&quot;, event)");
+    expect(html).toContain('未分配区域');
+  });
+
   it('syncs visual setting changes into persisted dashboard config', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const js = generateSettingsJS(config, undefined, hass);
