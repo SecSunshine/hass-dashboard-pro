@@ -51,4 +51,30 @@ describe('share code', () => {
     expect(imported.blueprints?.[0].inputs.main).toBe('light.kitchen_ceiling');
     expect(imported.blueprints?.[0].card.content).toContain('light.kitchen_ceiling');
   });
+
+  it('normalizes unsafe visual config and malformed blueprints on import', () => {
+    const imported = importShareBundle({
+      schema: 'hass-dashboard-pro.share.v1',
+      version: 1,
+      exported_at: '2026-07-02T00:00:00.000Z',
+      visual_config: { card_style: 'bad" onclick="evil()' } as any,
+      blueprints: [
+        { id: 'bad' } as any,
+        {
+          id: 'good',
+          name: 'Good',
+          icon: '',
+          blueprint_yaml: 'card:\n  type: custom:html-pro-card',
+          inputs: null,
+          card: { type: 'custom:html-pro-card', content: '<div></div>' },
+        } as any,
+      ],
+      source_entities: [],
+    }, hass);
+
+    expect(imported.visual_config?.card_style).toBe('classic');
+    expect(imported.blueprints).toHaveLength(1);
+    expect(imported.blueprints?.[0].id).toBe('good');
+    expect(imported.blueprints?.[0].inputs).toEqual({});
+  });
 });

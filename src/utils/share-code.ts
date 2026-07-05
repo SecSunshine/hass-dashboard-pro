@@ -6,6 +6,7 @@ import type { BlueprintInstance, HDPConfig } from '../types';
 import type { StoredVisualConfig } from './visual-config';
 import { applyEntityMapping, buildEntityMapping, extractEntityIds, type EntityMappingResult } from './entity-mapper';
 import type { Hass } from '../types';
+import { sanitizeCardSkin } from './card-skin';
 
 export const SHARE_CODE_PREFIX = 'HDP1.';
 export const SHARE_SCHEMA = 'hass-dashboard-pro.share.v1';
@@ -74,13 +75,38 @@ export function decodeShareCode(code: string): DashboardShareBundle {
 
 export function importShareBundle(bundle: DashboardShareBundle, hass: Hass): ImportedShareBundle {
   const mapping = buildEntityMapping(bundle.source_entities || extractEntityIds(bundle), hass);
+  const blueprints = normalizeBlueprints(applyEntityMapping(bundle.blueprints || [], mapping.mapping));
   return {
     bundle,
     mapping,
     hdp_config: applyEntityMapping(bundle.hdp_config, mapping.mapping),
-    visual_config: bundle.visual_config,
-    blueprints: applyEntityMapping(bundle.blueprints || [], mapping.mapping),
+    visual_config: normalizeVisualConfig(bundle.visual_config),
+    blueprints,
   };
+}
+
+function normalizeVisualConfig(config: StoredVisualConfig | undefined): StoredVisualConfig | undefined {
+  if (!config || typeof config !== 'object' || Array.isArray(config)) return undefined;
+  const normalized = { ...config };
+  if (normalized.card_style) normalized.card_style = sanitizeCardSkin(normalized.card_style);
+  return normalized;
+}
+
+function normalizeBlueprints(value: unknown): BlueprintInstance[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((page): page is BlueprintInstance => {
+    if (!page || typeof page !== 'object') return false;
+    const candidate = page as Partial<BlueprintInstance>;
+    return typeof candidate.id === 'string'
+      && typeof candidate.name === 'string'
+      && typeof candidate.blueprint_yaml === 'string'
+      && typeof candidate.card === 'object'
+      && candidate.card !== null;
+  }).map(page => ({
+    ...page,
+    icon: typeof page.icon === 'string' ? page.icon : 'mdi:puzzle',
+    inputs: page.inputs && typeof page.inputs === 'object' && !Array.isArray(page.inputs) ? page.inputs : {},
+  }));
 }
 
 function base64UrlEncode(value: string): string {
