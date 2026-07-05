@@ -133,6 +133,10 @@ describe('settings view', () => {
     expect(js).toContain('window.hdpPersistSettingsAndReload = function');
     expect(js).toContain('hdpSaveConfig(obj);');
     expect(js).toContain('hdpPersistSettingsAndReload();');
+    expect(js).toContain('window.hdpResetConfig = function');
+    expect(js).toContain('hdpSaveToLovelace(resetConfig)');
+    expect(js).toContain("throw new Error('配置文件格式不正确')");
+    expect(js).toContain('hdpSaveToLovelace(hdpLoadConfig()).then(reload)');
     expect(html).toContain("hdpSaveSetting('areas.hide_unavailable'");
   });
 

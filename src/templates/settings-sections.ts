@@ -452,7 +452,17 @@ window.hdpToggleArrayItem = function(path, item) {
 window.hdpResetConfig = function() {
   if (!confirm('确定重置所有设置？此操作不可撤销。')) return;
   hdpClearConfig();
-  location.reload();
+  var resetConfig = hdpLoadConfig();
+  var reload = function() { location.reload(); };
+  if (typeof hdpShowToast === 'function') hdpShowToast('正在重置配置...', 'info');
+  if (typeof hdpSaveToLovelace === 'function') {
+    hdpSaveToLovelace(resetConfig).then(reload).catch(function(err) {
+      console.warn('[HDP] Lovelace reset sync failed, cleared locally only', err);
+      reload();
+    });
+  } else {
+    reload();
+  }
 };
 
 window.hdpExportConfig = function() {
@@ -478,9 +488,22 @@ window.hdpImportConfig = function() {
     reader.onload = function(ev) {
       try {
         var config = JSON.parse(ev.target.result);
+        if (!config || typeof config !== 'object' || Array.isArray(config)) {
+          throw new Error('配置文件格式不正确');
+        }
         localStorage.setItem('hdp_config', JSON.stringify(config));
-        alert('配置已导入，页面将刷新');
-        location.reload();
+        var reload = function() {
+          alert('配置已导入，页面将刷新');
+          location.reload();
+        };
+        if (typeof hdpSaveToLovelace === 'function') {
+          hdpSaveToLovelace(hdpLoadConfig()).then(reload).catch(function(err) {
+            console.warn('[HDP] Lovelace import sync failed, saved locally only', err);
+            reload();
+          });
+        } else {
+          reload();
+        }
       } catch(err) {
         alert('导入失败: ' + err.message);
       }
