@@ -335,7 +335,7 @@ export function getWeather(hass: Hass, weatherEntity?: string): WeatherInfo {
   if (!eid) return { temp: '--', condition: '', condition_display: '--', icon_svg: '', has_data: false };
 
   const s = hass.states[eid];
-  if (!s) return { temp: '--', condition: '', condition_display: '--', icon_svg: '', has_data: false };
+  if (!s || !isRegistryVisible(hass, eid)) return { temp: '--', condition: '', condition_display: '--', icon_svg: '', has_data: false };
 
   const temp = s.attributes.temperature != null ? `${s.attributes.temperature}°` : '--';
   const condition = s.state;
@@ -351,7 +351,7 @@ export function getWeather(hass: Hass, weatherEntity?: string): WeatherInfo {
 
 function findWeatherEntity(hass: Hass): string | null {
   for (const eid of Object.keys(hass.states)) {
-    if (eid.startsWith('weather.')) return eid;
+    if (eid.startsWith('weather.') && isRegistryVisible(hass, eid)) return eid;
   }
   return null;
 }

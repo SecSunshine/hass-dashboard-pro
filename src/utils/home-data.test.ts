@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Hass, StrategyConfig } from '../types';
-import { countActiveAutomations, getAlarmStatus, getFavorites, getHomeSummaries, getPersons } from './home-data';
+import { countActiveAutomations, getAlarmStatus, getFavorites, getHomeSummaries, getPersons, getWeather } from './home-data';
 
 const hass: Hass = {
   states: {
@@ -78,6 +78,20 @@ const hass: Hass = {
       entity_id: 'person.hidden',
       state: 'home',
       attributes: { friendly_name: 'Hidden Person' },
+      last_changed: '',
+      last_updated: '',
+    },
+    'weather.hidden': {
+      entity_id: 'weather.hidden',
+      state: 'sunny',
+      attributes: { temperature: 26 },
+      last_changed: '',
+      last_updated: '',
+    },
+    'weather.home': {
+      entity_id: 'weather.home',
+      state: 'cloudy',
+      attributes: { temperature: 22 },
       last_changed: '',
       last_updated: '',
     },
@@ -180,6 +194,22 @@ const hass: Hass = {
       disabled_by: null,
       hidden_by: 'user',
     },
+    'weather.hidden': {
+      entity_id: 'weather.hidden',
+      device_id: null,
+      area_id: null,
+      platform: 'demo',
+      disabled_by: null,
+      hidden_by: 'user',
+    },
+    'weather.home': {
+      entity_id: 'weather.home',
+      device_id: null,
+      area_id: null,
+      platform: 'demo',
+      disabled_by: null,
+      hidden_by: null,
+    },
   },
 };
 
@@ -236,5 +266,10 @@ describe('home data', () => {
     const persons = getPersons(hass);
 
     expect(persons.map(person => person.entity_id)).toEqual(['person.alice']);
+  });
+
+  it('ignores registry-hidden weather entities for header weather', () => {
+    expect(getWeather(hass).temp).toBe('22°');
+    expect(getWeather(hass, 'weather.hidden').has_data).toBe(false);
   });
 });
