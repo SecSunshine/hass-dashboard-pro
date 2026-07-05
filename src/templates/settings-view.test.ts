@@ -159,6 +159,14 @@ describe('settings view', () => {
     expect(html).toContain('未分配区域');
   });
 
+  it('offers visual skin overrides for the virtual unassigned area', () => {
+    const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
+    const html = buildSettingsHTML(config, undefined, hass);
+
+    expect(html).toContain('data-area-id="__unassigned"');
+    expect(html).toContain('未分配区域');
+  });
+
   it('syncs visual setting changes into persisted dashboard config', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const js = generateSettingsJS(config, undefined, hass);

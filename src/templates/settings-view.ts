@@ -19,6 +19,7 @@ import type { ResolvedTokens, StoredVisualConfig } from '../utils/visual-config'
 import { getEffectiveStoredVisualConfig, loadStoredConfig, saveStoredConfig, clearStoredConfig } from '../utils/visual-config';
 import { generatePaletteGeneratorJS, MOOD_PRESETS } from '../themes/palette-generator';
 import { escapeAttribute, escapeHTML, escapeInlineStyleValue } from '../utils/html';
+import { resolveEntityAreaId, UNASSIGNED_AREA_ID, UNASSIGNED_AREA_NAME } from '../utils/dashboard-model';
 import {
   getSettingsSectionsCSS,
   generateSettingsSectionsJS,
@@ -35,6 +36,11 @@ import {
   buildAboutSection,
   buildResetSection,
 } from './settings-sections';
+
+function isVisibleRegistryEntity(hass: Hass | undefined, entityId: string): boolean {
+  const registryEntry = hass?.entities?.[entityId];
+  return !registryEntry?.disabled_by && !registryEntry?.hidden_by;
+}
 
 export function buildSettingsView(config: StrategyConfig, tokens?: ResolvedTokens, hass?: Hass): LovelaceCardConfig[] {
   const stored: StoredVisualConfig = getEffectiveStoredVisualConfig(config) || {};
@@ -1311,6 +1317,12 @@ function buildLayoutConfigCard(stored: StoredVisualConfig, config: StrategyConfi
       .filter(([areaId]) => !hiddenAreas.has(areaId))
       .sort((a, b) => (a[1].name || '').localeCompare(b[1].name || ''))
       .slice(0, 12); // limit to 12 areas
+    const hasUnassignedEntities = Object.keys(hass.states || {})
+      .filter(entityId => isVisibleRegistryEntity(hass, entityId))
+      .some(entityId => !resolveEntityAreaId(hass, entityId));
+    if (hasUnassignedEntities && !hiddenAreas.has(UNASSIGNED_AREA_ID)) {
+      areas.push([UNASSIGNED_AREA_ID, { area_id: UNASSIGNED_AREA_ID, name: UNASSIGNED_AREA_NAME, picture: null }]);
+    }
 
     const areaRows = areas.map(([areaId, area]) => {
       const current = areaSkins[areaId] || '';
