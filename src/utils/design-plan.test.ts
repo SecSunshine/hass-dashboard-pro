@@ -54,6 +54,15 @@ describe('dashboard design plan', () => {
     expect(buildDashboardDesignPlan(makeHass(true, 80), config).pack_id).toBe('dark-glass');
   });
 
+  it('keeps rationale aligned with manually selected alternatives in dark mode', () => {
+    const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
+    const plan = buildDashboardDesignPlan(makeHass(true, 80), config, 'warm-home');
+
+    expect(plan.pack_id).toBe('warm-home');
+    expect(plan.rationale.join(' ')).not.toContain('优先使用暗色玻璃风格');
+    expect(plan.rationale.join(' ')).toContain('明暗对比候选方案');
+  });
+
   it('exposes all built-in alternatives for one-click confirmation', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     expect(buildPlanAlternatives(makeHass(false, 40), config).map(plan => plan.pack_id).sort()).toEqual([

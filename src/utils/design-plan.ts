@@ -94,8 +94,10 @@ function buildRationale(pack: StylePack, profile: HomeProfile, hass: Hass): stri
   const reasons: string[] = [];
   reasons.push(`${profile.area_count} 个区域、${profile.entity_count} 个可见实体`);
 
-  if (hass.themes?.darkMode) {
+  if (hass.themes?.darkMode && pack.id === 'dark-glass') {
     reasons.push('检测到 Home Assistant 深色模式，优先使用暗色玻璃风格');
+  } else if (hass.themes?.darkMode) {
+    reasons.push('检测到 Home Assistant 深色模式，可作为明暗对比候选方案');
   } else if (profile.entity_count < 30) {
     reasons.push('设备量较少，使用更舒展的居家布局');
   } else if (profile.entity_count > 120 || profile.area_count > 12) {
