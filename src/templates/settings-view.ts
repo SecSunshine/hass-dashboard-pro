@@ -46,7 +46,7 @@ export function buildSettingsView(config: StrategyConfig, tokens?: ResolvedToken
     buildSeedColorCard(stored, tokens),
     buildAutoMoodCard(stored, tokens),
     buildCardStyleCard(stored, tokens),
-    buildLayoutConfigCard(stored, tokens, hass),
+    buildLayoutConfigCard(stored, config, tokens, hass),
     buildColorPickerCard(stored, tokens),
     buildShapeCard(stored, tokens),
     buildFontCard(stored, tokens),
@@ -1243,7 +1243,7 @@ ${generateDesignTokenCSS(tokens)}
 
 // ─── Layout Config Card (card_sizes + density + area_skins) ────────────────
 
-function buildLayoutConfigCard(stored: StoredVisualConfig, tokens?: ResolvedTokens, hass?: Hass): LovelaceCardConfig {
+function buildLayoutConfigCard(stored: StoredVisualConfig, config: StrategyConfig, tokens?: ResolvedTokens, hass?: Hass): LovelaceCardConfig {
   const cardSizes = (stored.card_sizes || {}) as Record<string, string>;
   const currentDensity = stored.layout_density || 'standard';
   const areaSkins = (stored.area_skins || {}) as Record<string, string>;
@@ -1305,9 +1305,10 @@ function buildLayoutConfigCard(stored: StoredVisualConfig, tokens?: ResolvedToke
       { val: 'soft', label: '柔影' },
       { val: 'neon', label: '霓虹' },
     ];
-    const hiddenAreas = (tokens as any)?.hidden_areas || [];
+    const hiddenAreas = new Set(config.hdp_config?.areas?.hidden_areas || config.hidden_areas || []);
     const areas = Object.entries(hass.areas)
       .filter(([, a]) => a && a.name)
+      .filter(([areaId]) => !hiddenAreas.has(areaId))
       .sort((a, b) => (a[1].name || '').localeCompare(b[1].name || ''))
       .slice(0, 12); // limit to 12 areas
 

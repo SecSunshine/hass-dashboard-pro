@@ -76,6 +76,18 @@ describe('settings view', () => {
     expect(html).toContain('theme-card theme-card--active" data-preset="dark"');
   });
 
+  it('does not offer visual skin overrides for hidden areas', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        areas: { hidden_areas: ['kitchen'] },
+      } as any,
+    };
+    const html = buildSettingsHTML(config, undefined, hass);
+
+    expect(html).not.toContain('data-area-id="kitchen"');
+  });
+
   it('syncs visual setting changes into persisted dashboard config', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const js = generateSettingsJS(config, undefined, hass);
