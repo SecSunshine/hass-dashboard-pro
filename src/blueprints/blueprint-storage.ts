@@ -23,17 +23,41 @@ export function generateBlueprintJS(): string {
 (function() {
   var BP_KEY = 'hdp_blueprints';
 
+  function hdpNormalizeBlueprintPages(pages) {
+    if (!Array.isArray(pages)) return [];
+    var seen = {};
+    var normalized = [];
+    for (var i = 0; i < pages.length; i++) {
+      var page = pages[i];
+      if (!page || typeof page !== 'object') continue;
+      if (typeof page.id !== 'string' || typeof page.name !== 'string' || typeof page.blueprint_yaml !== 'string') continue;
+      if (seen[page.id]) {
+        for (var j = 0; j < normalized.length; j++) {
+          if (normalized[j].id === page.id) normalized[j] = page;
+        }
+      } else {
+        seen[page.id] = true;
+        normalized.push(page);
+      }
+      page.icon = typeof page.icon === 'string' && page.icon ? page.icon : 'mdi:puzzle';
+      page.inputs = page.inputs && typeof page.inputs === 'object' && !Array.isArray(page.inputs) ? page.inputs : {};
+      page.card = page.card && typeof page.card === 'object' ? page.card : {};
+    }
+    return normalized;
+  }
+
   // Load all blueprint instances
   window.hdpBlueprintLoad = function() {
     try {
       var raw = localStorage.getItem(BP_KEY);
-      if (raw) return JSON.parse(raw);
+      if (raw) return hdpNormalizeBlueprintPages(JSON.parse(raw));
     } catch(e) {}
     return [];
   };
 
   // Save blueprint list
   window.hdpBlueprintSave = function(pages) {
+    pages = hdpNormalizeBlueprintPages(pages);
     try {
       localStorage.setItem(BP_KEY, JSON.stringify(pages));
     } catch(e) {
@@ -53,6 +77,7 @@ export function generateBlueprintJS(): string {
   // Add a new blueprint instance
   window.hdpBlueprintAdd = function(page) {
     var pages = hdpBlueprintLoad();
+    pages = pages.filter(function(p) { return p.id !== page.id; });
     pages.push(page);
     hdpBlueprintSave(pages);
     return pages;
