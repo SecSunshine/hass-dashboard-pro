@@ -573,13 +573,12 @@ export function generateBlueprintModalJS(): string {
     });
   };
 
-  // Refresh gallery — reload so strategy regenerates with updated blueprints
+  // Refresh gallery — reload only after the latest blueprint sync has settled.
   window.hdpRefreshBlueprintGallery = function() {
-    // Give hdpSaveToLovelace time to finish the async Lovelace config sync
-    // before reloading, otherwise the new config may not be persisted yet
-    setTimeout(function() {
+    var latestSave = window.hdpLastBlueprintSave || Promise.resolve();
+    Promise.resolve(latestSave).finally(function() {
       location.reload();
-    }, 500);
+    });
   };
 })();
 `;

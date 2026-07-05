@@ -67,11 +67,21 @@ export function generateBlueprintJS(): string {
     if (typeof hdpSaveConfig === 'function') {
       hdpSaveConfig({ blueprints: { pages: pages, replacements: {} } });
     }
+    var savePromise = Promise.resolve(pages);
     // Sync to HA Lovelace config (survives cache clear, cross-device)
     if (typeof hdpSaveToLovelace === 'function') {
       var hdpCfg = (typeof hdpLoadConfig === 'function') ? hdpLoadConfig() : null;
-      if (hdpCfg) hdpSaveToLovelace(hdpCfg);
+      if (hdpCfg) {
+        savePromise = hdpSaveToLovelace(hdpCfg).then(function() {
+          return pages;
+        });
+      }
     }
+    window.hdpLastBlueprintSave = savePromise.catch(function(err) {
+      console.warn('[HDP Blueprint] Lovelace sync failed, saved locally only', err);
+      return pages;
+    });
+    return window.hdpLastBlueprintSave;
   };
 
   // Add a new blueprint instance
@@ -79,16 +89,14 @@ export function generateBlueprintJS(): string {
     var pages = hdpBlueprintLoad();
     pages = pages.filter(function(p) { return p.id !== page.id; });
     pages.push(page);
-    hdpBlueprintSave(pages);
-    return pages;
+    return hdpBlueprintSave(pages);
   };
 
   // Remove a blueprint by ID
   window.hdpBlueprintRemove = function(id) {
     var pages = hdpBlueprintLoad();
     pages = pages.filter(function(p) { return p.id !== id; });
-    hdpBlueprintSave(pages);
-    return pages;
+    return hdpBlueprintSave(pages);
   };
 
   // Update input values for a blueprint
@@ -102,8 +110,7 @@ export function generateBlueprintJS(): string {
         break;
       }
     }
-    hdpBlueprintSave(pages);
-    return pages;
+    return hdpBlueprintSave(pages);
   };
 
   // Resolve placeholders in a card template
@@ -267,7 +274,10 @@ export function generateBlueprintJS(): string {
         var page = hdpBlueprintImportYAML(yaml);
         if (page) {
           page.source = url;
-          hdpBlueprintAdd(page);
+          hdpBlueprintAdd(page).then(function() {
+            if (callback) callback(page);
+          });
+          return;
         }
         if (callback) callback(page);
       })

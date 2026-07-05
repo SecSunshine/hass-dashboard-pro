@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildBlueprintGalleryHTML } from './blueprint-gallery';
+import { generateBlueprintModalJS } from './blueprint-gallery';
 
 describe('blueprint gallery rendering', () => {
   it('renders stable management markup for empty and sourced blueprints', () => {
@@ -25,5 +26,13 @@ describe('blueprint gallery rendering', () => {
     expect(sourcedHTML).toContain('title="检查更新" data-action="check-blueprint-update"');
     expect(sourcedHTML).toContain('title="编辑输入" data-action="edit-blueprint"');
     expect(sourcedHTML).toContain('title="删除" data-action="remove-blueprint"');
+  });
+
+  it('waits for the latest blueprint save before reloading the gallery', () => {
+    const js = generateBlueprintModalJS();
+
+    expect(js).toContain('var latestSave = window.hdpLastBlueprintSave || Promise.resolve();');
+    expect(js).toContain('Promise.resolve(latestSave).finally(function()');
+    expect(js).not.toContain('setTimeout(function() {\n      location.reload();\n    }, 500);');
   });
 });
