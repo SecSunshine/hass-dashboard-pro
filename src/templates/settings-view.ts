@@ -83,10 +83,10 @@ export function buildSettingsHTML(config: StrategyConfig, tokens?: ResolvedToken
 
   const visualHTML = visualCards.map(card => {
     const content = (card.content as string) || '';
-    return content
+    return repairMergedVisualHTML(content
       .replace(/<style>[\s\S]*?<\/style>/g, '')
       .replace(/<script>[\s\S]*?<\/script>/g, '')
-      .trim();
+      .trim());
   }).join('\n');
 
   // Wrap visual settings in a collapsible section
@@ -491,6 +491,12 @@ function scopeVisualSelector(selector: string): string {
   if (selector.startsWith(':root') || selector.startsWith('html') || selector.startsWith('body')) return selector;
   if (selector.startsWith(':host')) return selector.replace(':host', '#st-visual-body');
   return `#st-visual-body ${selector}`;
+}
+
+function repairMergedVisualHTML(html: string): string {
+  return html
+    .replace(/([^<])\/(div|span|button|label|select|option|textarea)>/g, '$1</$2>')
+    .replace(/(\saria-label="[^"]*?)\s\/>/g, '$1" />');
 }
 
 /**

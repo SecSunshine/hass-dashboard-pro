@@ -35,6 +35,7 @@ export function getDomainCardCSS(): string {
     position: relative;
     overflow: hidden;
     cursor: pointer;
+    min-width: 0;
   }
   .dvc:hover {
     transform: translateY(-2px);
@@ -54,6 +55,7 @@ export function getDomainCardCSS(): string {
     display: flex;
     align-items: center;
     gap: 12px;
+    min-width: 0;
   }
   .dvc-ico {
     width: 38px; height: 38px;
@@ -88,6 +90,9 @@ export function getDomainCardCSS(): string {
     display: flex;
     align-items: center;
     gap: 4px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .dvc-dot {
     width: 6px; height: 6px;
@@ -107,11 +112,13 @@ export function getDomainCardCSS(): string {
     align-items: center;
     gap: 12px;
     margin-bottom: 14px;
+    min-width: 0;
   }
   .dc-climate-current {
     margin-left: auto;
     text-align: right;
-    flex-shrink: 0;
+    flex: 0 1 36%;
+    min-width: 0;
   }
   .dc-climate-current-val {
     font: inherit;
@@ -119,6 +126,7 @@ export function getDomainCardCSS(): string {
     font-weight: 800;
     color: var(--hdp-info, #3B82F6);
     line-height: 1.1;
+    overflow-wrap: anywhere;
   }
   .dc-climate-current-label {
     font: inherit;
@@ -135,6 +143,7 @@ export function getDomainCardCSS(): string {
     border-radius: var(--hdp-radius-sm, 8px);
     padding: 8px 12px;
     margin-bottom: 12px;
+    min-width: 0;
   }
   .dc-climate-target-label {
     font: inherit;
@@ -175,6 +184,8 @@ export function getDomainCardCSS(): string {
     color: var(--hdp-text);
     text-align: center;
     flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .dc-climate-modes {
     display: flex;
@@ -358,6 +369,7 @@ export function getDomainCardCSS(): string {
   .dc-media-vol-icon svg { width: 16px; height: 16px; }
   .dc-media-vol-slider {
     flex: 1;
+    min-width: 0;
     -webkit-appearance: none;
     appearance: none;
     height: 6px;
@@ -399,6 +411,7 @@ export function getDomainCardCSS(): string {
     display: flex;
     gap: 6px;
     margin-top: 8px;
+    min-width: 0;
   }
   .dc-media-btn {
     flex: 1;

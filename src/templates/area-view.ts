@@ -214,6 +214,7 @@ ${generateDesignTokenCSS(tokens)}
 <style>
   .ah {
     padding: 2px 0 0 0;
+    min-width: 0;
   }
   .ah-name {
     font: inherit;
@@ -221,6 +222,8 @@ ${generateDesignTokenCSS(tokens)}
     font-weight: 700;
     color: var(--hdp-text);
     margin-bottom: 8px;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .ah-stats {
     display: flex;
@@ -236,6 +239,8 @@ ${generateDesignTokenCSS(tokens)}
     display: flex;
     align-items: center;
     gap: 5px;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .ah-dot {
     width: 7px; height: 7px;
@@ -283,6 +288,7 @@ const ENTITY_CARD_CSS = /* css */ `
     position: relative;
     overflow: hidden;
     cursor: pointer;
+    min-width: 0;
   }
   .ec:hover {
     transform: translateY(-2px);
@@ -304,6 +310,7 @@ const ENTITY_CARD_CSS = /* css */ `
     display: flex;
     align-items: center;
     gap: 12px;
+    min-width: 0;
   }
   .ec-ico {
     width: 38px; height: 38px;
@@ -338,6 +345,9 @@ const ENTITY_CARD_CSS = /* css */ `
     display: flex;
     align-items: center;
     gap: 4px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .ec-dot {
     width: 6px; height: 6px;
@@ -370,7 +380,11 @@ const ENTITY_CARD_CSS = /* css */ `
     font-weight: 700;
     color: var(--hdp-primary);
     margin-left: auto;
-    flex-shrink: 0;
+    flex: 0 1 45%;
+    min-width: 0;
+    max-width: 45%;
+    overflow-wrap: anywhere;
+    text-align: right;
   }
 `;
 
@@ -440,6 +454,7 @@ ${generateDesignTokenCSS(tokens)}
     align-items: center;
     gap: 8px;
     margin-bottom: 10px;
+    min-width: 0;
   }
   .ds-icon {
     width: 28px; height: 28px;
@@ -458,6 +473,8 @@ ${generateDesignTokenCSS(tokens)}
     font-size: 14px;
     font-weight: 700;
     color: var(--hdp-text);
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .ds-cnt {
     font: inherit;
@@ -474,8 +491,9 @@ ${generateDesignTokenCSS(tokens)}
   .ds-cnt--off { background: var(--hdp-divider); color: var(--hdp-text-muted); }
   .ds-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--hdp-card-gap);
+    min-width: 0;
   }
   @media (max-width: 480px) {
     .ds-grid { grid-template-columns: 1fr; }
@@ -505,8 +523,9 @@ ${generateDesignTokenCSS(tokens)}
 <style>
   .eg {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--hdp-card-gap);
+    min-width: 0;
   }
   @media (max-width: 480px) {
     .eg { grid-template-columns: 1fr; }

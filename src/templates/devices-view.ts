@@ -108,12 +108,16 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
     background: var(--hdp-primary-light, rgba(79,110,247,0.1));
     color: var(--hdp-primary);
   }
-  .dv-section { margin-bottom: 0; }
+  .dv-section {
+    margin-bottom: 0;
+    min-width: 0;
+  }
   .dv-section-hdr {
     display: flex;
     align-items: center;
     gap: 8px;
     margin-bottom: 10px;
+    min-width: 0;
   }
   .dv-section-icon {
     width: 28px; height: 28px;
@@ -126,6 +130,8 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
     font-size: 14px;
     font-weight: 700;
     color: var(--hdp-text);
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .dv-section-cnt {
     font: inherit;
@@ -138,8 +144,9 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
   }
   .dv-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--hdp-card-gap, 12px);
+    min-width: 0;
   }
   @media (max-width: 480px) {
     .dv-grid { grid-template-columns: 1fr; }
@@ -207,6 +214,7 @@ function getDeviceEntityCardCSS(): string {
     position: relative;
     overflow: hidden;
     cursor: pointer;
+    min-width: 0;
   }
   .dvc:hover {
     transform: translateY(-2px);
@@ -226,6 +234,7 @@ function getDeviceEntityCardCSS(): string {
     display: flex;
     align-items: center;
     gap: 12px;
+    min-width: 0;
   }
   .dvc-ico {
     width: 38px; height: 38px;
@@ -260,6 +269,9 @@ function getDeviceEntityCardCSS(): string {
     display: flex;
     align-items: center;
     gap: 4px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .dvc-dot {
     width: 6px; height: 6px;
@@ -273,6 +285,9 @@ function getDeviceEntityCardCSS(): string {
     font-size: 11px;
     color: var(--hdp-text-muted);
     margin-top: 2px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .dvc-val {
     font: inherit;
@@ -280,7 +295,11 @@ function getDeviceEntityCardCSS(): string {
     font-weight: 700;
     color: var(--hdp-primary);
     margin-left: auto;
-    flex-shrink: 0;
+    flex: 0 1 45%;
+    min-width: 0;
+    max-width: 45%;
+    overflow-wrap: anywhere;
+    text-align: right;
   }
   .dvc-toggle { flex-shrink: 0; }
   .dvc-tg {

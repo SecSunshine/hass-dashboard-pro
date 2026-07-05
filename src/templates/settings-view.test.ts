@@ -118,6 +118,8 @@ describe('settings view', () => {
     expect(html).toContain('#st-visual-body .lc-size-row');
     expect(html).toContain('#st-visual-body .am-toggle-row');
     expect(html).toContain('#st-visual-body input[type="color"]');
+    expect(html).toMatch(/settings-header-sub">[\s\S]*?<\/div>\s*<button class="settings-studio-btn"/);
+    expect(html).not.toMatch(/\saria-label="[^"]*\s\/>/);
     expect(html).toContain('.st-row > div');
     expect(html).toContain('overflow-wrap: anywhere');
     expect(html).toContain('width: min(240px, 45vw)');
