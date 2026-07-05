@@ -27,7 +27,7 @@
  */
 
 import type { BlueprintDefinition, BlueprintMeta, BlueprintInput, BlueprintInputType, LovelaceCardConfig } from '../types';
-import { escapeHTML, escapeJSONAttribute } from '../utils/html';
+import { escapeAttribute, escapeHTML, escapeInlineStyleValue, escapeJSONAttribute, escapeURLAttribute } from '../utils/html';
 
 // ─── YAML Parser (Simple Subset) ────────────────────────────────────────────
 
@@ -266,7 +266,9 @@ function deepCloneAndReplace(obj: unknown, inputs: Record<string, string | numbe
  */
 export function cardConfigToHTML(card: LovelaceCardConfig, pageName: string): string {
   if (card.type === 'custom:html-pro-card' && typeof card.content === 'string') {
-    return card.content;
+    return `<div class="bp-html-card" data-blueprint-card="${escapeAttribute(pageName)}">
+      ${sanitizeHtmlProContent(card.content)}
+    </div>`;
   }
 
   // For non-html-pro cards, wrap in a container that HA can render
@@ -310,6 +312,187 @@ export function cardConfigToHTML(card: LovelaceCardConfig, pageName: string): st
 }
 
 // ─── Version Comparison ─────────────────────────────────────────────────────
+
+const DANGEROUS_TAGS = new Set([
+  'base',
+  'embed',
+  'form',
+  'iframe',
+  'link',
+  'meta',
+  'object',
+  'script',
+]);
+
+const ALLOWED_HTML_TAGS = new Set([
+  'a',
+  'article',
+  'aside',
+  'b',
+  'br',
+  'button',
+  'canvas',
+  'circle',
+  'code',
+  'dd',
+  'details',
+  'div',
+  'dl',
+  'dt',
+  'em',
+  'footer',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'ha-icon',
+  'ha-state-icon',
+  'header',
+  'hr',
+  'i',
+  'img',
+  'li',
+  'line',
+  'main',
+  'nav',
+  'ol',
+  'p',
+  'path',
+  'polygon',
+  'polyline',
+  'rect',
+  'section',
+  'small',
+  'span',
+  'state-badge',
+  'strong',
+  'style',
+  'sub',
+  'summary',
+  'sup',
+  'svg',
+  'ul',
+]);
+
+const ALLOWED_ATTRS = new Set([
+  'alt',
+  'class',
+  'cx',
+  'cy',
+  'd',
+  'data-action',
+  'data-area',
+  'data-device',
+  'data-domain',
+  'data-entity',
+  'data-view',
+  'fill',
+  'height',
+  'href',
+  'icon',
+  'id',
+  'r',
+  'role',
+  'rx',
+  'ry',
+  'src',
+  'stroke',
+  'stroke-linecap',
+  'stroke-linejoin',
+  'stroke-width',
+  'style',
+  'title',
+  'type',
+  'viewbox',
+  'viewBox',
+  'width',
+  'x',
+  'x1',
+  'x2',
+  'y',
+  'y1',
+  'y2',
+]);
+
+function sanitizeHtmlProContent(content: string): string {
+  return content
+    .replace(/<\s*(script|iframe|object|embed|form)\b[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
+    .replace(/<\s*style\b[^>]*>([\s\S]*?)<\s*\/\s*style\s*>/gi, (_, css) => {
+      return `<style>${scopeBlueprintCSS(String(css))}</style>`;
+    })
+    .replace(/<[^>]+>/g, tag => sanitizeTag(tag));
+}
+
+function sanitizeTag(tag: string): string {
+  const match = tag.match(/^<\s*(\/)?\s*([a-zA-Z][a-zA-Z0-9-]*)\b([^>]*)>$/);
+  if (!match) return escapeHTML(tag);
+
+  const [, closing, rawName, rawAttrs] = match;
+  const name = rawName.toLowerCase();
+  if (DANGEROUS_TAGS.has(name) || !ALLOWED_HTML_TAGS.has(name)) return escapeHTML(tag);
+  if (closing) return `</${name}>`;
+  if (name === 'style') return '<style>';
+
+  const attrs = sanitizeAttributes(rawAttrs || '');
+  return attrs ? `<${name} ${attrs}>` : `<${name}>`;
+}
+
+function sanitizeAttributes(rawAttrs: string): string {
+  const attrs: string[] = [];
+  const attrPattern = /([:@a-zA-Z_][:@a-zA-Z0-9_.-]*)(?:\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = attrPattern.exec(rawAttrs)) !== null) {
+    const rawName = match[1];
+    const name = rawName.toLowerCase();
+    if (name.startsWith('on')) continue;
+    if (!isAllowedAttribute(name)) continue;
+
+    const rawValue = match[3] ?? match[4] ?? match[5] ?? '';
+    const safeValue = sanitizeAttributeValue(name, rawValue);
+    if (safeValue === null) continue;
+    attrs.push(`${rawName}="${safeValue}"`);
+  }
+
+  return attrs.join(' ');
+}
+
+function isAllowedAttribute(name: string): boolean {
+  return ALLOWED_ATTRS.has(name) || name.startsWith('data-') || name.startsWith('aria-');
+}
+
+function sanitizeAttributeValue(name: string, value: string): string | null {
+  if (name === 'href' || name === 'src') {
+    const safe = escapeURLAttribute(value);
+    return safe || null;
+  }
+  if (name === 'style') return escapeAttribute(escapeInlineStyleValue(value));
+  return escapeAttribute(value);
+}
+
+function scopeBlueprintCSS(css: string): string {
+  const cleaned = css
+    .replace(/@import[^;]+;?/gi, '')
+    .replace(/javascript\s*:/gi, '')
+    .replace(/expression\s*\(/gi, '')
+    .replace(/<\/?style/gi, '');
+
+  return cleaned.replace(/(^|})\s*([^@{}][^{}]*)\{/g, (_, prefix, selectors) => {
+    const scopedSelectors = String(selectors)
+      .split(',')
+      .map(selector => selector.trim())
+      .filter(Boolean)
+      .map(selector => {
+        if (selector.startsWith('.bp-html-card')) return selector;
+        if (selector === ':host') return '.bp-html-card';
+        return `.bp-html-card ${selector}`;
+      })
+      .join(', ');
+    return `${prefix} ${scopedSelectors} {`;
+  });
+}
 
 /**
  * Compare two semver version strings.
