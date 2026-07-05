@@ -27,6 +27,7 @@ export function getPersons(hass: Hass, hiddenPersons: string[] = []): PersonInfo
   for (const [entityId, stateObj] of Object.entries(hass.states)) {
     if (!entityId.startsWith('person.')) continue;
     if (hiddenPersons.includes(entityId)) continue;
+    if (!isRegistryVisible(hass, entityId)) continue;
 
     const st = stateObj.state;
     const name = (stateObj.attributes.friendly_name as string)

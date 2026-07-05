@@ -941,6 +941,7 @@ export function buildPeopleSection(hass: any, config: StrategyConfig): string {
   // Find person entities
   const persons: Array<{ id: string; name: string }> = [];
   for (const [entityId, stateObj] of Object.entries(hass.states || {})) {
+    if (!isVisibleRegistryEntity(hass, entityId)) continue;
     if (entityId.startsWith('person.')) {
       const name = (stateObj as any).attributes?.friendly_name || entityId.replace('person.', '');
       persons.push({ id: entityId, name });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Hass, StrategyConfig } from '../types';
-import { countActiveAutomations, getAlarmStatus, getFavorites, getHomeSummaries } from './home-data';
+import { countActiveAutomations, getAlarmStatus, getFavorites, getHomeSummaries, getPersons } from './home-data';
 
 const hass: Hass = {
   states: {
@@ -64,6 +64,20 @@ const hass: Hass = {
       entity_id: 'update.hidden',
       state: 'on',
       attributes: { friendly_name: 'Hidden Update' },
+      last_changed: '',
+      last_updated: '',
+    },
+    'person.alice': {
+      entity_id: 'person.alice',
+      state: 'home',
+      attributes: { friendly_name: 'Alice' },
+      last_changed: '',
+      last_updated: '',
+    },
+    'person.hidden': {
+      entity_id: 'person.hidden',
+      state: 'home',
+      attributes: { friendly_name: 'Hidden Person' },
       last_changed: '',
       last_updated: '',
     },
@@ -150,6 +164,22 @@ const hass: Hass = {
       disabled_by: 'user',
       hidden_by: null,
     },
+    'person.alice': {
+      entity_id: 'person.alice',
+      device_id: null,
+      area_id: null,
+      platform: 'demo',
+      disabled_by: null,
+      hidden_by: null,
+    },
+    'person.hidden': {
+      entity_id: 'person.hidden',
+      device_id: null,
+      area_id: null,
+      platform: 'demo',
+      disabled_by: null,
+      hidden_by: 'user',
+    },
   },
 };
 
@@ -200,5 +230,11 @@ describe('home data', () => {
     expect(countActiveAutomations(hass)).toBe(1);
     expect(summary.automations_count).toBe(1);
     expect(summary.updates_count).toBe(0);
+  });
+
+  it('ignores registry-hidden people in the home people card data', () => {
+    const persons = getPersons(hass);
+
+    expect(persons.map(person => person.entity_id)).toEqual(['person.alice']);
   });
 });

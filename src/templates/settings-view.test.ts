@@ -39,6 +39,20 @@ const hass: Hass = {
       last_changed: '',
       last_updated: '',
     },
+    'person.alice': {
+      entity_id: 'person.alice',
+      state: 'home',
+      attributes: { friendly_name: 'Alice' },
+      last_changed: '',
+      last_updated: '',
+    },
+    'person.hidden': {
+      entity_id: 'person.hidden',
+      state: 'home',
+      attributes: { friendly_name: 'Hidden Person' },
+      last_changed: '',
+      last_updated: '',
+    },
   },
   areas: {
     kitchen: { area_id: 'kitchen', name: 'Kitchen', picture: null },
@@ -61,6 +75,22 @@ const hass: Hass = {
       platform: 'demo',
       disabled_by: 'user',
       hidden_by: null,
+    },
+    'person.alice': {
+      entity_id: 'person.alice',
+      device_id: null,
+      area_id: null,
+      platform: 'demo',
+      disabled_by: null,
+      hidden_by: null,
+    },
+    'person.hidden': {
+      entity_id: 'person.hidden',
+      device_id: null,
+      area_id: null,
+      platform: 'demo',
+      disabled_by: null,
+      hidden_by: 'user',
     },
   },
 };
@@ -111,6 +141,15 @@ describe('settings view', () => {
 
     expect(html).toContain("hdpToggleArrayItem('devices.hidden_device_types', &quot;binary_sensor.motion&quot;, event)");
     expect(html).not.toContain("hdpToggleArrayItem('devices.hidden_device_types', &quot;sensor.temperature&quot;, event)");
+  });
+
+  it('ignores registry-hidden people in settings controls', () => {
+    const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
+    const html = buildSettingsHTML(config, undefined, hass);
+
+    expect(html).toContain("hdpToggleArrayItem('people.hidden_persons', &quot;person.alice&quot;, event)");
+    expect(html).not.toContain("hdpToggleArrayItem('people.hidden_persons', &quot;person.hidden&quot;, event)");
+    expect(html).not.toContain('Hidden Person');
   });
 
   it('escapes dashboard setting input values', () => {
