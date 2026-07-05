@@ -65,6 +65,9 @@ describe('share code', () => {
           area_skins: { kitchen: 'glass', garage: 'bad' },
           time_moods: { dawn: 'coral', day: 'bad', bogus: 'neon' },
         },
+        hidden_areas: ['garage', 'kitchen', 1],
+        hidden_domains: ['switch', 'sensor', false],
+        hidden_device_types: ['sensor.power', 'binary_sensor.motion', {}],
         areas: { hidden_areas: ['kitchen', 1, ''], area_order: ['kitchen', null] },
         devices: { hidden_domains: ['sensor', false], hidden_device_types: ['binary_sensor.motion', {}] },
         blueprints: {
@@ -102,10 +105,13 @@ describe('share code', () => {
     expect(imported.hdp_config?.visual?.card_sizes).toEqual({ home_welcome: 'wide' });
     expect(imported.hdp_config?.visual?.area_skins).toEqual({ kitchen: 'glass' });
     expect(imported.hdp_config?.visual?.time_moods).toEqual({ dawn: 'coral' });
-    expect(imported.hdp_config?.areas?.hidden_areas).toEqual(['kitchen']);
+    expect(imported.hdp_config?.areas?.hidden_areas).toEqual(['kitchen', 'garage']);
     expect(imported.hdp_config?.areas?.area_order).toEqual(['kitchen']);
-    expect(imported.hdp_config?.devices?.hidden_domains).toEqual(['sensor']);
-    expect(imported.hdp_config?.devices?.hidden_device_types).toEqual(['binary_sensor.motion']);
+    expect(imported.hdp_config?.devices?.hidden_domains).toEqual(['sensor', 'switch']);
+    expect(imported.hdp_config?.devices?.hidden_device_types).toEqual(['binary_sensor.motion', 'sensor.power']);
+    expect(imported.hdp_config).not.toHaveProperty('hidden_areas');
+    expect(imported.hdp_config).not.toHaveProperty('hidden_domains');
+    expect(imported.hdp_config).not.toHaveProperty('hidden_device_types');
     expect(imported.hdp_config?.blueprints?.pages).toHaveLength(1);
     expect(imported.hdp_config?.blueprints?.pages[0].icon).toBe('mdi:puzzle');
     expect(imported.hdp_config?.blueprints?.replacements).toEqual({});

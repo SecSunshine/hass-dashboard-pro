@@ -211,6 +211,10 @@ describe('settings view', () => {
     expect(js).toContain('function deviceText(entityId)');
     expect(js).toContain("score(stripDomain(sourceId), stripDomain(entityId) + ' ' + friendly + ' ' + registryName + ' ' + deviceText(entityId) + ' ' + areaName(entityId))");
     expect(js).toContain('function hdpNormalizeHDPConfig(config)');
+    expect(js).toContain('function hdpMergeStringArrays()');
+    expect(js).toContain('var legacyHiddenAreas = hdpNormalizeStringArray(normalized.hidden_areas);');
+    expect(js).toContain('hidden_areas: hdpMergeStringArrays(normalized.areas.hidden_areas, legacyHiddenAreas)');
+    expect(js).toContain('delete normalized.hidden_device_types;');
     expect(js).toContain('function hdpNormalizeVisualConfig(config)');
     expect(js).toContain('function hdpNormalizeBlueprints(value)');
     expect(js).toContain('function hdpSanitizeLayoutDensity(value)');

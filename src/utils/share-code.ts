@@ -91,6 +91,9 @@ export function importShareBundle(bundle: DashboardShareBundle, hass: Hass): Imp
 function normalizeHDPConfig(config: unknown): Partial<HDPConfig> | undefined {
   if (!isRecord(config)) return undefined;
   const normalized = { ...config } as Record<string, unknown>;
+  const legacyHiddenAreas = normalizeStringArray(normalized.hidden_areas);
+  const legacyHiddenDomains = normalizeStringArray(normalized.hidden_domains);
+  const legacyHiddenDeviceTypes = normalizeStringArray(normalized.hidden_device_types);
 
   if ('visual' in normalized) {
     const visual = normalizeVisualConfig(normalized.visual);
@@ -101,18 +104,28 @@ function normalizeHDPConfig(config: unknown): Partial<HDPConfig> | undefined {
   if (isRecord(normalized.areas)) {
     normalized.areas = {
       ...normalized.areas,
-      hidden_areas: normalizeStringArray(normalized.areas.hidden_areas),
+      hidden_areas: mergeStringArrays(normalized.areas.hidden_areas, legacyHiddenAreas),
       area_order: normalizeStringArray(normalized.areas.area_order),
     };
+  } else if (legacyHiddenAreas.length) {
+    normalized.areas = { hidden_areas: legacyHiddenAreas };
   }
 
   if (isRecord(normalized.devices)) {
     normalized.devices = {
       ...normalized.devices,
-      hidden_domains: normalizeStringArray(normalized.devices.hidden_domains),
-      hidden_device_types: normalizeStringArray(normalized.devices.hidden_device_types),
+      hidden_domains: mergeStringArrays(normalized.devices.hidden_domains, legacyHiddenDomains),
+      hidden_device_types: mergeStringArrays(normalized.devices.hidden_device_types, legacyHiddenDeviceTypes),
+    };
+  } else if (legacyHiddenDomains.length || legacyHiddenDeviceTypes.length) {
+    normalized.devices = {
+      hidden_domains: legacyHiddenDomains,
+      hidden_device_types: legacyHiddenDeviceTypes,
     };
   }
+  delete normalized.hidden_areas;
+  delete normalized.hidden_domains;
+  delete normalized.hidden_device_types;
 
   if (isRecord(normalized.people)) {
     normalized.people = {
@@ -182,6 +195,14 @@ function normalizeStringArray(value: unknown): string[] {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === 'string' && item.length > 0)
     : [];
+}
+
+function mergeStringArrays(...values: unknown[]): string[] {
+  const result = new Set<string>();
+  for (const value of values) {
+    for (const item of normalizeStringArray(value)) result.add(item);
+  }
+  return Array.from(result);
 }
 
 function normalizeCardSizes(value: unknown): Record<string, string> | undefined {

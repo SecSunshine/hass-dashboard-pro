@@ -688,6 +688,19 @@ function hdpNormalizeStringArray(value) {
   return value.filter(function(item) { return typeof item === 'string' && item.length > 0; });
 }
 
+function hdpMergeStringArrays() {
+  var seen = {};
+  var result = [];
+  Array.prototype.slice.call(arguments).forEach(function(value) {
+    hdpNormalizeStringArray(value).forEach(function(item) {
+      if (seen[item]) return;
+      seen[item] = true;
+      result.push(item);
+    });
+  });
+  return result;
+}
+
 function hdpNormalizeCardSizes(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
   var allowed = ['sm', 'md', 'lg', 'wide', 'tall'];
@@ -755,6 +768,9 @@ function hdpNormalizeBlueprints(value) {
 function hdpNormalizeHDPConfig(config) {
   if (!config || typeof config !== 'object' || Array.isArray(config)) return undefined;
   var normalized = Object.assign({}, config);
+  var legacyHiddenAreas = hdpNormalizeStringArray(normalized.hidden_areas);
+  var legacyHiddenDomains = hdpNormalizeStringArray(normalized.hidden_domains);
+  var legacyHiddenDeviceTypes = hdpNormalizeStringArray(normalized.hidden_device_types);
   if ('visual' in normalized) {
     var visual = hdpNormalizeVisualConfig(normalized.visual);
     if (visual) normalized.visual = visual;
@@ -762,16 +778,26 @@ function hdpNormalizeHDPConfig(config) {
   }
   if (normalized.areas && typeof normalized.areas === 'object' && !Array.isArray(normalized.areas)) {
     normalized.areas = Object.assign({}, normalized.areas, {
-      hidden_areas: hdpNormalizeStringArray(normalized.areas.hidden_areas),
+      hidden_areas: hdpMergeStringArrays(normalized.areas.hidden_areas, legacyHiddenAreas),
       area_order: hdpNormalizeStringArray(normalized.areas.area_order)
     });
+  } else if (legacyHiddenAreas.length) {
+    normalized.areas = { hidden_areas: legacyHiddenAreas };
   }
   if (normalized.devices && typeof normalized.devices === 'object' && !Array.isArray(normalized.devices)) {
     normalized.devices = Object.assign({}, normalized.devices, {
-      hidden_domains: hdpNormalizeStringArray(normalized.devices.hidden_domains),
-      hidden_device_types: hdpNormalizeStringArray(normalized.devices.hidden_device_types)
+      hidden_domains: hdpMergeStringArrays(normalized.devices.hidden_domains, legacyHiddenDomains),
+      hidden_device_types: hdpMergeStringArrays(normalized.devices.hidden_device_types, legacyHiddenDeviceTypes)
     });
+  } else if (legacyHiddenDomains.length || legacyHiddenDeviceTypes.length) {
+    normalized.devices = {
+      hidden_domains: legacyHiddenDomains,
+      hidden_device_types: legacyHiddenDeviceTypes
+    };
   }
+  delete normalized.hidden_areas;
+  delete normalized.hidden_domains;
+  delete normalized.hidden_device_types;
   if (normalized.people && typeof normalized.people === 'object' && !Array.isArray(normalized.people)) {
     normalized.people = Object.assign({}, normalized.people, {
       hidden_persons: hdpNormalizeStringArray(normalized.people.hidden_persons)
