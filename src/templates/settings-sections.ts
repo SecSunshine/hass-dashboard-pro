@@ -60,6 +60,8 @@ export function getSettingsSectionsCSS(): string {
     box-shadow: var(--hdp-shadow-card);
     overflow: hidden;
     margin-bottom: 12px;
+    width: 100%;
+    min-width: 0;
   }
   .st-section-hdr {
     display: flex;
@@ -84,10 +86,12 @@ export function getSettingsSectionsCSS(): string {
   .st-section-icon svg { width: 16px; height: 16px; }
   .st-section-title {
     flex: 1;
+    min-width: 0;
     font: inherit;
     font-size: 14px;
     font-weight: 700;
     color: var(--hdp-text);
+    overflow-wrap: anywhere;
   }
   .st-chevron {
     width: 18px; height: 18px;
@@ -101,6 +105,7 @@ export function getSettingsSectionsCSS(): string {
   .st-section-body {
     display: none;
     padding: 0 18px 18px 18px;
+    min-width: 0;
   }
   .st-section--open .st-section-body {
     display: block;
@@ -109,9 +114,15 @@ export function getSettingsSectionsCSS(): string {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
     padding: 10px 0;
     border-bottom: 1px solid var(--hdp-divider, rgba(0,0,0,0.04));
     min-height: 44px;
+    min-width: 0;
+  }
+  .st-row > div {
+    min-width: 0;
+    flex: 1 1 auto;
   }
   .st-row:last-child { border-bottom: none; }
   .st-row-label {
@@ -119,12 +130,14 @@ export function getSettingsSectionsCSS(): string {
     font-size: 13px;
     font-weight: 500;
     color: var(--hdp-text);
+    overflow-wrap: anywhere;
   }
   .st-row-desc {
     font: inherit;
     font-size: 12px;
     color: var(--hdp-text-muted);
     margin-top: 2px;
+    overflow-wrap: anywhere;
   }
   .st-input {
     font: inherit;
@@ -138,6 +151,7 @@ export function getSettingsSectionsCSS(): string {
     min-width: 140px;
     max-width: 240px;
     min-height: 36px;
+    width: min(240px, 45vw);
   }
   .st-input:focus {
     border-color: var(--hdp-primary);
@@ -165,6 +179,7 @@ export function getSettingsSectionsCSS(): string {
     flex-wrap: wrap;
     gap: 6px;
     margin-top: 8px;
+    min-width: 0;
   }
   .st-chip {
     display: flex;
@@ -181,6 +196,9 @@ export function getSettingsSectionsCSS(): string {
     cursor: pointer;
     transition: all 0.15s ease;
     min-height: 32px;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    text-align: left;
   }
   .st-chip--active {
     background: var(--hdp-primary-light, rgba(79,110,247,0.1));
@@ -200,9 +218,12 @@ export function getSettingsSectionsCSS(): string {
     cursor: pointer;
     transition: all 0.2s ease;
     min-height: 44px;
+    max-width: 100%;
     border: 1px solid var(--hdp-border);
     background: var(--hdp-card-bg);
     color: var(--hdp-text);
+    white-space: normal;
+    text-align: left;
   }
   .st-btn:hover { transform: translateY(-2px); border-color: var(--hdp-primary); }
   .st-btn--primary {
@@ -224,10 +245,17 @@ export function getSettingsSectionsCSS(): string {
     font: inherit;
     font-size: 13px;
     color: var(--hdp-text-secondary);
+    gap: 12px;
+    min-width: 0;
   }
   .st-about-val {
     font-weight: 600;
     color: var(--hdp-text);
+    text-align: right;
+  }
+  .st-about-row > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .st-section-subtitle {
     font: inherit;
@@ -329,6 +357,18 @@ export function getSettingsSectionsCSS(): string {
   @media (max-width: 720px) {
     .st-plan-hero { grid-template-columns: 1fr; }
     .st-plan-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .st-row {
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .st-input {
+      width: 100%;
+      max-width: none;
+      flex: 1 1 180px;
+    }
+    .st-btn {
+      justify-content: center;
+    }
   }
   `;
 }

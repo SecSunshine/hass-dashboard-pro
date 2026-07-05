@@ -33,6 +33,9 @@ describe('settings view', () => {
     expect(html).toContain('#st-visual-body .theme-grid');
     expect(html).toContain('repeat(auto-fit, minmax(136px, 1fr))');
     expect(html).toContain('#st-visual-body .color-row');
+    expect(html).toContain('.st-row > div');
+    expect(html).toContain('overflow-wrap: anywhere');
+    expect(html).toContain('width: min(240px, 45vw)');
     expect(html).toContain("hdpToggleArrayItem('areas.hidden_areas'");
     expect(html).toContain("hdpToggleArrayItem('devices.hidden_device_types'");
     expect(html).toContain(', event)');
