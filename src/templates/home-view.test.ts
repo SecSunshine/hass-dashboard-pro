@@ -113,4 +113,15 @@ describe('home view settings', () => {
     expect(html).toContain('hdp-card--classic');
     expect(html).not.toContain('onclick="evil()');
   });
+
+  it('marks active favorites with the class used by the active border style', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      favorite_entities: ['light.kitchen'],
+    };
+    const html = buildHomeHTML(hass, config);
+
+    expect(html).toContain('class="fav-item fav-item--active fav--active');
+    expect(html).toContain('.fav-item--active');
+  });
 });

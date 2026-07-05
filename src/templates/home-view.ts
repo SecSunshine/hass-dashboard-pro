@@ -781,7 +781,7 @@ function buildFavoritesCard(favorites: FavoriteEntity[], tokens?: ResolvedTokens
   const skinCls = cardSkinClass(tokens?.card_style);
   const items = favorites.map(f => {
     const iconSVG = getFavoriteIcon(f.domain, f.is_active);
-    const stateCls = f.is_active ? 'fav--active' : '';
+    const stateCls = f.is_active ? 'fav-item--active fav--active' : '';
     return `<div class="fav-item ${stateCls} ${skinCls}" data-entity="${escapeAttribute(f.entity_id)}" data-action="toggle">
       <div class="fav-icon">${iconSVG}</div>
       <div class="fav-info">
