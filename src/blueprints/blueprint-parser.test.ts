@@ -45,4 +45,16 @@ describe('blueprint parser rendering', () => {
     expect(html).toContain('cx="12"');
     expect(html).toContain('r="4"');
   });
+
+  it('preserves safe inline style declarations and drops unsafe ones', () => {
+    const html = cardConfigToHTML({
+      type: 'custom:html-pro-card',
+      content: '<div style="display:flex; gap: 8px; --accent: var(--hdp-primary); background-image: url(javascript:alert(1)); behavior:url(x)">Tile</div>',
+    }, 'Styled');
+
+    expect(html).toContain('style="display: flex; gap: 8px; --accent: var(--hdp-primary)"');
+    expect(html).not.toContain('background-image');
+    expect(html).not.toContain('behavior');
+    expect(html).not.toContain('javascript:');
+  });
 });

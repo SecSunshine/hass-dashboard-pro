@@ -468,8 +468,30 @@ function sanitizeAttributeValue(name: string, value: string): string | null {
     const safe = escapeURLAttribute(value);
     return safe || null;
   }
-  if (name === 'style') return escapeAttribute(escapeInlineStyleValue(value));
+  if (name === 'style') return sanitizeStyleAttribute(value);
   return escapeAttribute(value);
+}
+
+function sanitizeStyleAttribute(value: string): string {
+  const safeDeclarations = value
+    .split(';')
+    .map(declaration => declaration.trim())
+    .filter(Boolean)
+    .map(declaration => {
+      const separator = declaration.indexOf(':');
+      if (separator === -1) return '';
+
+      const property = declaration.slice(0, separator).trim();
+      const rawValue = declaration.slice(separator + 1).trim();
+      if (!/^(?:--)?[a-zA-Z][a-zA-Z0-9-]*$/.test(property)) return '';
+      if (/javascript\s*:|expression\s*\(|behavior\s*:|@import|url\s*\(/i.test(rawValue)) return '';
+
+      const safeValue = escapeInlineStyleValue(rawValue);
+      return safeValue ? `${property}: ${safeValue}` : '';
+    })
+    .filter(Boolean);
+
+  return escapeAttribute(safeDeclarations.join('; '));
 }
 
 function scopeBlueprintCSS(css: string): string {
