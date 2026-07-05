@@ -95,6 +95,20 @@ const hass: Hass = {
       last_changed: '',
       last_updated: '',
     },
+    'sensor.repairs': {
+      entity_id: 'sensor.repairs',
+      state: '9',
+      attributes: {},
+      last_changed: '',
+      last_updated: '',
+    },
+    'binary_sensor.repairs': {
+      entity_id: 'binary_sensor.repairs',
+      state: '1',
+      attributes: {},
+      last_changed: '',
+      last_updated: '',
+    },
   },
   areas: {
     kitchen: { area_id: 'kitchen', name: 'Kitchen', picture: null },
@@ -210,6 +224,22 @@ const hass: Hass = {
       disabled_by: null,
       hidden_by: null,
     },
+    'sensor.repairs': {
+      entity_id: 'sensor.repairs',
+      device_id: null,
+      area_id: null,
+      platform: 'demo',
+      disabled_by: null,
+      hidden_by: 'user',
+    },
+    'binary_sensor.repairs': {
+      entity_id: 'binary_sensor.repairs',
+      device_id: null,
+      area_id: null,
+      platform: 'demo',
+      disabled_by: null,
+      hidden_by: null,
+    },
   },
 };
 
@@ -271,5 +301,55 @@ describe('home data', () => {
   it('ignores registry-hidden weather entities for header weather', () => {
     expect(getWeather(hass).temp).toBe('22°');
     expect(getWeather(hass, 'weather.hidden').has_data).toBe(false);
+  });
+
+  it('ignores registry-hidden repair summary entities', () => {
+    const summary = getHomeSummaries(hass, { type: 'custom:hass-dashboard-pro' });
+
+    expect(summary.repairs_count).toBe(1);
+  });
+
+  it('ignores registry-hidden alarm entities when no visibility config is supplied', () => {
+    const alarmHass: Hass = {
+      ...hass,
+      states: {
+        ...hass.states,
+        'alarm_control_panel.hidden': {
+          entity_id: 'alarm_control_panel.hidden',
+          state: 'triggered',
+          attributes: {},
+          last_changed: '',
+          last_updated: '',
+        },
+        'alarm_control_panel.home': {
+          entity_id: 'alarm_control_panel.home',
+          state: 'armed_home',
+          attributes: {},
+          last_changed: '',
+          last_updated: '',
+        },
+      },
+      entities: {
+        ...hass.entities,
+        'alarm_control_panel.hidden': {
+          entity_id: 'alarm_control_panel.hidden',
+          device_id: null,
+          area_id: null,
+          platform: 'demo',
+          disabled_by: null,
+          hidden_by: 'user',
+        },
+        'alarm_control_panel.home': {
+          entity_id: 'alarm_control_panel.home',
+          device_id: null,
+          area_id: null,
+          platform: 'demo',
+          disabled_by: null,
+          hidden_by: null,
+        },
+      },
+    };
+
+    expect(getAlarmStatus(alarmHass).state).toBe('armed_home');
   });
 });

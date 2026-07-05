@@ -303,7 +303,9 @@ export function getHomeSummaries(hass: Hass, config?: StrategyConfig): HomeSumma
   }
 
   // Check for repairs integration
-  const repairsEntity = hass.states['sensor.repairs'] || hass.states['binary_sensor.repairs'];
+  const repairsEntityId = ['sensor.repairs', 'binary_sensor.repairs']
+    .find(entityId => hass.states[entityId] && isRegistryVisible(hass, entityId));
+  const repairsEntity = repairsEntityId ? hass.states[repairsEntityId] : undefined;
   if (repairsEntity) {
     repairsCount = parseInt(repairsEntity.state) || 0;
   }
@@ -409,6 +411,7 @@ export function getAlarmStatus(hass: Hass, alarmEntity?: string, config?: Strate
   for (const [eid, s] of Object.entries(hass.states)) {
     if (!eid.startsWith('alarm_control_panel.')) continue;
     if (visible && !visible.has(eid)) continue;
+    if (!visible && !isRegistryVisible(hass, eid)) continue;
     return formatAlarmControlState(s.state);
   }
 
@@ -417,6 +420,7 @@ export function getAlarmStatus(hass: Hass, alarmEntity?: string, config?: Strate
   for (const [eid, s] of Object.entries(hass.states)) {
     if (!eid.startsWith('lock.')) continue;
     if (visible && !visible.has(eid)) continue;
+    if (!visible && !isRegistryVisible(hass, eid)) continue;
     total++;
     if (s.state === 'locked') locked++;
   }
