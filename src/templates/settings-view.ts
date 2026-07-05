@@ -208,6 +208,157 @@ ${visualStyles}
   #st-visual-body .style-preview {
     flex-shrink: 0;
   }
+  #st-visual-body button {
+    font: inherit;
+    box-sizing: border-box;
+  }
+  #st-visual-body .settings-studio-btn {
+    margin-top: 14px;
+    min-height: 44px;
+    padding: 10px 20px;
+    border-radius: var(--hdp-radius, 14px);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    background: var(--hdp-gradient-primary, linear-gradient(135deg, var(--hdp-primary, #4F6EF7), var(--hdp-info, #38BDF8)));
+    color: var(--hdp-text-inverse, #fff);
+    box-shadow: 0 4px 12px var(--hdp-primary-glow, rgba(79,110,247,0.15));
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    max-width: 100%;
+  }
+  #st-visual-body .settings-studio-btn svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+  }
+  #st-visual-body .theme-card,
+  #st-visual-body .mood-card,
+  #st-visual-body .style-card,
+  #st-visual-body .font-card,
+  #st-visual-body .lc-density-btn {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    cursor: pointer;
+    border: 2px solid var(--hdp-border, rgba(0,0,0,0.06));
+    background: var(--hdp-card-bg, #fff);
+    color: var(--hdp-text, #1A1D26);
+    overflow: hidden;
+    position: relative;
+    padding: 0;
+    text-align: left;
+  }
+  #st-visual-body .style-card,
+  #st-visual-body .font-card,
+  #st-visual-body .lc-density-btn {
+    padding: 12px;
+  }
+  #st-visual-body .theme-card--active,
+  #st-visual-body .mood-card--active,
+  #st-visual-body .style-card--active,
+  #st-visual-body .font-card--active,
+  #st-visual-body .lc-density-btn--active {
+    border-color: var(--hdp-primary, #4F6EF7);
+    box-shadow: 0 0 0 3px var(--hdp-primary-glow, rgba(79,110,247,0.15));
+  }
+  #st-visual-body .theme-preview,
+  #st-visual-body .mood-preview {
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #st-visual-body .theme-meta,
+  #st-visual-body .mood-meta {
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-top: 1px solid var(--hdp-divider, rgba(0,0,0,0.04));
+  }
+  #st-visual-body .theme-dot-row {
+    display: flex;
+    align-items: center;
+  }
+  #st-visual-body .theme-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+    box-sizing: border-box;
+  }
+  #st-visual-body .mood-icon,
+  #st-visual-body .am-period-icon {
+    font-size: 18px;
+    line-height: 1;
+  }
+  #st-visual-body .theme-check,
+  #st-visual-body .mood-check {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--hdp-primary, #4F6EF7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #st-visual-body .toggle-switch {
+    width: 44px;
+    height: 24px;
+    border-radius: 999px;
+    position: relative;
+    cursor: pointer;
+    background: var(--hdp-divider, rgba(0,0,0,0.08));
+  }
+  #st-visual-body .toggle-switch--on {
+    background: var(--hdp-primary, #4F6EF7);
+  }
+  #st-visual-body .toggle-switch::after {
+    display: none;
+  }
+  #st-visual-body .toggle-switch-knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+    transition: left 0.2s ease, transform 0.2s ease;
+  }
+  #st-visual-body .toggle-switch--on .toggle-switch-knob {
+    left: 22px;
+  }
+  #st-visual-body .seed-color-picker,
+  #st-visual-body input[type="color"] {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    border: 2px solid var(--hdp-border, rgba(0,0,0,0.06));
+    border-radius: 10px;
+    padding: 2px;
+    background: transparent;
+  }
+  #st-visual-body select,
+  #st-visual-body input:not([type="color"]) {
+    min-height: 36px;
+    max-width: 100%;
+    border-radius: var(--hdp-radius-sm, 6px);
+    border: 1px solid var(--hdp-border, rgba(0,0,0,0.08));
+    background: var(--hdp-card-bg, #fff);
+    color: var(--hdp-text, #1A1D26);
+    padding: 6px 10px;
+    font: inherit;
+    box-sizing: border-box;
+  }
   #st-visual-body .color-row,
   #st-visual-body .seed-custom-row,
   #st-visual-body .seed-toggle-row,
