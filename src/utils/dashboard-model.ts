@@ -148,6 +148,15 @@ export function buildAreaEntityMapFromModel(entities: DashboardEntity[]): Map<st
   return map;
 }
 
+export function countVisibleDevices(hass: Hass, entities: EntityInfo[]): number {
+  const deviceIds = new Set<string>();
+  for (const entity of entities) {
+    const deviceId = hass.entities?.[entity.entity_id]?.device_id;
+    if (deviceId && hass.devices?.[deviceId]) deviceIds.add(deviceId);
+  }
+  return deviceIds.size;
+}
+
 export function classifyEntity(entity: EntityInfo, stateObj?: { attributes: Record<string, unknown> }): EntitySemanticType {
   const deviceClass = stateObj?.attributes?.device_class as string | undefined;
 
@@ -211,7 +220,7 @@ export function buildHomeProfile(hass: Hass, config: StrategyConfig): HomeProfil
   return {
     area_count: visibleAreaIds.size,
     entity_count: entityCount,
-    device_count: Object.keys(hass.devices || {}).length,
+    device_count: countVisibleDevices(hass, entities),
     floor_count: Object.keys(hass.floors || {}).length,
     active_count: entities.filter(entity => entity.active).length,
     dominant_semantics: dominantSemantics,

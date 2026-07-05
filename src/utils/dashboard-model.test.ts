@@ -193,6 +193,18 @@ describe('dashboard model', () => {
     const profile = buildHomeProfile(hass, config);
     expect(profile.area_count).toBe(3);
     expect(profile.entity_count).toBe(4);
+    expect(profile.device_count).toBe(2);
     expect(profile.dominant_semantics).toContain('lighting');
+  });
+
+  it('counts only devices with visible entities in the home profile', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        areas: { hidden_areas: ['closet'] },
+      } as any,
+    };
+
+    expect(buildHomeProfile(hass, config).device_count).toBe(1);
   });
 });

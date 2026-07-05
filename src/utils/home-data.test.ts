@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Hass, StrategyConfig } from '../types';
-import { getFavorites } from './home-data';
+import { getFavorites, getHomeSummaries } from './home-data';
 
 const hass: Hass = {
   states: {
@@ -37,12 +37,15 @@ const hass: Hass = {
     kitchen: { area_id: 'kitchen', name: 'Kitchen', picture: null },
     closet: { area_id: 'closet', name: 'Closet', picture: null },
   },
-  devices: {},
+  devices: {
+    dev_kitchen: { id: 'dev_kitchen', area_id: 'kitchen', name: 'Kitchen Device' },
+    dev_closet: { id: 'dev_closet', area_id: 'closet', name: 'Closet Device' },
+  },
   floors: {},
   entities: {
     'light.kitchen': {
       entity_id: 'light.kitchen',
-      device_id: null,
+      device_id: 'dev_kitchen',
       area_id: 'kitchen',
       platform: 'demo',
       disabled_by: null,
@@ -58,7 +61,7 @@ const hass: Hass = {
     },
     'switch.closet': {
       entity_id: 'switch.closet',
-      device_id: null,
+      device_id: 'dev_closet',
       area_id: 'closet',
       platform: 'demo',
       disabled_by: null,
@@ -89,5 +92,17 @@ describe('home data', () => {
     const favorites = getFavorites(hass, config);
 
     expect(favorites.map(entity => entity.entity_id)).toEqual(['light.kitchen']);
+  });
+
+  it('counts only devices represented by visible entities in summaries', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        areas: { hidden_areas: ['closet'], hide_unavailable: true },
+        devices: { hidden_device_types: ['sensor.power'] },
+      } as any,
+    };
+
+    expect(getHomeSummaries(hass, config).total_devices).toBe(1);
   });
 });

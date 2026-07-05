@@ -7,7 +7,7 @@
 
 import type { Hass, EntityInfo, StrategyConfig } from '../types';
 import { isEntityOn } from './area-entities';
-import { collectVisibleEntities, getDashboardFilters } from './dashboard-model';
+import { collectVisibleEntities, countVisibleDevices, getDashboardFilters } from './dashboard-model';
 
 // ─── Person Tracking ───────────────────────────────────────────────────────
 
@@ -283,6 +283,7 @@ export function getHomeSummaries(hass: Hass, config?: StrategyConfig): HomeSumma
   let repairsCount = 0;
   let updatesCount = 0;
   let automationsCount = 0;
+  const visibleEntities = config ? collectVisibleEntities(hass, getDashboardFilters(config)) : null;
 
   for (const [eid, s] of Object.entries(hass.states)) {
     if (eid.startsWith('update.') && s.state === 'on') updatesCount++;
@@ -299,8 +300,8 @@ export function getHomeSummaries(hass: Hass, config?: StrategyConfig): HomeSumma
     repairs_count: repairsCount,
     updates_count: updatesCount,
     automations_count: automationsCount,
-    total_entities: config ? collectVisibleEntities(hass, getDashboardFilters(config)).length : Object.keys(hass.states).length,
-    total_devices: Object.keys(hass.devices || {}).length,
+    total_entities: visibleEntities ? visibleEntities.length : Object.keys(hass.states).length,
+    total_devices: visibleEntities ? countVisibleDevices(hass, visibleEntities) : Object.keys(hass.devices || {}).length,
   };
 }
 
