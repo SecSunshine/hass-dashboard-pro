@@ -76,6 +76,8 @@ export function buildSettingsHTML(config: StrategyConfig, tokens?: ResolvedToken
     const content = (card.content as string) || '';
     return (content.match(/<style>[\s\S]*?<\/style>/g) || [])
       .map(style => style.replace(/^<style>/, '').replace(/<\/style>$/, ''))
+      .filter(style => !isDesignTokenStyle(style))
+      .map(scopeVisualStyle)
       .join('\n');
   }).filter(Boolean).join('\n');
 
@@ -433,6 +435,30 @@ ${buildThemeFilesSection()}
 ${buildPermissionsSection(config)}
 ${buildAboutSection()}
 ${buildResetSection()}`;
+}
+
+function isDesignTokenStyle(css: string): boolean {
+  return css.includes(':host, :root') && css.includes('--hdp-primary:');
+}
+
+function scopeVisualStyle(css: string): string {
+  return css.replace(/(^|[{}])\s*([^@{}][^{}]*)\{/g, (_match: string, prefix: string, selectors: string) => {
+    const scoped = selectors
+      .split(',')
+      .map(selector => selector.trim())
+      .filter(Boolean)
+      .map(scopeVisualSelector)
+      .join(', ');
+    return `${prefix} ${scoped} {`;
+  });
+}
+
+function scopeVisualSelector(selector: string): string {
+  if (!selector) return selector;
+  if (selector.startsWith('#st-visual-body')) return selector;
+  if (selector.startsWith(':root') || selector.startsWith('html') || selector.startsWith('body')) return selector;
+  if (selector.startsWith(':host')) return selector.replace(':host', '#st-visual-body');
+  return `#st-visual-body ${selector}`;
 }
 
 /**

@@ -76,6 +76,7 @@ describe('settings view', () => {
     expect(html).toContain('<style>\n');
     expect(html).toContain('.settings-header');
     expect(html).toContain('#st-visual-body .theme-grid');
+    expect(html).toContain('#st-visual-body .settings-section');
     expect(html).toContain('repeat(auto-fit, minmax(136px, 1fr))');
     expect(html).toContain('#st-visual-body .color-row');
     expect(html).toContain('#st-visual-body .settings-studio-btn');
@@ -89,6 +90,9 @@ describe('settings view', () => {
     expect(html).toContain("hdpToggleArrayItem('areas.hidden_areas'");
     expect(html).toContain("hdpToggleArrayItem('devices.hidden_device_types'");
     expect(html).toContain(', event)');
+    expect(html).not.toMatch(/(^|[{}])\s*\.settings-section\s*\{/);
+    expect(html).not.toMatch(/(^|[{}])\s*\.theme-card\s*\{/);
+    expect(html).not.toContain(':host, :root');
   });
 
   it('adds detected HA domains to the hidden domain controls', () => {
