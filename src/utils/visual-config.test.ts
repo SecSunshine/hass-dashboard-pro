@@ -89,6 +89,29 @@ describe('visual config', () => {
     expect(tokens.card_gap).toBe(22);
   });
 
+  it('normalizes nested local visual layout settings before resolving tokens', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => key === 'hdp_visual_config'
+        ? JSON.stringify({
+          card_style: 'bad-style',
+          layout_density: 'giant',
+          card_sizes: { home_welcome: 'wide', bad_card: 'giant' },
+          area_skins: { kitchen: 'glass', garage: 'bad-style' },
+          time_moods: { dawn: 'coral', day: 'bad-style', bogus: 'neon' },
+        })
+        : null,
+    });
+    const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
+
+    const tokens = resolveTokens(config);
+
+    expect(tokens.card_style).toBe('classic');
+    expect(tokens.layout_density).toBe('standard');
+    expect(tokens.card_sizes).toEqual({ home_welcome: 'wide' });
+    expect(tokens.area_skins).toEqual({ kitchen: 'glass' });
+    expect(tokens.time_moods).toEqual({ dawn: 'coral' });
+  });
+
   it('applies stored theme presets to resolved tokens', () => {
     vi.stubGlobal('localStorage', {
       getItem: (key: string) => key === 'hdp_visual_config'

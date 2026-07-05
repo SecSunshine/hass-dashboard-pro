@@ -649,15 +649,61 @@ function hdpSanitizeCardSkin(value) {
   return allowed.indexOf(value) >= 0 ? value : 'classic';
 }
 
+function hdpSanitizeLayoutDensity(value) {
+  var allowed = ['compact', 'standard', 'spacious'];
+  return allowed.indexOf(value) >= 0 ? value : 'standard';
+}
+
 function hdpNormalizeStringArray(value) {
   if (!Array.isArray(value)) return [];
   return value.filter(function(item) { return typeof item === 'string' && item.length > 0; });
+}
+
+function hdpNormalizeCardSizes(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  var allowed = ['sm', 'md', 'lg', 'wide', 'tall'];
+  var result = {};
+  Object.keys(value).forEach(function(key) {
+    if (key && allowed.indexOf(value[key]) >= 0) result[key] = value[key];
+  });
+  return Object.keys(result).length ? result : undefined;
+}
+
+function hdpNormalizeSkinMap(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  var allowed = ['classic', 'glass', 'gradient', 'aurora', 'soft', 'neon'];
+  var result = {};
+  Object.keys(value).forEach(function(key) {
+    if (key && allowed.indexOf(value[key]) >= 0) result[key] = value[key];
+  });
+  return Object.keys(result).length ? result : undefined;
+}
+
+function hdpNormalizeTimeMoods(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  var periods = ['dawn', 'day', 'dusk', 'night', 'midnight'];
+  var moods = ['coral', 'abyss', 'forest', 'amber', 'mono', 'neon'];
+  var result = {};
+  periods.forEach(function(period) {
+    if (moods.indexOf(value[period]) >= 0) result[period] = value[period];
+  });
+  return Object.keys(result).length ? result : undefined;
 }
 
 function hdpNormalizeVisualConfig(config) {
   if (!config || typeof config !== 'object' || Array.isArray(config)) return undefined;
   var normalized = Object.assign({}, config);
   if (normalized.card_style) normalized.card_style = hdpSanitizeCardSkin(normalized.card_style);
+  if (normalized.layout_density) normalized.layout_density = hdpSanitizeLayoutDensity(normalized.layout_density);
+  var cardSizes = hdpNormalizeCardSizes(normalized.card_sizes);
+  if (cardSizes) normalized.card_sizes = cardSizes;
+  else delete normalized.card_sizes;
+  var areaSkins = hdpNormalizeSkinMap(normalized.area_skins);
+  if (areaSkins) normalized.area_skins = areaSkins;
+  else delete normalized.area_skins;
+  var timeMoods = hdpNormalizeTimeMoods(normalized.time_moods);
+  if (timeMoods) normalized.time_moods = timeMoods;
+  else delete normalized.time_moods;
   return normalized;
 }
 

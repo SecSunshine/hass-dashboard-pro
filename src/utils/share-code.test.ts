@@ -58,7 +58,13 @@ describe('share code', () => {
       version: 1,
       exported_at: '2026-07-02T00:00:00.000Z',
       hdp_config: {
-        visual: { card_style: 'bad-style' },
+        visual: {
+          card_style: 'bad-style',
+          layout_density: 'giant',
+          card_sizes: { home_welcome: 'wide', broken: 'huge' },
+          area_skins: { kitchen: 'glass', garage: 'bad' },
+          time_moods: { dawn: 'coral', day: 'bad', bogus: 'neon' },
+        },
         areas: { hidden_areas: ['kitchen', 1, ''], area_order: ['kitchen', null] },
         devices: { hidden_domains: ['sensor', false], hidden_device_types: ['binary_sensor.motion', {}] },
         blueprints: {
@@ -92,6 +98,10 @@ describe('share code', () => {
 
     expect(imported.visual_config?.card_style).toBe('classic');
     expect(imported.hdp_config?.visual?.card_style).toBe('classic');
+    expect(imported.hdp_config?.visual?.layout_density).toBe('standard');
+    expect(imported.hdp_config?.visual?.card_sizes).toEqual({ home_welcome: 'wide' });
+    expect(imported.hdp_config?.visual?.area_skins).toEqual({ kitchen: 'glass' });
+    expect(imported.hdp_config?.visual?.time_moods).toEqual({ dawn: 'coral' });
     expect(imported.hdp_config?.areas?.hidden_areas).toEqual(['kitchen']);
     expect(imported.hdp_config?.areas?.area_order).toEqual(['kitchen']);
     expect(imported.hdp_config?.devices?.hidden_domains).toEqual(['sensor']);

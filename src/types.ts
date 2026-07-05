@@ -425,6 +425,14 @@ export interface StoredVisualConfig {
   shadows: boolean;
   card_sizes?: Record<string, string>;
   layout_density?: 'compact' | 'standard' | 'spacious';
+  time_moods?: {
+    dawn?: string;
+    day?: string;
+    dusk?: string;
+    night?: string;
+    midnight?: string;
+  };
+  area_skins?: Record<string, string>;
 }
 
 // ─── v4.0: Blueprint Types ────────────────────────────────────────────────

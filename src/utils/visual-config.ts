@@ -12,7 +12,9 @@
 
 import type { Hass, StrategyConfig } from '../types';
 import { THEME_PRESETS } from '../types';
-import { generateFromMood, generateFromSeed, generateFromTimeMood, paletteToTokens, resolveMode, type MoodPaletteResult } from '../themes/palette-generator';
+import { generateFromMood, generateFromSeed, generateFromTimeMood, MOOD_PRESETS, paletteToTokens, resolveMode, type MoodPaletteResult } from '../themes/palette-generator';
+import { CARD_SKINS, sanitizeCardSkin } from './card-skin';
+import { sanitizeBentoSize, sanitizeLayoutDensity } from './bento-layout';
 import { applyDefaultStylePack } from './style-packs';
 
 // ─── localStorage key ─────────────────────────────────────────────────────
@@ -182,6 +184,9 @@ export function resolveTokens(config: StrategyConfig, hass?: Hass): ResolvedToke
     if (storedVisual.shadows === false) result.shadows = false;
     if (storedVisual.card_style) result.card_style = storedVisual.card_style;
     if (storedVisual.card_sizes) result.card_sizes = storedVisual.card_sizes as ResolvedTokens['card_sizes'];
+    if (storedVisual.area_skins) result.area_skins = storedVisual.area_skins as ResolvedTokens['area_skins'];
+    if (storedVisual.time_moods) result.time_moods = storedVisual.time_moods as ResolvedTokens['time_moods'];
+    if (storedVisual.auto_mood === true) result.auto_mood = true;
     if (storedVisual.layout_density) result.layout_density = storedVisual.layout_density as ResolvedTokens['layout_density'];
   }
 
@@ -190,7 +195,7 @@ export function resolveTokens(config: StrategyConfig, hass?: Hass): ResolvedToke
 
 export function getEffectiveStoredVisualConfig(config: StrategyConfig): StoredVisualConfig | null {
   const persistedVisual = normalizePersistedVisualConfig(config);
-  const localVisual = loadStoredConfig();
+  const localVisual = normalizeStoredVisualConfig(loadStoredConfig());
   return mergeStoredVisualConfig(persistedVisual, localVisual);
 }
 
@@ -223,10 +228,12 @@ function normalizePersistedVisualConfig(config: StrategyConfig): StoredVisualCon
     if (typeof value === 'string') normalized[key] = value;
   }
 
-  for (const key of ['card_style', 'font_family', 'seed_color', 'mood_preset', 'theme']) {
+  for (const key of ['font_family', 'seed_color', 'mood_preset', 'theme']) {
     const value = visual[key];
     if (typeof value === 'string') normalized[key] = value;
   }
+
+  if (typeof visual.card_style === 'string') normalized.card_style = sanitizeCardSkin(visual.card_style);
 
   if (typeof visual.theme_id === 'string') normalized.theme = visual.theme_id;
 
@@ -239,20 +246,70 @@ function normalizePersistedVisualConfig(config: StrategyConfig): StoredVisualCon
   if (typeof visual.auto_dark === 'boolean') normalized.auto_dark = visual.auto_dark;
   if (typeof visual.auto_mood === 'boolean') normalized.auto_mood = visual.auto_mood;
 
-  if (visual.time_moods && typeof visual.time_moods === 'object' && !Array.isArray(visual.time_moods)) {
-    normalized.time_moods = visual.time_moods as StoredVisualConfig['time_moods'];
-  }
-  if (visual.area_skins && typeof visual.area_skins === 'object' && !Array.isArray(visual.area_skins)) {
-    normalized.area_skins = visual.area_skins as Record<string, string>;
-  }
-  if (visual.card_sizes && typeof visual.card_sizes === 'object' && !Array.isArray(visual.card_sizes)) {
-    normalized.card_sizes = visual.card_sizes as Record<string, string>;
-  }
-  if (visual.layout_density === 'compact' || visual.layout_density === 'standard' || visual.layout_density === 'spacious') {
-    normalized.layout_density = visual.layout_density;
-  }
+  const timeMoods = normalizeTimeMoods(visual.time_moods);
+  if (timeMoods) normalized.time_moods = timeMoods;
+  const areaSkins = normalizeSkinMap(visual.area_skins);
+  if (areaSkins) normalized.area_skins = areaSkins;
+  const cardSizes = normalizeCardSizes(visual.card_sizes);
+  if (cardSizes) normalized.card_sizes = cardSizes;
+  if (visual.layout_density != null) normalized.layout_density = sanitizeLayoutDensity(visual.layout_density);
 
   return Object.keys(normalized).length ? normalized : null;
+}
+
+function normalizeStoredVisualConfig(config: StoredVisualConfig | null): StoredVisualConfig | null {
+  if (!config || typeof config !== 'object' || Array.isArray(config)) return null;
+  const normalized: StoredVisualConfig = { ...config };
+
+  if (normalized.card_style) normalized.card_style = sanitizeCardSkin(normalized.card_style);
+  const cardSizes = normalizeCardSizes(normalized.card_sizes);
+  if (cardSizes) normalized.card_sizes = cardSizes;
+  else delete normalized.card_sizes;
+  const areaSkins = normalizeSkinMap(normalized.area_skins);
+  if (areaSkins) normalized.area_skins = areaSkins;
+  else delete normalized.area_skins;
+  const timeMoods = normalizeTimeMoods(normalized.time_moods);
+  if (timeMoods) normalized.time_moods = timeMoods;
+  else delete normalized.time_moods;
+  if (normalized.layout_density != null) normalized.layout_density = sanitizeLayoutDensity(normalized.layout_density);
+
+  return Object.keys(normalized).length ? normalized : null;
+}
+
+function normalizeCardSizes(value: unknown): Record<string, string> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const result: Record<string, string> = {};
+  for (const [key, size] of Object.entries(value)) {
+    if (!key || typeof size !== 'string' || sanitizeBentoSize(size, 'md') !== size) continue;
+    result[key] = size;
+  }
+  return Object.keys(result).length ? result : undefined;
+}
+
+function normalizeSkinMap(value: unknown): Record<string, string> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const result: Record<string, string> = {};
+  for (const [key, skin] of Object.entries(value)) {
+    if (!key || typeof skin !== 'string') continue;
+    if (!(CARD_SKINS as readonly string[]).includes(skin)) continue;
+    result[key] = skin;
+  }
+  return Object.keys(result).length ? result : undefined;
+}
+
+function normalizeTimeMoods(value: unknown): StoredVisualConfig['time_moods'] | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const allowedPeriods = ['dawn', 'day', 'dusk', 'night', 'midnight'] as const;
+  const allowedMoods = new Set(MOOD_PRESETS.map(mood => mood.id));
+  const result: StoredVisualConfig['time_moods'] = {};
+  const source = value as Record<string, unknown>;
+  for (const period of allowedPeriods) {
+    const mood = source[period];
+    if (typeof mood === 'string' && allowedMoods.has(mood)) {
+      result[period] = mood;
+    }
+  }
+  return Object.keys(result).length ? result : undefined;
 }
 
 function isDefaultPersistedVisualConfig(visual: Record<string, unknown>): boolean {

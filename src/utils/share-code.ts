@@ -6,7 +6,9 @@ import type { BlueprintInstance, HDPConfig } from '../types';
 import type { StoredVisualConfig } from './visual-config';
 import { applyEntityMapping, buildEntityMapping, extractEntityIds, type EntityMappingResult } from './entity-mapper';
 import type { Hass } from '../types';
-import { sanitizeCardSkin } from './card-skin';
+import { CARD_SKINS, sanitizeCardSkin } from './card-skin';
+import { sanitizeBentoSize, sanitizeLayoutDensity } from './bento-layout';
+import { MOOD_PRESETS } from '../themes/palette-generator';
 
 export const SHARE_CODE_PREFIX = 'HDP1.';
 export const SHARE_SCHEMA = 'hass-dashboard-pro.share.v1';
@@ -146,6 +148,16 @@ function normalizeVisualConfig(config: unknown): StoredVisualConfig | undefined 
   if (!config || typeof config !== 'object' || Array.isArray(config)) return undefined;
   const normalized = { ...(config as Record<string, unknown>) };
   if (normalized.card_style) normalized.card_style = sanitizeCardSkin(normalized.card_style);
+  if (normalized.layout_density) normalized.layout_density = sanitizeLayoutDensity(normalized.layout_density);
+  const cardSizes = normalizeCardSizes(normalized.card_sizes);
+  if (cardSizes) normalized.card_sizes = cardSizes;
+  else delete normalized.card_sizes;
+  const areaSkins = normalizeSkinMap(normalized.area_skins);
+  if (areaSkins) normalized.area_skins = areaSkins;
+  else delete normalized.area_skins;
+  const timeMoods = normalizeTimeMoods(normalized.time_moods);
+  if (timeMoods) normalized.time_moods = timeMoods;
+  else delete normalized.time_moods;
   return normalized as StoredVisualConfig;
 }
 
@@ -170,6 +182,39 @@ function normalizeStringArray(value: unknown): string[] {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === 'string' && item.length > 0)
     : [];
+}
+
+function normalizeCardSizes(value: unknown): Record<string, string> | undefined {
+  if (!isRecord(value)) return undefined;
+  const result: Record<string, string> = {};
+  for (const [key, size] of Object.entries(value)) {
+    if (!key || typeof size !== 'string' || sanitizeBentoSize(size, 'md') !== size) continue;
+    result[key] = size;
+  }
+  return Object.keys(result).length ? result : undefined;
+}
+
+function normalizeSkinMap(value: unknown): Record<string, string> | undefined {
+  if (!isRecord(value)) return undefined;
+  const result: Record<string, string> = {};
+  for (const [key, skin] of Object.entries(value)) {
+    if (!key || typeof skin !== 'string') continue;
+    if (!(CARD_SKINS as readonly string[]).includes(skin)) continue;
+    result[key] = skin;
+  }
+  return Object.keys(result).length ? result : undefined;
+}
+
+function normalizeTimeMoods(value: unknown): StoredVisualConfig['time_moods'] | undefined {
+  if (!isRecord(value)) return undefined;
+  const allowedPeriods = ['dawn', 'day', 'dusk', 'night', 'midnight'] as const;
+  const allowedMoods = new Set(MOOD_PRESETS.map(mood => mood.id));
+  const result: StoredVisualConfig['time_moods'] = {};
+  for (const period of allowedPeriods) {
+    const mood = value[period];
+    if (typeof mood === 'string' && allowedMoods.has(mood)) result[period] = mood;
+  }
+  return Object.keys(result).length ? result : undefined;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

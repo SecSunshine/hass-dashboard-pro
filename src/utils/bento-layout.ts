@@ -16,6 +16,7 @@
 // ─── Card Size Types ───────────────────────────────────────────────────────
 
 export type BentoSize = 'sm' | 'md' | 'lg' | 'wide' | 'tall';
+export const BENTO_SIZE_VALUES: readonly BentoSize[] = ['sm', 'md', 'lg', 'wide', 'tall'];
 
 interface GridSpan {
   /** Columns to span on desktop (4-col grid) */
@@ -137,7 +138,7 @@ export function bentoWrap(html: string, size: BentoSize): string {
 /**
  * Valid Bento sizes as a Set for quick validation.
  */
-const VALID_SIZES = new Set<BentoSize>(['sm', 'md', 'lg', 'wide', 'tall']);
+const VALID_SIZES = new Set<BentoSize>(BENTO_SIZE_VALUES);
 
 /**
  * Resolve a card's Bento size from user configuration.
@@ -153,16 +154,13 @@ export function resolveCardSize(
   cardSizes?: Record<string, string>,
 ): BentoSize {
   if (!cardSizes) return defaultSize;
-  const override = cardSizes[cardId];
-  if (override && VALID_SIZES.has(override as BentoSize)) {
-    return override as BentoSize;
-  }
-  return defaultSize;
+  return sanitizeBentoSize(cardSizes[cardId], defaultSize);
 }
 
 // ─── Layout Density Presets ────────────────────────────────────────────────
 
 export type LayoutDensity = 'compact' | 'standard' | 'spacious';
+export const LAYOUT_DENSITY_VALUES: readonly LayoutDensity[] = ['compact', 'standard', 'spacious'];
 
 export interface DensityPreset {
   /** Card gap in px */
@@ -181,19 +179,32 @@ export const DENSITY_PRESETS: Record<LayoutDensity, DensityPreset> = {
   spacious: { gap: 20, padding: 24, rowHeight: 140, entityPadding: 18 },
 };
 
+export function sanitizeBentoSize(value: unknown, fallback: BentoSize = 'md'): BentoSize {
+  return typeof value === 'string' && VALID_SIZES.has(value as BentoSize)
+    ? value as BentoSize
+    : fallback;
+}
+
+export function sanitizeLayoutDensity(value: unknown, fallback: LayoutDensity = 'standard'): LayoutDensity {
+  return typeof value === 'string' && (LAYOUT_DENSITY_VALUES as readonly string[]).includes(value)
+    ? value as LayoutDensity
+    : fallback;
+}
+
 /**
  * Generate CSS variables for the given layout density.
  * These variables are consumed by the Bento grid and card components.
  */
 export function generateDensityCSS(density?: LayoutDensity): string {
-  const preset = density ? DENSITY_PRESETS[density] : DENSITY_PRESETS.standard;
+  const safeDensity = sanitizeLayoutDensity(density);
+  const preset = DENSITY_PRESETS[safeDensity];
   return /* css */ `
   :root, :host {
     --hdp-density-gap: ${preset.gap}px;
     --hdp-density-padding: ${preset.padding}px;
     --hdp-density-row-height: ${preset.rowHeight}px;
     --hdp-density-entity-padding: ${preset.entityPadding}px;
-    --hdp-density: ${density || 'standard'};
+    --hdp-density: ${safeDensity};
   }
   `;
 }

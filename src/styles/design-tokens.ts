@@ -24,7 +24,7 @@
 
 import type { ResolvedTokens } from '../utils/visual-config';
 import { sanitizeCardSkin } from '../utils/card-skin';
-import { DENSITY_PRESETS, type LayoutDensity } from '../utils/bento-layout';
+import { DENSITY_PRESETS, sanitizeLayoutDensity } from '../utils/bento-layout';
 
 // ─── Spacing & Layout Constants ───────────────────────────────────────────
 
@@ -91,8 +91,8 @@ export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
   const shadowElevatedOverride = tokens?.shadow_elevated || '';
 
   // Layout density preset (compact | standard | spacious)
-  const density: LayoutDensity = (tokens?.layout_density as LayoutDensity) || 'standard';
-  const densityPreset = DENSITY_PRESETS[density] || DENSITY_PRESETS.standard;
+  const density = sanitizeLayoutDensity(tokens?.layout_density);
+  const densityPreset = DENSITY_PRESETS[density];
 
   // Build CSS: HA theme tokens with hardcoded fallbacks
   return /* css */ `
