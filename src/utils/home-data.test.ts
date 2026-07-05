@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Hass, StrategyConfig } from '../types';
-import { getAlarmStatus, getFavorites, getHomeSummaries } from './home-data';
+import { countActiveAutomations, getAlarmStatus, getFavorites, getHomeSummaries } from './home-data';
 
 const hass: Hass = {
   states: {
@@ -43,6 +43,27 @@ const hass: Hass = {
       entity_id: 'lock.closet',
       state: 'unlocked',
       attributes: { friendly_name: 'Closet Lock' },
+      last_changed: '',
+      last_updated: '',
+    },
+    'automation.visible': {
+      entity_id: 'automation.visible',
+      state: 'on',
+      attributes: { friendly_name: 'Visible Automation' },
+      last_changed: '',
+      last_updated: '',
+    },
+    'automation.hidden': {
+      entity_id: 'automation.hidden',
+      state: 'on',
+      attributes: { friendly_name: 'Hidden Automation' },
+      last_changed: '',
+      last_updated: '',
+    },
+    'update.hidden': {
+      entity_id: 'update.hidden',
+      state: 'on',
+      attributes: { friendly_name: 'Hidden Update' },
       last_changed: '',
       last_updated: '',
     },
@@ -105,6 +126,30 @@ const hass: Hass = {
       disabled_by: null,
       hidden_by: null,
     },
+    'automation.visible': {
+      entity_id: 'automation.visible',
+      device_id: null,
+      area_id: null,
+      platform: 'demo',
+      disabled_by: null,
+      hidden_by: null,
+    },
+    'automation.hidden': {
+      entity_id: 'automation.hidden',
+      device_id: null,
+      area_id: null,
+      platform: 'demo',
+      disabled_by: null,
+      hidden_by: 'user',
+    },
+    'update.hidden': {
+      entity_id: 'update.hidden',
+      device_id: null,
+      area_id: null,
+      platform: 'demo',
+      disabled_by: 'user',
+      hidden_by: null,
+    },
   },
 };
 
@@ -146,5 +191,14 @@ describe('home data', () => {
 
     expect(getAlarmStatus(hass, undefined, config).display).toBe('1/1 已锁');
     expect(getAlarmStatus(hass, 'lock.closet', config).display).toBe('1/1 已锁');
+  });
+
+  it('ignores registry-hidden automations and updates in summaries', () => {
+    const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
+    const summary = getHomeSummaries(hass, config);
+
+    expect(countActiveAutomations(hass)).toBe(1);
+    expect(summary.automations_count).toBe(1);
+    expect(summary.updates_count).toBe(0);
   });
 });

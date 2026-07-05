@@ -32,6 +32,7 @@ import {
   getHomeSummaries,
   getWeather,
   getAlarmStatus,
+  countActiveAutomations,
 } from '../utils/home-data';
 import type { PersonInfo, DomainStatus, FavoriteEntity } from '../utils/home-data';
 import { escapeAttribute, escapeHTML, escapeInlineStyleValue, escapeURLAttribute } from '../utils/html';
@@ -578,10 +579,7 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
   }
 
   // Active automations count
-  let autoCount = 0;
-  for (const [eid, s] of Object.entries(hass.states)) {
-    if (eid.startsWith('automation.') && s.state === 'on') autoCount++;
-  }
+  const autoCount = countActiveAutomations(hass);
   if (autoCount > 0) {
     items.push(`<div class="env-item ${skinCls}">
       <div class="env-icon env-icon--auto">
