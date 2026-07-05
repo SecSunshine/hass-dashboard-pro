@@ -39,7 +39,10 @@ export function buildBlueprintGalleryHTML(pages: BlueprintInstance[]): string {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
     margin-bottom: 4px;
+    min-width: 0;
   }
   .bp-gallery-title {
     font: inherit;
@@ -50,6 +53,9 @@ export function buildBlueprintGalleryHTML(pages: BlueprintInstance[]): string {
   .bp-gallery-actions {
     display: flex;
     gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    min-width: 0;
   }
   .bp-btn {
     display: flex;
@@ -66,6 +72,9 @@ export function buildBlueprintGalleryHTML(pages: BlueprintInstance[]): string {
     border: 1px solid var(--hdp-border);
     background: var(--hdp-card-bg);
     color: var(--hdp-text);
+    max-width: 100%;
+    white-space: normal;
+    text-align: center;
   }
   .bp-btn:hover {
     transform: translateY(-2px);
@@ -91,6 +100,7 @@ export function buildBlueprintGalleryHTML(pages: BlueprintInstance[]): string {
     align-items: center;
     gap: 12px;
     transition: all 0.2s ease;
+    min-width: 0;
   }
   .bp-item:hover {
     border-color: var(--hdp-primary);
@@ -123,11 +133,14 @@ export function buildBlueprintGalleryHTML(pages: BlueprintInstance[]): string {
     color: var(--hdp-text-secondary);
     display: flex;
     gap: 8px;
+    flex-wrap: wrap;
     margin-top: 2px;
   }
   .bp-item-actions {
     display: flex;
     gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     flex-shrink: 0;
   }
   .bp-item-btn {
@@ -171,6 +184,28 @@ export function buildBlueprintGalleryHTML(pages: BlueprintInstance[]): string {
     background: var(--hdp-success);
     display: inline-block;
     margin-left: 4px;
+  }
+  @media (max-width: 720px) {
+    .bp-gallery-hdr {
+      align-items: stretch;
+      flex-direction: column;
+    }
+    .bp-gallery-actions {
+      justify-content: stretch;
+      width: 100%;
+    }
+    .bp-btn {
+      flex: 1 1 120px;
+      justify-content: center;
+    }
+    .bp-item {
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .bp-item-actions {
+      width: 100%;
+      justify-content: flex-start;
+    }
   }
 </style>
 <div class="bp-gallery" id="bp-gallery">

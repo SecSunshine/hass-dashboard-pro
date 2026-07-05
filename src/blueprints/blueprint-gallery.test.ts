@@ -9,8 +9,13 @@ describe('blueprint gallery rendering', () => {
     expect(emptyHTML).toContain('<div class="bp-empty-list">暂无蓝图页面，点击上方按钮导入</div>');
     expect(emptyHTML).toContain('data-action="import-online-template" onclick="hdpImportOnlineTemplate()">在线库</button>');
     expect(emptyHTML).toContain('URL 导入');
+    expect(emptyHTML).toContain('.bp-gallery-actions');
+    expect(emptyHTML).toContain('flex-wrap: wrap');
+    expect(emptyHTML).toContain('@media (max-width: 720px)');
+    expect(emptyHTML).toContain('flex: 1 1 120px');
     expect(emptyHTML).not.toContain('?/button>');
     expect(emptyHTML).not.toContain('?/div>');
+    expect(emptyHTML).not.toMatch(/[^<]\/(div|span|button|option|a|textarea|label|select|input)>/);
 
     const sourcedHTML = buildBlueprintGalleryHTML([{
       id: 'weather',
