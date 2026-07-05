@@ -102,6 +102,7 @@ export function collectVisibleEntities(hass: Hass, filters: DashboardFilters): D
   for (const [entityId, stateObj] of Object.entries(hass.states)) {
     const domain = entityId.split('.')[0];
     if (!shouldIncludeDomain(domain, filters.hiddenDomains)) continue;
+    if (isRegistryHidden(hass, entityId)) continue;
     if (filters.hideUnavailable && isUnavailableState(stateObj.state)) continue;
     if (filters.hiddenDeviceTypes.includes(getEntityDeviceType(entityId, stateObj.attributes))) continue;
 
@@ -121,6 +122,11 @@ export function collectVisibleEntities(hass: Hass, filters: DashboardFilters): D
   }
 
   return entities;
+}
+
+function isRegistryHidden(hass: Hass, entityId: string): boolean {
+  const registryEntry = hass.entities?.[entityId];
+  return Boolean(registryEntry?.disabled_by || registryEntry?.hidden_by);
 }
 
 export function buildAreaEntityMapFromModel(entities: DashboardEntity[]): Map<string, EntityInfo[]> {

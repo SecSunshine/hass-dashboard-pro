@@ -37,6 +37,20 @@ const hass: Hass = {
       last_changed: '',
       last_updated: '',
     },
+    'light.registry_hidden': {
+      entity_id: 'light.registry_hidden',
+      state: 'on',
+      attributes: {},
+      last_changed: '',
+      last_updated: '',
+    },
+    'switch.registry_disabled': {
+      entity_id: 'switch.registry_disabled',
+      state: 'on',
+      attributes: {},
+      last_changed: '',
+      last_updated: '',
+    },
   },
   areas: {
     kitchen: { area_id: 'kitchen', name: 'Kitchen', picture: null },
@@ -70,6 +84,22 @@ const hass: Hass = {
       area_id: null,
       platform: 'demo',
       disabled_by: null,
+      hidden_by: null,
+    },
+    'light.registry_hidden': {
+      entity_id: 'light.registry_hidden',
+      device_id: null,
+      area_id: 'kitchen',
+      platform: 'demo',
+      disabled_by: null,
+      hidden_by: 'user',
+    },
+    'switch.registry_disabled': {
+      entity_id: 'switch.registry_disabled',
+      device_id: null,
+      area_id: 'kitchen',
+      platform: 'demo',
+      disabled_by: 'user',
       hidden_by: null,
     },
   },
@@ -136,6 +166,15 @@ describe('dashboard model', () => {
     const entities = collectVisibleEntities(hass, getDashboardFilters(config));
     expect(entities.map(entity => entity.entity_id)).not.toContain('sensor.kitchen_power');
     expect(entities.map(entity => entity.entity_id)).toContain('light.kitchen');
+  });
+
+  it('skips entities hidden or disabled in the HA registry', () => {
+    const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
+    const entities = collectVisibleEntities(hass, getDashboardFilters(config));
+    const ids = entities.map(entity => entity.entity_id);
+
+    expect(ids).not.toContain('light.registry_hidden');
+    expect(ids).not.toContain('switch.registry_disabled');
   });
 
   it('builds a home profile from visible entities', () => {
