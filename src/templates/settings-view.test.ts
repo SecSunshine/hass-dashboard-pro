@@ -199,6 +199,12 @@ describe('settings view', () => {
     expect(js).toContain('if (!isVisibleEntity(entityId)) return;');
     expect(js).toContain('function stripDomain(entityId)');
     expect(js).toContain("score(stripDomain(sourceId), stripDomain(entityId) + ' ' + friendly)");
+    expect(js).toContain('function hdpNormalizeHDPConfig(config)');
+    expect(js).toContain('function hdpNormalizeVisualConfig(config)');
+    expect(js).toContain('function hdpNormalizeBlueprints(value)');
+    expect(js).toContain('var config = hdpNormalizeHDPConfig(hdpApplyEntityMapping(bundle.hdp_config || {}, mapping.mapping)) || {};');
+    expect(js).toContain('var visual = hdpNormalizeVisualConfig(bundle.visual_config) || {};');
+    expect(js).toContain('var blueprints = hdpNormalizeBlueprints(hdpApplyEntityMapping(bundle.blueprints || [], mapping.mapping));');
     expect(html).toContain("hdpSaveSetting('areas.hide_unavailable'");
   });
 

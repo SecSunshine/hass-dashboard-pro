@@ -57,6 +57,24 @@ describe('share code', () => {
       schema: 'hass-dashboard-pro.share.v1',
       version: 1,
       exported_at: '2026-07-02T00:00:00.000Z',
+      hdp_config: {
+        visual: { card_style: 'bad-style' },
+        areas: { hidden_areas: ['kitchen', 1, ''], area_order: ['kitchen', null] },
+        devices: { hidden_domains: ['sensor', false], hidden_device_types: ['binary_sensor.motion', {}] },
+        blueprints: {
+          pages: [
+            { id: 'broken' },
+            {
+              id: 'nested_good',
+              name: 'Nested Good',
+              blueprint_yaml: 'card:\n  type: custom:html-pro-card',
+              inputs: null,
+              card: { type: 'custom:html-pro-card', content: '<div></div>' },
+            },
+          ],
+          replacements: [],
+        },
+      } as any,
       visual_config: { card_style: 'bad" onclick="evil()' } as any,
       blueprints: [
         { id: 'bad' } as any,
@@ -73,6 +91,14 @@ describe('share code', () => {
     }, hass);
 
     expect(imported.visual_config?.card_style).toBe('classic');
+    expect(imported.hdp_config?.visual?.card_style).toBe('classic');
+    expect(imported.hdp_config?.areas?.hidden_areas).toEqual(['kitchen']);
+    expect(imported.hdp_config?.areas?.area_order).toEqual(['kitchen']);
+    expect(imported.hdp_config?.devices?.hidden_domains).toEqual(['sensor']);
+    expect(imported.hdp_config?.devices?.hidden_device_types).toEqual(['binary_sensor.motion']);
+    expect(imported.hdp_config?.blueprints?.pages).toHaveLength(1);
+    expect(imported.hdp_config?.blueprints?.pages[0].icon).toBe('mdi:puzzle');
+    expect(imported.hdp_config?.blueprints?.replacements).toEqual({});
     expect(imported.blueprints).toHaveLength(1);
     expect(imported.blueprints?.[0].id).toBe('good');
     expect(imported.blueprints?.[0].inputs).toEqual({});

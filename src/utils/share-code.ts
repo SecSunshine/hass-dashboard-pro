@@ -76,20 +76,77 @@ export function decodeShareCode(code: string): DashboardShareBundle {
 export function importShareBundle(bundle: DashboardShareBundle, hass: Hass): ImportedShareBundle {
   const mapping = buildEntityMapping(bundle.source_entities || extractEntityIds(bundle), hass);
   const blueprints = normalizeBlueprints(applyEntityMapping(bundle.blueprints || [], mapping.mapping));
+  const hdpConfig = normalizeHDPConfig(applyEntityMapping(bundle.hdp_config, mapping.mapping));
   return {
     bundle,
     mapping,
-    hdp_config: applyEntityMapping(bundle.hdp_config, mapping.mapping),
+    hdp_config: hdpConfig,
     visual_config: normalizeVisualConfig(bundle.visual_config),
     blueprints,
   };
 }
 
-function normalizeVisualConfig(config: StoredVisualConfig | undefined): StoredVisualConfig | undefined {
+function normalizeHDPConfig(config: unknown): Partial<HDPConfig> | undefined {
+  if (!isRecord(config)) return undefined;
+  const normalized = { ...config } as Record<string, unknown>;
+
+  if ('visual' in normalized) {
+    const visual = normalizeVisualConfig(normalized.visual);
+    if (visual) normalized.visual = visual;
+    else delete normalized.visual;
+  }
+
+  if (isRecord(normalized.areas)) {
+    normalized.areas = {
+      ...normalized.areas,
+      hidden_areas: normalizeStringArray(normalized.areas.hidden_areas),
+      area_order: normalizeStringArray(normalized.areas.area_order),
+    };
+  }
+
+  if (isRecord(normalized.devices)) {
+    normalized.devices = {
+      ...normalized.devices,
+      hidden_domains: normalizeStringArray(normalized.devices.hidden_domains),
+      hidden_device_types: normalizeStringArray(normalized.devices.hidden_device_types),
+    };
+  }
+
+  if (isRecord(normalized.people)) {
+    normalized.people = {
+      ...normalized.people,
+      hidden_persons: normalizeStringArray(normalized.people.hidden_persons),
+    };
+  }
+
+  if (isRecord(normalized.home)) {
+    normalized.home = {
+      ...normalized.home,
+      section_order: normalizeStringArray(normalized.home.section_order),
+      hidden_sections: normalizeStringArray(normalized.home.hidden_sections),
+      hidden_info_cards: normalizeStringArray(normalized.home.hidden_info_cards),
+    };
+  }
+
+  if (isRecord(normalized.blueprints)) {
+    const replacements = isRecord(normalized.blueprints.replacements)
+      ? normalized.blueprints.replacements
+      : {};
+    normalized.blueprints = {
+      ...normalized.blueprints,
+      pages: normalizeBlueprints(normalized.blueprints.pages),
+      replacements,
+    };
+  }
+
+  return normalized as Partial<HDPConfig>;
+}
+
+function normalizeVisualConfig(config: unknown): StoredVisualConfig | undefined {
   if (!config || typeof config !== 'object' || Array.isArray(config)) return undefined;
-  const normalized = { ...config };
+  const normalized = { ...(config as Record<string, unknown>) };
   if (normalized.card_style) normalized.card_style = sanitizeCardSkin(normalized.card_style);
-  return normalized;
+  return normalized as StoredVisualConfig;
 }
 
 function normalizeBlueprints(value: unknown): BlueprintInstance[] {
@@ -107,6 +164,16 @@ function normalizeBlueprints(value: unknown): BlueprintInstance[] {
     icon: typeof page.icon === 'string' ? page.icon : 'mdi:puzzle',
     inputs: page.inputs && typeof page.inputs === 'object' && !Array.isArray(page.inputs) ? page.inputs : {},
   }));
+}
+
+function normalizeStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string' && item.length > 0)
+    : [];
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
 function base64UrlEncode(value: string): string {

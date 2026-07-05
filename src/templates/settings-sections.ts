@@ -639,6 +639,82 @@ function hdpSaveImportReport(kind, mapping) {
   return report;
 }
 
+function hdpSanitizeCardSkin(value) {
+  var allowed = ['classic', 'glass', 'gradient', 'aurora', 'soft', 'neon'];
+  return allowed.indexOf(value) >= 0 ? value : 'classic';
+}
+
+function hdpNormalizeStringArray(value) {
+  if (!Array.isArray(value)) return [];
+  return value.filter(function(item) { return typeof item === 'string' && item.length > 0; });
+}
+
+function hdpNormalizeVisualConfig(config) {
+  if (!config || typeof config !== 'object' || Array.isArray(config)) return undefined;
+  var normalized = Object.assign({}, config);
+  if (normalized.card_style) normalized.card_style = hdpSanitizeCardSkin(normalized.card_style);
+  return normalized;
+}
+
+function hdpNormalizeBlueprints(value) {
+  if (!Array.isArray(value)) return [];
+  return value.filter(function(page) {
+    return page && typeof page === 'object'
+      && typeof page.id === 'string'
+      && typeof page.name === 'string'
+      && typeof page.blueprint_yaml === 'string'
+      && page.card && typeof page.card === 'object' && !Array.isArray(page.card);
+  }).map(function(page) {
+    var normalized = Object.assign({}, page);
+    normalized.icon = typeof page.icon === 'string' && page.icon ? page.icon : 'mdi:puzzle';
+    normalized.inputs = page.inputs && typeof page.inputs === 'object' && !Array.isArray(page.inputs) ? page.inputs : {};
+    return normalized;
+  });
+}
+
+function hdpNormalizeHDPConfig(config) {
+  if (!config || typeof config !== 'object' || Array.isArray(config)) return undefined;
+  var normalized = Object.assign({}, config);
+  if ('visual' in normalized) {
+    var visual = hdpNormalizeVisualConfig(normalized.visual);
+    if (visual) normalized.visual = visual;
+    else delete normalized.visual;
+  }
+  if (normalized.areas && typeof normalized.areas === 'object' && !Array.isArray(normalized.areas)) {
+    normalized.areas = Object.assign({}, normalized.areas, {
+      hidden_areas: hdpNormalizeStringArray(normalized.areas.hidden_areas),
+      area_order: hdpNormalizeStringArray(normalized.areas.area_order)
+    });
+  }
+  if (normalized.devices && typeof normalized.devices === 'object' && !Array.isArray(normalized.devices)) {
+    normalized.devices = Object.assign({}, normalized.devices, {
+      hidden_domains: hdpNormalizeStringArray(normalized.devices.hidden_domains),
+      hidden_device_types: hdpNormalizeStringArray(normalized.devices.hidden_device_types)
+    });
+  }
+  if (normalized.people && typeof normalized.people === 'object' && !Array.isArray(normalized.people)) {
+    normalized.people = Object.assign({}, normalized.people, {
+      hidden_persons: hdpNormalizeStringArray(normalized.people.hidden_persons)
+    });
+  }
+  if (normalized.home && typeof normalized.home === 'object' && !Array.isArray(normalized.home)) {
+    normalized.home = Object.assign({}, normalized.home, {
+      section_order: hdpNormalizeStringArray(normalized.home.section_order),
+      hidden_sections: hdpNormalizeStringArray(normalized.home.hidden_sections),
+      hidden_info_cards: hdpNormalizeStringArray(normalized.home.hidden_info_cards)
+    });
+  }
+  if (normalized.blueprints && typeof normalized.blueprints === 'object' && !Array.isArray(normalized.blueprints)) {
+    normalized.blueprints = Object.assign({}, normalized.blueprints, {
+      pages: hdpNormalizeBlueprints(normalized.blueprints.pages),
+      replacements: normalized.blueprints.replacements && typeof normalized.blueprints.replacements === 'object' && !Array.isArray(normalized.blueprints.replacements)
+        ? normalized.blueprints.replacements
+        : {}
+    });
+  }
+  return normalized;
+}
+
 window.hdpShowImportReport = function() {
   var report = null;
   try { report = JSON.parse(localStorage.getItem('hdp_last_import_report') || 'null'); } catch(e) {}
@@ -698,9 +774,9 @@ window.hdpImportShareCode = function() {
     }
     var mapping = hdpBuildEntityMapping(bundle.source_entities || hdpExtractEntityIds(bundle));
     hdpSaveImportReport('share-code', mapping);
-    var config = hdpApplyEntityMapping(bundle.hdp_config || {}, mapping.mapping);
-    var visual = bundle.visual_config || {};
-    var blueprints = hdpApplyEntityMapping(bundle.blueprints || [], mapping.mapping);
+    var config = hdpNormalizeHDPConfig(hdpApplyEntityMapping(bundle.hdp_config || {}, mapping.mapping)) || {};
+    var visual = hdpNormalizeVisualConfig(bundle.visual_config) || {};
+    var blueprints = hdpNormalizeBlueprints(hdpApplyEntityMapping(bundle.blueprints || [], mapping.mapping));
 
     hdpSaveConfig(config);
     try { localStorage.setItem('hdp_visual_config', JSON.stringify(visual)); } catch(e) {}
