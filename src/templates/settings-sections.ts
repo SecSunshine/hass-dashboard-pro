@@ -212,6 +212,7 @@ export function getSettingsSectionsCSS(): string {
     max-width: 100%;
     overflow-wrap: anywhere;
     text-align: left;
+    appearance: none;
   }
   .st-chip--active {
     background: var(--hdp-primary-light, rgba(79,110,247,0.1));
@@ -451,7 +452,10 @@ window.hdpToggleArrayItem = function(path, item) {
   // Re-render chip state
   var evt = arguments.length > 2 ? arguments[2] : window.event;
   var chip = evt && evt.target && evt.target.closest ? evt.target.closest('.st-chip') : null;
-  if (chip) chip.classList.toggle('st-chip--active');
+  if (chip) {
+    chip.classList.toggle('st-chip--active');
+    chip.setAttribute('aria-pressed', chip.classList.contains('st-chip--active') ? 'true' : 'false');
+  }
   // Persist to Lovelace and reload so entity filtering takes effect
   hdpPersistSettingsAndReload();
 };
@@ -1005,9 +1009,14 @@ function iconReset(): string {
 
 function toggleHTML(settingPath: string, value: boolean): string {
   const cls = value ? 'st-toggle st-toggle--on' : 'st-toggle st-toggle--off';
-  return `<div class="${cls}" onclick="hdpSaveSetting('${settingPath}', ${!value}); this.classList.toggle('st-toggle--on'); this.classList.toggle('st-toggle--off');">
+  return `<div class="${cls}" data-action="toggle-setting" data-setting="${escapeAttribute(settingPath)}" role="switch" aria-checked="${value ? 'true' : 'false'}" tabindex="0" onclick="hdpSaveSetting('${settingPath}', ${!value}); this.classList.toggle('st-toggle--on'); this.classList.toggle('st-toggle--off'); this.setAttribute('aria-checked', this.classList.contains('st-toggle--on') ? 'true' : 'false');" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); this.click(); }">
     <div class="st-toggle-knob"></div>
   </div>`;
+}
+
+function chipHTML(action: string, path: string, value: string, label: string, active: boolean): string {
+  const activeClass = active ? ' st-chip--active' : '';
+  return `<button type="button" class="st-chip${activeClass}" data-action="${escapeAttribute(action)}" data-setting="${escapeAttribute(path)}" data-value="${escapeAttribute(value)}" aria-pressed="${active ? 'true' : 'false'}" onclick="hdpToggleArrayItem('${escapeAttribute(path)}', ${jsArg(value)}, event)">${escapeHTML(label)}</button>`;
 }
 
 // ─── 1. Dashboard ──────────────────────────────────────────────────────────
@@ -1073,7 +1082,7 @@ export function buildHomeSection(config: StrategyConfig): string {
   const chips = sectionKeys.map(key => {
     const active = !hiddenSections.includes(key);
     const label = HOME_SECTION_LABELS[key] || key;
-    return `<div class="st-chip ${active ? 'st-chip--active' : ''}" data-action="toggle-home-section" onclick="hdpToggleArrayItem('home.hidden_sections', ${jsArg(key)}, event)">${escapeHTML(label)}</div>`;
+    return chipHTML('toggle-home-section', 'home.hidden_sections', key, label, active);
   }).join('');
 
   return sectionCard('home', '首页', iconHome(), `
@@ -1149,7 +1158,7 @@ export function buildPeopleSection(hass: any, config: StrategyConfig): string {
 
   const chips = persons.map(p => {
     const hidden = hiddenPersons.includes(p.id);
-    return `<div class="st-chip ${hidden ? 'st-chip--active' : ''}" data-action="toggle-hidden-person" onclick="hdpToggleArrayItem('people.hidden_persons', ${jsArg(p.id)}, event)">${escapeHTML(p.name)}</div>`;
+    return chipHTML('toggle-hidden-person', 'people.hidden_persons', p.id, p.name, hidden);
   }).join('') || '<span class="st-row-desc">未找到 person 实体</span>';
 
   return sectionCard('people', '家庭成员', iconPeople(), `
@@ -1175,7 +1184,7 @@ export function buildAreasSection(hass: any, config: StrategyConfig): string {
 
   const areaChips = areaEntries.map(([id, area]: [string, any]) => {
     const hidden = hiddenAreas.includes(id);
-    return `<div class="st-chip ${hidden ? 'st-chip--active' : ''}" data-action="toggle-hidden-area" onclick="hdpToggleArrayItem('areas.hidden_areas', ${jsArg(id)}, event)">${escapeHTML(area.name)}</div>`;
+    return chipHTML('toggle-hidden-area', 'areas.hidden_areas', id, area.name, hidden);
   }).join('') || '<span class="st-row-desc">未找到区域</span>';
 
   return sectionCard('areas', '区域', iconAreas(), `
@@ -1224,7 +1233,7 @@ export function buildDevicesSection(config: StrategyConfig, hass?: Hass): string
 
   const chips = domains.map(d => {
     const hidden = hiddenDomains.includes(d);
-    return `<div class="st-chip ${hidden ? 'st-chip--active' : ''}" data-action="toggle-hidden-domain" onclick="hdpToggleArrayItem('devices.hidden_domains', ${jsArg(d)}, event)">${escapeHTML(domainLabels[d] || d)}</div>`;
+    return chipHTML('toggle-hidden-domain', 'devices.hidden_domains', d, domainLabels[d] || d, hidden);
   }).join('');
 
   const deviceTypeHTML = buildHiddenDeviceTypeChips(hass, hiddenDomains, hiddenDeviceTypes);
@@ -1263,7 +1272,7 @@ function buildHiddenDeviceTypeChips(hass: Hass | undefined, hiddenDomains: strin
 
   const chips = deviceTypes.map(type => {
     const hidden = hiddenDeviceTypes.includes(type);
-    return `<div class="st-chip ${hidden ? 'st-chip--active' : ''}" data-action="toggle-hidden-device-type" onclick="hdpToggleArrayItem('devices.hidden_device_types', ${jsArg(type)}, event)">${escapeHTML(deviceTypeLabels[type] || type)}</div>`;
+    return chipHTML('toggle-hidden-device-type', 'devices.hidden_device_types', type, deviceTypeLabels[type] || type, hidden);
   }).join('');
 
   return `<div class="st-section-subtitle">传感器/设备子类型</div><div class="st-chip-list">${chips}</div>`;

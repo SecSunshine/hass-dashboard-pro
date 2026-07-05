@@ -118,6 +118,10 @@ describe('settings view', () => {
     expect(html).toContain('#st-visual-body .lc-size-row');
     expect(html).toContain('#st-visual-body .am-toggle-row');
     expect(html).toContain('#st-visual-body input[type="color"]');
+    expect(html).toContain('#st-visual-body,\n  #st-visual-body *');
+    expect(html).toContain('#st-visual-body .color-swatch-wrap');
+    expect(html).toMatch(/@media \(max-width: 480px\) \{[\s\S]*#st-visual-body \.theme-grid/);
+    expect(html).not.toContain('#st-visual-body @media');
     expect(html).toMatch(/settings-header-sub">[\s\S]*?<\/div>\s*<button class="settings-studio-btn"/);
     expect(html).not.toMatch(/\saria-label="[^"]*\s\/>/);
     expect(html).toContain('.st-row > div');
@@ -156,8 +160,8 @@ describe('settings view', () => {
     };
     const html = buildSettingsHTML(config, undefined, hass);
 
-    expect(html).toContain('st-chip st-chip--active" data-action="toggle-hidden-area" onclick="hdpToggleArrayItem(\'areas.hidden_areas\', &quot;kitchen&quot;, event)">Kitchen');
-    expect(html).toContain('st-chip st-chip--active" data-action="toggle-hidden-domain" onclick="hdpToggleArrayItem(\'devices.hidden_domains\', &quot;number&quot;, event)');
+    expect(html).toContain('type="button" class="st-chip st-chip--active" data-action="toggle-hidden-area" data-setting="areas.hidden_areas" data-value="kitchen" aria-pressed="true" onclick="hdpToggleArrayItem(\'areas.hidden_areas\', &quot;kitchen&quot;, event)">Kitchen');
+    expect(html).toContain('type="button" class="st-chip st-chip--active" data-action="toggle-hidden-domain" data-setting="devices.hidden_domains" data-value="number" aria-pressed="true" onclick="hdpToggleArrayItem(\'devices.hidden_domains\', &quot;number&quot;, event)');
   });
 
   it('ignores hidden or disabled registry entities in device type controls', () => {
@@ -228,6 +232,10 @@ describe('settings view', () => {
     expect(js).toContain('var visual = hdpNormalizeVisualConfig(bundle.visual_config) || {};');
     expect(js).toContain('var blueprints = hdpNormalizeBlueprints(hdpApplyEntityMapping(bundle.blueprints || [], mapping.mapping));');
     expect(html).toContain("hdpSaveSetting('areas.hide_unavailable'");
+    expect(html).toContain('data-action="toggle-setting" data-setting="areas.hide_unavailable" role="switch" aria-checked="false" tabindex="0"');
+    expect(html).toContain("this.setAttribute('aria-checked'");
+    expect(js).toContain("chip.setAttribute('aria-pressed'");
+    expect(html).toContain("event.key === 'Enter' || event.key === ' '");
   });
 
   it('marks persisted theme presets as active', () => {

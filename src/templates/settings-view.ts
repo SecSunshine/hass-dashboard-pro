@@ -164,9 +164,20 @@ ${visualStyles}
   .toggle-switch--off::after { transform: translateX(2px); border: 1px solid var(--hdp-border); }
 
   /* Stable visual-settings layout when individual html-card bodies are merged */
+  #st-visual-body,
+  #st-visual-body * {
+    box-sizing: border-box;
+  }
   #st-visual-body .settings-section {
     width: 100%;
     box-sizing: border-box;
+  }
+  #st-visual-body .settings-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    min-width: 0;
   }
   #st-visual-body .settings-title,
   #st-visual-body .lc-title {
@@ -212,6 +223,7 @@ ${visualStyles}
     min-width: 0;
     min-height: 104px;
     box-sizing: border-box;
+    border-radius: var(--hdp-radius, 14px);
     appearance: none;
     line-height: 1.25;
   }
@@ -236,9 +248,42 @@ ${visualStyles}
   #st-visual-body .style-preview {
     flex-shrink: 0;
   }
+  #st-visual-body .theme-preview,
+  #st-visual-body .mood-preview {
+    width: 100%;
+  }
+  #st-visual-body .theme-meta,
+  #st-visual-body .mood-meta,
+  #st-visual-body .style-meta,
+  #st-visual-body .font-meta,
+  #st-visual-body .color-info,
+  #st-visual-body .seed-custom-info,
+  #st-visual-body .am-toggle-info,
+  #st-visual-body .am-period-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  #st-visual-body .theme-preview-text,
+  #st-visual-body .color-label,
+  #st-visual-body .color-desc,
+  #st-visual-body .seed-custom-label,
+  #st-visual-body .seed-custom-desc,
+  #st-visual-body .am-toggle-label,
+  #st-visual-body .am-toggle-desc,
+  #st-visual-body .am-period-label,
+  #st-visual-body .am-period-time {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
   #st-visual-body button {
     font: inherit;
     box-sizing: border-box;
+  }
+  #st-visual-body svg {
+    max-width: 100%;
+    flex-shrink: 0;
   }
   #st-visual-body .settings-studio-btn {
     margin-top: 14px;
@@ -375,6 +420,42 @@ ${visualStyles}
     padding: 2px;
     background: transparent;
   }
+  #st-visual-body .color-input-group,
+  #st-visual-body .seed-custom-input {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  #st-visual-body .color-swatch-wrap {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+  }
+  #st-visual-body .color-picker {
+    position: absolute;
+    inset: 0;
+    width: 32px;
+    height: 32px;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 1;
+  }
+  #st-visual-body .color-swatch {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 2px solid var(--hdp-border, rgba(0,0,0,0.06));
+    pointer-events: none;
+  }
+  #st-visual-body .color-hex {
+    font-family: 'SF Mono', 'Cascadia Code', monospace;
+    font-size: 12px;
+    color: var(--hdp-text-secondary, #6B7280);
+    min-width: 60px;
+    text-align: right;
+  }
   #st-visual-body select,
   #st-visual-body input:not([type="color"]) {
     min-height: 36px;
@@ -474,15 +555,60 @@ function isDesignTokenStyle(css: string): boolean {
 }
 
 function scopeVisualStyle(css: string): string {
-  return css.replace(/(^|[{}])\s*([^@{}][^{}]*)\{/g, (_match: string, prefix: string, selectors: string) => {
-    const scoped = selectors
-      .split(',')
-      .map(selector => selector.trim())
-      .filter(Boolean)
-      .map(scopeVisualSelector)
-      .join(', ');
-    return `${prefix} ${scoped} {`;
-  });
+  return scopeCSSBlock(css);
+}
+
+function scopeCSSBlock(css: string): string {
+  let output = '';
+  let cursor = 0;
+
+  while (cursor < css.length) {
+    const open = css.indexOf('{', cursor);
+    if (open === -1) {
+      output += css.slice(cursor);
+      break;
+    }
+
+    const selector = css.slice(cursor, open).trim();
+    const close = findMatchingCSSBrace(css, open);
+    if (close === -1) {
+      output += css.slice(cursor);
+      break;
+    }
+
+    const body = css.slice(open + 1, close);
+    if (selector.startsWith('@media') || selector.startsWith('@supports') || selector.startsWith('@container')) {
+      output += `${selector} {${scopeCSSBlock(body)}}`;
+    } else if (selector.startsWith('@')) {
+      output += `${selector} {${body}}`;
+    } else if (selector) {
+      output += `${scopeVisualSelectors(selector)} {${body}}`;
+    }
+    cursor = close + 1;
+  }
+
+  return output;
+}
+
+function findMatchingCSSBrace(css: string, open: number): number {
+  let depth = 0;
+  for (let i = open; i < css.length; i++) {
+    if (css[i] === '{') depth++;
+    if (css[i] === '}') {
+      depth--;
+      if (depth === 0) return i;
+    }
+  }
+  return -1;
+}
+
+function scopeVisualSelectors(selectors: string): string {
+  return selectors
+    .split(',')
+    .map(selector => selector.trim())
+    .filter(Boolean)
+    .map(scopeVisualSelector)
+    .join(', ');
 }
 
 function scopeVisualSelector(selector: string): string {
