@@ -12,7 +12,7 @@
 import type { Hass, AreaSummary, StrategyConfig } from '../types';
 import { groupAreasByFloor } from '../utils/area-entities';
 import { getAreaIcon } from '../strategies/dashboard-strategy';
-import { escapeAttribute, escapeHTML } from '../utils/html';
+import { escapeAttribute, escapeHTML, escapeJSONAttribute } from '../utils/html';
 
 export interface SidebarOptions {
   title: string;
@@ -47,7 +47,8 @@ export function buildSidebarHTML(opts: SidebarOptions): string {
       const icon = getAreaIcon(a.area_name);
       const tempHTML = a.temp ? `<span class="sb-temp">${escapeHTML(a.temp)}</span>` : '';
       const areaId = escapeAttribute(a.area_id);
-      return `<button class="sb-area-btn" data-area="${areaId}" data-action="show-view" onclick="hdpShowView('${areaId}')">
+      const areaArg = escapeJSONAttribute(a.area_id);
+      return `<button class="sb-area-btn" data-area="${areaId}" data-action="show-view" onclick="hdpShowView(${areaArg})">
         <span class="sb-area-icon">${getAreaIconSVG(icon)}</span>
         <span class="sb-area-info">
           <span class="sb-area-name">${escapeHTML(a.area_name)}</span>

@@ -74,4 +74,36 @@ describe('layout card', () => {
 
     expect(card.content).not.toContain('data-view="settings" data-action="show-view"');
   });
+
+  it('uses safe view arguments for area navigation', () => {
+    const areaId = "kitchen'bad";
+    const card = buildLayoutCard({
+      hass: {
+        ...hass,
+        areas: {
+          [areaId]: { area_id: areaId, name: 'Kitchen', picture: null },
+        },
+      },
+      config: { type: 'custom:hass-dashboard-pro' },
+      homeHTML: '',
+      areaSections: [{ area_id: areaId, area_name: 'Kitchen', html: '' }],
+      devicesHTML: '',
+      settingsHTML: '',
+      areaSummaries: [{
+        area_id: areaId,
+        area_name: 'Kitchen',
+        icon: 'mdi:home-outline',
+        entity_count: 0,
+        active_count: 0,
+        temp: null,
+        humidity: null,
+        domain_counts: {},
+      }],
+      blueprintPages: [],
+    });
+
+    expect(card.content).toContain('onclick="hdpShowView(&quot;kitchen&#39;bad&quot;)"');
+    expect(card.content).not.toContain("hdpShowView('kitchen'bad')");
+    expect(card.content).toContain('function findView(viewId)');
+  });
 });

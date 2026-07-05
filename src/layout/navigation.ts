@@ -25,6 +25,14 @@ export function buildNavigationScript(): string {
   var params = new URLSearchParams(window.location.search);
   var initialView = params.get('hdp_area') || 'home';
 
+  function findView(viewId) {
+    var views = root.querySelectorAll('.hdp-view');
+    for (var i = 0; i < views.length; i++) {
+      if (views[i].getAttribute('data-view') === viewId) return views[i];
+    }
+    return null;
+  }
+
   // Show a view by ID
   window.hdpShowView = function(viewId) {
     // Hide all views
@@ -33,7 +41,7 @@ export function buildNavigationScript(): string {
       views[i].style.display = 'none';
     }
     // Show target view
-    var target = root.querySelector('.hdp-view[data-view="' + viewId + '"]');
+    var target = findView(viewId);
     if (target) {
       target.style.display = '';
     } else {
@@ -100,7 +108,7 @@ export function buildNavigationScript(): string {
     for (var i = 0; i < views.length; i++) {
       views[i].style.display = 'none';
     }
-    var target = root.querySelector('.hdp-view[data-view="' + viewId + '"]');
+    var target = findView(viewId);
     if (target) target.style.display = '';
     else {
       var home = root.querySelector('.hdp-view[data-view="home"]');
