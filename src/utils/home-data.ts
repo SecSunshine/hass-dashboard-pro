@@ -375,8 +375,9 @@ export interface AlarmStatus {
   has_alarm: boolean;
 }
 
-export function getAlarmStatus(hass: Hass, alarmEntity?: string): AlarmStatus {
-  if (alarmEntity && hass.states[alarmEntity]) {
+export function getAlarmStatus(hass: Hass, alarmEntity?: string, config?: StrategyConfig): AlarmStatus {
+  const visible = config ? new Set(collectVisibleEntities(hass, getDashboardFilters(config)).map(entity => entity.entity_id)) : null;
+  if (alarmEntity && hass.states[alarmEntity] && (!visible || visible.has(alarmEntity))) {
     const stateObj = hass.states[alarmEntity];
     if (alarmEntity.startsWith('alarm_control_panel.')) {
       return formatAlarmControlState(stateObj.state);
@@ -395,6 +396,7 @@ export function getAlarmStatus(hass: Hass, alarmEntity?: string): AlarmStatus {
 
   for (const [eid, s] of Object.entries(hass.states)) {
     if (!eid.startsWith('alarm_control_panel.')) continue;
+    if (visible && !visible.has(eid)) continue;
     return formatAlarmControlState(s.state);
   }
 
@@ -402,6 +404,7 @@ export function getAlarmStatus(hass: Hass, alarmEntity?: string): AlarmStatus {
   let locked = 0, total = 0;
   for (const [eid, s] of Object.entries(hass.states)) {
     if (!eid.startsWith('lock.')) continue;
+    if (visible && !visible.has(eid)) continue;
     total++;
     if (s.state === 'locked') locked++;
   }

@@ -197,7 +197,7 @@ function buildWelcomeCard(hass: Hass, config: StrategyConfig, tokens?: ResolvedT
   const userName = hass.user?.name || '';
   const dateStr = header.showTime ? getDateString() : '';
   const weather = header.showWeather ? getWeather(hass, header.weatherEntity) : null;
-  const alarm = header.showNotifications ? getAlarmStatus(hass, header.alarmEntity) : null;
+  const alarm = header.showNotifications ? getAlarmStatus(hass, header.alarmEntity, config) : null;
   const alarmDisplay = alarm ? escapeHTML(alarm.display) : '';
 
   const dateHTML = dateStr ? `<span class="hw-date">${dateStr}</span>` : '';
@@ -529,7 +529,7 @@ ${generateDesignTokenCSS(tokens)}
 function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: ResolvedTokens): LovelaceCardConfig {
   const header = getHeaderConfig(config);
   const climate = getClimateSummary(hass, config);
-  const alarm = header.showNotifications ? getAlarmStatus(hass, header.alarmEntity) : null;
+  const alarm = header.showNotifications ? getAlarmStatus(hass, header.alarmEntity, config) : null;
   const alarmDisplay = alarm ? escapeHTML(alarm.display) : '';
   const skinCls = cardSkinClass(tokens?.card_style);
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Hass, StrategyConfig } from '../types';
-import { getFavorites, getHomeSummaries } from './home-data';
+import { getAlarmStatus, getFavorites, getHomeSummaries } from './home-data';
 
 const hass: Hass = {
   states: {
@@ -29,6 +29,20 @@ const hass: Hass = {
       entity_id: 'light.offline',
       state: 'unavailable',
       attributes: { friendly_name: 'Offline Light' },
+      last_changed: '',
+      last_updated: '',
+    },
+    'lock.front_door': {
+      entity_id: 'lock.front_door',
+      state: 'locked',
+      attributes: { friendly_name: 'Front Door' },
+      last_changed: '',
+      last_updated: '',
+    },
+    'lock.closet': {
+      entity_id: 'lock.closet',
+      state: 'unlocked',
+      attributes: { friendly_name: 'Closet Lock' },
       last_changed: '',
       last_updated: '',
     },
@@ -75,6 +89,22 @@ const hass: Hass = {
       disabled_by: null,
       hidden_by: null,
     },
+    'lock.front_door': {
+      entity_id: 'lock.front_door',
+      device_id: null,
+      area_id: 'kitchen',
+      platform: 'demo',
+      disabled_by: null,
+      hidden_by: null,
+    },
+    'lock.closet': {
+      entity_id: 'lock.closet',
+      device_id: null,
+      area_id: 'closet',
+      platform: 'demo',
+      disabled_by: null,
+      hidden_by: null,
+    },
   },
 };
 
@@ -104,5 +134,17 @@ describe('home data', () => {
     };
 
     expect(getHomeSummaries(hass, config).total_devices).toBe(1);
+  });
+
+  it('filters hidden area locks from alarm summaries', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        areas: { hidden_areas: ['closet'] },
+      } as any,
+    };
+
+    expect(getAlarmStatus(hass, undefined, config).display).toBe('1/1 已锁');
+    expect(getAlarmStatus(hass, 'lock.closet', config).display).toBe('1/1 已锁');
   });
 });
