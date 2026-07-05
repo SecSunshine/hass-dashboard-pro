@@ -176,6 +176,10 @@ describe('settings view', () => {
     expect(js).toContain('hdpSaveToLovelace(resetConfig)');
     expect(js).toContain("throw new Error('配置文件格式不正确')");
     expect(js).toContain('hdpSaveToLovelace(hdpLoadConfig()).then(reload)');
+    expect(js).toContain('function isVisibleEntity(entityId)');
+    expect(js).toContain('if (!isVisibleEntity(entityId)) return;');
+    expect(js).toContain('function stripDomain(entityId)');
+    expect(js).toContain("score(stripDomain(sourceId), stripDomain(entityId) + ' ' + friendly)");
     expect(html).toContain("hdpSaveSetting('areas.hide_unavailable'");
   });
 

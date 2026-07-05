@@ -37,7 +37,7 @@ export function buildEntityMapping(sourceEntityIds: string[], hass: Hass): Entit
   const used = new Set<string>();
 
   for (const sourceId of sourceEntityIds) {
-    if (hass.states[sourceId] && !used.has(sourceId)) {
+    if (hass.states[sourceId] && !used.has(sourceId) && isRegistryVisible(hass, sourceId)) {
       mapping[sourceId] = sourceId;
       matches.push({ source: sourceId, target: sourceId, score: 999, confidence: 'exact' });
       used.add(sourceId);
@@ -90,22 +90,32 @@ export function applyEntityMapping<T>(value: T, mapping: Record<string, string>)
 
 function findBestCandidate(sourceId: string, hass: Hass, used: Set<string>): { id: string; score: number } | null {
   const sourceDomain = sourceId.split('.')[0];
-  const sourceTokens = tokenize(sourceId);
+  const sourceTokens = tokenize(stripDomain(sourceId));
   let best: { id: string; score: number } | null = null;
 
   for (const [entityId, state] of Object.entries(hass.states)) {
     if (used.has(entityId)) continue;
     if (entityId.split('.')[0] !== sourceDomain) continue;
+    if (!isRegistryVisible(hass, entityId)) continue;
 
     const name = String(state.attributes?.friendly_name || '');
     const registryName = String(hass.entities?.[entityId]?.name || '');
-    const targetTokens = tokenize(`${entityId} ${name} ${registryName}`);
+    const targetTokens = tokenize(`${stripDomain(entityId)} ${name} ${registryName}`);
     const score = similarity(sourceTokens, targetTokens);
 
     if (!best || score > best.score) best = { id: entityId, score };
   }
 
   return best && best.score > 0 ? best : null;
+}
+
+function stripDomain(entityId: string): string {
+  return entityId.includes('.') ? entityId.split('.').slice(1).join('.') : entityId;
+}
+
+function isRegistryVisible(hass: Hass, entityId: string): boolean {
+  const registryEntry = hass.entities?.[entityId];
+  return !registryEntry?.disabled_by && !registryEntry?.hidden_by;
 }
 
 function walk(value: unknown, visit: (value: unknown) => void): void {

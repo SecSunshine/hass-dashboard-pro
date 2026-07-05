@@ -561,13 +561,22 @@ function hdpApplyEntityMapping(value, mapping) {
 function hdpBuildEntityMapping(sourceEntities) {
   var hass = hdpFindHass && hdpFindHass();
   var states = hass && hass.states ? hass.states : {};
+  var registry = hass && hass.entities ? hass.entities : {};
   var mapping = {};
   var matches = [];
   var unmapped = [];
   var used = {};
+  function isVisibleEntity(entityId) {
+    var entry = registry[entityId];
+    return !(entry && (entry.disabled_by || entry.hidden_by));
+  }
 
   function tokens(value) {
     return String(value || '').toLowerCase().replace(/[^a-z0-9_]+/g, '_').split(/[_\\s]+/).filter(function(t) { return t.length > 1; });
+  }
+  function stripDomain(entityId) {
+    var idx = String(entityId || '').indexOf('.');
+    return idx === -1 ? entityId : String(entityId).slice(idx + 1);
   }
   function score(source, target) {
     var sourceTokens = tokens(source);
@@ -578,7 +587,7 @@ function hdpBuildEntityMapping(sourceEntities) {
   }
 
   sourceEntities.forEach(function(sourceId) {
-    if (states[sourceId] && !used[sourceId]) {
+    if (states[sourceId] && !used[sourceId] && isVisibleEntity(sourceId)) {
       mapping[sourceId] = sourceId;
       matches.push({ source: sourceId, target: sourceId, score: 999, confidence: 'exact' });
       used[sourceId] = true;
@@ -588,8 +597,9 @@ function hdpBuildEntityMapping(sourceEntities) {
     var best = null;
     Object.keys(states).forEach(function(entityId) {
       if (used[entityId] || entityId.split('.')[0] !== domain) return;
+      if (!isVisibleEntity(entityId)) return;
       var friendly = states[entityId].attributes && states[entityId].attributes.friendly_name || '';
-      var s = score(sourceId, entityId + ' ' + friendly);
+      var s = score(stripDomain(sourceId), stripDomain(entityId) + ' ' + friendly);
       if (!best || s > best.score) best = { id: entityId, score: s };
     });
     if (best && best.score > 0) {
