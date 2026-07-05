@@ -101,6 +101,8 @@ describe('settings view', () => {
     const html = buildSettingsHTML(config, undefined, hass);
 
     expect(html).toContain('#st-visual-body > div');
+    expect(html).toContain('.hdp-view[data-view="settings"] .hdp-area-content');
+    expect(html).toContain('width: min(100%, 1040px)');
     expect(html).not.toContain('.st-section-body > div {');
     expect(html).toContain('.theme-grid');
     expect(html).toContain('<style>\n');
@@ -122,6 +124,7 @@ describe('settings view', () => {
     expect(html).toContain("hdpToggleArrayItem('areas.hidden_areas'");
     expect(html).toContain("hdpToggleArrayItem('devices.hidden_device_types'");
     expect(html).toContain(', event)');
+    expect(html).not.toMatch(/[^<]\/(div|span|button|option|a|textarea|label|select|input)>/);
     expect(html).not.toMatch(/(^|[{}])\s*\.settings-section\s*\{/);
     expect(html).not.toMatch(/(^|[{}])\s*\.theme-card\s*\{/);
     expect(html).not.toContain(':host, :root');
@@ -202,7 +205,11 @@ describe('settings view', () => {
     expect(js).toContain('function isVisibleEntity(entityId)');
     expect(js).toContain('if (!isVisibleEntity(entityId)) return;');
     expect(js).toContain('function stripDomain(entityId)');
-    expect(js).toContain("score(stripDomain(sourceId), stripDomain(entityId) + ' ' + friendly)");
+    expect(js).toContain('function hdpReplaceEntityId(value, from, to)');
+    expect(js).toContain("Object.keys(mapping).sort(function(a, b) { return b.length - a.length; })");
+    expect(js).toContain('function areaName(entityId)');
+    expect(js).toContain('function deviceText(entityId)');
+    expect(js).toContain("score(stripDomain(sourceId), stripDomain(entityId) + ' ' + friendly + ' ' + registryName + ' ' + deviceText(entityId) + ' ' + areaName(entityId))");
     expect(js).toContain('function hdpNormalizeHDPConfig(config)');
     expect(js).toContain('function hdpNormalizeVisualConfig(config)');
     expect(js).toContain('function hdpNormalizeBlueprints(value)');

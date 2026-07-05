@@ -143,6 +143,24 @@ describe('dashboard model', () => {
     expect(getConfiguredHiddenDeviceTypes(config)).toEqual(['binary_sensor.motion']);
   });
 
+  it('accepts legacy hidden filters stored inside hdp_config root', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        hidden_areas: ['closet'],
+        hidden_domains: ['sensor'],
+        hidden_device_types: ['switch'],
+      } as any,
+    };
+
+    expect(getConfiguredHiddenAreas(config)).toEqual(['closet']);
+    expect(getConfiguredHiddenDomains(config)).toEqual(['sensor']);
+    expect(getConfiguredHiddenDeviceTypes(config)).toEqual(['switch']);
+
+    const entities = collectVisibleEntities(hass, getDashboardFilters(config));
+    expect(entities.map(entity => entity.entity_id)).toEqual(['light.kitchen']);
+  });
+
   it('applies hide unavailable consistently', () => {
     const hassWithUnavailable: Hass = {
       ...hass,

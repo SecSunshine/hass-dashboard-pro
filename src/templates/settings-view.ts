@@ -104,6 +104,11 @@ export function buildSettingsHTML(config: StrategyConfig, tokens?: ResolvedToken
   return `
 <style>
 ${getSettingsSectionsCSS()}
+  .hdp-view[data-view="settings"] .hdp-area-content,
+  .hdp-view[data-view="hdp-settings"] .hdp-area-content {
+    width: min(100%, 1040px);
+    margin: 0 auto;
+  }
   /* Visual settings card spacing & wrappers */
   #st-visual-body > div {
     padding: 16px;

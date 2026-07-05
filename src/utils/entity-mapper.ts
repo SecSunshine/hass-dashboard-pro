@@ -67,8 +67,9 @@ export function applyEntityMapping<T>(value: T, mapping: Record<string, string>)
 
   if (typeof value === 'string') {
     let result = value as string;
-    for (const [from, to] of Object.entries(mapping)) {
-      result = result.split(from).join(to);
+    const entries = Object.entries(mapping).sort((a, b) => b[0].length - a[0].length);
+    for (const [from, to] of entries) {
+      result = replaceEntityId(result, from, to);
     }
     return result as T;
   }
@@ -99,8 +100,12 @@ function findBestCandidate(sourceId: string, hass: Hass, used: Set<string>): { i
     if (!isRegistryVisible(hass, entityId)) continue;
 
     const name = String(state.attributes?.friendly_name || '');
-    const registryName = String(hass.entities?.[entityId]?.name || '');
-    const targetTokens = tokenize(`${stripDomain(entityId)} ${name} ${registryName}`);
+    const registryEntry = hass.entities?.[entityId];
+    const registryName = String(registryEntry?.name || '');
+    const device = registryEntry?.device_id ? hass.devices?.[registryEntry.device_id] : undefined;
+    const deviceName = `${device?.name || ''} ${device?.name_by_user || ''} ${device?.manufacturer || ''} ${device?.model || ''}`;
+    const areaName = getEntityAreaName(entityId, hass);
+    const targetTokens = tokenize(`${stripDomain(entityId)} ${name} ${registryName} ${deviceName} ${areaName}`);
     const score = similarity(sourceTokens, targetTokens);
 
     if (!best || score > best.score) best = { id: entityId, score };
@@ -111,6 +116,24 @@ function findBestCandidate(sourceId: string, hass: Hass, used: Set<string>): { i
 
 function stripDomain(entityId: string): string {
   return entityId.includes('.') ? entityId.split('.').slice(1).join('.') : entityId;
+}
+
+function getEntityAreaName(entityId: string, hass: Hass): string {
+  const registryEntry = hass.entities?.[entityId];
+  const areaId = registryEntry?.area_id
+    || (registryEntry?.device_id ? hass.devices?.[registryEntry.device_id]?.area_id : null)
+    || (hass.states[entityId]?.attributes?.area_id as string | undefined)
+    || null;
+  return areaId ? hass.areas?.[areaId]?.name || areaId : '';
+}
+
+function replaceEntityId(value: string, from: string, to: string): string {
+  const escaped = escapeRegExp(from);
+  return value.replace(new RegExp(`(^|[^a-z0-9_])(${escaped})(?=$|[^a-z0-9_])`, 'g'), `$1${to}`);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function isRegistryVisible(hass: Hass, entityId: string): boolean {

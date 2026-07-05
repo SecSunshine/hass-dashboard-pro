@@ -62,17 +62,20 @@ export function getDashboardFilters(config: StrategyConfig): DashboardFilters {
 
 export function getConfiguredHiddenAreas(config: StrategyConfig): string[] {
   const hdpConfig = getEffectiveHDPConfig(config);
-  return mergeStringArrays(hdpConfig?.areas?.hidden_areas, config.hidden_areas);
+  const legacyConfig = hdpConfig as { hidden_areas?: unknown } | undefined;
+  return mergeStringArrays(hdpConfig?.areas?.hidden_areas, legacyConfig?.hidden_areas, config.hidden_areas);
 }
 
 export function getConfiguredHiddenDomains(config: StrategyConfig): string[] {
   const hdpConfig = getEffectiveHDPConfig(config);
-  return mergeStringArrays(hdpConfig?.devices?.hidden_domains, config.hidden_domains);
+  const legacyConfig = hdpConfig as { hidden_domains?: unknown } | undefined;
+  return mergeStringArrays(hdpConfig?.devices?.hidden_domains, legacyConfig?.hidden_domains, config.hidden_domains);
 }
 
 export function getConfiguredHiddenDeviceTypes(config: StrategyConfig): string[] {
   const hdpConfig = getEffectiveHDPConfig(config);
-  return mergeStringArrays(hdpConfig?.devices?.hidden_device_types, config.hidden_device_types);
+  const legacyConfig = hdpConfig as { hidden_device_types?: unknown } | undefined;
+  return mergeStringArrays(hdpConfig?.devices?.hidden_device_types, legacyConfig?.hidden_device_types, config.hidden_device_types);
 }
 
 function mergeStringArrays(...values: Array<unknown>): string[] {

@@ -18,6 +18,13 @@ const hass: Hass = {
       last_changed: '',
       last_updated: '',
     },
+    'light.ceiling': {
+      entity_id: 'light.ceiling',
+      state: 'off',
+      attributes: { friendly_name: 'Ceiling' },
+      last_changed: '',
+      last_updated: '',
+    },
     'light.hidden_kitchen_ceiling': {
       entity_id: 'light.hidden_kitchen_ceiling',
       state: 'off',
@@ -33,8 +40,12 @@ const hass: Hass = {
       last_updated: '',
     },
   },
-  areas: {},
-  devices: {},
+  areas: {
+    kitchen: { area_id: 'kitchen', name: 'Kitchen', picture: null },
+  },
+  devices: {
+    dev_ceiling: { id: 'dev_ceiling', area_id: 'kitchen', name: 'Main Light' },
+  },
   floors: {},
   entities: {
     'light.kitchen_ceiling': {
@@ -48,6 +59,14 @@ const hass: Hass = {
     'sensor.living_temperature': {
       entity_id: 'sensor.living_temperature',
       device_id: null,
+      area_id: null,
+      platform: 'demo',
+      disabled_by: null,
+      hidden_by: null,
+    },
+    'light.ceiling': {
+      entity_id: 'light.ceiling',
+      device_id: 'dev_ceiling',
       area_id: null,
       platform: 'demo',
       disabled_by: null,
@@ -90,6 +109,17 @@ describe('entity mapper', () => {
     ]));
   });
 
+  it('uses area and device registry names when matching renamed entities', () => {
+    const result = buildEntityMapping(['light.kitchen_main_light'], hass);
+
+    expect(result.mapping['light.kitchen_main_light']).toBe('light.ceiling');
+    expect(result.matches[0]).toEqual(expect.objectContaining({
+      source: 'light.kitchen_main_light',
+      target: 'light.ceiling',
+      confidence: 'high',
+    }));
+  });
+
   it('does not map imported entities to registry-hidden or disabled entities', () => {
     const result = buildEntityMapping(['light.old_kitchen_ceiling', 'sensor.hidden_exact'], hass);
 
@@ -108,5 +138,22 @@ describe('entity mapper', () => {
       { 'light.old_kitchen_ceiling': 'light.kitchen_ceiling', 'sensor.living_temp': 'sensor.living_temperature' },
     );
     expect(mapped).toEqual({ entity: 'light.kitchen_ceiling', content: 'sensor.living_temperature' });
+  });
+
+  it('does not replace entity ids embedded inside longer ids', () => {
+    const mapped = applyEntityMapping(
+      {
+        exact: 'sensor.old_temp',
+        longer: 'sensor.old_temp_extra',
+        html: 'data-entity="sensor.old_temp" data-other="sensor.old_temp_extra"',
+      },
+      { 'sensor.old_temp': 'sensor.new_temp' },
+    );
+
+    expect(mapped).toEqual({
+      exact: 'sensor.new_temp',
+      longer: 'sensor.old_temp_extra',
+      html: 'data-entity="sensor.new_temp" data-other="sensor.old_temp_extra"',
+    });
   });
 });

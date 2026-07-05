@@ -556,8 +556,8 @@ function hdpExtractEntityIds(value) {
 function hdpApplyEntityMapping(value, mapping) {
   if (typeof value === 'string') {
     var result = value;
-    Object.keys(mapping).forEach(function(from) {
-      result = result.split(from).join(mapping[from]);
+    Object.keys(mapping).sort(function(a, b) { return b.length - a.length; }).forEach(function(from) {
+      result = hdpReplaceEntityId(result, from, mapping[from]);
     });
     return result;
   }
@@ -570,10 +570,25 @@ function hdpApplyEntityMapping(value, mapping) {
   return value;
 }
 
+function hdpEscapeRegExp(value) {
+  var slash = String.fromCharCode(92);
+  var specials = slash + '^$.*+?()[]{}|';
+  return String(value).split('').map(function(ch) {
+    return specials.indexOf(ch) >= 0 ? slash + ch : ch;
+  }).join('');
+}
+
+function hdpReplaceEntityId(value, from, to) {
+  var escaped = hdpEscapeRegExp(from);
+  return String(value).replace(new RegExp('(^|[^a-z0-9_])(' + escaped + ')(?=$|[^a-z0-9_])', 'g'), '$1' + to);
+}
+
 function hdpBuildEntityMapping(sourceEntities) {
   var hass = hdpFindHass && hdpFindHass();
   var states = hass && hass.states ? hass.states : {};
   var registry = hass && hass.entities ? hass.entities : {};
+  var areas = hass && hass.areas ? hass.areas : {};
+  var devices = hass && hass.devices ? hass.devices : {};
   var mapping = {};
   var matches = [];
   var unmapped = [];
@@ -597,6 +612,19 @@ function hdpBuildEntityMapping(sourceEntities) {
     targetTokens.forEach(function(t) { targetSet[t] = true; });
     return sourceTokens.reduce(function(total, t) { return total + (targetSet[t] ? t.length : 0); }, 0);
   }
+  function areaName(entityId) {
+    var entry = registry[entityId] || {};
+    var areaId = entry.area_id;
+    if (!areaId && entry.device_id && devices[entry.device_id]) areaId = devices[entry.device_id].area_id;
+    if (!areaId && states[entityId] && states[entityId].attributes) areaId = states[entityId].attributes.area_id;
+    return areaId && areas[areaId] ? (areas[areaId].name || areaId) : (areaId || '');
+  }
+  function deviceText(entityId) {
+    var entry = registry[entityId] || {};
+    var device = entry.device_id ? devices[entry.device_id] : null;
+    if (!device) return '';
+    return [device.name, device.name_by_user, device.manufacturer, device.model].filter(Boolean).join(' ');
+  }
 
   sourceEntities.forEach(function(sourceId) {
     if (states[sourceId] && !used[sourceId] && isVisibleEntity(sourceId)) {
@@ -611,7 +639,8 @@ function hdpBuildEntityMapping(sourceEntities) {
       if (used[entityId] || entityId.split('.')[0] !== domain) return;
       if (!isVisibleEntity(entityId)) return;
       var friendly = states[entityId].attributes && states[entityId].attributes.friendly_name || '';
-      var s = score(stripDomain(sourceId), stripDomain(entityId) + ' ' + friendly);
+      var registryName = registry[entityId] && registry[entityId].name || '';
+      var s = score(stripDomain(sourceId), stripDomain(entityId) + ' ' + friendly + ' ' + registryName + ' ' + deviceText(entityId) + ' ' + areaName(entityId));
       if (!best || s > best.score) best = { id: entityId, score: s };
     });
     if (best && best.score > 0) {
