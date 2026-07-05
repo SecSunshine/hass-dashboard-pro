@@ -18,6 +18,20 @@ const hass: Hass = {
       last_changed: '',
       last_updated: '',
     },
+    'sensor.hidden_temperature': {
+      entity_id: 'sensor.hidden_temperature',
+      state: '21',
+      attributes: { device_class: 'temperature', unit_of_measurement: '°C' },
+      last_changed: '',
+      last_updated: '',
+    },
+    'select.disabled_mode': {
+      entity_id: 'select.disabled_mode',
+      state: 'auto',
+      attributes: { friendly_name: 'Disabled Mode' },
+      last_changed: '',
+      last_updated: '',
+    },
     'automation.hidden_system': {
       entity_id: 'automation.hidden_system',
       state: 'on',
@@ -31,7 +45,24 @@ const hass: Hass = {
   },
   devices: {},
   floors: {},
-  entities: {},
+  entities: {
+    'sensor.hidden_temperature': {
+      entity_id: 'sensor.hidden_temperature',
+      device_id: null,
+      area_id: 'kitchen',
+      platform: 'demo',
+      disabled_by: null,
+      hidden_by: 'user',
+    },
+    'select.disabled_mode': {
+      entity_id: 'select.disabled_mode',
+      device_id: null,
+      area_id: 'kitchen',
+      platform: 'demo',
+      disabled_by: 'user',
+      hidden_by: null,
+    },
+  },
 };
 
 describe('settings view', () => {
@@ -61,7 +92,16 @@ describe('settings view', () => {
 
     expect(html).toContain("hdpToggleArrayItem('devices.hidden_domains', &quot;number&quot;, event)");
     expect(html).toContain('数字');
+    expect(html).not.toContain("hdpToggleArrayItem('devices.hidden_domains', &quot;select&quot;, event)");
     expect(html).not.toContain("hdpToggleArrayItem('devices.hidden_domains', &quot;automation&quot;, event)");
+  });
+
+  it('ignores hidden or disabled registry entities in device type controls', () => {
+    const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
+    const html = buildSettingsHTML(config, undefined, hass);
+
+    expect(html).toContain("hdpToggleArrayItem('devices.hidden_device_types', &quot;binary_sensor.motion&quot;, event)");
+    expect(html).not.toContain("hdpToggleArrayItem('devices.hidden_device_types', &quot;sensor.temperature&quot;, event)");
   });
 
   it('escapes dashboard setting input values', () => {

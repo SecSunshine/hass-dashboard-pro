@@ -34,6 +34,11 @@ function jsValue(value: unknown): string {
   return escapeAttribute(JSON.stringify(value ?? null));
 }
 
+function isVisibleRegistryEntity(hass: Hass | undefined, entityId: string): boolean {
+  const registryEntry = hass?.entities?.[entityId];
+  return !registryEntry?.disabled_by && !registryEntry?.hidden_by;
+}
+
 // ─── Section Container ──────────────────────────────────────────────────────
 
 function sectionCard(id: string, title: string, icon: string, content: string): string {
@@ -966,6 +971,7 @@ export function buildDevicesSection(config: StrategyConfig, hass?: Hass): string
   const hiddenDeviceTypes: string[] = config.hdp_config?.devices?.hidden_device_types || [];
   const defaultDomains = ['light', 'switch', 'climate', 'fan', 'cover', 'lock', 'sensor', 'binary_sensor', 'media_player', 'camera', 'vacuum', 'button'];
   const detectedDomains = Object.keys(hass?.states || {})
+    .filter(entityId => isVisibleRegistryEntity(hass, entityId))
     .map(entityId => entityId.split('.')[0])
     .filter(domain => domain && !HIDDEN_DOMAINS.has(domain));
   const domains = Array.from(new Set([...defaultDomains, ...detectedDomains, ...hiddenDomains]))
@@ -1017,6 +1023,7 @@ function buildHiddenDeviceTypeChips(hass: Hass | undefined, hiddenDomains: strin
     'binary_sensor.presence': '存在',
   };
   const deviceTypes = Array.from(new Set(Object.entries(hass?.states || {})
+    .filter(([entityId]) => isVisibleRegistryEntity(hass, entityId))
     .map(([entityId, stateObj]) => getEntityDeviceType(entityId, stateObj.attributes || {}))
     .filter(type => type.includes('.') && !hiddenDomains.includes(type.split('.')[0]))))
     .sort();
