@@ -194,6 +194,10 @@ describe('settings view', () => {
     expect(js).toContain('window.hdpResetConfig = function');
     expect(js).toContain('hdpSaveToLovelace(resetConfig)');
     expect(js).toContain("throw new Error('配置文件格式不正确')");
+    expect(js).toContain('var normalized = hdpNormalizeHDPConfig(config);');
+    expect(js).toContain('hdpClearConfig();');
+    expect(js).toContain('hdpSaveConfig(normalized);');
+    expect(js).not.toContain("localStorage.setItem('hdp_config', JSON.stringify(config));");
     expect(js).toContain('hdpSaveToLovelace(hdpLoadConfig()).then(reload)');
     expect(js).toContain('function isVisibleEntity(entityId)');
     expect(js).toContain('if (!isVisibleEntity(entityId)) return;');

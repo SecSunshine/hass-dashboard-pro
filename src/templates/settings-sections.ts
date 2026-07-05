@@ -498,7 +498,12 @@ window.hdpImportConfig = function() {
         if (!config || typeof config !== 'object' || Array.isArray(config)) {
           throw new Error('配置文件格式不正确');
         }
-        localStorage.setItem('hdp_config', JSON.stringify(config));
+        var normalized = hdpNormalizeHDPConfig(config);
+        if (!normalized) {
+          throw new Error('配置文件格式不正确');
+        }
+        hdpClearConfig();
+        hdpSaveConfig(normalized);
         var reload = function() {
           alert('配置已导入，页面将刷新');
           location.reload();

@@ -115,11 +115,17 @@ export function saveConfig(partial: Partial<HDPConfig>): HDPConfig {
 export function generateStorageJS(): string {
   return `
 function hdpLoadConfig() {
+  var defaults = ${JSON.stringify(getDefaultConfig())};
   try {
     var raw = localStorage.getItem('hdp_config');
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      var parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return hdpDeepMerge(defaults, parsed);
+      }
+    }
   } catch(e) {}
-  return ${JSON.stringify(getDefaultConfig())};
+  return defaults;
 }
 
 function hdpSaveConfig(partial) {
