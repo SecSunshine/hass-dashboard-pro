@@ -131,8 +131,8 @@ function formatWatts(watts: number): string {
  * Get a simple total power reading (for quick-strip / status cards).
  * Returns the first power sensor found, or null.
  */
-export function getQuickPower(hass: Hass): { display: string; percent: number } | null {
-  const result = buildHousePowerUsage(hass);
+export function getQuickPower(hass: Hass, config?: StrategyConfig): { display: string; percent: number } | null {
+  const result = buildHousePowerUsage(hass, config);
   if (!result.has_data) return null;
   // Estimate percent based on a reasonable 8kW baseline
   const percent = Math.min(100, Math.round((result.total_watts / 8000) * 100));

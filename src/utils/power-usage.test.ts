@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Hass, StrategyConfig } from '../types';
 import { UNASSIGNED_AREA_NAME } from './dashboard-model';
-import { buildHousePowerUsage } from './power-usage';
+import { buildHousePowerUsage, getQuickPower } from './power-usage';
 
 const hass: Hass = {
   states: {
@@ -82,5 +82,16 @@ describe('power usage', () => {
     expect(power.total_watts).toBe(300);
     expect(power.rooms.map(room => room.area_name)).toEqual([UNASSIGNED_AREA_NAME, 'Kitchen']);
     expect(power.rooms.map(room => room.area_name)).not.toContain('Closet');
+  });
+
+  it('applies visibility filters to quick power totals', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        areas: { hidden_areas: ['closet'] },
+      } as any,
+    };
+
+    expect(getQuickPower(hass, config)?.display).toBe('300 W');
   });
 });
