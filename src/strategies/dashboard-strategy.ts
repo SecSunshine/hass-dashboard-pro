@@ -11,9 +11,10 @@
  */
 
 import type { Hass, StrategyConfig, DashboardStrategyResult, LovelaceViewConfig, AreaSummary, BlueprintInstance } from '../types';
-import { buildAreaEntityMap, groupAreasByFloor, isEntityOn } from '../utils/area-entities';
+import { isEntityOn } from '../utils/area-entities';
 import { safeBlueprintViewId } from '../utils/dom-id';
 import { getEffectiveStrategyConfig } from '../utils/effective-config';
+import { buildAreaEntityMapFromModel, collectVisibleEntities, getDashboardFilters } from '../utils/dashboard-model';
 
 const VIEW_STRATEGY_TYPE = 'custom:hass-dashboard-pro-view';
 
@@ -21,10 +22,8 @@ export class HassDashboardProStrategy {
   static async generate(config: StrategyConfig, hass: Hass): Promise<DashboardStrategyResult> {
     const effectiveConfig = getEffectiveStrategyConfig(config);
     const hiddenAreas = effectiveConfig.hdp_config?.areas?.hidden_areas || effectiveConfig.hidden_areas || [];
-    const hiddenDomains = effectiveConfig.hdp_config?.devices?.hidden_domains || effectiveConfig.hidden_domains || [];
-    const hideUnavailable = effectiveConfig.hdp_config?.areas?.hide_unavailable || false;
-    const hiddenDeviceTypes = effectiveConfig.hdp_config?.devices?.hidden_device_types || [];
-    const areaEntityMap = buildAreaEntityMap(hass, hiddenAreas, hiddenDomains, hideUnavailable, hiddenDeviceTypes);
+    const visibleEntities = collectVisibleEntities(hass, getDashboardFilters(effectiveConfig));
+    const areaEntityMap = buildAreaEntityMapFromModel(visibleEntities);
 
     // Pre-compute area summaries (for sidebar display)
     const areaSummaries = buildAreaSummaries(hass, areaEntityMap, hiddenAreas);

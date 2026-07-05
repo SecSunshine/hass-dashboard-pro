@@ -7,7 +7,7 @@
 
 import type { Hass, EntityInfo, StrategyConfig } from '../types';
 import { isEntityOn } from './area-entities';
-import { collectVisibleEntities, getDashboardFilters, shouldIncludeDomain } from './dashboard-model';
+import { collectVisibleEntities, getDashboardFilters } from './dashboard-model';
 
 // ─── Person Tracking ───────────────────────────────────────────────────────
 
@@ -229,14 +229,14 @@ export interface FavoriteEntity {
 export function getFavorites(hass: Hass, config: StrategyConfig): FavoriteEntity[] {
   const ids = config.favorite_entities || [];
   const favorites: FavoriteEntity[] = [];
-  const filters = getDashboardFilters(config);
+  const visible = new Set(collectVisibleEntities(hass, getDashboardFilters(config)).map(entity => entity.entity_id));
 
   for (const eid of ids) {
     const stateObj = hass.states[eid];
     if (!stateObj) continue;
+    if (!visible.has(eid)) continue;
 
     const domain = eid.split('.')[0];
-    if (!shouldIncludeDomain(domain, filters.hiddenDomains)) continue;
     const name = (stateObj.attributes.friendly_name as string) || eid.replace(`${domain}.`, '').replace(/_/g, ' ');
     const unit = (stateObj.attributes.unit_of_measurement as string) || null;
     const isActive = isEntityOn(stateObj.state, domain);

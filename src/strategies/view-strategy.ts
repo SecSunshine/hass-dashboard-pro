@@ -12,7 +12,6 @@
  */
 
 import type { Hass, StrategyConfig, ViewStrategyResult, LovelaceCardConfig, EntityInfo } from '../types';
-import { buildAreaEntityMap } from '../utils/area-entities';
 import { resolveTokens } from '../utils/visual-config';
 import { buildHomeHTML } from '../templates/home-view';
 import { buildAreaHTML } from '../templates/area-view';
@@ -21,6 +20,7 @@ import { buildSettingsHTML, generateSettingsJS } from '../templates/settings-vie
 import { buildBlueprintPagesHTML } from '../blueprints/blueprint-page';
 import { buildLayoutCard } from '../layout/layout-card';
 import { getEffectiveStrategyConfig } from '../utils/effective-config';
+import { buildAreaEntityMapFromModel, collectVisibleEntities, getDashboardFilters } from '../utils/dashboard-model';
 
 export class HassDashboardProViewStrategy {
   static async generate(config: StrategyConfig, hass: Hass): Promise<ViewStrategyResult> {
@@ -50,11 +50,7 @@ export class HassDashboardProViewStrategy {
 // ─── Build Complete Layout Card ─────────────────────────────────────────────
 
 function buildFullLayoutCard(hass: Hass, config: StrategyConfig, tokens: ReturnType<typeof resolveTokens>): LovelaceCardConfig {
-  const hiddenAreas = config.hdp_config?.areas?.hidden_areas || config.hidden_areas || [];
-  const hiddenDomains = config.hdp_config?.devices?.hidden_domains || config.hidden_domains || [];
-  const hideUnavailable = config.hdp_config?.areas?.hide_unavailable || false;
-  const hiddenDeviceTypes = config.hdp_config?.devices?.hidden_device_types || [];
-  const areaEntityMap = buildAreaEntityMap(hass, hiddenAreas, hiddenDomains, hideUnavailable, hiddenDeviceTypes);
+  const areaEntityMap = buildAreaEntityMapFromModel(collectVisibleEntities(hass, getDashboardFilters(config)));
   const areaSummaries = config.area_summaries || [];
   const blueprintPages = config.hdp_config?.blueprints?.pages || config.blueprint_pages || [];
 
