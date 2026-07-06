@@ -96,6 +96,34 @@ const hass: Hass = {
   },
 };
 
+const STRUCTURAL_TAGS = new Set(['a', 'button', 'div', 'label', 'option', 'section', 'select', 'span']);
+
+function stripRawBlocks(html: string): string {
+  return html
+    .replace(/<style>[\s\S]*?<\/style>/g, '')
+    .replace(/<script>[\s\S]*?<\/script>/g, '');
+}
+
+function expectBalancedStructuralTags(html: string): void {
+  const stack: string[] = [];
+  const tagPattern = /<\/?([a-zA-Z][\w-]*)\b[^>]*>/g;
+  const cleaned = stripRawBlocks(html);
+  let match: RegExpExecArray | null;
+
+  while ((match = tagPattern.exec(cleaned))) {
+    const fullTag = match[0];
+    const tag = match[1].toLowerCase();
+    if (!STRUCTURAL_TAGS.has(tag)) continue;
+    if (fullTag.startsWith('</')) {
+      expect(stack.pop()).toBe(tag);
+    } else if (!fullTag.endsWith('/>')) {
+      stack.push(tag);
+    }
+  }
+
+  expect(stack).toEqual([]);
+}
+
 describe('settings view', () => {
   it('scopes visual card wrappers and keeps visual card styles', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
@@ -183,6 +211,18 @@ describe('settings view', () => {
     expect(html.indexOf('Stable visual-settings layout')).toBeGreaterThan(html.indexOf('#st-visual-body .settings-header'));
     expect(html).not.toContain('grid-template-columns: repeat(4, 1fr)');
     expect(() => new Function(js)).not.toThrow();
+  });
+
+  it('keeps generated settings markup structurally balanced', () => {
+    const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
+    const html = buildSettingsHTML(config, undefined, hass);
+
+    expectBalancedStructuralTags(html);
+    const visualBodyIndex = html.indexOf('<div class="st-section-body" id="st-visual-body">');
+    const visualActionsIndex = html.indexOf('<div class="st-visual-card" data-visual-card="settings-actions"');
+    const themesIndex = html.indexOf('<div class="st-section" id="st-themes"');
+    expect(visualBodyIndex).toBeLessThan(visualActionsIndex);
+    expect(visualActionsIndex).toBeLessThan(themesIndex);
   });
 
   it('adds detected HA domains to the hidden domain controls', () => {
