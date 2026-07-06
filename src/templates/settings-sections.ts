@@ -475,7 +475,7 @@ window.hdpSaveSetting = function(path, value) {
   }
   current[parts[parts.length - 1]] = value;
   hdpSaveConfig(obj);
-  hdpPersistSettingsAndReload();
+  window.hdpPersistSettingsAndReload();
 };
 
 window.hdpToggleArrayItem = function(path, item) {
@@ -504,7 +504,7 @@ window.hdpToggleArrayItem = function(path, item) {
     chip.setAttribute('aria-pressed', chip.classList.contains('st-chip--active') ? 'true' : 'false');
   }
   // Persist to Lovelace and reload so entity filtering takes effect
-  hdpPersistSettingsAndReload();
+  window.hdpPersistSettingsAndReload();
 };
 
 window.hdpResetConfig = function() {
