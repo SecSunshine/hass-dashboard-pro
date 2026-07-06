@@ -21,6 +21,7 @@ import { buildBlueprintPagesHTML } from '../blueprints/blueprint-page';
 import { buildLayoutCard } from '../layout/layout-card';
 import { getEffectiveStrategyConfig } from '../utils/effective-config';
 import { buildAreaEntityMapFromModel, collectVisibleEntities, getDashboardFilters } from '../utils/dashboard-model';
+import { shouldShowSettings } from '../utils/permissions';
 
 export class HassDashboardProViewStrategy {
   static async generate(config: StrategyConfig, hass: Hass): Promise<ViewStrategyResult> {
@@ -53,6 +54,7 @@ function buildFullLayoutCard(hass: Hass, config: StrategyConfig, tokens: ReturnT
   const areaEntityMap = buildAreaEntityMapFromModel(collectVisibleEntities(hass, getDashboardFilters(config)));
   const areaSummaries = config.area_summaries || [];
   const blueprintPages = config.hdp_config?.blueprints?.pages || config.blueprint_pages || [];
+  const canEditBlueprints = shouldShowSettings(hass, config);
 
   // 1. Home HTML
   const homeHTML = buildHomeHTML(hass, config, tokens);
@@ -78,7 +80,7 @@ function buildFullLayoutCard(hass: Hass, config: StrategyConfig, tokens: ReturnT
   const settingsJS = generateSettingsJS(config, tokens, hass);
 
   // 5. Blueprint page HTML
-  const blueprintHTML = buildBlueprintPagesHTML(blueprintPages);
+  const blueprintHTML = buildBlueprintPagesHTML(blueprintPages, canEditBlueprints);
 
   return buildLayoutCard({
     hass,

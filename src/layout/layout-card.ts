@@ -63,6 +63,10 @@ export function buildLayoutCard(opts: LayoutCardOptions): LovelaceCardConfig {
   const settingsScript = showSettings ? settingsJS || '' : '';
   const themeStudioHTML = showSettings ? buildThemeStudioHTML(tokens, hass, config) : '';
   const themeStudioJS = showSettings ? generateThemeStudioJS() : '';
+  const blueprintAdminHTML = showSettings ? buildImportModalHTML() : '';
+  const blueprintAdminJS = showSettings
+    ? `${generateBlueprintJS()}\n${generateBlueprintModalJS()}`
+    : '';
 
   // Build sidebar
   const sidebarHTML = buildSidebarHTML({
@@ -154,14 +158,13 @@ ${generateDesignTokenCSS(tokens)}
     ${settingsViewHTML}
   </main>
   ${bottomNavHTML}
-  ${buildImportModalHTML()}
+  ${blueprintAdminHTML}
   ${themeStudioHTML}
 </div>
 <script>
 ${generateServiceScript()}
 ${generateStorageJS()}
-${generateBlueprintJS()}
-${generateBlueprintModalJS()}
+${blueprintAdminJS}
 ${devicesJS || ''}
 ${settingsScript}
 ${themeStudioJS}

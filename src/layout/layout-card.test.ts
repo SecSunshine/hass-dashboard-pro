@@ -51,6 +51,9 @@ describe('layout card', () => {
 
     expect(card.content).toContain('data-view="settings" data-action="show-view"');
     expect(card.content).toContain('<span>设置</span>');
+    expect(card.content).toContain('id="bp-import-modal"');
+    expect(card.content).toContain('window.hdpBlueprintSave');
+    expect(card.content).toContain('window.hdpShowImportModal');
   });
 
   it('hides settings in mobile navigation when restricted', () => {
@@ -77,6 +80,11 @@ describe('layout card', () => {
     expect(card.content).not.toContain('<div class="hdp-view" data-view="settings"');
     expect(card.content).not.toContain('SECRET_SETTINGS_HTML');
     expect(card.content).not.toContain('SECRET_SETTINGS_JS');
+    expect(card.content).not.toContain('id="bp-import-modal"');
+    expect(card.content).not.toContain('window.hdpBlueprintSave');
+    expect(card.content).not.toContain('window.hdpShowImportModal');
+    expect(card.content).not.toContain('window.hdpOpenStudio');
+    expect(card.content).not.toContain('id="hdp-studio-overlay"');
   });
 
   it('uses safe view arguments for area navigation', () => {

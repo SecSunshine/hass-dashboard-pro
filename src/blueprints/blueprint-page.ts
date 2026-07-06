@@ -21,23 +21,28 @@ function jsArg(value: unknown): string {
  * Build HTML for all blueprint pages.
  * Returns an array of { id, html } pairs for the layout card.
  */
-export function buildBlueprintPagesHTML(pages: BlueprintInstance[]): Array<{ id: string; html: string }> {
+export function buildBlueprintPagesHTML(pages: BlueprintInstance[], canEdit = true): Array<{ id: string; html: string }> {
   return pages.map(page => ({
     id: safeDomIdSegment(page.id),
-    html: buildBlueprintPageHTML(page),
+    html: buildBlueprintPageHTML(page, canEdit),
   }));
 }
 
 /**
  * Build HTML for a single blueprint page.
  */
-function buildBlueprintPageHTML(page: BlueprintInstance): string {
+function buildBlueprintPageHTML(page: BlueprintInstance, canEdit: boolean): string {
   if (!page.card || Object.keys(page.card).length === 0) {
-    return buildEmptyBlueprintHTML(page);
+    return buildEmptyBlueprintHTML(page, canEdit);
   }
 
   // Render the resolved card config as HTML
   const cardHTML = cardConfigToHTML(page.card, page.name);
+  const editButton = canEdit
+    ? `<button class="bp-page-edit" title="编辑输入" data-action="edit-blueprint" onclick="hdpShowInputEditor(${jsArg(page.id)})">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    </button>`
+    : '';
 
   return `
 <style>
@@ -94,9 +99,7 @@ function buildBlueprintPageHTML(page: BlueprintInstance): string {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
     </div>
     <span class="bp-page-name">${escapeHTML(page.name)}</span>
-    <button class="bp-page-edit" title="编辑输入" data-action="edit-blueprint" onclick="hdpShowInputEditor(${jsArg(page.id)})">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-    </button>
+    ${editButton}
   </div>
   <div class="bp-page-content">
     ${cardHTML}
@@ -107,7 +110,13 @@ function buildBlueprintPageHTML(page: BlueprintInstance): string {
 /**
  * Build HTML for an empty/unconfigured blueprint.
  */
-function buildEmptyBlueprintHTML(page: BlueprintInstance): string {
+function buildEmptyBlueprintHTML(page: BlueprintInstance, canEdit: boolean): string {
+  const configureButton = canEdit
+    ? `<button class="bp-btn bp-btn--primary" data-action="edit-blueprint" onclick="hdpShowInputEditor(${jsArg(page.id)})">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      配置输入
+    </button>`
+    : '';
   return `<div class="bp-empty-page">
     <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
       <rect x="3" y="3" width="18" height="18" rx="4"/>
@@ -115,10 +124,7 @@ function buildEmptyBlueprintHTML(page: BlueprintInstance): string {
     </svg>
     <span class="bp-empty-title">${escapeHTML(page.name)}</span>
     <span class="bp-empty-desc">蓝图配置为空，请点击编辑按钮配置输入参数</span>
-    <button class="bp-btn bp-btn--primary" data-action="edit-blueprint" onclick="hdpShowInputEditor(${jsArg(page.id)})">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-      配置输入
-    </button>
+    ${configureButton}
   </div>
   <style>
     .bp-empty-page {
