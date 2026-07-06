@@ -310,6 +310,22 @@ describe('settings view', () => {
     expect(html).not.toContain('Hidden Person');
   });
 
+  it('keeps hidden person chips visible so they can be restored', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        people: { hidden_persons: ['person.hidden', 'person.missing'] },
+      } as any,
+    };
+    const html = buildSettingsHTML(config, undefined, hass);
+
+    expect(html).toContain('data-action="toggle-hidden-person" data-setting="people.hidden_persons" data-value="person.hidden" aria-pressed="true"');
+    expect(html).toContain("hdpToggleArrayItem('people.hidden_persons', &quot;person.hidden&quot;, event)");
+    expect(html).toContain('Hidden Person');
+    expect(html).toContain('data-action="toggle-hidden-person" data-setting="people.hidden_persons" data-value="person.missing" aria-pressed="true"');
+    expect(html).toContain("hdpToggleArrayItem('people.hidden_persons', &quot;person.missing&quot;, event)");
+  });
+
   it('escapes dashboard setting input values', () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',

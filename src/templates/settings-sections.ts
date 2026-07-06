@@ -1218,6 +1218,14 @@ export function buildPeopleSection(hass: any, config: StrategyConfig): string {
       persons.push({ id: entityId, name });
     }
   }
+  const personIds = new Set(persons.map(person => person.id));
+  for (const entityId of hiddenPersons) {
+    if (personIds.has(entityId)) continue;
+    const stateObj = hass.states?.[entityId];
+    const name = stateObj?.attributes?.friendly_name || entityId.replace('person.', '');
+    persons.push({ id: entityId, name });
+    personIds.add(entityId);
+  }
 
   const chips = persons.map(p => {
     const hidden = hiddenPersons.includes(p.id);
