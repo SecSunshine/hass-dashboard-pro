@@ -52,6 +52,17 @@ export function buildLayoutCard(opts: LayoutCardOptions): LovelaceCardConfig {
   const title = config.hdp_config?.dashboard?.name || config.sidebar_title || config.title || '智能家居';
   const hiddenAreas = getConfiguredHiddenAreas(config);
   const showSettings = shouldShowSettings(hass, config);
+  const settingsViewHTML = showSettings
+    ? `<div class="hdp-view" data-view="settings" style="display:none">
+      <div class="hdp-area-header-bar">
+        <span class="hdp-area-title">设置</span>
+      </div>
+      <div class="hdp-area-content">${settingsHTML}</div>
+    </div>`
+    : '';
+  const settingsScript = showSettings ? settingsJS || '' : '';
+  const themeStudioHTML = showSettings ? buildThemeStudioHTML(tokens, hass, config) : '';
+  const themeStudioJS = showSettings ? generateThemeStudioJS() : '';
 
   // Build sidebar
   const sidebarHTML = buildSidebarHTML({
@@ -140,16 +151,11 @@ ${generateDesignTokenCSS(tokens)}
     </div>
     ${areaViewSections}
     ${blueprintSections}
-    <div class="hdp-view" data-view="settings" style="display:none">
-      <div class="hdp-area-header-bar">
-        <span class="hdp-area-title">设置</span>
-      </div>
-      <div class="hdp-area-content">${settingsHTML}</div>
-    </div>
+    ${settingsViewHTML}
   </main>
   ${bottomNavHTML}
   ${buildImportModalHTML()}
-  ${buildThemeStudioHTML(tokens, hass, config)}
+  ${themeStudioHTML}
 </div>
 <script>
 ${generateServiceScript()}
@@ -157,8 +163,8 @@ ${generateStorageJS()}
 ${generateBlueprintJS()}
 ${generateBlueprintModalJS()}
 ${devicesJS || ''}
-${settingsJS || ''}
-${generateThemeStudioJS()}
+${settingsScript}
+${themeStudioJS}
 ${buildNavigationScript()}
 </script>`;
 

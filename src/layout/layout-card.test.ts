@@ -67,12 +67,16 @@ describe('layout card', () => {
       homeHTML: '',
       areaSections: [],
       devicesHTML: '',
-      settingsHTML: '',
+      settingsHTML: 'SECRET_SETTINGS_HTML',
+      settingsJS: 'SECRET_SETTINGS_JS',
       areaSummaries: [],
       blueprintPages: [],
     });
 
     expect(card.content).not.toContain('data-view="settings" data-action="show-view"');
+    expect(card.content).not.toContain('<div class="hdp-view" data-view="settings"');
+    expect(card.content).not.toContain('SECRET_SETTINGS_HTML');
+    expect(card.content).not.toContain('SECRET_SETTINGS_JS');
   });
 
   it('uses safe view arguments for area navigation', () => {
