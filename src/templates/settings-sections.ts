@@ -934,6 +934,7 @@ window.hdpImportShareCode = function() {
     var visual = hdpNormalizeVisualConfig(bundle.visual_config) || {};
     var blueprints = hdpNormalizeBlueprints(hdpApplyEntityMapping(bundle.blueprints || [], mapping.mapping));
 
+    hdpClearConfig();
     hdpSaveConfig(config);
     try { localStorage.setItem('hdp_visual_config', JSON.stringify(visual)); } catch(e) {}
     if (typeof hdpBlueprintSave === 'function') hdpBlueprintSave(blueprints);

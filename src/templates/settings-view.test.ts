@@ -347,6 +347,9 @@ describe('settings view', () => {
     expect(js).toContain('var config = hdpNormalizeHDPConfig(hdpApplyEntityMapping(bundle.hdp_config || {}, mapping.mapping)) || {};');
     expect(js).toContain('var visual = hdpNormalizeVisualConfig(bundle.visual_config) || {};');
     expect(js).toContain('var blueprints = hdpNormalizeBlueprints(hdpApplyEntityMapping(bundle.blueprints || [], mapping.mapping));');
+    expect(js.indexOf('hdpClearConfig();', js.indexOf('window.hdpImportShareCode = function'))).toBeLessThan(
+      js.indexOf('hdpSaveConfig(config);', js.indexOf('window.hdpImportShareCode = function')),
+    );
     expect(html).toContain("hdpSaveSetting('areas.hide_unavailable'");
     expect(html).toContain('data-action="toggle-setting" data-setting="areas.hide_unavailable" role="switch" aria-checked="false" tabindex="0"');
     expect(html).toContain("this.setAttribute('aria-checked'");
