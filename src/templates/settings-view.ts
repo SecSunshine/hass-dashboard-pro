@@ -748,7 +748,7 @@ ${generateDesignTokenCSS(tokens)}
 <div class="settings-header" data-component="settings-header">
   <div class="settings-header-title">视觉设置</div>
   <div class="settings-header-sub">自定义仪表盘外观，所有更改实时生效</div>
-  <button class="settings-studio-btn" id="settings-studio-btn" data-component="studio-entry">
+  <button class="settings-studio-btn" id="settings-studio-btn" data-action="open-theme-studio" data-component="studio-entry">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
     主题工作室
   </button>
@@ -845,7 +845,7 @@ function buildThemePresetCard(current: string, tokens?: ResolvedTokens): Lovelac
         )
         .join('');
 
-      return `<button class="theme-card ${isActive ? 'theme-card--active' : ''}" data-preset="${p.key}" data-component="theme-card">
+      return `<button class="theme-card ${isActive ? 'theme-card--active' : ''}" data-action="select-theme-preset" data-preset="${p.key}" data-component="theme-card" aria-pressed="${isActive ? 'true' : 'false'}">
         <div class="theme-preview" style="background: ${p.dots[0]};">
           <div class="theme-dot-row">${dots}</div>
           <div class="theme-preview-text" style="color: ${p.textColor}; font-size: 11px; margin-top: 6px; font-weight: 600;">Aa</div>
@@ -969,7 +969,7 @@ function buildSeedColorCard(stored: StoredVisualConfig, tokens?: ResolvedTokens)
   const moodCards = MOOD_PRESETS.map(m => {
     const isActive = currentMood === m.id;
     const seed = escapeInlineStyleValue(m.seed);
-    return `<button class="mood-card ${isActive ? 'mood-card--active' : ''}" data-mood="${escapeAttribute(m.id)}" data-component="mood-card">
+    return `<button class="mood-card ${isActive ? 'mood-card--active' : ''}" data-action="select-mood-preset" data-mood="${escapeAttribute(m.id)}" data-component="mood-card" aria-pressed="${isActive ? 'true' : 'false'}">
       <div class="mood-preview" style="background: linear-gradient(135deg, ${seed} 0%, ${seed}99 100%);">
         <span class="mood-icon">${escapeHTML(m.icon)}</span>
       </div>
@@ -1130,11 +1130,11 @@ ${generateDesignTokenCSS(tokens)}
       <span class="seed-custom-label">自动明暗模式</span>
       <span class="seed-custom-desc">20:00-06:00 自动切换暗色色板</span>
     </div>
-    <div class="toggle-switch ${autoDark ? 'toggle-switch--on' : 'toggle-switch--off'}" id="auto-dark-toggle" data-component="auto-dark-toggle">
+    <div class="toggle-switch ${autoDark ? 'toggle-switch--on' : 'toggle-switch--off'}" id="auto-dark-toggle" data-action="toggle-auto-dark" data-component="auto-dark-toggle" role="switch" aria-checked="${autoDark ? 'true' : 'false'}" tabindex="0" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); this.click(); }">
       <div class="toggle-switch-knob"></div>
     </div>
   </div>
-  ${(currentMood || currentSeed) ? '<div class="seed-clear-row"><button class="seed-clear-btn" id="seed-clear-btn">清除种子色，恢复主题预设</button></div>' : ''}
+  ${(currentMood || currentSeed) ? '<div class="seed-clear-row"><button class="seed-clear-btn" id="seed-clear-btn" data-action="clear-seed-color">清除种子色，恢复主题预设</button></div>' : ''}
 </div>
 <script>
   (function() {
@@ -1216,6 +1216,7 @@ ${generateDesignTokenCSS(tokens)}
       darkToggle.addEventListener('click', function() {
         var isOn = this.className.indexOf('toggle-switch--on') !== -1;
         this.className = 'toggle-switch ' + (isOn ? 'toggle-switch--off' : 'toggle-switch--on');
+        this.setAttribute('aria-checked', isOn ? 'false' : 'true');
         var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
         cfg.auto_dark = !isOn;
         hdpSaveVisualConfigAndReload(cfg);
@@ -1421,7 +1422,7 @@ ${generateDesignTokenCSS(tokens)}
       <span class="am-toggle-label">自动氛围切换</span>
       <span class="am-toggle-desc">每 5 分钟检测时间段，自动切换氛围预设</span>
     </div>
-    <div class="toggle-switch ${autoMood ? 'toggle-switch--on' : 'toggle-switch--off'}" id="auto-mood-toggle" data-component="auto-mood-toggle">
+    <div class="toggle-switch ${autoMood ? 'toggle-switch--on' : 'toggle-switch--off'}" id="auto-mood-toggle" data-action="toggle-auto-mood" data-component="auto-mood-toggle" role="switch" aria-checked="${autoMood ? 'true' : 'false'}" tabindex="0" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); this.click(); }">
       <div class="toggle-switch-knob"></div>
     </div>
   </div>
@@ -1438,6 +1439,7 @@ ${generateDesignTokenCSS(tokens)}
       moodToggle.addEventListener('click', function() {
         var isOn = this.className.indexOf('toggle-switch--on') !== -1;
         this.className = 'toggle-switch ' + (isOn ? 'toggle-switch--off' : 'toggle-switch--on');
+        this.setAttribute('aria-checked', isOn ? 'false' : 'true');
         var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
         cfg.auto_mood = !isOn;
         if (periodsEl) {
@@ -1514,7 +1516,7 @@ function buildCardStyleCard(stored: StoredVisualConfig, tokens?: ResolvedTokens)
   const cards = styles
     .map((s) => {
       const isActive = currentStyle === s.key;
-      return `<button class="style-card ${isActive ? 'style-card--active' : ''}" data-style="${s.key}" data-component="style-card">
+      return `<button class="style-card ${isActive ? 'style-card--active' : ''}" data-action="select-card-style" data-style="${s.key}" data-component="style-card" aria-pressed="${isActive ? 'true' : 'false'}">
         <div class="style-preview-box" style="${s.preview} border-radius: 8px;">
           <div class="style-preview-line" style="width: 60%; height: 4px; border-radius: 2px; background: var(--hdp-text-muted); opacity: 0.4;"></div>
           <div class="style-preview-line" style="width: 40%; height: 4px; border-radius: 2px; background: var(--hdp-text-muted); opacity: 0.25;"></div>
@@ -1648,7 +1650,7 @@ function buildLayoutConfigCard(stored: StoredVisualConfig, config: StrategyConfi
     { val: 'spacious', label: '宽松', desc: '更多留白' },
   ];
   const densityBtns = densities.map(d =>
-    `<button class="lc-density-btn ${d.val === currentDensity ? 'lc-density-btn--active' : ''}" data-density="${escapeAttribute(d.val)}">
+    `<button class="lc-density-btn ${d.val === currentDensity ? 'lc-density-btn--active' : ''}" data-action="select-layout-density" data-density="${escapeAttribute(d.val)}" aria-pressed="${d.val === currentDensity ? 'true' : 'false'}">
       <span class="lc-density-label">${escapeHTML(d.label)}</span>
       <span class="lc-density-desc">${escapeHTML(d.desc)}</span>
     </button>`
@@ -1833,6 +1835,7 @@ ${generateDesignTokenCSS(tokens)}
         var density = this.getAttribute('data-density');
         document.querySelectorAll('.lc-density-btn').forEach(function(b) {
           b.className = 'lc-density-btn' + (b.getAttribute('data-density') === density ? ' lc-density-btn--active' : '');
+          b.setAttribute('aria-pressed', b.getAttribute('data-density') === density ? 'true' : 'false');
         });
         var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
         cfg.layout_density = density;
@@ -2129,7 +2132,7 @@ ${generateDesignTokenCSS(tokens)}
   </div>
   <div class="toggle-row">
     <span class="toggle-label-text">卡片投影</span>
-    <div class="toggle-switch ${stored.shadows !== false ? 'toggle-switch--on' : 'toggle-switch--off'}" id="shadow-toggle" data-component="shadow-toggle">
+    <div class="toggle-switch ${stored.shadows !== false ? 'toggle-switch--on' : 'toggle-switch--off'}" id="shadow-toggle" data-action="toggle-card-shadow" data-component="shadow-toggle" role="switch" aria-checked="${stored.shadows !== false ? 'true' : 'false'}" tabindex="0" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); this.click(); }">
       <div class="toggle-switch-knob"></div>
     </div>
   </div>
@@ -2173,6 +2176,7 @@ ${generateDesignTokenCSS(tokens)}
     document.getElementById('shadow-toggle').addEventListener('click', function() {
       shadowOn = !shadowOn;
       this.className = 'toggle-switch ' + (shadowOn ? 'toggle-switch--on' : 'toggle-switch--off');
+      this.setAttribute('aria-checked', shadowOn ? 'true' : 'false');
       var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
       cfg.shadows = shadowOn;
       hdpSaveVisualConfig(cfg);
@@ -2220,7 +2224,7 @@ function buildFontCard(stored: StoredVisualConfig, tokens?: ResolvedTokens): Lov
     .map((f) => {
       const selected = currentFont === f.value;
       return `<button class="font-card ${selected ? 'font-card--active' : ''}"
-        data-font="${f.value.replace(/"/g, '&quot;')}" data-component="font-card">
+        data-action="select-font-family" data-font="${f.value.replace(/"/g, '&quot;')}" data-component="font-card" aria-pressed="${selected ? 'true' : 'false'}">
         <div class="font-sample" style="font-family: ${f.value};">${f.sample}</div>
         <div class="font-meta">
           <span class="font-name">${f.label}</span>
@@ -2362,11 +2366,11 @@ ${generateDesignTokenCSS(tokens)}
   }
 </style>
 <div class="action-section" data-component="settings-actions">
-  <button class="action-btn action-btn--reset" id="reset-btn">
+  <button class="action-btn action-btn--reset" id="reset-btn" data-action="reset-visual-config">
     <svg viewBox="0 0 24 24" fill="none"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="currentColor"/></svg>
     恢复默认
   </button>
-  <button class="action-btn action-btn--done" id="done-btn">
+  <button class="action-btn action-btn--done" id="done-btn" data-action="close-settings">
     <svg viewBox="0 0 24 24" fill="none"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/></svg>
     完成配置
   </button>

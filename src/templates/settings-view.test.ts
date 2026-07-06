@@ -138,6 +138,20 @@ describe('settings view', () => {
     expect(html).toContain('data-action="export-config"');
     expect(html).toContain('data-action="import-config"');
     expect(html).toContain('data-action="reset-config"');
+    expect(html).toContain('data-action="open-theme-studio"');
+    expect(html).toContain('data-action="select-theme-preset" data-preset="light" data-component="theme-card" aria-pressed="true"');
+    expect(html).toContain('data-action="select-mood-preset"');
+    expect(html).toContain('data-action="toggle-auto-dark" data-component="auto-dark-toggle" role="switch" aria-checked="true" tabindex="0"');
+    expect(html).toContain('data-action="toggle-auto-mood" data-component="auto-mood-toggle" role="switch" aria-checked="false" tabindex="0"');
+    expect(html).toContain('data-action="select-card-style" data-style="classic" data-component="style-card" aria-pressed="true"');
+    expect(html).toContain('data-action="select-layout-density" data-density="standard" aria-pressed="true"');
+    expect(html).toContain('data-action="toggle-card-shadow" data-component="shadow-toggle" role="switch" aria-checked="true" tabindex="0"');
+    expect(html).toContain('data-action="select-font-family"');
+    expect(html).toContain('data-action="reset-visual-config"');
+    expect(html).toContain('data-action="close-settings"');
+    expect(js).toContain("this.setAttribute('aria-checked', isOn ? 'false' : 'true');");
+    expect(js).toContain("this.setAttribute('aria-checked', shadowOn ? 'true' : 'false');");
+    expect(js).toContain("b.setAttribute('aria-pressed'");
     expect(html).not.toMatch(/[^<]\/(div|span|button|option|a|textarea|label|select|input)>/);
     expect(html).not.toMatch(/(^|[{}])\s*\.settings-section\s*\{/);
     expect(html).not.toMatch(/(^|[{}])\s*\.theme-card\s*\{/);
@@ -255,7 +269,7 @@ describe('settings view', () => {
     };
     const html = buildSettingsHTML(config, undefined, hass);
 
-    expect(html).toContain('theme-card theme-card--active" data-preset="dark"');
+    expect(html).toContain('theme-card theme-card--active" data-action="select-theme-preset" data-preset="dark" data-component="theme-card" aria-pressed="true"');
   });
 
   it('does not offer visual skin overrides for hidden areas', () => {
