@@ -91,6 +91,56 @@ describe('dashboard strategy hidden filters', () => {
     expect(content.indexOf('<div class="hdp-view" data-view="bedroom"')).toBeLessThan(content.indexOf('<div class="hdp-view" data-view="kitchen"'));
   });
 
+  it('removes areas left empty by hidden device type filters', async () => {
+    const motionHass: Hass = {
+      ...hass,
+      states: {
+        ...hass.states,
+        'binary_sensor.bedroom_motion': {
+          entity_id: 'binary_sensor.bedroom_motion',
+          state: 'off',
+          attributes: { friendly_name: 'Bedroom Motion', device_class: 'motion' },
+          last_changed: '',
+          last_updated: '',
+        },
+      },
+      entities: {
+        ...hass.entities,
+        'light.bedroom': {
+          ...hass.entities['light.bedroom'],
+          disabled_by: 'user',
+        },
+        'binary_sensor.bedroom_motion': {
+          entity_id: 'binary_sensor.bedroom_motion',
+          device_id: null,
+          area_id: 'bedroom',
+          platform: 'demo',
+          disabled_by: null,
+          hidden_by: null,
+        },
+      },
+    };
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        devices: { hidden_device_types: ['binary_sensor.motion'] },
+      } as any,
+    };
+
+    const dashboard = await HassDashboardProStrategy.generate(config, motionHass);
+    const homeStrategy = dashboard.views.find(view => view.path === 'home')?.strategy;
+
+    expect(homeStrategy?.area_summaries?.map(area => area.area_id)).toEqual(['kitchen']);
+
+    const home = await HassDashboardProViewStrategy.generate(homeStrategy!, motionHass);
+    const content = String(home.cards[0].content || '');
+
+    expect(content).toContain('data-area="kitchen"');
+    expect(content).not.toContain('data-area="bedroom"');
+    expect(content).not.toContain('data-view="bedroom"');
+    expect(content).not.toContain('Bedroom Motion');
+  });
+
   it('omits the top-level settings view when settings are restricted', async () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',

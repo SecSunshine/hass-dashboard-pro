@@ -57,8 +57,8 @@ function buildFullLayoutCard(hass: Hass, config: StrategyConfig, tokens: ReturnT
   // 1. Home HTML
   const homeHTML = buildHomeHTML(hass, config, tokens);
 
-  // 2. Area HTML sections — iterate areaSummaries so ALL visible areas get a view,
-  // even those with no entities (otherwise sidebar clicks fall back to home)
+  // 2. Area HTML sections - iterate filtered summaries so sidebar entries and
+  // pre-rendered area views stay in sync after hidden domain/type filters.
   const areaSections: Array<{ area_id: string; area_name: string; html: string }> = [];
   for (const summary of areaSummaries) {
     const entities = areaEntityMap.get(summary.area_id) || [];

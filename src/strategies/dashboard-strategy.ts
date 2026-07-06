@@ -133,6 +133,7 @@ function buildAreaSummaries(
     if (hiddenAreas.includes(areaId)) continue;
 
     const entities = areaEntityMap.get(areaId) || [];
+    if (entities.length === 0) continue;
     const activeCount = entities.filter(e => isEntityOn(e.state, e.domain)).length;
 
     // Find temp/humidity sensors in this area
