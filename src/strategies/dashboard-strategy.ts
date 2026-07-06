@@ -23,6 +23,7 @@ import {
   UNASSIGNED_AREA_ID,
   UNASSIGNED_AREA_NAME,
 } from '../utils/dashboard-model';
+import { shouldShowSettings } from '../utils/permissions';
 
 const VIEW_STRATEGY_TYPE = 'custom:hass-dashboard-pro-view';
 
@@ -97,20 +98,22 @@ export class HassDashboardProStrategy {
     }
 
     // 4. Settings View
-    views.push({
-      title: '设置',
-      path: 'hdp-settings',
-      icon: 'mdi:cog',
-      badges: [],
-      cards: [],
-      panel: true,
-      strategy: {
-        ...enrichedConfig,
-        type: VIEW_STRATEGY_TYPE,
-        view_path: 'hdp-settings',
-      } as StrategyConfig,
-      subview: false,
-    });
+    if (shouldShowSettings(hass, effectiveConfig)) {
+      views.push({
+        title: '设置',
+        path: 'hdp-settings',
+        icon: 'mdi:cog',
+        badges: [],
+        cards: [],
+        panel: true,
+        strategy: {
+          ...enrichedConfig,
+          type: VIEW_STRATEGY_TYPE,
+          view_path: 'hdp-settings',
+        } as StrategyConfig,
+        subview: false,
+      });
+    }
 
     return { views };
   }

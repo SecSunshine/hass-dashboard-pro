@@ -90,4 +90,39 @@ describe('dashboard strategy hidden filters', () => {
     expect(content.indexOf('data-area="bedroom"')).toBeLessThan(content.indexOf('data-area="kitchen"'));
     expect(content.indexOf('<div class="hdp-view" data-view="bedroom"')).toBeLessThan(content.indexOf('<div class="hdp-view" data-view="kitchen"'));
   });
+
+  it('omits the top-level settings view when settings are restricted', async () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        permissions: { restrict_settings: true },
+      } as any,
+    };
+
+    const dashboard = await HassDashboardProStrategy.generate(config, hass);
+    const paths = dashboard.views.map(view => view.path);
+
+    expect(paths).toContain('home');
+    expect(paths).toContain('devices');
+    expect(paths).not.toContain('hdp-settings');
+  });
+
+  it('omits the top-level settings view for restricted non-admin users', async () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        permissions: { restrict_non_admin: true },
+      } as any,
+    };
+    const nonAdminHass: Hass = {
+      ...hass,
+      user: { is_admin: false } as any,
+    };
+
+    const dashboard = await HassDashboardProStrategy.generate(config, nonAdminHass);
+    const paths = dashboard.views.map(view => view.path);
+
+    expect(paths).toContain('home');
+    expect(paths).not.toContain('hdp-settings');
+  });
 });

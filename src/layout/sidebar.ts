@@ -13,6 +13,7 @@ import type { Hass, AreaSummary, StrategyConfig } from '../types';
 import { groupAreasByFloor } from '../utils/area-entities';
 import { getAreaIcon } from '../strategies/dashboard-strategy';
 import { escapeAttribute, escapeHTML, escapeJSONAttribute } from '../utils/html';
+import { shouldShowSettings } from '../utils/permissions';
 
 export interface SidebarOptions {
   title: string;
@@ -109,12 +110,7 @@ export function buildSidebarHTML(opts: SidebarOptions): string {
   </div>`;
 }
 
-export function shouldShowSettings(hass: Hass, config: StrategyConfig): boolean {
-  const permissions = config.hdp_config?.permissions;
-  if (permissions?.restrict_settings) return false;
-  if (permissions?.restrict_non_admin && hass.user?.is_admin === false) return false;
-  return true;
-}
+export { shouldShowSettings };
 
 /**
  * Generate sidebar CSS styles.
