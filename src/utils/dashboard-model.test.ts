@@ -7,6 +7,7 @@ import {
   getConfiguredHiddenAreas,
   getConfiguredHiddenDeviceTypes,
   getConfiguredHiddenDomains,
+  getConfiguredHiddenPersons,
   getDashboardFilters,
   resolveEntityAreaId,
   UNASSIGNED_AREA_ID,
@@ -133,15 +134,18 @@ describe('dashboard model', () => {
       hidden_areas: ['closet'],
       hidden_domains: ['sensor'],
       hidden_device_types: ['binary_sensor.motion'],
+      hidden_persons: ['person.alice'],
       hdp_config: {
         areas: { hidden_areas: [] },
         devices: { hidden_domains: ['switch'], hidden_device_types: [] },
+        people: { hidden_persons: [] },
       } as any,
     };
 
     expect(getConfiguredHiddenAreas(config)).toEqual(['closet']);
     expect(getConfiguredHiddenDomains(config)).toEqual(['switch', 'sensor']);
     expect(getConfiguredHiddenDeviceTypes(config)).toEqual(['binary_sensor.motion']);
+    expect(getConfiguredHiddenPersons(config)).toEqual(['person.alice']);
   });
 
   it('reads configured area order from persisted HDP config', () => {
@@ -162,12 +166,14 @@ describe('dashboard model', () => {
         hidden_areas: ['closet'],
         hidden_domains: ['sensor'],
         hidden_device_types: ['switch'],
+        hidden_persons: ['person.alice'],
       } as any,
     };
 
     expect(getConfiguredHiddenAreas(config)).toEqual(['closet']);
     expect(getConfiguredHiddenDomains(config)).toEqual(['sensor']);
     expect(getConfiguredHiddenDeviceTypes(config)).toEqual(['switch']);
+    expect(getConfiguredHiddenPersons(config)).toEqual(['person.alice']);
 
     const entities = collectVisibleEntities(hass, getDashboardFilters(config));
     expect(entities.map(entity => entity.entity_id)).toEqual(['light.kitchen']);

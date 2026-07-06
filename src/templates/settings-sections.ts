@@ -30,6 +30,7 @@ import {
   getConfiguredAreaOrder,
   getConfiguredHiddenDeviceTypes,
   getConfiguredHiddenDomains,
+  getConfiguredHiddenPersons,
   resolveEntityAreaId,
   UNASSIGNED_AREA_ID,
   UNASSIGNED_AREA_NAME,
@@ -821,6 +822,7 @@ function hdpNormalizeHDPConfig(config) {
   var legacyHiddenAreas = hdpNormalizeStringArray(normalized.hidden_areas);
   var legacyHiddenDomains = hdpNormalizeStringArray(normalized.hidden_domains);
   var legacyHiddenDeviceTypes = hdpNormalizeStringArray(normalized.hidden_device_types);
+  var legacyHiddenPersons = hdpNormalizeStringArray(normalized.hidden_persons);
   if ('visual' in normalized) {
     var visual = hdpNormalizeVisualConfig(normalized.visual);
     if (visual) normalized.visual = visual;
@@ -850,9 +852,12 @@ function hdpNormalizeHDPConfig(config) {
   delete normalized.hidden_device_types;
   if (normalized.people && typeof normalized.people === 'object' && !Array.isArray(normalized.people)) {
     normalized.people = Object.assign({}, normalized.people, {
-      hidden_persons: hdpNormalizeStringArray(normalized.people.hidden_persons)
+      hidden_persons: hdpMergeStringArrays(normalized.people.hidden_persons, legacyHiddenPersons)
     });
+  } else if (legacyHiddenPersons.length) {
+    normalized.people = { hidden_persons: legacyHiddenPersons };
   }
+  delete normalized.hidden_persons;
   if (normalized.home && typeof normalized.home === 'object' && !Array.isArray(normalized.home)) {
     normalized.home = Object.assign({}, normalized.home, {
       section_order: hdpNormalizeStringArray(normalized.home.section_order),
@@ -1207,7 +1212,7 @@ export function buildHeaderSection(config: StrategyConfig): string {
 // ─── 4. People ──────────────────────────────────────────────────────────────
 
 export function buildPeopleSection(hass: any, config: StrategyConfig): string {
-  const hiddenPersons: string[] = (config as any).hdp_config?.people?.hidden_persons || config.hidden_persons || [];
+  const hiddenPersons: string[] = getConfiguredHiddenPersons(config);
 
   // Find person entities
   const persons: Array<{ id: string; name: string }> = [];

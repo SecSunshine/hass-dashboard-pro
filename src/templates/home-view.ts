@@ -37,6 +37,7 @@ import {
 import type { PersonInfo, DomainStatus, FavoriteEntity } from '../utils/home-data';
 import { escapeAttribute, escapeHTML, escapeInlineStyleValue, escapeURLAttribute } from '../utils/html';
 import { cardSkinClass } from '../utils/card-skin';
+import { getConfiguredHiddenPersons } from '../utils/dashboard-model';
 
 const DEFAULT_HOME_SECTION_ORDER: HomeSectionKey[] = ['status_badges', 'people', 'environment', 'power_usage', 'favorites', 'summary'];
 
@@ -169,7 +170,7 @@ function getHiddenInfoCards(config?: StrategyConfig): string[] {
 }
 
 function getHiddenPersons(config: StrategyConfig): string[] {
-  return config.hdp_config?.people?.hidden_persons || config.hidden_persons || [];
+  return getConfiguredHiddenPersons(config);
 }
 
 function getHeaderConfig(config: StrategyConfig): {

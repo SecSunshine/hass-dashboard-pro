@@ -138,6 +138,20 @@ describe('home view settings', () => {
     expect(html).not.toContain('Bob');
   });
 
+  it('honors legacy hidden persons when hdp_config people is present', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hidden_persons: ['person.bob'],
+      hdp_config: {
+        people: { hidden_persons: [] },
+      } as any,
+    };
+
+    const html = buildHomeHTML(hass, config);
+    expect(html).toContain('Alice');
+    expect(html).not.toContain('Bob');
+  });
+
   it('honors header visibility toggles', () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',

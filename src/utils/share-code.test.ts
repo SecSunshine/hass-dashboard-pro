@@ -68,8 +68,10 @@ describe('share code', () => {
         hidden_areas: ['garage', 'kitchen', 1],
         hidden_domains: ['switch', 'sensor', false],
         hidden_device_types: ['sensor.power', 'binary_sensor.motion', {}],
+        hidden_persons: ['person.bob', 'person.alice', null],
         areas: { hidden_areas: ['kitchen', 1, ''], area_order: ['kitchen', null] },
         devices: { hidden_domains: ['sensor', false], hidden_device_types: ['binary_sensor.motion', {}] },
+        people: { hidden_persons: ['person.alice', ''] },
         blueprints: {
           pages: [
             { id: 'broken' },
@@ -109,9 +111,11 @@ describe('share code', () => {
     expect(imported.hdp_config?.areas?.area_order).toEqual(['kitchen']);
     expect(imported.hdp_config?.devices?.hidden_domains).toEqual(['sensor', 'switch']);
     expect(imported.hdp_config?.devices?.hidden_device_types).toEqual(['binary_sensor.motion', 'sensor.power']);
+    expect(imported.hdp_config?.people?.hidden_persons).toEqual(['person.alice', 'person.bob']);
     expect(imported.hdp_config).not.toHaveProperty('hidden_areas');
     expect(imported.hdp_config).not.toHaveProperty('hidden_domains');
     expect(imported.hdp_config).not.toHaveProperty('hidden_device_types');
+    expect(imported.hdp_config).not.toHaveProperty('hidden_persons');
     expect(imported.hdp_config?.blueprints?.pages).toHaveLength(1);
     expect(imported.hdp_config?.blueprints?.pages[0].icon).toBe('mdi:puzzle');
     expect(imported.hdp_config?.blueprints?.replacements).toEqual({});

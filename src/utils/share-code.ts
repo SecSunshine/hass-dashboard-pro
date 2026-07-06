@@ -94,6 +94,7 @@ function normalizeHDPConfig(config: unknown): Partial<HDPConfig> | undefined {
   const legacyHiddenAreas = normalizeStringArray(normalized.hidden_areas);
   const legacyHiddenDomains = normalizeStringArray(normalized.hidden_domains);
   const legacyHiddenDeviceTypes = normalizeStringArray(normalized.hidden_device_types);
+  const legacyHiddenPersons = normalizeStringArray(normalized.hidden_persons);
 
   if ('visual' in normalized) {
     const visual = normalizeVisualConfig(normalized.visual);
@@ -130,9 +131,12 @@ function normalizeHDPConfig(config: unknown): Partial<HDPConfig> | undefined {
   if (isRecord(normalized.people)) {
     normalized.people = {
       ...normalized.people,
-      hidden_persons: normalizeStringArray(normalized.people.hidden_persons),
+      hidden_persons: mergeStringArrays(normalized.people.hidden_persons, legacyHiddenPersons),
     };
+  } else if (legacyHiddenPersons.length) {
+    normalized.people = { hidden_persons: legacyHiddenPersons };
   }
+  delete normalized.hidden_persons;
 
   if (isRecord(normalized.home)) {
     normalized.home = {

@@ -238,20 +238,23 @@ describe('settings view', () => {
     expect(html).not.toContain("hdpToggleArrayItem('devices.hidden_domains', &quot;automation&quot;, event)");
   });
 
-  it('marks legacy hidden area and domain settings as active', () => {
+  it('marks legacy hidden area, domain, and person settings as active', () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',
       hidden_areas: ['kitchen'],
       hidden_domains: ['number'],
+      hidden_persons: ['person.alice'],
       hdp_config: {
         areas: { hidden_areas: [] },
         devices: { hidden_domains: [], hidden_device_types: [] },
+        people: { hidden_persons: [] },
       } as any,
     };
     const html = buildSettingsHTML(config, undefined, hass);
 
     expect(html).toContain('type="button" class="st-chip st-chip--active" data-action="toggle-hidden-area" data-setting="areas.hidden_areas" data-value="kitchen" aria-pressed="true" onclick="hdpToggleArrayItem(\'areas.hidden_areas\', &quot;kitchen&quot;, event)">Kitchen');
     expect(html).toContain('type="button" class="st-chip st-chip--active" data-action="toggle-hidden-domain" data-setting="devices.hidden_domains" data-value="number" aria-pressed="true" onclick="hdpToggleArrayItem(\'devices.hidden_domains\', &quot;number&quot;, event)');
+    expect(html).toContain('type="button" class="st-chip st-chip--active" data-action="toggle-hidden-person" data-setting="people.hidden_persons" data-value="person.alice" aria-pressed="true" onclick="hdpToggleArrayItem(\'people.hidden_persons\', &quot;person.alice&quot;, event)">Alice');
   });
 
   it('offers home summary info card visibility controls', () => {
@@ -368,8 +371,11 @@ describe('settings view', () => {
     expect(js).toContain('function hdpNormalizeHDPConfig(config)');
     expect(js).toContain('function hdpMergeStringArrays()');
     expect(js).toContain('var legacyHiddenAreas = hdpNormalizeStringArray(normalized.hidden_areas);');
+    expect(js).toContain('var legacyHiddenPersons = hdpNormalizeStringArray(normalized.hidden_persons);');
     expect(js).toContain('hidden_areas: hdpMergeStringArrays(normalized.areas.hidden_areas, legacyHiddenAreas)');
+    expect(js).toContain('hidden_persons: hdpMergeStringArrays(normalized.people.hidden_persons, legacyHiddenPersons)');
     expect(js).toContain('delete normalized.hidden_device_types;');
+    expect(js).toContain('delete normalized.hidden_persons;');
     expect(js).toContain('function hdpNormalizeVisualConfig(config)');
     expect(js).toContain('function hdpNormalizeBlueprints(value)');
     expect(js).toContain('function hdpSanitizeLayoutDensity(value)');
