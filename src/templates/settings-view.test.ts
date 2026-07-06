@@ -207,6 +207,9 @@ describe('settings view', () => {
     expect(html).not.toMatch(/[^<]\/(div|span|button|option|a|textarea|label|select|input)>/);
     expect(html).not.toMatch(/(^|[{}])\s*\.settings-section\s*\{/);
     expect(html).not.toMatch(/(^|[{}])\s*\.theme-card\s*\{/);
+    expect(html).not.toMatch(/(^|[{}])\s*\.theme-card\s*,\s*\.mood-card/);
+    expect(html).not.toMatch(/(^|[{}])\s*\.toggle-switch\s*\{/);
+    expect(html).not.toMatch(/(^|[{}])\s*\.toggle-switch--on/);
     expect(html).not.toContain(':host, :root');
     expect(html.indexOf('Stable visual-settings layout')).toBeGreaterThan(html.indexOf('#st-visual-body .settings-header'));
     expect(html).not.toContain('grid-template-columns: repeat(4, 1fr)');

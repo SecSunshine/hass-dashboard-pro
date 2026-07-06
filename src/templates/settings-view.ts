@@ -139,12 +139,15 @@ ${visualStyles}
     gap: 12px;
   }
   /* Selectable items in visual cards */
-  .theme-card, .mood-card, .style-card, .font-card {
+  #st-visual-body .theme-card,
+  #st-visual-body .mood-card,
+  #st-visual-body .style-card,
+  #st-visual-body .font-card {
     border-radius: var(--hdp-radius, 14px);
     transition: all 0.2s ease;
   }
   /* Toggle switch consistency */
-  .toggle-switch {
+  #st-visual-body .toggle-switch {
     width: 44px; height: 24px;
     border-radius: 12px;
     position: relative;
@@ -152,9 +155,9 @@ ${visualStyles}
     transition: background 0.2s ease;
     flex-shrink: 0;
   }
-  .toggle-switch--on { background: var(--hdp-primary, #4F6EF7); }
-  .toggle-switch--off { background: var(--hdp-divider, rgba(0,0,0,0.08)); }
-  .toggle-switch::after {
+  #st-visual-body .toggle-switch--on { background: var(--hdp-primary, #4F6EF7); }
+  #st-visual-body .toggle-switch--off { background: var(--hdp-divider, rgba(0,0,0,0.08)); }
+  #st-visual-body .toggle-switch::after {
     content: '';
     position: absolute;
     width: 20px; height: 20px;
@@ -164,8 +167,8 @@ ${visualStyles}
     box-shadow: 0 1px 3px rgba(0,0,0,0.15);
     transition: transform 0.2s ease;
   }
-  .toggle-switch--on::after { transform: translateX(20px); }
-  .toggle-switch--off::after { transform: translateX(2px); border: 1px solid var(--hdp-border); }
+  #st-visual-body .toggle-switch--on::after { transform: translateX(20px); }
+  #st-visual-body .toggle-switch--off::after { transform: translateX(2px); border: 1px solid var(--hdp-border); }
 
   /* Stable visual-settings layout when individual html-card bodies are merged */
   #st-visual-body,
