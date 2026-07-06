@@ -160,6 +160,16 @@ export function getSettingsSectionsCSS(): string {
     min-width: 0;
     flex: 1 1 auto;
   }
+  .st-row > :not(:first-child) {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+  .st-row > .st-input {
+    flex: 0 1 min(240px, 45vw);
+  }
+  .st-row > .st-toggle {
+    flex: 0 0 44px;
+  }
   .st-row:last-child { border-bottom: none; }
   .st-row--spaced {
     margin-top: 12px;
@@ -274,6 +284,11 @@ export function getSettingsSectionsCSS(): string {
     margin-top: 12px;
     min-width: 0;
   }
+  .st-action-row .st-btn,
+  .st-link-row .st-btn {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
   .st-btn--primary {
     background: var(--hdp-primary);
     color: white;
@@ -323,6 +338,13 @@ export function getSettingsSectionsCSS(): string {
     border-radius: var(--hdp-radius, 14px);
     background: var(--hdp-primary-light, rgba(79,110,247,0.08));
     border: 1px solid var(--hdp-border);
+  }
+  .st-plan-hero > div {
+    min-width: 0;
+  }
+  .st-plan-hero > .st-btn {
+    justify-self: end;
+    text-align: center;
   }
   .st-plan-title {
     font: inherit;
@@ -413,6 +435,10 @@ export function getSettingsSectionsCSS(): string {
   }
   @media (max-width: 720px) {
     .st-plan-hero { grid-template-columns: 1fr; }
+    .st-plan-hero > .st-btn {
+      justify-self: stretch;
+      width: 100%;
+    }
     .st-plan-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .st-row {
       align-items: flex-start;
@@ -426,6 +452,9 @@ export function getSettingsSectionsCSS(): string {
     .st-btn {
       justify-content: center;
     }
+  }
+  @media (max-width: 420px) {
+    .st-plan-grid { grid-template-columns: 1fr; }
   }
   `;
 }
