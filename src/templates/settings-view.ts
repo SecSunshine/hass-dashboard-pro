@@ -112,6 +112,8 @@ ${getSettingsSectionsCSS()}
     margin: 0 auto;
   }
 ${visualStyles}
+</style>
+<style>
   /* Visual settings card spacing & wrappers */
   #st-visual-body .st-visual-card {
     padding: 16px;

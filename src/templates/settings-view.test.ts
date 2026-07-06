@@ -135,6 +135,9 @@ describe('settings view', () => {
     expect(html).toContain('class="st-visual-card" data-visual-card="theme-presets"');
     expect(html).toContain('#st-visual-body .st-visual-card');
     expect(html).toContain('#st-visual-body .st-visual-card > .settings-section');
+    expect(html.indexOf('</style>\n<style>\n  /* Visual settings card spacing & wrappers */')).toBeGreaterThan(
+      html.indexOf('#st-visual-body .settings-studio-btn'),
+    );
     expect(html).toContain('.hdp-view[data-view="settings"] .hdp-area-content');
     expect(html).toContain('width: min(100%, 1040px)');
     expect(html).not.toContain('.st-section-body > div {');
