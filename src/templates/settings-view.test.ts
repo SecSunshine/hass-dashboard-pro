@@ -110,7 +110,7 @@ describe('settings view', () => {
     expect(html).toContain('.settings-header');
     expect(html).toContain('#st-visual-body .theme-grid');
     expect(html).toContain('#st-visual-body .settings-section');
-    expect(html).toContain('repeat(auto-fit, minmax(136px, 1fr))');
+    expect(html).toContain('repeat(auto-fit, minmax(160px, 1fr))');
     expect(html).toContain('#st-visual-body .color-row');
     expect(html).toContain('#st-visual-body .settings-studio-btn');
     expect(html).toContain('#st-visual-body .settings-studio-btn svg');
@@ -123,6 +123,8 @@ describe('settings view', () => {
     expect(html).toContain('#st-visual-body input[type="color"]');
     expect(html).toContain('#st-visual-body,\n  #st-visual-body *');
     expect(html).toContain('#st-visual-body .color-swatch-wrap');
+    expect(html).toContain('#st-visual-body .am-mood-select');
+    expect(html).toContain('width: min(180px, 42vw)');
     expect(html).toMatch(/@media \(max-width: 480px\) \{[\s\S]*#st-visual-body \.theme-grid/);
     expect(html).not.toContain('#st-visual-body @media');
     expect(html).toMatch(/settings-header-sub">[\s\S]*?<\/div>\s*<button class="settings-studio-btn"/);

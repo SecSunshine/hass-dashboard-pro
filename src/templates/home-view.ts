@@ -38,46 +38,44 @@ import type { PersonInfo, DomainStatus, FavoriteEntity } from '../utils/home-dat
 import { escapeAttribute, escapeHTML, escapeInlineStyleValue, escapeURLAttribute } from '../utils/html';
 import { cardSkinClass } from '../utils/card-skin';
 
+const DEFAULT_HOME_SECTION_ORDER: HomeSectionKey[] = ['status_badges', 'people', 'environment', 'power_usage', 'favorites', 'summary'];
+
 export function buildHomeView(hass: Hass, config: StrategyConfig, tokens?: ResolvedTokens): LovelaceCardConfig[] {
   const cards: LovelaceCardConfig[] = [];
 
   // 1. Welcome hero (always shown)
   cards.push(buildWelcomeCard(hass, config, tokens));
 
-  // 2. Status domain badges (only if domains exist)
-  const domains = isHomeSectionVisible(config, 'status_badges') ? getStatusDomains(hass, config) : [];
-  if (domains.length > 0) {
-    cards.push(buildStatusBadges(domains, tokens));
-  }
-
-  // 3. People card (only if person entities exist)
-  const persons = isHomeSectionVisible(config, 'people') ? getPersons(hass, getHiddenPersons(config)) : [];
-  if (persons.length > 0) {
-    cards.push(buildPeopleCard(persons, tokens));
-  }
-
-  // 4. Climate + Alarm combo card
-  if (isHomeSectionVisible(config, 'environment')) {
-    cards.push(buildEnvironmentCard(hass, config, tokens));
-  }
-
-  // 5. Power usage card
-  const power = isHomeSectionVisible(config, 'power_usage')
-    ? buildHousePowerUsage(hass, config)
-    : { has_data: false } as ReturnType<typeof buildHousePowerUsage>;
-  if (power.has_data) {
-    cards.push(buildPowerCard(power, tokens));
-  }
-
-  // 6. Favorites (only if configured)
-  const favorites = isHomeSectionVisible(config, 'favorites') ? getFavorites(hass, config) : [];
-  if (favorites.length > 0) {
-    cards.push(buildFavoritesCard(favorites, tokens));
-  }
-
-  // 7. Summary
-  if (isHomeSectionVisible(config, 'summary')) {
-    cards.push(buildSummaryCard(hass, tokens, config));
+  for (const section of getOrderedHomeSections(config)) {
+    if (!isHomeSectionVisible(config, section)) continue;
+    switch (section) {
+      case 'status_badges': {
+        const domains = getStatusDomains(hass, config);
+        if (domains.length > 0) cards.push(buildStatusBadges(domains, tokens));
+        break;
+      }
+      case 'people': {
+        const persons = getPersons(hass, getHiddenPersons(config));
+        if (persons.length > 0) cards.push(buildPeopleCard(persons, tokens));
+        break;
+      }
+      case 'environment':
+        cards.push(buildEnvironmentCard(hass, config, tokens));
+        break;
+      case 'power_usage': {
+        const power = buildHousePowerUsage(hass, config);
+        if (power.has_data) cards.push(buildPowerCard(power, tokens));
+        break;
+      }
+      case 'favorites': {
+        const favorites = getFavorites(hass, config);
+        if (favorites.length > 0) cards.push(buildFavoritesCard(favorites, tokens));
+        break;
+      }
+      case 'summary':
+        cards.push(buildSummaryCard(hass, tokens, config));
+        break;
+    }
   }
 
   return cards;
@@ -92,48 +90,50 @@ export function buildHomeHTML(hass: Hass, config: StrategyConfig, tokens?: Resol
   const sections: string[] = [];
   const cs = tokens?.card_sizes;
 
-  // Welcome hero — large 2x2 card
   sections.push(bentoWrap(extractCardHTML(buildWelcomeCard(hass, config, tokens)), resolveCardSize('home_welcome', 'lg', cs)));
 
-  // Status badges — full width banner
-  const domains = isHomeSectionVisible(config, 'status_badges') ? getStatusDomains(hass, config) : [];
-  if (domains.length > 0) {
-    sections.push(bentoWrap(extractCardHTML(buildStatusBadges(domains, tokens)), resolveCardSize('home_status_badges', 'wide', cs)));
-  }
-
-  // People — medium card
-  const persons = isHomeSectionVisible(config, 'people') ? getPersons(hass, getHiddenPersons(config)) : [];
-  if (persons.length > 0) {
-    sections.push(bentoWrap(extractCardHTML(buildPeopleCard(persons, tokens)), resolveCardSize('home_people', 'md', cs)));
-  }
-
-  // Environment — medium card
-  if (isHomeSectionVisible(config, 'environment')) {
-    sections.push(bentoWrap(extractCardHTML(buildEnvironmentCard(hass, config, tokens)), resolveCardSize('home_environment', 'md', cs)));
-  }
-
-  // Power — medium card
-  const power = isHomeSectionVisible(config, 'power_usage')
-    ? buildHousePowerUsage(hass, config)
-    : { has_data: false } as ReturnType<typeof buildHousePowerUsage>;
-  if (power.has_data) {
-    sections.push(bentoWrap(extractCardHTML(buildPowerCard(power, tokens)), resolveCardSize('home_power', 'md', cs)));
-  }
-
-  // Favorites — full width
-  const favorites = isHomeSectionVisible(config, 'favorites') ? getFavorites(hass, config) : [];
-  if (favorites.length > 0) {
-    sections.push(bentoWrap(extractCardHTML(buildFavoritesCard(favorites, tokens)), resolveCardSize('home_favorites', 'wide', cs)));
-  }
-
-  // Summary — medium card
-  if (isHomeSectionVisible(config, 'summary')) {
-    sections.push(bentoWrap(extractCardHTML(buildSummaryCard(hass, tokens, config)), resolveCardSize('home_summary', 'md', cs)));
+  for (const section of getOrderedHomeSections(config)) {
+    if (!isHomeSectionVisible(config, section)) continue;
+    switch (section) {
+      case 'status_badges': {
+        const domains = getStatusDomains(hass, config);
+        if (domains.length > 0) {
+          sections.push(bentoWrap(extractCardHTML(buildStatusBadges(domains, tokens)), resolveCardSize('home_status_badges', 'wide', cs)));
+        }
+        break;
+      }
+      case 'people': {
+        const persons = getPersons(hass, getHiddenPersons(config));
+        if (persons.length > 0) {
+          sections.push(bentoWrap(extractCardHTML(buildPeopleCard(persons, tokens)), resolveCardSize('home_people', 'md', cs)));
+        }
+        break;
+      }
+      case 'environment':
+        sections.push(bentoWrap(extractCardHTML(buildEnvironmentCard(hass, config, tokens)), resolveCardSize('home_environment', 'md', cs)));
+        break;
+      case 'power_usage': {
+        const power = buildHousePowerUsage(hass, config);
+        if (power.has_data) {
+          sections.push(bentoWrap(extractCardHTML(buildPowerCard(power, tokens)), resolveCardSize('home_power', 'md', cs)));
+        }
+        break;
+      }
+      case 'favorites': {
+        const favorites = getFavorites(hass, config);
+        if (favorites.length > 0) {
+          sections.push(bentoWrap(extractCardHTML(buildFavoritesCard(favorites, tokens)), resolveCardSize('home_favorites', 'wide', cs)));
+        }
+        break;
+      }
+      case 'summary':
+        sections.push(bentoWrap(extractCardHTML(buildSummaryCard(hass, tokens, config)), resolveCardSize('home_summary', 'md', cs)));
+        break;
+    }
   }
 
   return sections.join('\n');
 }
-
 /**
  * Extract the inner HTML content from a card config, stripping
  * the design token <style> block (the layout card provides tokens globally).
@@ -150,6 +150,18 @@ function isHomeSectionVisible(config: StrategyConfig, key: HomeSectionKey): bool
 
 function getHiddenHomeSections(config: StrategyConfig): HomeSectionKey[] {
   return (config.hdp_config?.home?.hidden_sections || []) as HomeSectionKey[];
+}
+
+function getOrderedHomeSections(config: StrategyConfig): HomeSectionKey[] {
+  const configured = config.hdp_config?.home?.section_order || [];
+  const order = configured.filter((key): key is HomeSectionKey =>
+    DEFAULT_HOME_SECTION_ORDER.includes(key as HomeSectionKey));
+
+  for (const key of DEFAULT_HOME_SECTION_ORDER) {
+    if (!order.includes(key)) order.push(key);
+  }
+
+  return order;
 }
 
 function getHiddenInfoCards(config?: StrategyConfig): string[] {

@@ -173,6 +173,7 @@ ${visualStyles}
     box-sizing: border-box;
     min-width: 0;
     overflow: hidden;
+    display: block;
   }
   #st-visual-body .settings-header {
     display: flex;
@@ -208,13 +209,13 @@ ${visualStyles}
   #st-visual-body .font-grid,
   #st-visual-body .lc-density-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 10px;
     width: 100%;
     align-items: stretch;
   }
   #st-visual-body .mood-grid {
-    grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
   }
   #st-visual-body .theme-card,
   #st-visual-body .mood-card,
@@ -223,7 +224,7 @@ ${visualStyles}
   #st-visual-body .lc-density-btn {
     width: 100%;
     min-width: 0;
-    min-height: 104px;
+    min-height: 112px;
     box-sizing: border-box;
     border-radius: var(--hdp-radius, 14px);
     appearance: none;
@@ -347,7 +348,8 @@ ${visualStyles}
   }
   #st-visual-body .theme-preview,
   #st-visual-body .mood-preview {
-    min-height: 52px;
+    min-height: 56px;
+    flex: 0 0 auto;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -355,11 +357,13 @@ ${visualStyles}
   }
   #st-visual-body .theme-meta,
   #st-visual-body .mood-meta {
-    padding: 8px 10px;
+    padding: 9px 10px;
     display: flex;
     flex-direction: column;
     gap: 2px;
     border-top: 1px solid var(--hdp-divider, rgba(0,0,0,0.04));
+    min-height: 44px;
+    min-width: 0;
   }
   #st-visual-body .theme-dot-row {
     display: flex;
@@ -489,6 +493,7 @@ ${visualStyles}
     align-items: center;
     gap: 12px;
     min-width: 0;
+    width: 100%;
   }
   #st-visual-body .color-row,
   #st-visual-body .seed-custom-row,
@@ -502,15 +507,29 @@ ${visualStyles}
   }
   #st-visual-body .color-info,
   #st-visual-body .seed-custom-info,
-  #st-visual-body .am-period-info {
+  #st-visual-body .am-period-info,
+  #st-visual-body .am-toggle-info {
     min-width: 0;
     flex: 1 1 auto;
   }
   #st-visual-body .color-input-group,
   #st-visual-body .seed-custom-input,
   #st-visual-body .toggle-switch,
-  #st-visual-body .lc-skin-select {
+  #st-visual-body .lc-skin-select,
+  #st-visual-body .am-mood-select {
     flex: 0 0 auto;
+  }
+  #st-visual-body .am-period-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  #st-visual-body .am-mood-select {
+    width: min(180px, 42vw);
+  }
+  #st-visual-body .seed-hex,
+  #st-visual-body .color-hex {
+    white-space: nowrap;
   }
   @media (max-width: 720px) {
     #st-visual-body .theme-grid,
@@ -531,6 +550,10 @@ ${visualStyles}
     #st-visual-body .lc-skin-row {
       align-items: flex-start;
       flex-wrap: wrap;
+    }
+    #st-visual-body .am-mood-select,
+    #st-visual-body .lc-skin-select {
+      width: 100%;
     }
   }
   @media (max-width: 420px) {

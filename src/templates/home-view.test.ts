@@ -86,6 +86,45 @@ describe('home view settings', () => {
     expect(html).not.toContain('data-info-card="entities"');
   });
 
+  it('honors configured home section order and appends omitted defaults', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        home: { section_order: ['summary', 'people', 'status_badges'] },
+      } as any,
+    };
+
+    const html = buildHomeHTML(hass, config);
+    const summaryIndex = html.indexOf('<div class="sum-grid">');
+    const peopleIndex = html.indexOf('<div class="pp-grid">');
+    const statusIndex = html.indexOf('<div class="sd-wrap">');
+    const environmentIndex = html.indexOf('<div class="env-grid">');
+
+    expect(summaryIndex).toBeGreaterThan(-1);
+    expect(peopleIndex).toBeGreaterThan(summaryIndex);
+    expect(statusIndex).toBeGreaterThan(peopleIndex);
+    expect(environmentIndex).toBeGreaterThan(statusIndex);
+  });
+
+  it('ignores invalid configured home section order keys', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        home: { section_order: ['summary', 'bad_key', 'people'] },
+      } as any,
+    };
+
+    const html = buildHomeHTML(hass, config);
+    const summaryIndex = html.indexOf('<div class="sum-grid">');
+    const peopleIndex = html.indexOf('<div class="pp-grid">');
+    const statusIndex = html.indexOf('<div class="sd-wrap">');
+
+    expect(summaryIndex).toBeGreaterThan(-1);
+    expect(peopleIndex).toBeGreaterThan(summaryIndex);
+    expect(statusIndex).toBeGreaterThan(peopleIndex);
+    expect(html).not.toContain('bad_key');
+  });
+
   it('honors hdp_config hidden persons', () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',
