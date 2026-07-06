@@ -274,6 +274,19 @@ describe('settings view', () => {
     expect(html).not.toContain("hdpToggleArrayItem('devices.hidden_device_types', &quot;sensor.temperature&quot;, event)");
   });
 
+  it('keeps hidden device type chips visible even when no matching entity is visible', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        devices: { hidden_device_types: ['sensor.temperature'] },
+      } as any,
+    };
+    const html = buildSettingsHTML(config, undefined, hass);
+
+    expect(html).toContain('data-action="toggle-hidden-device-type" data-setting="devices.hidden_device_types" data-value="sensor.temperature" aria-pressed="true"');
+    expect(html).toContain("hdpToggleArrayItem('devices.hidden_device_types', &quot;sensor.temperature&quot;, event)");
+  });
+
   it('uses the same device type keys for settings chips and dashboard filtering', () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',
@@ -387,6 +400,19 @@ describe('settings view', () => {
 
     expect(html).toContain("hdpToggleArrayItem('areas.hidden_areas', &quot;__unassigned&quot;, event)");
     expect(html).toContain('未分配区域');
+  });
+
+  it('keeps stale hidden area chips visible so they can be restored', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        areas: { hidden_areas: ['garage'] },
+      } as any,
+    };
+    const html = buildSettingsHTML(config, undefined, hass);
+
+    expect(html).toContain('data-action="toggle-hidden-area" data-setting="areas.hidden_areas" data-value="garage" aria-pressed="true"');
+    expect(html).toContain("hdpToggleArrayItem('areas.hidden_areas', &quot;garage&quot;, event)");
   });
 
   it('orders area visibility controls from configured area order', () => {

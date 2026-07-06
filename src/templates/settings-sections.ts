@@ -1245,6 +1245,13 @@ export function buildAreasSection(hass: any, config: StrategyConfig): string {
   if (hasUnassignedEntities) {
     areaEntries.push([UNASSIGNED_AREA_ID, { area_id: UNASSIGNED_AREA_ID, name: UNASSIGNED_AREA_NAME, picture: null }]);
   }
+  const areaIds = new Set(areaEntries.map(([id]) => id));
+  for (const id of hiddenAreas) {
+    if (areaIds.has(id)) continue;
+    const name = id === UNASSIGNED_AREA_ID ? UNASSIGNED_AREA_NAME : id;
+    areaEntries.push([id, { area_id: id, name, picture: null }]);
+    areaIds.add(id);
+  }
   sortAreaEntries(areaEntries, areaOrder);
 
   const areaChips = areaEntries.map(([id, area]: [string, any]) => {
@@ -1342,10 +1349,12 @@ function buildHiddenDeviceTypeChips(hass: Hass | undefined, hiddenDomains: strin
     'binary_sensor.occupancy': '占用',
     'binary_sensor.presence': '存在',
   };
-  const deviceTypes = Array.from(new Set(Object.entries(hass?.states || {})
+  const detectedDeviceTypes = Object.entries(hass?.states || {})
     .filter(([entityId]) => isVisibleRegistryEntity(hass, entityId))
     .map(([entityId, stateObj]) => getEntityDeviceType(entityId, stateObj.attributes || {}))
-    .filter(type => type.includes('.') && !hiddenDomains.includes(type.split('.')[0]))))
+    .filter(type => type.includes('.') && !hiddenDomains.includes(type.split('.')[0]));
+  const deviceTypes = Array.from(new Set([...detectedDeviceTypes, ...hiddenDeviceTypes]
+    .filter(type => typeof type === 'string' && type.includes('.'))))
     .sort();
   if (!deviceTypes.length) return '';
 
