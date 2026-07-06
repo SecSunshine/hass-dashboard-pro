@@ -191,6 +191,21 @@ describe('settings view', () => {
     expect(html).toContain('type="button" class="st-chip st-chip--active" data-action="toggle-hidden-domain" data-setting="devices.hidden_domains" data-value="number" aria-pressed="true" onclick="hdpToggleArrayItem(\'devices.hidden_domains\', &quot;number&quot;, event)');
   });
 
+  it('offers home summary info card visibility controls', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        home: { hidden_info_cards: ['entities'] },
+      } as any,
+    };
+    const html = buildSettingsHTML(config, undefined, hass);
+
+    expect(html).toContain('Summary info cards');
+    expect(html).toContain("hdpToggleArrayItem('home.hidden_info_cards', &quot;entities&quot;, event)");
+    expect(html).toContain('data-action="toggle-home-info-card" data-setting="home.hidden_info_cards" data-value="entities" aria-pressed="true"');
+    expect(html).toContain("hdpToggleArrayItem('home.hidden_info_cards', &quot;automations&quot;, event)");
+  });
+
   it('ignores hidden or disabled registry entities in device type controls', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const html = buildSettingsHTML(config, undefined, hass);

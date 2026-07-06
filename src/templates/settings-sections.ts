@@ -1102,7 +1102,15 @@ export function buildQuickGenerateSection(hass: Hass, config: StrategyConfig): s
 
 export function buildHomeSection(config: StrategyConfig): string {
   const hiddenSections: string[] = (config as any).hdp_config?.home?.hidden_sections || [];
+  const hiddenInfoCards: string[] = (config as any).hdp_config?.home?.hidden_info_cards || [];
   const sectionKeys: HomeSectionKey[] = ['status_badges', 'people', 'environment', 'power_usage', 'favorites', 'summary'];
+  const infoCardLabels: Record<string, string> = {
+    updates: 'Updates',
+    repairs: 'Repairs',
+    entities: 'Entities',
+    devices: 'Devices',
+    automations: 'Automations',
+  };
 
   const chips = sectionKeys.map(key => {
     const active = !hiddenSections.includes(key);
@@ -1110,10 +1118,18 @@ export function buildHomeSection(config: StrategyConfig): string {
     return chipHTML('toggle-home-section', 'home.hidden_sections', key, label, active);
   }).join('');
 
+  const infoChips = Object.entries(infoCardLabels).map(([key, label]) => {
+    const hidden = hiddenInfoCards.includes(key);
+    return chipHTML('toggle-home-info-card', 'home.hidden_info_cards', key, label, hidden);
+  }).join('');
+
   return sectionCard('home', '首页', iconHome(), `
     <div class="st-row-label">显示区块</div>
     <div class="st-row-desc">选择首页要显示的内容区块</div>
     <div class="st-chip-list">${chips}</div>
+    <div class="st-section-subtitle">Summary info cards</div>
+    <div class="st-row-desc">Highlighted chips are hidden from the home summary.</div>
+    <div class="st-chip-list">${infoChips}</div>
   `);
 }
 

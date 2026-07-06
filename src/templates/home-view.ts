@@ -152,6 +152,10 @@ function getHiddenHomeSections(config: StrategyConfig): HomeSectionKey[] {
   return (config.hdp_config?.home?.hidden_sections || []) as HomeSectionKey[];
 }
 
+function getHiddenInfoCards(config?: StrategyConfig): string[] {
+  return config?.hdp_config?.home?.hidden_info_cards || [];
+}
+
 function getHiddenPersons(config: StrategyConfig): string[] {
   return config.hdp_config?.people?.hidden_persons || config.hidden_persons || [];
 }
@@ -900,11 +904,13 @@ function getFavoriteIcon(domain: string, active: boolean): string {
 function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: StrategyConfig): LovelaceCardConfig {
   const summaries = getHomeSummaries(hass, config);
   const skinCls = cardSkinClass(tokens?.card_style);
+  const hiddenInfoCards = new Set(getHiddenInfoCards(config));
+  const isInfoCardVisible = (key: string): boolean => !hiddenInfoCards.has(key);
 
   const items: string[] = [];
 
-  if (summaries.updates_count > 0) {
-    items.push(`<div class="sum-item sum-item--info ${skinCls}">
+  if (summaries.updates_count > 0 && isInfoCardVisible('updates')) {
+    items.push(`<div class="sum-item sum-item--info ${skinCls}" data-info-card="updates">
       <div class="sum-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       </div>
@@ -913,8 +919,8 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: Strategy
     </div>`);
   }
 
-  if (summaries.repairs_count > 0) {
-    items.push(`<div class="sum-item sum-item--warn ${skinCls}">
+  if (summaries.repairs_count > 0 && isInfoCardVisible('repairs')) {
+    items.push(`<div class="sum-item sum-item--warn ${skinCls}" data-info-card="repairs">
       <div class="sum-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       </div>
@@ -923,16 +929,18 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: Strategy
     </div>`);
   }
 
-  items.push(`<div class="sum-item ${skinCls}">
+  if (isInfoCardVisible('entities')) {
+    items.push(`<div class="sum-item ${skinCls}" data-info-card="entities">
     <div class="sum-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="12" cy="12" r="3"/></svg>
     </div>
     <div class="sum-val">${summaries.total_entities}</div>
     <div class="sum-lbl">实体</div>
   </div>`);
+  }
 
-  if (summaries.total_devices > 0) {
-    items.push(`<div class="sum-item ${skinCls}">
+  if (summaries.total_devices > 0 && isInfoCardVisible('devices')) {
+    items.push(`<div class="sum-item ${skinCls}" data-info-card="devices">
       <div class="sum-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
       </div>
@@ -941,8 +949,8 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: Strategy
     </div>`);
   }
 
-  if (summaries.automations_count > 0) {
-    items.push(`<div class="sum-item ${skinCls}">
+  if (summaries.automations_count > 0 && isInfoCardVisible('automations')) {
+    items.push(`<div class="sum-item ${skinCls}" data-info-card="automations">
       <div class="sum-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg>
       </div>

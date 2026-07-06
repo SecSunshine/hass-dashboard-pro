@@ -73,6 +73,19 @@ describe('home view settings', () => {
     expect(html).not.toContain('<div class="sum-grid">');
   });
 
+  it('honors hdp_config hidden summary info cards', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        home: { hidden_info_cards: ['entities'] },
+      } as any,
+    };
+
+    const html = buildHomeHTML(hass, config);
+    expect(html).toContain('<div class="sum-grid">');
+    expect(html).not.toContain('data-info-card="entities"');
+  });
+
   it('honors hdp_config hidden persons', () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',
