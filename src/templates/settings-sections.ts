@@ -85,6 +85,15 @@ export function getSettingsSectionsCSS(): string {
     appearance: none;
     font: inherit;
   }
+  .st-section button,
+  .st-section input,
+  .st-section select,
+  .st-section textarea {
+    font: inherit;
+  }
+  .st-section a.st-btn {
+    text-decoration: none;
+  }
   .st-section svg {
     flex-shrink: 0;
     max-width: 100%;
@@ -151,6 +160,9 @@ export function getSettingsSectionsCSS(): string {
     flex: 1 1 auto;
   }
   .st-row:last-child { border-bottom: none; }
+  .st-row--spaced {
+    margin-top: 12px;
+  }
   .st-row-label {
     font: inherit;
     font-size: 13px;
@@ -253,6 +265,14 @@ export function getSettingsSectionsCSS(): string {
     text-align: left;
   }
   .st-btn:hover { transform: translateY(-2px); border-color: var(--hdp-primary); }
+  .st-action-row,
+  .st-link-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+    min-width: 0;
+  }
   .st-btn--primary {
     background: var(--hdp-primary);
     color: white;
@@ -1071,7 +1091,7 @@ export function buildQuickGenerateSection(hass: Hass, config: StrategyConfig): s
   const choices = alternatives.map((plan: DashboardDesignPlan) => {
     const colors = plan.visual;
     const swatch = `linear-gradient(135deg, ${colors.page_bg || '#fff'} 0%, ${colors.card_bg || '#fff'} 48%, ${colors.primary || '#4F6EF7'} 100%)`;
-    return `<button class="st-plan-choice ${plan.pack_id === recommended.pack_id ? 'st-plan-choice--active' : ''}"
+    return `<button type="button" class="st-plan-choice ${plan.pack_id === recommended.pack_id ? 'st-plan-choice--active' : ''}"
       data-action="apply-design-plan"
       data-plan="${escapeAttribute(plan.pack_id)}"
       onclick="hdpApplyDesignPlan(${jsValue(plan)})">
@@ -1091,7 +1111,7 @@ export function buildQuickGenerateSection(hass: Hass, config: StrategyConfig): s
           ${focus}
         </div>
       </div>
-      <button class="st-btn st-btn--primary" data-action="apply-recommended-design" onclick="hdpApplyDesignPlan(${jsValue(recommended)})">
+      <button type="button" class="st-btn st-btn--primary" data-action="apply-recommended-design" onclick="hdpApplyDesignPlan(${jsValue(recommended)})">
         应用推荐方案
       </button>
     </div>
@@ -1239,7 +1259,7 @@ export function buildAreasSection(hass: any, config: StrategyConfig): string {
       </div>
     </div>
     <div class="st-chip-list">${areaChips}</div>
-    <div class="st-row" style="margin-top: 12px;">
+    <div class="st-row st-row--spaced">
       <div>
         <div class="st-row-label">隐藏不可用设备</div>
         <div class="st-row-desc">不显示 unavailable 状态的设备</div>
@@ -1358,8 +1378,8 @@ export function buildThemeFilesSection(): string {
       </div>
       <span class="st-about-val">JSON</span>
     </div>
-    <div style="margin-top: 12px;">
-      <button class="st-btn" data-action="refresh-themes" onclick="hdpRefreshThemes()">
+    <div class="st-action-row">
+      <button type="button" class="st-btn" data-action="refresh-themes" onclick="hdpRefreshThemes()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         刷新主题列表
       </button>
@@ -1412,7 +1432,7 @@ export function buildAboutSection(): string {
       <span>设计语言</span>
       <span class="st-about-val">Apple HIG + Dieter Rams</span>
     </div>
-    <div style="margin-top: 12px; display: flex; gap: 8px;">
+    <div class="st-link-row">
       <a class="st-btn" href="https://github.com/" target="_blank" rel="noopener">
         <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.39.6.11.82-.26.82-.58v-2.03c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.74.08-.73.08-.73 1.21.09 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.31 3.5 1 .11-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6.02 0c2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.25 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.82.58C20.56 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
         GitHub
@@ -1430,21 +1450,21 @@ export function buildResetSection(): string {
         <div class="st-row-label">导出配置</div>
         <div class="st-row-desc">将所有设置导出为 JSON 文件</div>
       </div>
-      <button class="st-btn" data-action="export-config" onclick="hdpExportConfig()">导出</button>
+      <button type="button" class="st-btn" data-action="export-config" onclick="hdpExportConfig()">导出</button>
     </div>
     <div class="st-row">
       <div>
         <div class="st-row-label">导入配置</div>
         <div class="st-row-desc">从 JSON 文件恢复设置</div>
       </div>
-      <button class="st-btn" data-action="import-config" onclick="hdpImportConfig()">导入</button>
+      <button type="button" class="st-btn" data-action="import-config" onclick="hdpImportConfig()">导入</button>
     </div>
     <div class="st-row">
       <div>
         <div class="st-row-label">重置所有设置</div>
         <div class="st-row-desc">恢复到默认配置，此操作不可撤销</div>
       </div>
-      <button class="st-btn st-btn--danger" data-action="reset-config" onclick="hdpResetConfig()">重置</button>
+      <button type="button" class="st-btn st-btn--danger" data-action="reset-config" onclick="hdpResetConfig()">重置</button>
     </div>
   `);
 }
