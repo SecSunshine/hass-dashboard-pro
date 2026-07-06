@@ -171,6 +171,8 @@ ${visualStyles}
   #st-visual-body .settings-section {
     width: 100%;
     box-sizing: border-box;
+    min-width: 0;
+    overflow: hidden;
   }
   #st-visual-body .settings-header {
     display: flex;
@@ -278,8 +280,10 @@ ${visualStyles}
     overflow-wrap: anywhere;
   }
   #st-visual-body button {
+    appearance: none;
     font: inherit;
     box-sizing: border-box;
+    min-width: 0;
   }
   #st-visual-body svg {
     max-width: 100%;
@@ -302,6 +306,8 @@ ${visualStyles}
     justify-content: center;
     gap: 8px;
     max-width: 100%;
+    white-space: normal;
+    text-align: center;
   }
   #st-visual-body .settings-studio-btn svg {
     width: 18px;
@@ -324,6 +330,7 @@ ${visualStyles}
     position: relative;
     padding: 0;
     text-align: left;
+    white-space: normal;
   }
   #st-visual-body .style-card,
   #st-visual-body .font-card,
@@ -342,6 +349,7 @@ ${visualStyles}
   #st-visual-body .mood-preview {
     min-height: 52px;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
   }

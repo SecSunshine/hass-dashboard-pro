@@ -265,11 +265,50 @@ function hdpInitEntityClickHandlers() {
  */
 export function generateLovelaceConfigJS(): string {
   return `
+function hdpFindLovelacePanel() {
+  var ha = document.querySelector('home-assistant');
+  if (ha && ha.shadowRoot) {
+    var panel = ha.shadowRoot.querySelector('ha-panel-lovelace');
+    if (panel) return panel;
+  }
+  var els = document.querySelectorAll('*');
+  for (var i = 0; i < els.length; i++) {
+    if (els[i].tagName && String(els[i].tagName).toLowerCase() === 'ha-panel-lovelace') return els[i];
+    if (els[i].shadowRoot) {
+      var nested = els[i].shadowRoot.querySelector && els[i].shadowRoot.querySelector('ha-panel-lovelace');
+      if (nested) return nested;
+    }
+  }
+  return null;
+}
+
+function hdpNormalizeLovelaceUrlPath(value) {
+  if (typeof value !== 'string') return undefined;
+  var cleaned = value.replace(/^\\/+|\\/+$/g, '');
+  if (!cleaned || cleaned === 'lovelace') return undefined;
+  return cleaned;
+}
+
 function hdpGetCurrentUrlPath() {
-  var path = window.location.pathname;
-  // Extract dashboard path: /lovelace/my-dashboard -> my-dashboard
+  var panel = hdpFindLovelacePanel();
+  var panelPath = hdpNormalizeLovelaceUrlPath(
+    panel && (panel.urlPath || panel.url_path || (panel.lovelace && panel.lovelace.urlPath) || (panel.lovelace && panel.lovelace.url_path))
+  );
+  if (panelPath) return panelPath;
+
+  var path = window.location.pathname.replace(/^\\/+|\\/+$/g, '');
   var parts = path.split('/').filter(Boolean);
-  return parts.length > 1 ? '/' + parts.slice(1).join('/') : path;
+  if (!parts.length) return undefined;
+
+  var dashboardPath = parts[0];
+  if (dashboardPath === 'lovelace') return undefined;
+  return hdpNormalizeLovelaceUrlPath(dashboardPath);
+}
+
+function hdpLovelaceMessage(type, urlPath, extra) {
+  var msg = Object.assign({ type: type }, extra || {});
+  if (urlPath) msg.url_path = urlPath;
+  return msg;
 }
 
 function hdpLoadHDPConfig() {
@@ -311,18 +350,14 @@ function hdpSaveToLovelace(hdpConfig) {
     return hdpSaveHDPConfig(hdpConfig);
   }
   var urlPath = hdpGetCurrentUrlPath();
-  return conn.sendMessagePromise({
-    type: 'lovelace/config',
-    url_path: urlPath,
+  return conn.sendMessagePromise(hdpLovelaceMessage('lovelace/config', urlPath, {
     force: false
-  }).then(function(lovelaceConfig) {
+  })).then(function(lovelaceConfig) {
     var strategy = lovelaceConfig.strategy || {};
     strategy.hdp_config = hdpConfig;
-    return conn.sendMessagePromise({
-      type: 'lovelace/config/save',
-      url_path: urlPath,
+    return conn.sendMessagePromise(hdpLovelaceMessage('lovelace/config/save', urlPath, {
       config: Object.assign({}, lovelaceConfig, { strategy: strategy })
-    });
+    }));
   }).then(function() {
     return hdpSaveHDPConfig(hdpConfig);
   }).catch(function(err) {

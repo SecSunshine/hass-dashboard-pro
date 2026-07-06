@@ -114,6 +114,8 @@ describe('settings view', () => {
     expect(html).toContain('#st-visual-body .color-row');
     expect(html).toContain('#st-visual-body .settings-studio-btn');
     expect(html).toContain('#st-visual-body .settings-studio-btn svg');
+    expect(html).toContain('#st-visual-body button {\n    appearance: none;');
+    expect(html).toContain('white-space: normal;\n    text-align: center;');
     expect(html).toContain('#st-visual-body .toggle-switch::after');
     expect(html).toContain('#st-visual-body .toggle-switch-knob');
     expect(html).toContain('#st-visual-body .lc-size-row');
@@ -126,6 +128,9 @@ describe('settings view', () => {
     expect(html).toMatch(/settings-header-sub">[\s\S]*?<\/div>\s*<button class="settings-studio-btn"/);
     expect(html).not.toMatch(/\saria-label="[^"]*\s\/>/);
     expect(html).toContain('.st-row > div');
+    expect(html).toContain('.st-section,\n  .st-section *');
+    expect(html).toContain('.st-section button');
+    expect(html).toContain('.st-plan-choice {\n    appearance: none;');
     expect(html).toContain('overflow-wrap: anywhere');
     expect(html).toContain('width: min(240px, 45vw)');
     expect(html).toContain("hdpToggleArrayItem('areas.hidden_areas'");

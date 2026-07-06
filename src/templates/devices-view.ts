@@ -53,10 +53,10 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
     const label = DOMAIN_GROUPS[domain]?.label || domain;
     const activeCount = entities.filter(e => isEntityOn(e.state, e.domain)).length;
     const safeDomain = escapeAttribute(domain);
-    return `<div class="dv-chip" data-domain="${safeDomain}" data-action="scroll-domain" onclick="hdpScrollToDomain('${safeDomain}')">
+    return `<button type="button" class="dv-chip" data-domain="${safeDomain}" data-action="scroll-domain" onclick="hdpScrollToDomain('${safeDomain}')">
       <span class="dv-chip-label">${escapeHTML(label)}</span>
       <span class="dv-chip-count">${activeCount}/${entities.length}</span>
-    </div>`;
+    </button>`;
   }).join('');
 
   // Domain sections
@@ -87,6 +87,7 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
     border-radius: var(--hdp-radius-pill, 20px);
     background: var(--hdp-card-bg);
     border: 1px solid var(--hdp-border);
+    appearance: none;
     font: inherit;
     font-size: 13px;
     color: var(--hdp-text);

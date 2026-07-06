@@ -76,6 +76,18 @@ export function getSettingsSectionsCSS(): string {
     width: 100%;
     min-width: 0;
   }
+  .st-section,
+  .st-section * {
+    box-sizing: border-box;
+  }
+  .st-section button {
+    appearance: none;
+    font: inherit;
+  }
+  .st-section svg {
+    flex-shrink: 0;
+    max-width: 100%;
+  }
   .st-section-hdr {
     display: flex;
     align-items: center;
@@ -323,7 +335,11 @@ export function getSettingsSectionsCSS(): string {
     margin-top: 12px;
   }
   .st-plan-choice {
+    appearance: none;
+    display: flex;
+    flex-direction: column;
     min-height: 92px;
+    min-width: 0;
     text-align: left;
     border-radius: var(--hdp-radius, 14px);
     border: 1px solid var(--hdp-border);
@@ -333,6 +349,7 @@ export function getSettingsSectionsCSS(): string {
     cursor: pointer;
     transition: all 0.2s ease;
     font: inherit;
+    overflow: hidden;
   }
   .st-plan-choice:hover {
     transform: translateY(-2px);
@@ -352,11 +369,15 @@ export function getSettingsSectionsCSS(): string {
     font-size: 12px;
     font-weight: 800;
     color: var(--hdp-text);
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .st-plan-choice-desc {
     font-size: 10px;
     color: var(--hdp-text-muted);
     margin-top: 2px;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .st-plan-reasons {
     margin-top: 12px;

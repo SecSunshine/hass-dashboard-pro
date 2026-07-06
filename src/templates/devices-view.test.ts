@@ -72,6 +72,9 @@ describe('devices view', () => {
     expect(html).toContain('min-width: 0');
     expect(html).toContain('flex: 0 1 45%');
     expect(html).toContain('overflow-wrap: anywhere');
+    expect(html).toContain('<button type="button" class="dv-chip"');
+    expect(html).toContain('data-action="scroll-domain"');
+    expect(html).toContain('appearance: none;');
   });
 
   it('applies hidden domains and hidden device types', () => {
