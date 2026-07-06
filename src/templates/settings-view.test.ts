@@ -314,6 +314,18 @@ describe('settings view', () => {
     expect(html).toContain('未分配区域');
   });
 
+  it('orders area visibility controls from configured area order', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        areas: { area_order: ['__unassigned', 'kitchen'] },
+      } as any,
+    };
+    const html = buildSettingsHTML(config, undefined, hass);
+
+    expect(html.indexOf('data-value="__unassigned"')).toBeLessThan(html.indexOf('data-value="kitchen"'));
+  });
+
   it('offers visual skin overrides for the virtual unassigned area', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const html = buildSettingsHTML(config, undefined, hass);

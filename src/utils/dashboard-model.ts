@@ -78,6 +78,12 @@ export function getConfiguredHiddenDeviceTypes(config: StrategyConfig): string[]
   return mergeStringArrays(hdpConfig?.devices?.hidden_device_types, legacyConfig?.hidden_device_types, config.hidden_device_types);
 }
 
+export function getConfiguredAreaOrder(config: StrategyConfig): string[] {
+  const hdpConfig = getEffectiveHDPConfig(config);
+  const legacyConfig = hdpConfig as { area_order?: unknown } | undefined;
+  return mergeStringArrays(hdpConfig?.areas?.area_order, legacyConfig?.area_order);
+}
+
 function mergeStringArrays(...values: Array<unknown>): string[] {
   const seen = new Set<string>();
   for (const value of values) {

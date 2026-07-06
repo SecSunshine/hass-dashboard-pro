@@ -70,4 +70,24 @@ describe('dashboard strategy hidden filters', () => {
     expect(content).not.toContain('data-view="kitchen"');
     expect(content).not.toContain('Kitchen Light');
   });
+
+  it('honors configured area order in summaries, sidebar, and rendered area sections', async () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        areas: { hidden_areas: [], area_order: ['bedroom', 'kitchen'], hide_unavailable: false },
+      },
+    };
+
+    const dashboard = await HassDashboardProStrategy.generate(config, hass);
+    const homeStrategy = dashboard.views.find(view => view.path === 'home')?.strategy;
+
+    expect(homeStrategy?.area_summaries?.map(area => area.area_id)).toEqual(['bedroom', 'kitchen']);
+
+    const home = await HassDashboardProViewStrategy.generate(homeStrategy!, hass);
+    const content = String(home.cards[0].content || '');
+
+    expect(content.indexOf('data-area="bedroom"')).toBeLessThan(content.indexOf('data-area="kitchen"'));
+    expect(content.indexOf('<div class="hdp-view" data-view="bedroom"')).toBeLessThan(content.indexOf('<div class="hdp-view" data-view="kitchen"'));
+  });
 });

@@ -3,6 +3,7 @@ import type { Hass, StrategyConfig } from '../types';
 import {
   buildHomeProfile,
   collectVisibleEntities,
+  getConfiguredAreaOrder,
   getConfiguredHiddenAreas,
   getConfiguredHiddenDeviceTypes,
   getConfiguredHiddenDomains,
@@ -141,6 +142,17 @@ describe('dashboard model', () => {
     expect(getConfiguredHiddenAreas(config)).toEqual(['closet']);
     expect(getConfiguredHiddenDomains(config)).toEqual(['switch', 'sensor']);
     expect(getConfiguredHiddenDeviceTypes(config)).toEqual(['binary_sensor.motion']);
+  });
+
+  it('reads configured area order from persisted HDP config', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        areas: { area_order: ['bedroom', 'kitchen', 'bedroom', ''] },
+      } as any,
+    };
+
+    expect(getConfiguredAreaOrder(config)).toEqual(['bedroom', 'kitchen']);
   });
 
   it('accepts legacy hidden filters stored inside hdp_config root', () => {

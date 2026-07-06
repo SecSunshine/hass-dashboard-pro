@@ -27,6 +27,7 @@ import { escapeAttribute, escapeHTML } from '../utils/html';
 import { getEntityDeviceType } from '../utils/area-entities';
 import {
   getConfiguredHiddenAreas,
+  getConfiguredAreaOrder,
   getConfiguredHiddenDeviceTypes,
   getConfiguredHiddenDomains,
   resolveEntityAreaId,
@@ -1213,6 +1214,7 @@ export function buildPeopleSection(hass: any, config: StrategyConfig): string {
 
 export function buildAreasSection(hass: any, config: StrategyConfig): string {
   const hiddenAreas: string[] = getConfiguredHiddenAreas(config);
+  const areaOrder: string[] = getConfiguredAreaOrder(config);
   const hideUnavailable = config.hdp_config?.areas?.hide_unavailable || false;
 
   const areaEntries = Object.entries(hass.areas || {});
@@ -1222,6 +1224,7 @@ export function buildAreasSection(hass: any, config: StrategyConfig): string {
   if (hasUnassignedEntities) {
     areaEntries.push([UNASSIGNED_AREA_ID, { area_id: UNASSIGNED_AREA_ID, name: UNASSIGNED_AREA_NAME, picture: null }]);
   }
+  sortAreaEntries(areaEntries, areaOrder);
 
   const areaChips = areaEntries.map(([id, area]: [string, any]) => {
     const hidden = hiddenAreas.includes(id);
@@ -1247,6 +1250,20 @@ export function buildAreasSection(hass: any, config: StrategyConfig): string {
 }
 
 // ─── 6. Devices ─────────────────────────────────────────────────────────────
+
+function sortAreaEntries(areaEntries: Array<[string, any]>, areaOrder: string[]): void {
+  if (!areaOrder.length) return;
+
+  const orderIndex = new Map(areaOrder.map((areaId, index) => [areaId, index]));
+  areaEntries.sort((a, b) => {
+    const ai = orderIndex.get(a[0]);
+    const bi = orderIndex.get(b[0]);
+    if (ai !== undefined || bi !== undefined) {
+      return (ai ?? Number.MAX_SAFE_INTEGER) - (bi ?? Number.MAX_SAFE_INTEGER);
+    }
+    return 0;
+  });
+}
 
 export function buildDevicesSection(config: StrategyConfig, hass?: Hass): string {
   const hiddenDomains: string[] = getConfiguredHiddenDomains(config);

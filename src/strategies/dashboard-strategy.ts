@@ -17,6 +17,7 @@ import { getEffectiveStrategyConfig } from '../utils/effective-config';
 import {
   buildAreaEntityMapFromModel,
   collectVisibleEntities,
+  getConfiguredAreaOrder,
   getConfiguredHiddenAreas,
   getDashboardFilters,
   UNASSIGNED_AREA_ID,
@@ -29,11 +30,12 @@ export class HassDashboardProStrategy {
   static async generate(config: StrategyConfig, hass: Hass): Promise<DashboardStrategyResult> {
     const effectiveConfig = getEffectiveStrategyConfig(config);
     const hiddenAreas = getConfiguredHiddenAreas(effectiveConfig);
+    const areaOrder = getConfiguredAreaOrder(effectiveConfig);
     const visibleEntities = collectVisibleEntities(hass, getDashboardFilters(effectiveConfig));
     const areaEntityMap = buildAreaEntityMapFromModel(visibleEntities);
 
     // Pre-compute area summaries (for sidebar display)
-    const areaSummaries = buildAreaSummaries(hass, areaEntityMap, hiddenAreas);
+    const areaSummaries = buildAreaSummaries(hass, areaEntityMap, hiddenAreas, areaOrder);
 
     // Inject pre-computed data into config for the view strategy
     const enrichedConfig: StrategyConfig = {
@@ -120,6 +122,7 @@ function buildAreaSummaries(
   hass: Hass,
   areaEntityMap: Map<string, import('../types').EntityInfo[]>,
   hiddenAreas: string[],
+  areaOrder: string[] = [],
 ): AreaSummary[] {
   const summaries: AreaSummary[] = [];
 
@@ -179,7 +182,24 @@ function buildAreaSummaries(
     });
   }
 
-  return summaries;
+  return sortAreaSummaries(summaries, areaOrder);
+}
+
+function sortAreaSummaries(summaries: AreaSummary[], areaOrder: string[]): AreaSummary[] {
+  if (!areaOrder.length) return summaries;
+
+  const orderIndex = new Map(areaOrder.map((areaId, index) => [areaId, index]));
+  return summaries
+    .map((summary, index) => ({ summary, index }))
+    .sort((a, b) => {
+      const ai = orderIndex.get(a.summary.area_id);
+      const bi = orderIndex.get(b.summary.area_id);
+      if (ai !== undefined || bi !== undefined) {
+        return (ai ?? Number.MAX_SAFE_INTEGER) - (bi ?? Number.MAX_SAFE_INTEGER);
+      }
+      return a.index - b.index;
+    })
+    .map(item => item.summary);
 }
 
 // ─── Area Icon Mapping ─────────────────────────────────────────────────────
