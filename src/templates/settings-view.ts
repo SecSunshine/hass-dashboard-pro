@@ -81,12 +81,14 @@ export function buildSettingsHTML(config: StrategyConfig, tokens?: ResolvedToken
       .join('\n');
   }).filter(Boolean).join('\n');
 
-  const visualHTML = visualCards.map(card => {
+  const visualHTML = visualCards.map((card, index) => {
     const content = (card.content as string) || '';
-    return repairMergedVisualHTML(content
+    const repaired = repairMergedVisualHTML(content
       .replace(/<style>[\s\S]*?<\/style>/g, '')
       .replace(/<script>[\s\S]*?<\/script>/g, '')
       .trim());
+    const component = getVisualCardComponent(repaired, index);
+    return `<div class="st-visual-card" data-visual-card="${escapeAttribute(component)}">${repaired}</div>`;
   }).join('\n');
 
   // Wrap visual settings in a collapsible section
@@ -111,26 +113,28 @@ ${getSettingsSectionsCSS()}
   }
 ${visualStyles}
   /* Visual settings card spacing & wrappers */
-  #st-visual-body > div {
+  #st-visual-body .st-visual-card {
     padding: 16px;
     margin-bottom: 12px;
     border-radius: var(--hdp-radius, 14px);
     background: var(--hdp-card-bg, #fff);
     border: 1px solid var(--hdp-border, rgba(0,0,0,0.06));
     transition: border-color 0.2s ease;
+    min-width: 0;
+    overflow: hidden;
   }
-  #st-visual-body > div:last-child { margin-bottom: 0; }
-  #st-visual-body > div:hover { border-color: var(--hdp-primary, #4F6EF7); }
+  #st-visual-body .st-visual-card:last-child { margin-bottom: 0; }
+  #st-visual-body .st-visual-card:hover { border-color: var(--hdp-primary, #4F6EF7); }
   /* Settings header doesn't need card wrapper */
-  #st-visual-body > div[data-component="settings-header"] {
+  #st-visual-body .st-visual-card[data-visual-card="settings-header"] {
     padding: 4px 0 0 0;
     margin-bottom: 16px;
     background: transparent;
     border: none;
   }
-  #st-visual-body > div[data-component="settings-header"]:hover { border: none; }
+  #st-visual-body .st-visual-card[data-visual-card="settings-header"]:hover { border: none; }
   /* Action card full width */
-  #st-visual-body > div[data-component="settings-actions"] {
+  #st-visual-body .st-visual-card[data-visual-card="settings-actions"] {
     display: flex;
     gap: 12px;
   }
@@ -174,6 +178,12 @@ ${visualStyles}
     min-width: 0;
     overflow: hidden;
     display: block;
+  }
+  #st-visual-body .st-visual-card > .settings-section {
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
   }
   #st-visual-body .settings-header {
     display: flex;
@@ -287,6 +297,8 @@ ${visualStyles}
     min-width: 0;
   }
   #st-visual-body svg {
+    width: 18px;
+    height: 18px;
     max-width: 100%;
     flex-shrink: 0;
   }
@@ -382,7 +394,8 @@ ${visualStyles}
     line-height: 1;
   }
   #st-visual-body .theme-check,
-  #st-visual-body .mood-check {
+  #st-visual-body .mood-check,
+  #st-visual-body .font-check {
     position: absolute;
     top: 6px;
     right: 6px;
@@ -393,6 +406,12 @@ ${visualStyles}
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+  #st-visual-body .theme-check svg,
+  #st-visual-body .mood-check svg,
+  #st-visual-body .font-check svg {
+    width: 12px;
+    height: 12px;
   }
   #st-visual-body .toggle-switch {
     width: 44px;
@@ -531,6 +550,21 @@ ${visualStyles}
   #st-visual-body .color-hex {
     white-space: nowrap;
   }
+  #st-visual-body .slider-input {
+    width: 100%;
+  }
+  #st-visual-body .action-section {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 12px;
+    width: 100%;
+  }
+  #st-visual-body .action-btn {
+    min-height: 44px;
+    max-width: 100%;
+    white-space: normal;
+  }
   @media (max-width: 720px) {
     #st-visual-body .theme-grid,
     #st-visual-body .mood-grid,
@@ -654,6 +688,11 @@ function repairMergedVisualHTML(html: string): string {
   return html
     .replace(/([^<])\/(div|span|button|label|select|option|textarea)>/g, '$1</$2>')
     .replace(/(\saria-label="[^"]*?)\s\/>/g, '$1" />');
+}
+
+function getVisualCardComponent(html: string, index: number): string {
+  const match = html.match(/\sdata-component="([^"]+)"/);
+  return match?.[1] || `visual-card-${index}`;
 }
 
 /**

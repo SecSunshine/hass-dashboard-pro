@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Hass, StrategyConfig } from '../types';
+import { collectVisibleEntities, getDashboardFilters } from '../utils/dashboard-model';
 import { buildSettingsHTML, generateSettingsJS } from './settings-view';
 
 const hass: Hass = {
@@ -101,7 +102,11 @@ describe('settings view', () => {
     const html = buildSettingsHTML(config, undefined, hass);
     const js = generateSettingsJS(config, undefined, hass);
 
-    expect(html).toContain('#st-visual-body > div');
+    expect(html).toContain('.st-visual-card');
+    expect(html).toContain('class="st-visual-card" data-visual-card="settings-header"');
+    expect(html).toContain('class="st-visual-card" data-visual-card="theme-presets"');
+    expect(html).toContain('#st-visual-body .st-visual-card');
+    expect(html).toContain('#st-visual-body .st-visual-card > .settings-section');
     expect(html).toContain('.hdp-view[data-view="settings"] .hdp-area-content');
     expect(html).toContain('width: min(100%, 1040px)');
     expect(html).not.toContain('.st-section-body > div {');
@@ -114,6 +119,7 @@ describe('settings view', () => {
     expect(html).toContain('#st-visual-body .color-row');
     expect(html).toContain('#st-visual-body .settings-studio-btn');
     expect(html).toContain('#st-visual-body .settings-studio-btn svg');
+    expect(html).toContain('#st-visual-body svg {\n    width: 18px;\n    height: 18px;');
     expect(html).toContain('#st-visual-body button {\n    appearance: none;');
     expect(html).toContain('white-space: normal;\n    text-align: center;');
     expect(html).toContain('#st-visual-body .toggle-switch::after');
@@ -125,6 +131,7 @@ describe('settings view', () => {
     expect(html).toContain('#st-visual-body .color-swatch-wrap');
     expect(html).toContain('#st-visual-body .am-mood-select');
     expect(html).toContain('width: min(180px, 42vw)');
+    expect(html).toContain('#st-visual-body .action-section');
     expect(html).toMatch(/@media \(max-width: 480px\) \{[\s\S]*#st-visual-body \.theme-grid/);
     expect(html).not.toContain('#st-visual-body @media');
     expect(html).toMatch(/settings-header-sub">[\s\S]*?<\/div>\s*<button class="settings-studio-btn"/);
@@ -165,6 +172,7 @@ describe('settings view', () => {
     expect(html).not.toContain(':host, :root');
     expect(html.indexOf('Stable visual-settings layout')).toBeGreaterThan(html.indexOf('#st-visual-body .settings-header'));
     expect(html).not.toContain('grid-template-columns: repeat(4, 1fr)');
+    expect(() => new Function(js)).not.toThrow();
   });
 
   it('adds detected HA domains to the hidden domain controls', () => {
@@ -214,6 +222,20 @@ describe('settings view', () => {
 
     expect(html).toContain("hdpToggleArrayItem('devices.hidden_device_types', &quot;binary_sensor.motion&quot;, event)");
     expect(html).not.toContain("hdpToggleArrayItem('devices.hidden_device_types', &quot;sensor.temperature&quot;, event)");
+  });
+
+  it('uses the same device type keys for settings chips and dashboard filtering', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        devices: { hidden_device_types: ['binary_sensor.motion'] },
+      } as any,
+    };
+    const html = buildSettingsHTML(config, undefined, hass);
+    const visibleIds = collectVisibleEntities(hass, getDashboardFilters(config)).map(entity => entity.entity_id);
+
+    expect(html).toContain('data-action="toggle-hidden-device-type" data-setting="devices.hidden_device_types" data-value="binary_sensor.motion" aria-pressed="true"');
+    expect(visibleIds).not.toContain('binary_sensor.kitchen_motion');
   });
 
   it('ignores registry-hidden people in settings controls', () => {
