@@ -717,7 +717,9 @@ ${scripts}`;
 }
 
 function scopeVisualScript(script: string): string {
-  return script.replace(/document\.querySelectorAll\(/g, 'hdpVisualQueryAll(');
+  return script
+    .replace(/document\.querySelectorAll\(/g, 'hdpVisualQueryAll(')
+    .replace(/document\.getElementById\(/g, 'hdpVisualGetElementById(');
 }
 
 function generateVisualQueryScopeJS(): string {
@@ -725,6 +727,15 @@ function generateVisualQueryScopeJS(): string {
 function hdpVisualQueryAll(selector) {
   var root = document.getElementById('st-visual-body');
   return (root || document).querySelectorAll(selector);
+}
+
+function hdpVisualGetElementById(id) {
+  var root = document.getElementById('st-visual-body');
+  if (root && root.querySelector) {
+    var found = root.querySelector('#' + id);
+    if (found) return found;
+  }
+  return document.getElementById(id);
 }
 `;
 }

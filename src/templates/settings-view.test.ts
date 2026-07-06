@@ -460,10 +460,17 @@ describe('settings view', () => {
     expect(js).toContain('window.hdpClearVisualConfigAndReload = function');
     expect(js).toContain('window.hdpReplaceVisualConfig = function');
     expect(js).toContain('function hdpVisualQueryAll(selector)');
+    expect(js).toContain('function hdpVisualGetElementById(id)');
     expect(js).toContain("hdpVisualQueryAll('.theme-card')");
     expect(js).toContain("hdpVisualQueryAll('.lc-density-btn')");
+    expect(js).toContain("var autoDark = hdpVisualGetElementById('auto-dark-toggle');");
+    expect(js).toContain("var seedInput = hdpVisualGetElementById('seed-color-input');");
+    expect(js).toContain("hdpVisualGetElementById('shadow-toggle').addEventListener");
     expect(js).not.toContain("document.querySelectorAll('.theme-card')");
     expect(js).not.toContain("document.querySelectorAll('.lc-density-btn')");
+    expect(js).not.toContain("document.getElementById('auto-dark-toggle')");
+    expect(js).not.toContain("document.getElementById('seed-color-input')");
+    expect(js).not.toContain("document.getElementById('shadow-toggle').addEventListener");
     expect(js).toContain('current.visual = cfg;');
     expect(js).toContain('cfg.theme = preset;');
     expect(js).toContain('hdpSaveVisualConfigAndReload(cfg);');
