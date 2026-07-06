@@ -92,7 +92,7 @@ function buildHeadline(pack: StylePack, profile: HomeProfile): string {
 
 function buildRationale(pack: StylePack, profile: HomeProfile, hass: Hass): string[] {
   const reasons: string[] = [];
-  reasons.push(`${profile.area_count} 个区域、${profile.entity_count} 个可见实体`);
+  reasons.push(`${profile.area_count} 个区域，${profile.entity_count} 个可见实体`);
 
   if (hass.themes?.darkMode && pack.id === 'dark-glass') {
     reasons.push('检测到 Home Assistant 深色模式，优先使用暗色玻璃风格');

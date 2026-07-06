@@ -45,7 +45,8 @@ describe('dashboard design plan', () => {
     expect(['colorful-family', 'warm-home', 'minimal-light']).toContain(plan.pack_id);
     expect(plan.visual.mood_preset).toBe(plan.pack_id);
     expect(plan.visual.card_style).toBeTruthy();
-    expect(plan.rationale.join(' ')).toContain('2 个区域');
+    expect(plan.rationale.join(' ')).toContain('2 个区域，8 个可见实体');
+    expect(plan.rationale.join(' ')).not.toContain('{profile');
     expect(plan.focus.length).toBeGreaterThan(0);
   });
 
