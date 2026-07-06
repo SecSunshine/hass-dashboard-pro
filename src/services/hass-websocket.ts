@@ -243,6 +243,8 @@ function hdpVacuumAction(entityId, action) {
 function hdpInitEntityClickHandlers() {
   // Event delegation on the main content area
   document.addEventListener('click', function(e) {
+    // Domain-specific cards own their inner buttons and service calls.
+    if (e.target.closest('[data-no-toggle]')) return;
     // Check if click is on an entity card or its toggle
     var card = e.target.closest('[data-entity]');
     if (!card) return;

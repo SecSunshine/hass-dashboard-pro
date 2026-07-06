@@ -42,6 +42,10 @@ export function getDomainCardCSS(): string {
     box-shadow: var(--hdp-shadow-elevated);
   }
   .dvc--on { border-color: var(--hdp-primary); }
+  .dvc button {
+    appearance: none;
+    font: inherit;
+  }
   .dvc-bar {
     position: absolute;
     top: 0; left: 0; right: 0;
@@ -152,6 +156,7 @@ export function getDomainCardCSS(): string {
     flex-shrink: 0;
   }
   .dc-climate-temp-btn {
+    appearance: none;
     width: 36px;
     height: 36px;
     border-radius: var(--hdp-radius-sm, 8px);
@@ -194,6 +199,7 @@ export function getDomainCardCSS(): string {
     margin-bottom: 8px;
   }
   .dc-climate-mode {
+    appearance: none;
     padding: 7px 14px;
     border-radius: var(--hdp-radius-pill, 20px);
     border: 1px solid var(--hdp-border);
@@ -208,6 +214,7 @@ export function getDomainCardCSS(): string {
     display: flex;
     align-items: center;
     gap: 4px;
+    text-align: center;
   }
   .dc-climate-mode:hover {
     border-color: var(--hdp-info, #3B82F6);
@@ -235,6 +242,7 @@ export function getDomainCardCSS(): string {
     margin-right: 2px;
   }
   .dc-climate-fan-btn {
+    appearance: none;
     padding: 4px 10px;
     border-radius: var(--hdp-radius-pill, 20px);
     border: 1px solid var(--hdp-border);
@@ -246,6 +254,7 @@ export function getDomainCardCSS(): string {
     cursor: pointer;
     transition: all 0.15s ease;
     min-height: 28px;
+    text-align: center;
   }
   .dc-climate-fan-btn:hover {
     border-color: var(--hdp-primary);
@@ -512,7 +521,7 @@ export function buildDomainCard(entity: EntityInfo, stateObj: HassEntity | undef
 
   switch (entity.domain) {
     case 'climate':
-      return buildClimateCard(entity, stateObj, skin);
+      return buildAccessibleClimateCard(entity, stateObj, skin);
     case 'cover':
       return buildCoverCard(entity, stateObj, skin);
     case 'lock':
@@ -558,8 +567,12 @@ function buildClimateCard(entity: EntityInfo, stateObj: HassEntity, skin?: strin
   const modePills = hvacModes.map(mode => {
     const label = HVAC_MODE_LABELS[mode] || mode;
     const active = currentState === mode;
-    return `<div class="dc-climate-mode ${active ? 'dc-climate-mode--active' : ''}"
-      data-action="climate-mode" onclick="hdpSetClimateMode(${jsArg(entity.entity_id)}, ${jsArg(mode)})">${escapeHTML(label)}</div>`;
+    return `<button type="button" class="dc-climate-mode ${active ? 'dc-climate-mode--active' : ''}"
+      data-entity="${escapeAttribute(entity.entity_id)}"
+      data-action="climate-mode"
+      data-mode="${escapeAttribute(mode)}"
+      aria-pressed="${active ? 'true' : 'false'}"
+      onclick="hdpSetClimateMode(${jsArg(entity.entity_id)}, ${jsArg(mode)})">${escapeHTML(label)}</button>`;
   }).join('');
 
   // Fan mode pills (only if fan modes available)
@@ -569,8 +582,12 @@ function buildClimateCard(entity: EntityInfo, stateObj: HassEntity, skin?: strin
         ${fanModes.map(fm => {
           const label = FAN_MODE_LABELS[fm] || fm;
           const active = fanMode === fm;
-          return `<div class="dc-climate-fan-btn ${active ? 'dc-climate-fan-btn--active' : ''}"
-            data-action="climate-fan" onclick="hdpSetClimateFanMode(${jsArg(entity.entity_id)}, ${jsArg(fm)})">${escapeHTML(label)}</div>`;
+          return `<button type="button" class="dc-climate-fan-btn ${active ? 'dc-climate-fan-btn--active' : ''}"
+            data-entity="${escapeAttribute(entity.entity_id)}"
+            data-action="climate-fan"
+            data-fan-mode="${escapeAttribute(fm)}"
+            aria-pressed="${active ? 'true' : 'false'}"
+            onclick="hdpSetClimateFanMode(${jsArg(entity.entity_id)}, ${jsArg(fm)})">${escapeHTML(label)}</button>`;
         }).join('')}
       </div>`
     : '';
@@ -597,6 +614,96 @@ function buildClimateCard(entity: EntityInfo, stateObj: HassEntity, skin?: strin
       <div class="dc-climate-target-val">${escapeHTML(targetTempVal)}</div>
       <div class="dc-climate-temp-btn"
         data-action="climate-temp" onclick="hdpSetClimateTemp(${jsArg(entity.entity_id)}, ${tempUpDelta}, ${minTemp}, ${maxTemp})">+</div>
+    </div>
+    <div class="dc-climate-modes">${modePills}</div>
+    ${fanPills}
+  </div>`;
+}
+
+// ─── Accessible Climate Card ─────────────────────────────────────────────────
+
+function buildAccessibleClimateCard(entity: EntityInfo, stateObj: HassEntity, skin?: string): string {
+  const attrs = stateObj.attributes || {};
+  const currentTemp = attrs.current_temperature as number | undefined;
+  const targetTemp = attrs.temperature as number | undefined;
+  const hvacModes = (attrs.hvac_modes as string[]) || ['off', 'cool', 'heat', 'auto'];
+  const fanModes = (attrs.fan_modes as string[]) || [];
+  const fanMode = attrs.fan_mode as string | undefined;
+  const currentState = stateObj.state;
+  const skinCls = skin ? cardSkinClass(skin) : '';
+  const step = (attrs.target_temp_step as number) || 0.5;
+  const minTemp = (attrs.min_temp as number) || 16;
+  const maxTemp = (attrs.max_temp as number) || 30;
+  const entityId = escapeAttribute(entity.entity_id);
+
+  const currentTempHTML = currentTemp != null
+    ? `<div class="dc-climate-current">
+        <div class="dc-climate-current-val">${currentTemp.toFixed(1)}&deg;</div>
+        <div class="dc-climate-current-label">Current</div>
+      </div>`
+    : '';
+
+  const targetTempVal = targetTemp != null ? `${targetTemp.toFixed(1)}&deg;` : '--';
+  const tempUpDelta = step;
+  const tempDownDelta = -step;
+
+  const modePills = hvacModes.map(mode => {
+    const label = HVAC_MODE_LABELS[mode] || mode;
+    const active = currentState === mode;
+    return `<button type="button" class="dc-climate-mode ${active ? 'dc-climate-mode--active' : ''}"
+      data-entity="${entityId}"
+      data-action="climate-mode"
+      data-mode="${escapeAttribute(mode)}"
+      aria-pressed="${active ? 'true' : 'false'}"
+      onclick="hdpSetClimateMode(${jsArg(entity.entity_id)}, ${jsArg(mode)})">${escapeHTML(label)}</button>`;
+  }).join('');
+
+  const fanPills = fanModes.length > 0
+    ? `<div class="dc-climate-fan">
+        <span class="dc-climate-fan-label">Fan</span>
+        ${fanModes.map(fm => {
+          const label = FAN_MODE_LABELS[fm] || fm;
+          const active = fanMode === fm;
+          return `<button type="button" class="dc-climate-fan-btn ${active ? 'dc-climate-fan-btn--active' : ''}"
+            data-entity="${entityId}"
+            data-action="climate-fan"
+            data-fan-mode="${escapeAttribute(fm)}"
+            aria-pressed="${active ? 'true' : 'false'}"
+            onclick="hdpSetClimateFanMode(${jsArg(entity.entity_id)}, ${jsArg(fm)})">${escapeHTML(label)}</button>`;
+        }).join('')}
+      </div>`
+    : '';
+
+  return `<div class="dvc dc-climate ${skinCls}" data-entity="${entityId}" data-no-toggle>
+    <div class="dvc-bar"></div>
+    <div class="dc-climate-top">
+      <div class="dvc-ico ${currentState !== 'off' ? 'dvc-ico--on' : 'dvc-ico--off'}">
+        ${getClimateIcon(currentState !== 'off')}
+      </div>
+      <div class="dvc-info">
+        <div class="dvc-name">${escapeHTML(entity.name)}</div>
+        <div class="dvc-state">
+          <span class="dvc-dot ${currentState !== 'off' ? 'dvc-dot--on' : 'dvc-dot--off'}"></span>
+          ${escapeHTML(HVAC_MODE_LABELS[currentState] || currentState)}
+        </div>
+      </div>
+      ${currentTempHTML}
+    </div>
+    <div class="dc-climate-target-row">
+      <span class="dc-climate-target-label">Target</span>
+      <button type="button" class="dc-climate-temp-btn"
+        data-entity="${entityId}"
+        data-action="climate-temp"
+        data-step="${escapeAttribute(String(tempDownDelta))}"
+        aria-label="Decrease target temperature"
+        onclick="hdpSetClimateTemp(${jsArg(entity.entity_id)}, ${tempDownDelta}, ${minTemp}, ${maxTemp})">-</button>
+      <div class="dc-climate-target-val">${targetTempVal}</div>
+      <button type="button" class="dc-climate-temp-btn"
+        data-entity="${entityId}"
+        data-action="climate-temp"
+        data-step="${escapeAttribute(String(tempUpDelta))}"
+        aria-label="Increase target temperature"
+        onclick="hdpSetClimateTemp(${jsArg(entity.entity_id)}, ${tempUpDelta}, ${minTemp}, ${maxTemp})">+</button>
     </div>
     <div class="dc-climate-modes">${modePills}</div>
     ${fanPills}
