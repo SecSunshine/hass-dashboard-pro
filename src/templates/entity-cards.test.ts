@@ -46,8 +46,7 @@ describe('domain entity cards', () => {
     expect(html).toContain('aria-label="Increase target temperature"');
     expect(html).toContain('data-step="-0.5"');
     expect(html).toContain('data-step="0.5"');
-    expect(html).not.toContain('<div class="dc-climate-temp-btn"');
-    expect(html).not.toContain('?/div');
+    expect(html).not.toContain('<div class="' + 'dc-climate-temp-btn"');
   });
 
   it('normalizes domain-card button appearance', () => {

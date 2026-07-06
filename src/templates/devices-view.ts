@@ -221,6 +221,10 @@ function getDeviceEntityCardCSS(): string {
     transform: translateY(-2px);
     box-shadow: var(--hdp-shadow-elevated);
   }
+  .dvc[role="button"]:focus-visible {
+    outline: 2px solid var(--hdp-primary);
+    outline-offset: 2px;
+  }
   .dvc--on { border-color: var(--hdp-primary); }
   .dvc-bar {
     position: absolute;
@@ -342,6 +346,9 @@ function buildDeviceEntityCard(entity: EntityInfo, skin?: string, hass?: Hass): 
   const skinCls = cardSkinClass(skin);
   const cardCls = active ? `dvc dvc--on ${skinCls}` : `dvc ${skinCls}`;
   const entityId = escapeAttribute(entity.entity_id);
+  const cardAttrs = isSensor
+    ? `data-entity="${entityId}"`
+    : `data-entity="${entityId}" data-action="toggle" role="button" tabindex="0" aria-pressed="${active ? 'true' : 'false'}"`;
 
   const rightHTML = isSensor
     ? `<span class="dvc-val">${stateText}</span>`
@@ -351,7 +358,7 @@ function buildDeviceEntityCard(entity: EntityInfo, skin?: string, hass?: Hass): 
         </div>
       </div>`;
 
-  return `<div class="${cardCls}" data-entity="${entityId}" data-action="toggle">
+  return `<div class="${cardCls}" ${cardAttrs}>
     <div class="dvc-bar"></div>
     <div class="dvc-row">
       <div class="dvc-ico ${active ? 'dvc-ico--on' : 'dvc-ico--off'}">${iconSVG}</div>

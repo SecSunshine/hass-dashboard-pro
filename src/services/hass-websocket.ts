@@ -257,6 +257,14 @@ function hdpInitEntityClickHandlers() {
     if (domain === 'sensor' || domain === 'binary_sensor' || domain === 'camera') return;
     hdpToggleEntity(entityId);
   });
+  document.addEventListener('keydown', function(e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    if (e.target.closest('[data-no-toggle]')) return;
+    var card = e.target.closest('[data-action="toggle"][data-entity]');
+    if (!card) return;
+    e.preventDefault();
+    card.click();
+  });
 }
 `;
 }

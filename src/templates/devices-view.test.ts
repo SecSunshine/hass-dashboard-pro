@@ -93,4 +93,13 @@ describe('devices view', () => {
     expect(html).not.toContain('Kitchen Motion');
     expect(html).toContain('Power Meter With An Extremely Long Friendly Name');
   });
+
+  it('marks only controllable default cards as toggle buttons', () => {
+    const html = buildDevicesHTML(hass, { type: 'custom:hass-dashboard-pro' });
+
+    expect(html).toContain('data-entity="light.kitchen_counter" data-action="toggle" role="button" tabindex="0" aria-pressed="true"');
+    expect(html).toContain('data-entity="sensor.power_meter"');
+    expect(html).not.toContain('data-entity="sensor.power_meter" data-action="toggle"');
+    expect(html).toContain('.dvc[role="button"]:focus-visible');
+  });
 });

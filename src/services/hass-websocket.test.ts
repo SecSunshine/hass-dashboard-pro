@@ -20,4 +20,12 @@ describe('hass websocket script', () => {
 
     expect(js).toContain("if (e.target.closest('[data-no-toggle]')) return;");
   });
+
+  it('adds keyboard activation for declarative toggle cards', () => {
+    const js = generateConnectionDiscoveryJS();
+
+    expect(js).toContain("document.addEventListener('keydown'");
+    expect(js).toContain("e.target.closest('[data-action=\"toggle\"][data-entity]')");
+    expect(js).toContain('card.click();');
+  });
 });

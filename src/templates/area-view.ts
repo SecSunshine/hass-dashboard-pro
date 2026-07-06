@@ -294,6 +294,10 @@ const ENTITY_CARD_CSS = /* css */ `
     transform: translateY(-2px);
     box-shadow: var(--hdp-shadow-elevated);
   }
+  .ec[role="button"]:focus-visible {
+    outline: 2px solid var(--hdp-primary);
+    outline-offset: 2px;
+  }
   .ec--on {
     border-color: var(--hdp-primary);
   }
@@ -408,6 +412,9 @@ function buildEntityCard(entity: EntityInfo, skin?: string, hass?: Hass): string
   const skinCls = skin ? cardSkinClass(skin) : '';
   const cardCls = active ? `ec ec--on ${skinCls}` : `ec ${skinCls}`;
   const entityId = escapeAttribute(entity.entity_id);
+  const cardAttrs = isSensor
+    ? `data-entity="${entityId}"`
+    : `data-entity="${entityId}" data-action="toggle" role="button" tabindex="0" aria-pressed="${active ? 'true' : 'false'}"`;
 
   const rightHTML = isSensor
     ? `<span class="ec-val">${stateText}</span>`
@@ -417,7 +424,7 @@ function buildEntityCard(entity: EntityInfo, skin?: string, hass?: Hass): string
         </div>
       </div>`;
 
-  return `<div class="${cardCls}" data-entity="${entityId}" data-action="toggle">
+  return `<div class="${cardCls}" ${cardAttrs}>
     <div class="ec-bar"></div>
     <div class="ec-row">
       <div class="ec-ico ${active ? 'ec-ico--on' : 'ec-ico--off'}">${iconSVG}</div>
