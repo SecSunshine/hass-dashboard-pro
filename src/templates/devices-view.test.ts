@@ -77,6 +77,21 @@ describe('devices view', () => {
     expect(html).toContain('appearance: none;');
   });
 
+  it('applies hidden areas to the all devices view', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        areas: { hidden_areas: ['kitchen'] },
+      } as any,
+    };
+    const html = buildDevicesHTML(hass, config);
+
+    expect(html).not.toContain('Kitchen Counter Light');
+    expect(html).not.toContain('Power Meter With An Extremely Long Friendly Name');
+    expect(html).not.toContain('Kitchen Motion');
+    expect(html).toContain('dv-empty');
+  });
+
   it('applies hidden domains and hidden device types', () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',
