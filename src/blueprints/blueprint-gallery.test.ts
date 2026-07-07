@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildBlueprintGalleryHTML } from './blueprint-gallery';
-import { generateBlueprintModalJS } from './blueprint-gallery';
+import { buildBlueprintGalleryHTML, buildImportModalHTML, generateBlueprintModalJS } from './blueprint-gallery';
 
 describe('blueprint gallery rendering', () => {
   it('renders stable management markup for empty and sourced blueprints', () => {
@@ -31,6 +30,22 @@ describe('blueprint gallery rendering', () => {
     expect(sourcedHTML).toContain('title="检查更新" data-action="check-blueprint-update"');
     expect(sourcedHTML).toContain('title="编辑输入" data-action="edit-blueprint"');
     expect(sourcedHTML).toContain('title="删除" data-action="remove-blueprint"');
+  });
+
+  it('uses overflow-safe import modal layout css', () => {
+    const html = buildImportModalHTML();
+
+    expect(html).toContain('padding: 16px;');
+    expect(html).toContain('width: min(560px, 100%)');
+    expect(html).toContain('max-height: calc(100vh - 32px)');
+    expect(html).toContain('overflow-x: hidden');
+    expect(html).toContain('box-sizing: border-box');
+    expect(html).toContain('.bp-modal-input {');
+    expect(html).toContain('width: 100%;\n    max-width: 100%;\n    min-width: 0;');
+    expect(html).toContain('.bp-modal-actions {\n    display: flex;\n    flex-wrap: wrap;');
+    expect(html).toContain('.bp-modal-actions .bp-btn {\n    flex: 0 1 auto;');
+    expect(html).toContain('@media (max-width: 480px)');
+    expect(html).toContain('.bp-modal-actions .bp-btn { flex: 1 1 120px; }');
   });
 
   it('waits for the latest blueprint save before reloading the gallery', () => {

@@ -280,17 +280,22 @@ export function buildImportModalHTML(): string {
     z-index: 999;
     align-items: center;
     justify-content: center;
+    padding: 16px;
+    box-sizing: border-box;
   }
   .bp-modal-overlay--active { display: flex; }
   .bp-modal {
     background: var(--hdp-card-bg, #fff);
     border-radius: var(--hdp-radius, 14px);
     padding: 24px;
-    width: 90%;
-    max-width: 560px;
-    max-height: 80vh;
+    width: min(560px, 100%);
+    max-width: 100%;
+    max-height: calc(100vh - 32px);
+    min-width: 0;
     overflow-y: auto;
+    overflow-x: hidden;
     box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    box-sizing: border-box;
   }
   .bp-modal-title {
     font: inherit;
@@ -298,6 +303,7 @@ export function buildImportModalHTML(): string {
     font-weight: 700;
     color: var(--hdp-text);
     margin-bottom: 16px;
+    overflow-wrap: anywhere;
   }
   .bp-modal-field {
     display: flex;
@@ -321,6 +327,10 @@ export function buildImportModalHTML(): string {
     color: var(--hdp-text);
     outline: none;
     min-height: 44px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
   .bp-modal-input:focus {
     border-color: var(--hdp-primary);
@@ -337,16 +347,29 @@ export function buildImportModalHTML(): string {
     color: var(--hdp-text);
     outline: none;
     min-height: 200px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     resize: vertical;
+    box-sizing: border-box;
   }
   .bp-modal-textarea:focus {
     border-color: var(--hdp-primary);
   }
   .bp-modal-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     justify-content: flex-end;
     margin-top: 16px;
+    min-width: 0;
+  }
+  .bp-modal-actions .bp-btn {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
   .bp-input-editor {
     display: flex;
@@ -368,6 +391,16 @@ export function buildImportModalHTML(): string {
     font: inherit;
     font-size: 12px;
     color: var(--hdp-text-muted);
+    overflow-wrap: anywhere;
+  }
+  @media (max-width: 480px) {
+    .bp-modal-overlay { padding: 12px; }
+    .bp-modal {
+      padding: 16px;
+      max-height: calc(100vh - 24px);
+    }
+    .bp-modal-actions { justify-content: stretch; }
+    .bp-modal-actions .bp-btn { flex: 1 1 120px; }
   }
 </style>
 <div class="bp-modal-overlay" id="bp-import-modal">

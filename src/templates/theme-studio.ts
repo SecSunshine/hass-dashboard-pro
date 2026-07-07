@@ -99,6 +99,10 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
     color: var(--hdp-text, #1a1d26);
   }
   .hdp-studio-overlay--open { display: flex !important; }
+  .hdp-studio-overlay,
+  .hdp-studio-overlay * {
+    box-sizing: border-box;
+  }
 
   /* ── Preview Area (left) ── */
   .hdp-studio-preview {
@@ -174,6 +178,7 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
   .ts-panel-title svg {
     width: 20px; height: 20px;
     color: var(--hdp-primary);
+    flex-shrink: 0;
   }
   .ts-close-btn {
     width: 32px; height: 32px;
@@ -488,10 +493,12 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
   }
   .ts-action-row {
     display: flex;
+    flex-wrap: wrap;
     gap: 10px;
+    min-width: 0;
   }
   .ts-btn {
-    flex: 1;
+    flex: 1 1 120px;
     padding: 12px 16px;
     border-radius: var(--hdp-radius, 14px);
     font-size: 14px;
@@ -505,6 +512,8 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
     justify-content: center;
     gap: 6px;
     min-width: 0;
+    max-width: 100%;
+    white-space: normal;
     overflow-wrap: anywhere;
   }
   .ts-btn svg { width: 16px; height: 16px; }
@@ -542,8 +551,11 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
     border-radius: 16px;
     box-shadow: 0 24px 64px rgba(0,0,0,0.2);
     padding: 24px;
-    width: 480px;
-    max-width: 90vw;
+    width: min(480px, calc(100vw - 32px));
+    max-width: 100%;
+    max-height: calc(100vh - 32px);
+    min-width: 0;
+    overflow: auto;
     z-index: 100000;
     display: none;
     flex-direction: column;
@@ -554,9 +566,12 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
     font-size: 17px;
     font-weight: 700;
     color: var(--hdp-text);
+    overflow-wrap: anywhere;
   }
   .ts-code-textarea {
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     height: 100px;
     border: 1px solid var(--hdp-border);
     border-radius: 10px;
@@ -574,8 +589,13 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
   }
   .ts-code-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 10px;
     justify-content: flex-end;
+    min-width: 0;
+  }
+  .ts-code-actions .ts-btn {
+    flex: 0 1 auto;
   }
   .ts-code-backdrop {
     position: fixed;
@@ -590,6 +610,13 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
   @media (max-width: 768px) {
     .hdp-studio-overlay { flex-direction: column; }
     .hdp-studio-preview { flex: none; max-height: 40vh; padding: 16px; }
+    .ts-code-dialog {
+      width: calc(100vw - 24px);
+      max-height: calc(100vh - 24px);
+      padding: 16px;
+    }
+    .ts-code-actions { justify-content: stretch; }
+    .ts-code-actions .ts-btn { flex: 1 1 120px; }
     .hdp-studio-panel {
       width: 100%;
       min-width: 0;
@@ -746,9 +773,9 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
   <div class="ts-code-dialog-title" id="ts-code-dialog-title">导出主题码</div>
   <textarea class="ts-code-textarea" id="ts-code-textarea" placeholder="粘贴主题码到这里..."></textarea>
   <div class="ts-code-actions">
-    <button class="ts-btn ts-btn--secondary" id="ts-code-copy-btn" style="flex: none; padding: 10px 16px;">复制</button>
-    <button class="ts-btn ts-btn--secondary" id="ts-code-close-btn" style="flex: none; padding: 10px 16px;">关闭</button>
-    <button class="ts-btn ts-btn--primary" id="ts-code-apply-btn" style="flex: none; padding: 10px 16px; display: none;">应用</button>
+    <button class="ts-btn ts-btn--secondary" id="ts-code-copy-btn">复制</button>
+    <button class="ts-btn ts-btn--secondary" id="ts-code-close-btn">关闭</button>
+    <button class="ts-btn ts-btn--primary" id="ts-code-apply-btn" style="display: none;">应用</button>
   </div>
 </div>
 `;

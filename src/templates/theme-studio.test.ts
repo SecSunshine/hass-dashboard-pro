@@ -27,6 +27,26 @@ describe('theme studio', () => {
   it('uses responsive shrink-safe studio layout css', () => {
     const html = buildThemeStudioHTML();
 
+    expect(html).toContain(`.hdp-studio-overlay,
+  .hdp-studio-overlay *`);
+    expect(html).toContain('box-sizing: border-box');
+    expect(html).toContain(`.ts-action-row {
+    display: flex;
+    flex-wrap: wrap;`);
+    expect(html).toContain(`.ts-btn {
+    flex: 1 1 120px;`);
+    expect(html).toContain(`max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;`);
+    expect(html).toContain('width: min(480px, calc(100vw - 32px))');
+    expect(html).toContain('max-height: calc(100vh - 32px)');
+    expect(html).toContain(`.ts-code-actions {
+    display: flex;
+    flex-wrap: wrap;`);
+    expect(html).toContain(`.ts-code-actions .ts-btn {
+    flex: 0 1 auto;`);
+    expect(html).toContain('.ts-code-actions .ts-btn { flex: 1 1 120px; }');
+    expect(html).not.toContain('style="flex: none; padding: 10px 16px;');
     expect(html).toContain('width: clamp(320px, 32vw, 380px)');
     expect(html).toContain('grid-template-columns: repeat(3, minmax(0, 1fr))');
     expect(html).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))');
