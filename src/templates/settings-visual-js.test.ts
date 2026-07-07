@@ -3,7 +3,7 @@ import type { StrategyConfig } from '../types';
 import { generateStorageJS } from '../services/storage';
 import { generateSettingsJS } from './settings-view';
 
-function createRuntime() {
+function createRuntime(config: StrategyConfig = { type: 'custom:hass-dashboard-pro' }) {
   const store = new Map<string, string>();
   const timers: Array<{ delay: number; fn: () => void }> = [];
   const window = {} as any;
@@ -22,7 +22,6 @@ function createRuntime() {
     timers.push({ fn, delay });
     return timers.length;
   };
-  const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
   const code = `${generateStorageJS()}\n${generateSettingsJS(config)}\nreturn window;`;
 
   const runtime = new Function('window', 'localStorage', 'document', 'location', 'setTimeout', 'console', code)(
@@ -34,7 +33,21 @@ function createRuntime() {
     console,
   );
 
-  return { runtime, store, timers, location };
+  const eventForChip = () => {
+    const chip = {
+      active: false,
+      classList: {
+        toggle: (className: string) => {
+          if (className === 'st-chip--active') chip.active = !chip.active;
+        },
+        contains: (className: string) => className === 'st-chip--active' && chip.active,
+      },
+      setAttribute: () => undefined,
+    };
+    return { target: { closest: () => chip } };
+  };
+
+  return { runtime, store, timers, location, eventForChip };
 }
 
 describe('settings visual client script', () => {
@@ -54,6 +67,38 @@ describe('settings visual client script', () => {
     expect(timers.map(timer => timer.delay)).toContain(250);
     timers[timers.length - 1]?.fn();
     expect(location.reloaded).toBe(true);
+  });
+
+
+  it('seeds current strategy config before hidden setting toggles', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        dashboard: { name: 'Family Dashboard' },
+        areas: { hidden_areas: ['kitchen'] },
+        devices: {
+          hidden_domains: ['sensor'],
+          hidden_device_types: ['binary_sensor.motion'],
+        },
+      } as any,
+    };
+    const { runtime, store, eventForChip } = createRuntime(config);
+
+    expect(JSON.parse(store.get('hdp_config') || '{}')).toMatchObject({
+      dashboard: { name: 'Family Dashboard' },
+      areas: { hidden_areas: ['kitchen'] },
+      devices: {
+        hidden_domains: ['sensor'],
+        hidden_device_types: ['binary_sensor.motion'],
+      },
+    });
+
+    runtime.hdpToggleArrayItem('areas.hidden_areas', 'garage', eventForChip());
+
+    const saved = JSON.parse(store.get('hdp_config') || '{}');
+    expect(saved.areas.hidden_areas).toEqual(['kitchen', 'garage']);
+    expect(saved.devices.hidden_domains).toEqual(['sensor']);
+    expect(saved.devices.hidden_device_types).toEqual(['binary_sensor.motion']);
   });
 
   it('clears visual config through window-scoped helpers', async () => {

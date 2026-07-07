@@ -49,6 +49,8 @@ export function buildBlueprintGalleryHTML(pages: BlueprintInstance[]): string {
     font-size: 15px;
     font-weight: 700;
     color: var(--hdp-text);
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .bp-gallery-actions {
     display: flex;
@@ -73,7 +75,9 @@ export function buildBlueprintGalleryHTML(pages: BlueprintInstance[]): string {
     background: var(--hdp-card-bg);
     color: var(--hdp-text);
     max-width: 100%;
+    min-width: 0;
     white-space: normal;
+    overflow-wrap: anywhere;
     text-align: center;
   }
   .bp-btn:hover {
@@ -123,9 +127,10 @@ export function buildBlueprintGalleryHTML(pages: BlueprintInstance[]): string {
     font-size: 14px;
     font-weight: 600;
     color: var(--hdp-text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
   .bp-item-meta {
     font: inherit;
@@ -141,10 +146,12 @@ export function buildBlueprintGalleryHTML(pages: BlueprintInstance[]): string {
     gap: 6px;
     flex-wrap: wrap;
     justify-content: flex-end;
-    flex-shrink: 0;
+    flex: 0 1 auto;
+    min-width: 0;
   }
   .bp-item-btn {
     width: 34px; height: 34px;
+    flex: 0 0 34px;
     border-radius: var(--hdp-radius-sm);
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;

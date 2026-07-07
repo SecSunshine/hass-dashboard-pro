@@ -298,7 +298,7 @@ export function getSettingsSectionsCSS(): string {
   }
   .st-action-row .st-btn,
   .st-link-row .st-btn {
-    flex: 0 1 auto;
+    flex: 1 1 120px;
     min-width: 0;
   }
   .st-btn--primary {
@@ -327,6 +327,9 @@ export function getSettingsSectionsCSS(): string {
     font-weight: 600;
     color: var(--hdp-text);
     text-align: right;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
   .st-about-row > span {
     min-width: 0;
@@ -343,7 +346,7 @@ export function getSettingsSectionsCSS(): string {
   }
   .st-plan-hero {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) minmax(160px, auto);
     gap: 14px;
     align-items: center;
     padding: 14px;
@@ -357,6 +360,7 @@ export function getSettingsSectionsCSS(): string {
   .st-plan-hero > .st-btn {
     justify-self: end;
     text-align: center;
+    min-width: 0;
   }
   .st-plan-title {
     font: inherit;
@@ -383,6 +387,9 @@ export function getSettingsSectionsCSS(): string {
     font: inherit;
     font-size: 11px;
     font-weight: 700;
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .st-plan-grid {
     display: grid;

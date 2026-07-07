@@ -187,8 +187,11 @@ describe('settings view', () => {
     expect(html).toContain('.st-row--spaced');
     expect(html).toContain('.st-action-row,\n  .st-link-row');
     expect(html).toContain('.st-action-row .st-btn,\n  .st-link-row .st-btn');
+    expect(html).toContain('flex: 1 1 120px;\n    min-width: 0;');
+    expect(html).toContain('grid-template-columns: minmax(0, 1fr) minmax(160px, auto);');
     expect(html).toContain('.st-plan-hero > div');
     expect(html).toContain('.st-plan-hero > .st-btn');
+    expect(html).toContain('.st-about-val {\n    font-weight: 600;\n    color: var(--hdp-text);\n    text-align: right;\n    min-width: 0;\n    overflow-wrap: anywhere;');
     expect(html).toContain('.st-plan-choice {\n    appearance: none;');
     expect(html).toContain('<button type="button" class="st-plan-choice');
     expect(html).toContain('overflow-wrap: anywhere');

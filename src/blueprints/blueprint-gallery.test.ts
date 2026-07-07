@@ -12,6 +12,12 @@ describe('blueprint gallery rendering', () => {
     expect(emptyHTML).toContain('flex-wrap: wrap');
     expect(emptyHTML).toContain('@media (max-width: 720px)');
     expect(emptyHTML).toContain('flex: 1 1 120px');
+    expect(emptyHTML).toContain('.bp-gallery-title {');
+    expect(emptyHTML).toContain('min-width: 0;\n    overflow-wrap: anywhere;');
+    expect(emptyHTML).toContain('.bp-item-name {');
+    expect(emptyHTML).toContain('white-space: normal;\n    overflow-wrap: anywhere;');
+    expect(emptyHTML).toContain('flex: 0 1 auto;\n    min-width: 0;');
+    expect(emptyHTML).toContain('flex: 0 0 34px;');
     expect(emptyHTML).not.toContain('?/button>');
     expect(emptyHTML).not.toContain('?/div>');
     expect(emptyHTML).not.toMatch(/[^<]\/(div|span|button|option|a|textarea|label|select|input)>/);

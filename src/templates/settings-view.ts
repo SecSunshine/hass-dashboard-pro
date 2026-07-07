@@ -714,11 +714,30 @@ export function generateSettingsJS(config: StrategyConfig, tokens?: ResolvedToke
   }).filter(Boolean).join('\n');
 
   return `
+${generateSettingsConfigSeedJS(config)}
 ${generateSettingsSectionsJS()}
 ${generatePaletteGeneratorJS()}
 ${generateVisualConfigPersistenceJS()}
 ${generateVisualQueryScopeJS()}
 ${scripts}`;
+}
+
+function generateSettingsConfigSeedJS(config: StrategyConfig): string {
+  const seedConfig = config.hdp_config || {};
+  return `
+(function() {
+  var seedConfig = ${JSON.stringify(seedConfig)};
+  if (!seedConfig || typeof seedConfig !== 'object' || Array.isArray(seedConfig) || !Object.keys(seedConfig).length) return;
+  try {
+    if (localStorage.getItem('hdp_config')) return;
+    var base = typeof hdpLoadConfig === 'function' ? hdpLoadConfig() : {};
+    var merged = typeof hdpDeepMerge === 'function' ? hdpDeepMerge(base, seedConfig) : Object.assign({}, base, seedConfig);
+    localStorage.setItem('hdp_config', JSON.stringify(merged));
+  } catch(e) {
+    console.warn('[HDP] Failed to seed settings config', e);
+  }
+})();
+`;
 }
 
 function scopeVisualScript(script: string): string {
