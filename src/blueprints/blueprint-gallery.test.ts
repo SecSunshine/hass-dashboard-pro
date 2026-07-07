@@ -48,6 +48,59 @@ describe('blueprint gallery rendering', () => {
     expect(html).toContain('.bp-modal-actions .bp-btn { flex: 1 1 120px; }');
   });
 
+  it('does not abort when blueprint modal DOM nodes are missing', () => {
+    const window = {} as any;
+    const document = {
+      getElementById: () => null,
+      querySelectorAll: () => [],
+    };
+    const alerts: string[] = [];
+    const code = generateBlueprintModalJS() + '\nreturn window;';
+    const runtime = new Function(
+      'window',
+      'document',
+      'alert',
+      'confirm',
+      'location',
+      'Promise',
+      'hdpShowView',
+      'hdpBlueprintLoad',
+      'hdpBlueprintParseMeta',
+      'hdpBlueprintImportURL',
+      'hdpBlueprintImportYAML',
+      'hdpBlueprintAdd',
+      'hdpBlueprintUpdateInputs',
+      'hdpBlueprintRemove',
+      'hdpBlueprintCheckUpdate',
+      'hdpBlueprintResolveCard',
+      'hdpBlueprintSave',
+      code,
+    )(
+      window,
+      document,
+      (msg: string) => alerts.push(msg),
+      () => true,
+      { reload: () => undefined },
+      Promise,
+      () => undefined,
+      () => [{ id: 'weather', name: 'Weather', inputs: {}, blueprint_yaml: 'meta:\n  inputs: {}' }],
+      () => ({ inputs: {} }),
+      () => undefined,
+      () => null,
+      () => undefined,
+      () => undefined,
+      () => undefined,
+      () => undefined,
+      (page: any) => page.card || {},
+      () => Promise.resolve([]),
+    );
+
+    expect(() => runtime.hdpShowImportModal('url')).not.toThrow();
+    expect(() => runtime.hdpConfirmImport()).not.toThrow();
+    expect(() => runtime.hdpShowInputEditor('weather')).not.toThrow();
+    expect(alerts.length).toBeGreaterThan(0);
+  });
+
   it('waits for the latest blueprint save before reloading the gallery', () => {
     const js = generateBlueprintModalJS();
 

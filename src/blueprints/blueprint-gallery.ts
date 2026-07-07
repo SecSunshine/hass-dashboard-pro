@@ -473,72 +473,97 @@ export function generateBlueprintModalJS(): string {
     return 'bp-' + hdpSafeDomIdSegment(id);
   }
 
+  function hdpModalElement(id) {
+    return document.getElementById(id);
+  }
+
+  function hdpSetModalDisplay(id, value) {
+    var el = hdpModalElement(id);
+    if (el) el.style.display = value;
+    return el;
+  }
+
+  function hdpSetModalText(id, value) {
+    var el = hdpModalElement(id);
+    if (el) el.textContent = value;
+    return el;
+  }
+
+  function hdpSetModalClick(id, handler) {
+    var el = hdpModalElement(id);
+    if (el) el.onclick = handler;
+    return el;
+  }
+
+  function hdpModalValue(id) {
+    var el = hdpModalElement(id);
+    return el && typeof el.value === 'string' ? el.value : '';
+  }
+
   function hdpShowBlueprintView(id) {
-    hdpShowView(hdpBlueprintViewId(id));
+    if (typeof window.hdpShowView === 'function') window.hdpShowView(hdpBlueprintViewId(id));
   }
 
   window.hdpShowImportModal = function(mode) {
     currentMode = mode;
     editingPageId = '';
-    var modal = document.getElementById('bp-import-modal');
+    var modal = hdpModalElement('bp-import-modal');
     if (!modal) return;
 
     // Reset all panels
-    document.getElementById('bp-import-url').style.display = 'none';
-    document.getElementById('bp-import-paste').style.display = 'none';
-    document.getElementById('bp-input-editor').style.display = 'none';
+    hdpSetModalDisplay('bp-import-url', 'none');
+    hdpSetModalDisplay('bp-import-paste', 'none');
+    hdpSetModalDisplay('bp-input-editor', 'none');
 
-    var title = document.getElementById('bp-modal-title');
-    var confirm = document.getElementById('bp-modal-confirm');
 
     if (mode === 'url') {
-      title.textContent = '从 URL 导入';
-      document.getElementById('bp-import-url').style.display = '';
-      confirm.textContent = '导入';
-      confirm.onclick = hdpConfirmImport;
+      hdpSetModalText('bp-modal-title', '从 URL 导入');
+      hdpSetModalDisplay('bp-import-url', '');
+      hdpSetModalText('bp-modal-confirm', '导入');
+      hdpSetModalClick('bp-modal-confirm', window.hdpConfirmImport);
     } else if (mode === 'paste') {
-      title.textContent = '粘贴 YAML 导入';
-      document.getElementById('bp-import-paste').style.display = '';
-      confirm.textContent = '导入';
-      confirm.onclick = hdpConfirmImport;
+      hdpSetModalText('bp-modal-title', '粘贴 YAML 导入');
+      hdpSetModalDisplay('bp-import-paste', '');
+      hdpSetModalText('bp-modal-confirm', '导入');
+      hdpSetModalClick('bp-modal-confirm', window.hdpConfirmImport);
     }
 
     modal.classList.add('bp-modal-overlay--active');
   };
 
   window.hdpCloseImportModal = function() {
-    var modal = document.getElementById('bp-import-modal');
+    var modal = hdpModalElement('bp-import-modal');
     if (modal) modal.classList.remove('bp-modal-overlay--active');
   };
 
   window.hdpConfirmImport = function() {
     if (currentMode === 'url') {
-      var url = document.getElementById('bp-url-input').value.trim();
+      var url = hdpModalValue('bp-url-input').trim();
       if (!url) { alert('请输入 URL'); return; }
       hdpBlueprintImportURL(url, function(page, err) {
         if (page) {
-          hdpCloseImportModal();
+          window.hdpCloseImportModal();
           alert('蓝图 "' + page.name + '" 导入成功！');
           hdpShowBlueprintView(page.id);
           // Re-render gallery in settings
-          hdpRefreshBlueprintGallery();
+          window.hdpRefreshBlueprintGallery();
         } else {
           alert('导入失败: ' + (err || '未知错误'));
         }
       });
     } else if (currentMode === 'paste') {
-      var yaml = document.getElementById('bp-yaml-input').value.trim();
+      var yaml = hdpModalValue('bp-yaml-input').trim();
       if (!yaml) { alert('请粘贴 YAML 内容'); return; }
       var page = hdpBlueprintImportYAML(yaml);
       if (page) {
         hdpBlueprintAdd(page);
-        hdpCloseImportModal();
+        window.hdpCloseImportModal();
         alert('蓝图 "' + page.name + '" 导入成功！');
         hdpShowBlueprintView(page.id);
-        hdpRefreshBlueprintGallery();
+        window.hdpRefreshBlueprintGallery();
       }
     } else if (currentMode === 'edit') {
-      hdpSaveInputEditor();
+      window.hdpSaveInputEditor();
     }
   };
 
@@ -553,14 +578,14 @@ export function generateBlueprintModalJS(): string {
     }
     if (!page) return;
 
-    var modal = document.getElementById('bp-import-modal');
-    document.getElementById('bp-import-url').style.display = 'none';
-    document.getElementById('bp-import-paste').style.display = 'none';
-    document.getElementById('bp-input-editor').style.display = '';
+    var modal = hdpModalElement('bp-import-modal');
+    hdpSetModalDisplay('bp-import-url', 'none');
+    hdpSetModalDisplay('bp-import-paste', 'none');
+    hdpSetModalDisplay('bp-input-editor', '');
 
-    document.getElementById('bp-modal-title').textContent = '编辑: ' + page.name;
-    document.getElementById('bp-modal-confirm').textContent = '保存';
-    document.getElementById('bp-modal-confirm').onclick = hdpConfirmImport;
+    hdpSetModalText('bp-modal-title', '编辑: ' + page.name);
+    hdpSetModalText('bp-modal-confirm', '保存');
+    hdpSetModalClick('bp-modal-confirm', window.hdpConfirmImport);
 
     // Build input fields
     var meta = hdpBlueprintParseMeta(page.blueprint_yaml);
@@ -584,8 +609,9 @@ export function generateBlueprintModalJS(): string {
       fieldsHTML = '<div class="bp-input-desc">此蓝图没有可配置的输入</div>';
     }
 
-    document.getElementById('bp-input-fields').innerHTML = fieldsHTML;
-    modal.classList.add('bp-modal-overlay--active');
+    var fieldsRoot = hdpModalElement('bp-input-fields');
+    if (fieldsRoot) fieldsRoot.innerHTML = fieldsHTML;
+    if (modal) modal.classList.add('bp-modal-overlay--active');
   };
 
   window.hdpSaveInputEditor = function() {
@@ -597,17 +623,17 @@ export function generateBlueprintModalJS(): string {
       inputs[key] = fields[i].value;
     }
     hdpBlueprintUpdateInputs(editingPageId, inputs);
-    hdpCloseImportModal();
+    window.hdpCloseImportModal();
     hdpShowBlueprintView(editingPageId);
-    hdpRefreshBlueprintGallery();
+    window.hdpRefreshBlueprintGallery();
   };
 
   // Remove blueprint
   window.hdpRemoveBlueprint = function(id) {
     if (!confirm('确定删除此蓝图页面？')) return;
     hdpBlueprintRemove(id);
-    hdpShowView('home');
-    hdpRefreshBlueprintGallery();
+    if (typeof window.hdpShowView === 'function') window.hdpShowView('home');
+    window.hdpRefreshBlueprintGallery();
   };
 
   // Check for updates
@@ -632,7 +658,7 @@ export function generateBlueprintModalJS(): string {
           }
           hdpBlueprintSave(allPages);
           hdpShowBlueprintView(id);
-          hdpRefreshBlueprintGallery();
+          window.hdpRefreshBlueprintGallery();
           alert('蓝图已更新到 ' + result.remoteVersion);
         }
       } else {
