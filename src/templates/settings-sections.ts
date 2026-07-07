@@ -141,7 +141,10 @@ export function getSettingsSectionsCSS(): string {
   .st-section-body {
     display: none;
     padding: 0 18px 18px 18px;
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
+    overflow-x: hidden;
   }
   .st-section--open .st-section-body {
     display: block;
@@ -228,12 +231,16 @@ export function getSettingsSectionsCSS(): string {
     flex-wrap: wrap;
     gap: 6px;
     margin-top: 8px;
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
+    overflow: hidden;
   }
   .st-chip {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 4px;
+    flex: 0 1 auto;
     padding: 5px 12px;
     border-radius: var(--hdp-radius-pill, 20px);
     font: inherit;
@@ -245,7 +252,10 @@ export function getSettingsSectionsCSS(): string {
     cursor: pointer;
     transition: all 0.15s ease;
     min-height: 32px;
+    min-width: 0;
     max-width: 100%;
+    white-space: normal;
+    word-break: break-word;
     overflow-wrap: anywhere;
     text-align: left;
     appearance: none;
@@ -268,11 +278,13 @@ export function getSettingsSectionsCSS(): string {
     cursor: pointer;
     transition: all 0.2s ease;
     min-height: 44px;
+    min-width: 0;
     max-width: 100%;
     border: 1px solid var(--hdp-border);
     background: var(--hdp-card-bg);
     color: var(--hdp-text);
     white-space: normal;
+    overflow-wrap: anywhere;
     text-align: left;
   }
   .st-btn:hover { transform: translateY(-2px); border-color: var(--hdp-primary); }

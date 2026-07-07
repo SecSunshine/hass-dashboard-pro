@@ -173,6 +173,14 @@ describe('settings view', () => {
     expect(html).toContain('.st-row > .st-input');
     expect(html).toContain('.st-row > .st-toggle');
     expect(html).toContain('.st-section,\n  .st-section *');
+    expect(html).toContain('.st-section-body {\n    display: none;\n    padding: 0 18px 18px 18px;\n    width: 100%;\n    max-width: 100%;\n    min-width: 0;\n    overflow-x: hidden;');
+    expect(html).toContain('.st-chip-list {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 6px;\n    margin-top: 8px;\n    width: 100%;\n    max-width: 100%;\n    min-width: 0;\n    overflow: hidden;');
+    expect(html).toContain('.st-chip {\n    display: inline-flex;');
+    expect(html).toContain('flex: 0 1 auto;\n    padding: 5px 12px;');
+    expect(html).toContain('min-height: 32px;\n    min-width: 0;\n    max-width: 100%;\n    white-space: normal;\n    word-break: break-word;\n    overflow-wrap: anywhere;');
+    expect(html).toContain('.st-btn {\n    display: flex;');
+    expect(html).toContain('min-height: 44px;\n    min-width: 0;\n    max-width: 100%;');
+    expect(html).toContain('white-space: normal;\n    overflow-wrap: anywhere;\n    text-align: left;');
     expect(html).toContain('.st-section button');
     expect(html).toContain('.st-section input,\n  .st-section select,\n  .st-section textarea');
     expect(html).toContain('.st-section a.st-btn');
