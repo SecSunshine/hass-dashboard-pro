@@ -724,7 +724,10 @@ ${scripts}`;
 function scopeVisualScript(script: string): string {
   return script
     .replace(/document\.querySelectorAll\(/g, 'hdpVisualQueryAll(')
-    .replace(/document\.getElementById\(/g, 'hdpVisualGetElementById(');
+    .replace(/document\.getElementById\(/g, 'hdpVisualGetElementById(')
+    .replace(/\bhdpSaveVisualConfigAndReload\(/g, 'window.hdpSaveVisualConfigAndReload(')
+    .replace(/\bhdpSaveVisualConfig\(/g, 'window.hdpSaveVisualConfig(')
+    .replace(/\bhdpClearVisualConfigAndReload\(/g, 'window.hdpClearVisualConfigAndReload(');
 }
 
 function generateVisualQueryScopeJS(): string {
@@ -766,8 +769,8 @@ window.hdpSaveVisualConfig = function(config) {
   } catch(e) {
     console.warn('[HDP] Failed to save visual config locally', e);
   }
-  var fullConfig = typeof hdpReplaceVisualConfig === 'function'
-    ? hdpReplaceVisualConfig(cfg)
+  var fullConfig = typeof window.hdpReplaceVisualConfig === 'function'
+    ? window.hdpReplaceVisualConfig(cfg)
     : (typeof hdpSaveConfig === 'function' ? hdpSaveConfig({ visual: cfg }) : null);
   if (typeof hdpSaveToLovelace === 'function' && fullConfig) {
     return hdpSaveToLovelace(fullConfig).catch(function(err) {
@@ -783,7 +786,7 @@ window.hdpSaveVisualConfigAndReload = function(config, delay) {
   var reload = function() {
     setTimeout(function() { location.reload(); }, wait);
   };
-  return hdpSaveVisualConfig(config).then(reload).catch(reload);
+  return window.hdpSaveVisualConfig(config).then(reload).catch(reload);
 };
 
 window.hdpClearVisualConfigAndReload = function(delay) {
@@ -794,8 +797,8 @@ window.hdpClearVisualConfigAndReload = function(delay) {
   try {
     localStorage.removeItem('hdp_visual_config');
   } catch(e) {}
-  if (typeof hdpReplaceVisualConfig === 'function') {
-    hdpReplaceVisualConfig({});
+  if (typeof window.hdpReplaceVisualConfig === 'function') {
+    window.hdpReplaceVisualConfig({});
   }
   var fullConfig = typeof hdpLoadConfig === 'function' ? hdpLoadConfig() : null;
   if (typeof hdpSaveToLovelace === 'function' && fullConfig) {
@@ -2233,11 +2236,16 @@ ${generateDesignTokenCSS(tokens)}
   (function() {
     var shadowOn = ${stored.shadows !== false ? 'true' : 'false'};
     function updatePreview() {
-      var r = document.getElementById('radius-slider').value;
-      var p = document.getElementById('padding-slider').value;
-      document.getElementById('radius-val').textContent = r + 'px';
-      document.getElementById('padding-val').textContent = p + 'px';
+      var radiusSlider = document.getElementById('radius-slider');
+      var paddingSlider = document.getElementById('padding-slider');
       var preview = document.getElementById('shape-preview');
+      if (!radiusSlider || !paddingSlider || !preview) return;
+      var r = radiusSlider.value;
+      var p = paddingSlider.value;
+      var radiusVal = document.getElementById('radius-val');
+      var paddingVal = document.getElementById('padding-val');
+      if (radiusVal) radiusVal.textContent = r + 'px';
+      if (paddingVal) paddingVal.textContent = p + 'px';
       preview.style.borderRadius = r + 'px';
       preview.style.padding = p + 'px';
       var blocks = preview.querySelectorAll('.preview-block');
@@ -2259,16 +2267,19 @@ ${generateDesignTokenCSS(tokens)}
         saveSlider(key, this.value);
       });
     });
-    document.getElementById('shadow-toggle').addEventListener('click', function() {
-      shadowOn = !shadowOn;
-      this.className = 'toggle-switch ' + (shadowOn ? 'toggle-switch--on' : 'toggle-switch--off');
-      this.setAttribute('aria-checked', shadowOn ? 'true' : 'false');
-      var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
-      cfg.shadows = shadowOn;
-      hdpSaveVisualConfig(cfg);
-      document.documentElement.style.setProperty('--hdp-shadow-card',
-        shadowOn ? '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)' : 'none');
-    });
+    var shadowToggle = document.getElementById('shadow-toggle');
+    if (shadowToggle) {
+      shadowToggle.addEventListener('click', function() {
+        shadowOn = !shadowOn;
+        this.className = 'toggle-switch ' + (shadowOn ? 'toggle-switch--on' : 'toggle-switch--off');
+        this.setAttribute('aria-checked', shadowOn ? 'true' : 'false');
+        var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
+        cfg.shadows = shadowOn;
+        hdpSaveVisualConfig(cfg);
+        document.documentElement.style.setProperty('--hdp-shadow-card',
+          shadowOn ? '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)' : 'none');
+      });
+    }
   })();
 </script>`,
   };
@@ -2463,14 +2474,20 @@ ${generateDesignTokenCSS(tokens)}
 </div>
 <script>
   (function() {
-    document.getElementById('reset-btn').addEventListener('click', function() {
-      if (confirm('确定恢复默认视觉设置吗？')) {
-        hdpClearVisualConfigAndReload();
-      }
-    });
-    document.getElementById('done-btn').addEventListener('click', function() {
-      history.back();
-    });
+    var resetBtn = document.getElementById('reset-btn');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', function() {
+        if (confirm('确定恢复默认视觉设置吗？')) {
+          hdpClearVisualConfigAndReload();
+        }
+      });
+    }
+    var doneBtn = document.getElementById('done-btn');
+    if (doneBtn) {
+      doneBtn.addEventListener('click', function() {
+        history.back();
+      });
+    }
   })();
 </script>`,
   };
