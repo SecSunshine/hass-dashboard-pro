@@ -877,9 +877,20 @@ function hdpVisualGetElementById(id) {
 
 function generateVisualConfigPersistenceJS(): string {
   return `
+function hdpLoadRawHDPConfig() {
+  try {
+    var raw = localStorage.getItem('hdp_config');
+    if (!raw) return {};
+    var parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch(e) {
+    return {};
+  }
+}
+
 window.hdpReplaceVisualConfig = function(config) {
   var cfg = config || {};
-  var current = typeof hdpLoadConfig === 'function' ? hdpLoadConfig() : {};
+  var current = hdpLoadRawHDPConfig();
   current.visual = cfg;
   try {
     localStorage.setItem('hdp_config', JSON.stringify(current));
@@ -925,9 +936,9 @@ window.hdpClearVisualConfigAndReload = function(delay) {
     localStorage.removeItem('hdp_visual_config');
   } catch(e) {}
   if (typeof window.hdpReplaceVisualConfig === 'function') {
-    window.hdpReplaceVisualConfig({});
+    var replaced = window.hdpReplaceVisualConfig({});
   }
-  var fullConfig = typeof hdpLoadConfig === 'function' ? hdpLoadConfig() : null;
+  var fullConfig = replaced || (typeof hdpLoadRawHDPConfig === 'function' ? hdpLoadRawHDPConfig() : null);
   if (typeof hdpSaveToLovelace === 'function' && fullConfig) {
     return hdpSaveToLovelace(fullConfig).then(reload).catch(function(err) {
       console.warn('[HDP] Lovelace visual reset sync failed, cleared locally only', err);

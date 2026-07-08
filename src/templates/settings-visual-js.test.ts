@@ -64,6 +64,8 @@ describe('settings visual client script', () => {
       theme: 'dark',
       card_style: 'glass',
     });
+    expect(JSON.parse(store.get('hdp_config') || '{}')).not.toHaveProperty('areas');
+    expect(JSON.parse(store.get('hdp_config') || '{}')).not.toHaveProperty('devices');
     expect(timers.map(timer => timer.delay)).toContain(250);
     timers[timers.length - 1]?.fn();
     expect(location.reloaded).toBe(true);
