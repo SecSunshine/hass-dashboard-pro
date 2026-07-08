@@ -22,6 +22,15 @@ export function escapeJSONAttribute(value: unknown): string {
   return escapeAttribute(JSON.stringify(value ?? null));
 }
 
+export function escapeScriptJSON(value: unknown): string {
+  return JSON.stringify(value ?? null)
+    .replace(/</g, '\\u003C')
+    .replace(/>/g, '\\u003E')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+
 export function escapeURLAttribute(value: unknown): string {
   const raw = String(value ?? '').trim();
   if (!raw) return '';
@@ -43,4 +52,3 @@ export function escapeURLAttribute(value: unknown): string {
 export function escapeInlineStyleValue(value: unknown): string {
   return String(value ?? '').replace(/[<>"'`;{}]/g, '');
 }
-

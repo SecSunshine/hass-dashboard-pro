@@ -18,7 +18,7 @@ import { generateDesignTokenCSS } from '../styles/design-tokens';
 import type { ResolvedTokens, StoredVisualConfig } from '../utils/visual-config';
 import { getEffectiveStoredVisualConfig, loadStoredConfig, saveStoredConfig, clearStoredConfig } from '../utils/visual-config';
 import { generatePaletteGeneratorJS, MOOD_PRESETS } from '../themes/palette-generator';
-import { escapeAttribute, escapeHTML, escapeInlineStyleValue } from '../utils/html';
+import { escapeAttribute, escapeHTML, escapeInlineStyleValue, escapeScriptJSON } from '../utils/html';
 import { getConfiguredHiddenAreas, resolveEntityAreaId, UNASSIGNED_AREA_ID, UNASSIGNED_AREA_NAME } from '../utils/dashboard-model';
 import {
   getSettingsSectionsCSS,
@@ -726,7 +726,7 @@ function generateSettingsConfigSeedJS(config: StrategyConfig): string {
   const seedConfig = config.hdp_config || {};
   return `
 (function() {
-  var seedConfig = ${JSON.stringify(seedConfig)};
+  var seedConfig = ${escapeScriptJSON(seedConfig)};
   if (!seedConfig || typeof seedConfig !== 'object' || Array.isArray(seedConfig) || !Object.keys(seedConfig).length) return;
   try {
     if (localStorage.getItem('hdp_config')) return;

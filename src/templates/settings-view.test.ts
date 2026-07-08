@@ -365,6 +365,20 @@ describe('settings view', () => {
     expect(html).not.toContain('value=""><script>');
   });
 
+
+  it('escapes seeded dashboard config for inline scripts', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        dashboard: { name: '</script><img src=x onerror=alert(1)>', icon: 'mdi:home' },
+      } as any,
+    };
+    const js = generateSettingsJS(config, undefined, hass);
+
+    expect(js).not.toContain('</script>');
+    expect(js).not.toContain('<img');
+    expect(js).toContain('\\u003C/script\\u003E');
+  });
   it('persists scalar setting changes with a reload', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const js = generateSettingsJS(config, undefined, hass);
