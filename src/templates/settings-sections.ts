@@ -100,6 +100,8 @@ export function getSettingsSectionsCSS(): string {
   }
   .st-section svg {
     flex-shrink: 0;
+    width: 18px;
+    height: 18px;
     max-width: 100%;
   }
   .st-section-hdr {

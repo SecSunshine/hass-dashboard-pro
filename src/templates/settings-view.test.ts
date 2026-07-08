@@ -209,6 +209,7 @@ describe('settings view', () => {
     expect(html).toContain('.st-section button');
     expect(html).toContain('.st-section input,\n  .st-section select,\n  .st-section textarea');
     expect(html).toContain('.st-section a.st-btn');
+    expect(html).toContain('.st-section svg {\n    flex-shrink: 0;\n    width: 18px;\n    height: 18px;');
     expect(html).toContain('.st-row--spaced');
     expect(html).toContain('.st-action-row,\n  .st-link-row');
     expect(html).toContain('.st-action-row .st-btn,\n  .st-link-row .st-btn');
@@ -571,7 +572,10 @@ describe('settings view', () => {
     expect(js).not.toContain("document.getElementById('shadow-toggle').addEventListener");
     expect(js).toContain('current.visual = cfg;');
     expect(js).toContain('cfg.theme = preset;');
+    expect(js).toContain('var cfg = window.hdpLoadDraftVisualConfig();');
     expect(js).toContain('window.hdpSaveVisualConfigAndReload(cfg);');
     expect(js).toContain('window.hdpReplaceVisualConfig({});');
+    const visualHandlers = js.slice(js.indexOf('function hdpVisualQueryAll(selector)'));
+    expect(visualHandlers).not.toContain("var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');");
   });
 });
