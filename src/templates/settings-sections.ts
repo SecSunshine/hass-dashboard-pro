@@ -216,6 +216,12 @@ export function getSettingsSectionsCSS(): string {
     border-color: var(--hdp-primary);
     box-shadow: 0 0 0 3px var(--hdp-primary-glow, rgba(79,110,247,0.12));
   }
+  .st-textarea {
+    display: block;
+    min-height: 76px;
+    resize: vertical;
+    line-height: 1.4;
+  }
   .st-toggle {
     width: 44px; height: 24px;
     border-radius: 12px;
@@ -360,7 +366,8 @@ export function getSettingsSectionsCSS(): string {
     border-radius: var(--hdp-radius-sm, 8px);
     background: var(--hdp-bg);
   }
-  .st-keyword-field .st-input {
+  .st-keyword-field .st-input,
+  .st-keyword-field .st-textarea {
     width: 100%;
     max-width: none;
     margin-top: 8px;
@@ -1567,12 +1574,12 @@ export function buildDevicesSection(config: StrategyConfig, hass?: Hass): string
       <label class="st-keyword-field">
         <div class="st-row-label">隐藏关键词</div>
         <div class="st-row-desc">匹配到这些关键词的设备会从仪表盘隐藏。</div>
-        <input class="st-input" value="${escapeAttribute(hiddenKeywordValue)}" placeholder="例如：测试, 临时, old" data-setting="devices.hidden_keywords" oninput="hdpSaveKeywordList('devices.hidden_keywords', this.value)" />
+        <textarea class="st-input st-textarea" placeholder="例如：测试, 临时, old" data-setting="devices.hidden_keywords" oninput="hdpSaveKeywordList('devices.hidden_keywords', this.value)">${escapeHTML(hiddenKeywordValue)}</textarea>
       </label>
       <label class="st-keyword-field">
         <div class="st-row-label">仅显示关键词</div>
         <div class="st-row-desc">填写后只显示匹配这些关键词的设备；留空则显示所有未隐藏设备。</div>
-        <input class="st-input" value="${escapeAttribute(visibleKeywordValue)}" placeholder="例如：客厅, 灯, living" data-setting="devices.visible_keywords" oninput="hdpSaveKeywordList('devices.visible_keywords', this.value)" />
+        <textarea class="st-input st-textarea" placeholder="例如：客厅, 灯, living" data-setting="devices.visible_keywords" oninput="hdpSaveKeywordList('devices.visible_keywords', this.value)">${escapeHTML(visibleKeywordValue)}</textarea>
       </label>
     </div>
   `);

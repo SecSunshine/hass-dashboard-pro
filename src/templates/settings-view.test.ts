@@ -230,6 +230,10 @@ describe('settings view', () => {
     expect(html).toContain('data-action="save-settings" onclick="hdpCommitSettings()"');
     expect(html).toContain('data-setting="devices.hidden_keywords"');
     expect(html).toContain('data-setting="devices.visible_keywords"');
+    expect(html).toContain('<textarea class="st-input st-textarea"');
+    expect(html).toContain('.st-textarea {');
+    expect(html).toContain('resize: vertical;');
+    expect(html).toContain('.st-keyword-field .st-textarea');
     expect(html).toContain('data-action="toggle-section" data-section="st-dashboard" role="button" aria-expanded="false" tabindex="0"');
     expect(html).toContain('data-action="toggle-section" data-section="st-visual" role="button" aria-expanded="true" tabindex="0"');
     expect(js).toContain("hdr.setAttribute('aria-expanded'");
