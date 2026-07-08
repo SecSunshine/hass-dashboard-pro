@@ -265,11 +265,6 @@ describe('settings view', () => {
       hidden_areas: ['kitchen'],
       hidden_domains: ['number'],
       hidden_persons: ['person.alice'],
-      hdp_config: {
-        areas: { hidden_areas: [] },
-        devices: { hidden_domains: [], hidden_device_types: [] },
-        people: { hidden_persons: [] },
-      } as any,
     };
     const html = buildSettingsHTML(config, undefined, hass);
 

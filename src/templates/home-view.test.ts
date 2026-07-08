@@ -138,7 +138,18 @@ describe('home view settings', () => {
     expect(html).not.toContain('Bob');
   });
 
-  it('honors legacy hidden persons when hdp_config people is present', () => {
+  it('honors legacy hidden persons when no nested people config exists', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hidden_persons: ['person.bob'],
+    };
+
+    const html = buildHomeHTML(hass, config);
+    expect(html).toContain('Alice');
+    expect(html).not.toContain('Bob');
+  });
+
+  it('lets nested people config restore legacy hidden persons', () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',
       hidden_persons: ['person.bob'],
@@ -149,7 +160,7 @@ describe('home view settings', () => {
 
     const html = buildHomeHTML(hass, config);
     expect(html).toContain('Alice');
-    expect(html).not.toContain('Bob');
+    expect(html).toContain('Bob');
   });
 
   it('honors header visibility toggles', () => {

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { Hass, StrategyConfig } from '../types';
 import {
   buildHomeProfile,
@@ -113,9 +113,6 @@ const hass: Hass = {
 };
 
 describe('dashboard model', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
   it('resolves area through entity registry and device fallback', () => {
     expect(resolveEntityAreaId(hass, 'sensor.kitchen_power')).toBe('kitchen');
     expect(resolveEntityAreaId(hass, 'light.kitchen')).toBe('kitchen');
@@ -131,7 +128,7 @@ describe('dashboard model', () => {
     expect(entities.map(entity => entity.entity_id)).toEqual(['light.kitchen']);
   });
 
-  it('merges legacy top-level hidden filters with persisted HDP config', () => {
+  it('lets nested HDP hidden settings override legacy top-level filters', () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',
       hidden_areas: ['closet'],
@@ -145,32 +142,8 @@ describe('dashboard model', () => {
       } as any,
     };
 
-    expect(getConfiguredHiddenAreas(config)).toEqual(['closet']);
-    expect(getConfiguredHiddenDomains(config)).toEqual(['switch', 'sensor']);
-    expect(getConfiguredHiddenDeviceTypes(config)).toEqual(['binary_sensor.motion']);
-    expect(getConfiguredHiddenPersons(config)).toEqual(['person.alice']);
-  });
-
-  it('lets local nested hidden settings override legacy top-level filters', () => {
-    vi.stubGlobal('localStorage', {
-      getItem: (key: string) => key === 'hdp_config'
-        ? JSON.stringify({
-          areas: { hidden_areas: [] },
-          devices: { hidden_domains: [], hidden_device_types: [] },
-          people: { hidden_persons: [] },
-        })
-        : null,
-    });
-    const config: StrategyConfig = {
-      type: 'custom:hass-dashboard-pro',
-      hidden_areas: ['closet'],
-      hidden_domains: ['sensor'],
-      hidden_device_types: ['binary_sensor.motion'],
-      hidden_persons: ['person.alice'],
-    };
-
     expect(getConfiguredHiddenAreas(config)).toEqual([]);
-    expect(getConfiguredHiddenDomains(config)).toEqual([]);
+    expect(getConfiguredHiddenDomains(config)).toEqual(['switch']);
     expect(getConfiguredHiddenDeviceTypes(config)).toEqual([]);
     expect(getConfiguredHiddenPersons(config)).toEqual([]);
   });
