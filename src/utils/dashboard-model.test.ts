@@ -7,7 +7,9 @@ import {
   getConfiguredHiddenAreas,
   getConfiguredHiddenDeviceTypes,
   getConfiguredHiddenDomains,
+  getConfiguredHiddenKeywords,
   getConfiguredHiddenPersons,
+  getConfiguredVisibleKeywords,
   getDashboardFilters,
   resolveEntityAreaId,
   UNASSIGNED_AREA_ID,
@@ -137,7 +139,9 @@ describe('dashboard model', () => {
       hidden_persons: ['person.alice'],
       hdp_config: {
         areas: { hidden_areas: [] },
-        devices: { hidden_domains: ['switch'], hidden_device_types: [] },
+        hidden_keywords: ['legacy-old'],
+        visible_keywords: ['legacy-visible'],
+        devices: { hidden_domains: ['switch'], hidden_device_types: [], hidden_keywords: [], visible_keywords: [] },
         people: { hidden_persons: [] },
       } as any,
     };
@@ -145,6 +149,8 @@ describe('dashboard model', () => {
     expect(getConfiguredHiddenAreas(config)).toEqual([]);
     expect(getConfiguredHiddenDomains(config)).toEqual(['switch']);
     expect(getConfiguredHiddenDeviceTypes(config)).toEqual([]);
+    expect(getConfiguredHiddenKeywords(config)).toEqual([]);
+    expect(getConfiguredVisibleKeywords(config)).toEqual([]);
     expect(getConfiguredHiddenPersons(config)).toEqual([]);
   });
   it('reads configured area order from persisted HDP config', () => {
@@ -176,6 +182,19 @@ describe('dashboard model', () => {
 
     const entities = collectVisibleEntities(hass, getDashboardFilters(config));
     expect(entities.map(entity => entity.entity_id)).toEqual(['light.kitchen']);
+  });
+
+  it('accepts legacy keyword filters stored inside hdp_config root', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        hidden_keywords: ['Kitchen'],
+        visible_keywords: ['Light'],
+      } as any,
+    };
+
+    expect(getConfiguredHiddenKeywords(config)).toEqual(['kitchen']);
+    expect(getConfiguredVisibleKeywords(config)).toEqual(['light']);
   });
 
   it('applies hide unavailable consistently', () => {

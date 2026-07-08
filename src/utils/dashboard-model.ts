@@ -88,6 +88,7 @@ export function getConfiguredHiddenDeviceTypes(config: StrategyConfig): string[]
 export function getConfiguredHiddenKeywords(config: StrategyConfig): string[] {
   const hdpConfig = getEffectiveHDPConfig(config);
   const legacyConfig = hdpConfig as { hidden_keywords?: unknown; hidden_device_keywords?: unknown } | undefined;
+  if (Array.isArray(hdpConfig?.devices?.hidden_keywords)) return normalizeKeywordList(hdpConfig.devices.hidden_keywords);
   return normalizeKeywordList(
     hdpConfig?.devices?.hidden_keywords,
     legacyConfig?.hidden_keywords,
@@ -98,6 +99,7 @@ export function getConfiguredHiddenKeywords(config: StrategyConfig): string[] {
 export function getConfiguredVisibleKeywords(config: StrategyConfig): string[] {
   const hdpConfig = getEffectiveHDPConfig(config);
   const legacyConfig = hdpConfig as { visible_keywords?: unknown; visible_device_keywords?: unknown } | undefined;
+  if (Array.isArray(hdpConfig?.devices?.visible_keywords)) return normalizeKeywordList(hdpConfig.devices.visible_keywords);
   return normalizeKeywordList(
     hdpConfig?.devices?.visible_keywords,
     legacyConfig?.visible_keywords,
