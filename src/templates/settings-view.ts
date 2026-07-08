@@ -337,13 +337,29 @@ ${visualStyles}
     height: 18px;
     flex: 0 0 18px;
   }
+  #st-visual-body .theme-grid,
+  #st-visual-body .mood-grid,
+  #st-visual-body .style-grid,
+  #st-visual-body .font-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)) !important;
+    gap: 10px !important;
+    width: 100%;
+    min-width: 0;
+    align-items: stretch;
+  }
+  #st-visual-body .theme-card,
+  #st-visual-body .mood-card {
+    min-height: 104px;
+    max-height: 132px;
+  }
   #st-visual-body .theme-card,
   #st-visual-body .mood-card,
   #st-visual-body .style-card,
   #st-visual-body .font-card,
   #st-visual-body .lc-density-btn {
-    display: flex;
-    flex-direction: column;
+    display: flex !important;
+    flex-direction: column !important;
     gap: 8px;
     cursor: pointer;
     border: 2px solid var(--hdp-border, rgba(0,0,0,0.06));
@@ -354,6 +370,8 @@ ${visualStyles}
     padding: 0;
     text-align: left;
     white-space: normal;
+    font: inherit;
+    appearance: none;
   }
   #st-visual-body .style-card,
   #st-visual-body .font-card,
@@ -372,10 +390,11 @@ ${visualStyles}
   #st-visual-body .mood-preview {
     min-height: 56px;
     flex: 0 0 auto;
-    display: flex;
+    display: flex !important;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
   }
   #st-visual-body .theme-meta,
   #st-visual-body .mood-meta {
@@ -390,6 +409,9 @@ ${visualStyles}
   #st-visual-body .theme-dot-row {
     display: flex;
     align-items: center;
+    justify-content: center;
+    max-width: 100%;
+    overflow: hidden;
   }
   #st-visual-body .theme-dot {
     width: 14px;
@@ -397,11 +419,17 @@ ${visualStyles}
     border-radius: 50%;
     display: inline-block;
     box-sizing: border-box;
+    flex: 0 0 14px;
   }
   #st-visual-body .mood-icon,
   #st-visual-body .am-period-icon {
     font-size: 18px;
     line-height: 1;
+  }
+  #st-visual-body .mood-icon {
+    font-size: 20px;
+    max-height: 24px;
+    overflow: hidden;
   }
   #st-visual-body .theme-check,
   #st-visual-body .mood-check,

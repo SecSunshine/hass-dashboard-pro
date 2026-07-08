@@ -153,6 +153,12 @@ describe('settings view', () => {
     expect(html).toContain('#st-visual-body .settings-studio-btn');
     expect(html).toContain('#st-visual-body .settings-studio-btn svg');
     expect(html).toContain('#st-visual-body svg {\n    width: 18px;\n    height: 18px;');
+    expect(html).toContain('display: grid !important;');
+    expect(html).toContain('grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)) !important;');
+    expect(html).toContain('display: flex !important;\n    flex-direction: column !important;');
+    expect(html).toContain('max-height: 132px;');
+    expect(html).toContain('flex: 0 0 14px;');
+    expect(html).toContain('#st-visual-body .mood-icon {\n    font-size: 20px;');
     expect(html).toContain('#st-visual-body button {\n    appearance: none;');
     expect(html).toContain('white-space: normal;\n    text-align: center;');
     expect(html).toContain('#st-visual-body .toggle-switch::after');
