@@ -1698,8 +1698,8 @@ function buildCardStyleCard(stored: StoredVisualConfig, tokens?: ResolvedTokens)
       const isActive = currentStyle === s.key;
       return `<button class="style-card ${isActive ? 'style-card--active' : ''}" data-action="select-card-style" data-style="${s.key}" data-component="style-card" aria-pressed="${isActive ? 'true' : 'false'}">
         <div class="style-preview-box" style="${s.preview} border-radius: 8px;">
-          <div class="style-preview-line" style="width: 60%; height: 4px; border-radius: 2px; background: var(--hdp-text-muted); opacity: 0.4;"></div>
-          <div class="style-preview-line" style="width: 40%; height: 4px; border-radius: 2px; background: var(--hdp-text-muted); opacity: 0.25;"></div>
+          <div class="style-preview-line style-preview-line--primary"></div>
+          <div class="style-preview-line style-preview-line--secondary"></div>
         </div>
         <div class="style-meta">
           <span class="style-label">${s.label}</span>
@@ -1752,6 +1752,19 @@ ${generateDesignTokenCSS(tokens)}
     height: 44px; padding: 10px;
     display: flex; flex-direction: column;
     justify-content: center; gap: 6px;
+  }
+  .style-preview-line {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--hdp-text-muted);
+  }
+  .style-preview-line--primary {
+    width: 60%;
+    opacity: 0.4;
+  }
+  .style-preview-line--secondary {
+    width: 40%;
+    opacity: 0.25;
   }
   .style-meta {
     display: flex; flex-direction: column; gap: 2px;

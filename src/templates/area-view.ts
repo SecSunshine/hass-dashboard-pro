@@ -498,12 +498,12 @@ ${generateDesignTokenCSS(tokens)}
   .ds-cnt--off { background: var(--hdp-divider); color: var(--hdp-text-muted); }
   .ds-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: var(--hdp-card-gap);
     min-width: 0;
   }
   @media (max-width: 480px) {
-    .ds-grid { grid-template-columns: 1fr; }
+    .ds-grid { grid-template-columns: minmax(0, 1fr); }
   }
   ${ENTITY_CARD_CSS}
   ${getDomainCardCSS()}
@@ -530,12 +530,12 @@ ${generateDesignTokenCSS(tokens)}
 <style>
   .eg {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: var(--hdp-card-gap);
     min-width: 0;
   }
   @media (max-width: 480px) {
-    .eg { grid-template-columns: 1fr; }
+    .eg { grid-template-columns: minmax(0, 1fr); }
   }
   ${ENTITY_CARD_CSS}
   ${getDomainCardCSS()}

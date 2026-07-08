@@ -56,7 +56,9 @@ describe('area view', () => {
   it('uses overflow-safe grids and entity values', () => {
     const html = buildAreaHTML('Kitchen With A Very Long Area Name', entities, hass);
 
-    expect(html).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))');
+    expect(html).toContain('grid-template-columns: repeat(auto-fit, minmax(180px, 1fr))');
+    expect(html).toContain('grid-template-columns: minmax(0, 1fr)');
+    expect(html).not.toContain('grid-template-columns: repeat(2, minmax(0, 1fr))');
     expect(html).toContain('min-width: 0');
     expect(html).toContain('overflow-wrap: anywhere');
     expect(html).toContain('flex: 0 1 45%');

@@ -229,6 +229,11 @@ describe('settings view', () => {
     expect(html).toContain('data-action="toggle-auto-dark" data-component="auto-dark-toggle" role="switch" aria-checked="true" tabindex="0"');
     expect(html).toContain('data-action="toggle-auto-mood" data-component="auto-mood-toggle" role="switch" aria-checked="false" tabindex="0"');
     expect(html).toContain('data-action="select-card-style" data-style="classic" data-component="style-card" aria-pressed="true"');
+    expect(html).toContain('style-preview-line style-preview-line--primary');
+    expect(html).toContain('style-preview-line style-preview-line--secondary');
+    expect(html).toContain('.style-preview-line {');
+    expect(html).not.toContain('style="width: 60%; height: 4px;');
+    expect(html).not.toContain('style="width: 40%; height: 4px;');
     expect(html).toContain('data-action="select-layout-density" data-density="standard" aria-pressed="true"');
     expect(html).toContain('data-action="toggle-card-shadow" data-component="shadow-toggle" role="switch" aria-checked="true" tabindex="0"');
     expect(html).toContain('data-action="select-font-family"');
