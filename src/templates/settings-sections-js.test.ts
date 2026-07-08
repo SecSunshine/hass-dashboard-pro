@@ -17,13 +17,14 @@ type MockChip = {
 function createRuntime() {
   const store = new Map<string, string>();
   const chips: MockChip[] = [];
+  let reloadCount = 0;
   const window = {} as any;
   const localStorage = {
     getItem: (key: string) => store.get(key) ?? null,
     setItem: (key: string, value: string) => { store.set(key, value); },
     removeItem: (key: string) => { store.delete(key); },
   };
-  const location = { reload: () => undefined };
+  const location = { reload: () => { reloadCount += 1; } };
   const setTimeout = () => 1;
 
   const code = `${generateStorageJS()}\n${generateSettingsSectionsJS()}\nreturn window;`;
@@ -57,7 +58,7 @@ function createRuntime() {
     return { target: { closest: () => chip } };
   };
 
-  return { runtime, store, eventForChip, chips };
+  return { runtime, store, eventForChip, chips, getReloadCount: () => reloadCount };
 }
 
 describe('settings sections client script', () => {
@@ -143,5 +144,48 @@ Old `);
 
     const saved = JSON.parse(store.get('hdp_config') || '{}');
     expect(saved.devices.hidden_device_types).toEqual([]);
+  });
+
+  it('stages recommended design plans without saving or reloading immediately', () => {
+    const { runtime, store, getReloadCount } = createRuntime();
+
+    runtime.hdpApplyDesignPlan({
+      pack_id: 'warm-home',
+      visual: {
+        page_bg: '#f8f2e7',
+        card_bg: '#ffffff',
+        primary: '#d97706',
+        text_primary: '#1f2937',
+        text_secondary: '#6b7280',
+        border: '#eadfd0',
+        border_radius: 18,
+        card_padding: 16,
+        card_gap: 12,
+        card_style: 'soft',
+        font_family: 'system',
+        shadows: true,
+        layout_density: 'cozy',
+      },
+    });
+
+    expect(store.get('hdp_config')).toBeUndefined();
+    expect(store.get('hdp_visual_config')).toBeUndefined();
+    expect(getReloadCount()).toBe(0);
+    expect(runtime.hdpSettingsDirty).toBe(true);
+    expect(runtime.hdpDraftVisualDirty).toBe(true);
+    expect(runtime.hdpSettingsDraft.visual).toMatchObject({
+      theme_id: 'warm-home',
+      card_style: 'soft',
+      layout_density: 'cozy',
+      colors: {
+        primary: '#d97706',
+      },
+    });
+
+    runtime.hdpCommitSettings();
+
+    const saved = JSON.parse(store.get('hdp_config') || '{}');
+    expect(saved.visual.theme_id).toBe('warm-home');
+    expect(saved.visual.colors.primary).toBe('#d97706');
   });
 });

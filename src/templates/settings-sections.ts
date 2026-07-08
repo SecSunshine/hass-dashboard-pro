@@ -1217,27 +1217,17 @@ window.hdpApplyDesignPlan = function(plan) {
     layout_density: visual.layout_density
   };
 
-  try {
-    localStorage.setItem('hdp_visual_config', JSON.stringify(visual));
-  } catch(e) {}
-
-  hdpSaveConfig({ visual: hdpVisual });
+  if (typeof window.hdpSaveVisualConfig === 'function') {
+    window.hdpSaveVisualConfig(visual);
+  }
+  if (typeof hdpSetDraftPath === 'function') {
+    hdpSetDraftPath('visual', hdpVisual);
+  }
+  window.hdpDraftVisualConfig = JSON.parse(JSON.stringify(visual));
+  window.hdpDraftVisualDirty = true;
 
   if (typeof hdpShowToast === 'function') {
-    hdpShowToast('正在应用自动生成方案...', 'info');
-  }
-
-  if (typeof hdpSaveToLovelace === 'function') {
-    hdpSaveToLovelace(hdpLoadConfig()).then(function() {
-      if (typeof hdpShowToast === 'function') hdpShowToast('方案已应用，正在刷新...', 'success');
-      setTimeout(function() { location.reload(); }, 600);
-    }).catch(function(err) {
-      console.warn('[HDP] Lovelace sync failed, saved locally only', err);
-      if (typeof hdpShowToast === 'function') hdpShowToast('已保存到本地，正在刷新...', 'success');
-      setTimeout(function() { location.reload(); }, 900);
-    });
-  } else {
-    setTimeout(function() { location.reload(); }, 600);
+    hdpShowToast('方案已暂存，点击保存并应用后生效', 'success');
   }
 };
 `;
