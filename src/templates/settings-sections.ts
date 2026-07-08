@@ -240,7 +240,8 @@ export function getSettingsSectionsCSS(): string {
     width: 100%;
     max-width: 100%;
     min-width: 0;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: visible;
   }
   .st-chip {
     display: inline-flex;
@@ -259,10 +260,10 @@ export function getSettingsSectionsCSS(): string {
     transition: all 0.15s ease;
     min-height: 32px;
     min-width: 0;
-    max-width: 100%;
-    white-space: normal;
-    word-break: break-word;
-    overflow-wrap: anywhere;
+    max-width: min(220px, 100%);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     text-align: left;
     appearance: none;
   }
@@ -1138,7 +1139,7 @@ function toggleHTML(settingPath: string, value: boolean): string {
 
 function chipHTML(action: string, path: string, value: string, label: string, active: boolean): string {
   const activeClass = active ? ' st-chip--active' : '';
-  return `<button type="button" class="st-chip${activeClass}" data-action="${escapeAttribute(action)}" data-setting="${escapeAttribute(path)}" data-value="${escapeAttribute(value)}" aria-pressed="${active ? 'true' : 'false'}" onclick="hdpToggleArrayItem('${escapeAttribute(path)}', ${jsArg(value)}, event)">${escapeHTML(label)}</button>`;
+  return `<button type="button" class="st-chip${activeClass}" data-action="${escapeAttribute(action)}" data-setting="${escapeAttribute(path)}" data-value="${escapeAttribute(value)}" aria-pressed="${active ? 'true' : 'false'}" title="${escapeAttribute(label)}" onclick="hdpToggleArrayItem('${escapeAttribute(path)}', ${jsArg(value)}, event)">${escapeHTML(label)}</button>`;
 }
 
 // ─── 1. Dashboard ──────────────────────────────────────────────────────────
@@ -1432,11 +1433,13 @@ function buildHiddenDeviceTypeChips(hass: Hass | undefined, hiddenDomains: strin
     'binary_sensor.occupancy': '占用',
     'binary_sensor.presence': '存在',
   };
+  const defaultDeviceTypes = Object.keys(deviceTypeLabels)
+    .filter(type => !hiddenDomains.includes(type.split('.')[0]));
   const detectedDeviceTypes = Object.entries(hass?.states || {})
     .filter(([entityId]) => isVisibleRegistryEntity(hass, entityId))
     .map(([entityId, stateObj]) => getEntityDeviceType(entityId, stateObj.attributes || {}))
     .filter(type => type.includes('.') && !hiddenDomains.includes(type.split('.')[0]));
-  const deviceTypes = Array.from(new Set([...detectedDeviceTypes, ...hiddenDeviceTypes]
+  const deviceTypes = Array.from(new Set([...defaultDeviceTypes, ...detectedDeviceTypes, ...hiddenDeviceTypes]
     .filter(type => typeof type === 'string' && type.includes('.'))))
     .sort();
   if (!deviceTypes.length) return '';

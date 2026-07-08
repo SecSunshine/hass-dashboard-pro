@@ -83,6 +83,8 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
     display: flex;
     align-items: center;
     gap: 6px;
+    min-width: 0;
+    max-width: min(220px, 68vw);
     padding: 6px 14px;
     border-radius: var(--hdp-radius-pill, 20px);
     background: var(--hdp-card-bg);
@@ -100,8 +102,14 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
     transform: translateY(-2px);
     border-color: var(--hdp-primary);
   }
-  .dv-chip-label { font-weight: 600; }
+  .dv-chip-label {
+    font-weight: 600;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .dv-chip-count {
+    flex: 0 0 auto;
     font-size: 11px;
     font-weight: 700;
     padding: 2px 7px;

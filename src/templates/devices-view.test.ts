@@ -75,6 +75,13 @@ describe('devices view', () => {
     expect(html).toContain('flex: 0 1 45%');
     expect(html).toContain('overflow-wrap: anywhere');
     expect(html).toContain('<button type="button" class="dv-chip"');
+    expect(html).toContain('max-width: min(220px, 68vw)');
+    expect(html).toContain(`.dv-chip-label {
+    font-weight: 600;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;`);
+    expect(html).toContain('flex: 0 0 auto;');
     expect(html).toContain('data-action="scroll-domain"');
     expect(html).toContain('appearance: none;');
   });

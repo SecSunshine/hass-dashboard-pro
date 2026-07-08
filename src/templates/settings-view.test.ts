@@ -193,10 +193,10 @@ describe('settings view', () => {
     expect(html).toContain('.st-row > .st-toggle');
     expect(html).toContain('.st-section,\n  .st-section *');
     expect(html).toContain('.st-section-body {\n    display: none;\n    padding: 0 18px 18px 18px;\n    width: 100%;\n    max-width: 100%;\n    min-width: 0;\n    overflow-x: hidden;');
-    expect(html).toContain('.st-chip-list {\n    display: flex;\n    flex-wrap: wrap;\n    align-items: flex-start;\n    gap: 6px;\n    margin-top: 8px;\n    width: 100%;\n    max-width: 100%;\n    min-width: 0;\n    overflow: hidden;');
+    expect(html).toContain('.st-chip-list {\n    display: flex;\n    flex-wrap: wrap;\n    align-items: flex-start;\n    gap: 6px;\n    margin-top: 8px;\n    width: 100%;\n    max-width: 100%;\n    min-width: 0;\n    overflow-x: hidden;\n    overflow-y: visible;');
     expect(html).toContain('.st-chip {\n    display: inline-flex;');
     expect(html).toContain('flex: 0 1 auto;\n    padding: 5px 12px;');
-    expect(html).toContain('min-height: 32px;\n    min-width: 0;\n    max-width: 100%;\n    white-space: normal;\n    word-break: break-word;\n    overflow-wrap: anywhere;');
+    expect(html).toContain('min-height: 32px;\n    min-width: 0;\n    max-width: min(220px, 100%);\n    white-space: nowrap;\n    overflow: hidden;\n    text-overflow: ellipsis;');
     expect(html).toContain('.st-btn {\n    display: flex;');
     expect(html).toContain('min-height: 44px;\n    min-width: 0;\n    max-width: 100%;');
     expect(html).toContain('white-space: normal;\n    overflow-wrap: anywhere;\n    text-align: left;');
@@ -218,6 +218,7 @@ describe('settings view', () => {
     expect(html).toContain("hdpToggleArrayItem('areas.hidden_areas'");
     expect(html).toContain("hdpToggleArrayItem('devices.hidden_device_types'");
     expect(html).toContain(', event)');
+    expect(html).toContain('title="Kitchen" onclick="hdpToggleArrayItem');
     expect(html).toContain('data-action="toggle-section" data-section="st-dashboard" role="button" aria-expanded="false" tabindex="0"');
     expect(html).toContain('data-action="toggle-section" data-section="st-visual" role="button" aria-expanded="true" tabindex="0"');
     expect(js).toContain("hdr.setAttribute('aria-expanded'");
@@ -294,9 +295,12 @@ describe('settings view', () => {
     };
     const html = buildSettingsHTML(config, undefined, hass);
 
-    expect(html).toContain('type="button" class="st-chip st-chip--active" data-action="toggle-hidden-area" data-setting="areas.hidden_areas" data-value="kitchen" aria-pressed="true" onclick="hdpToggleArrayItem(\'areas.hidden_areas\', &quot;kitchen&quot;, event)">Kitchen');
-    expect(html).toContain('type="button" class="st-chip st-chip--active" data-action="toggle-hidden-domain" data-setting="devices.hidden_domains" data-value="number" aria-pressed="true" onclick="hdpToggleArrayItem(\'devices.hidden_domains\', &quot;number&quot;, event)');
-    expect(html).toContain('type="button" class="st-chip st-chip--active" data-action="toggle-hidden-person" data-setting="people.hidden_persons" data-value="person.alice" aria-pressed="true" onclick="hdpToggleArrayItem(\'people.hidden_persons\', &quot;person.alice&quot;, event)">Alice');
+    expect(html).toContain('data-action="toggle-hidden-area" data-setting="areas.hidden_areas" data-value="kitchen" aria-pressed="true" title="Kitchen"');
+    expect(html).toContain("hdpToggleArrayItem('areas.hidden_areas', &quot;kitchen&quot;, event)");
+    expect(html).toContain('data-action="toggle-hidden-domain" data-setting="devices.hidden_domains" data-value="number" aria-pressed="true" title="数字"');
+    expect(html).toContain("hdpToggleArrayItem('devices.hidden_domains', &quot;number&quot;, event)");
+    expect(html).toContain('data-action="toggle-hidden-person" data-setting="people.hidden_persons" data-value="person.alice" aria-pressed="true" title="Alice"');
+    expect(html).toContain("hdpToggleArrayItem('people.hidden_persons', &quot;person.alice&quot;, event)");
   });
 
   it('offers home summary info card visibility controls', () => {
@@ -314,12 +318,13 @@ describe('settings view', () => {
     expect(html).toContain("hdpToggleArrayItem('home.hidden_info_cards', &quot;automations&quot;, event)");
   });
 
-  it('ignores hidden or disabled registry entities in device type controls', () => {
+  it('offers common device subtype controls without relying on currently visible entities', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const html = buildSettingsHTML(config, undefined, hass);
 
     expect(html).toContain("hdpToggleArrayItem('devices.hidden_device_types', &quot;binary_sensor.motion&quot;, event)");
-    expect(html).not.toContain("hdpToggleArrayItem('devices.hidden_device_types', &quot;sensor.temperature&quot;, event)");
+    expect(html).toContain("hdpToggleArrayItem('devices.hidden_device_types', &quot;sensor.temperature&quot;, event)");
+    expect(html).toContain('温度传感器');
   });
 
   it('keeps hidden device type chips visible even when no matching entity is visible', () => {
