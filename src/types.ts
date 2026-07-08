@@ -45,6 +45,8 @@ export interface HassEntityRegistryEntry {
   config_entry_id?: string;
   unique_id?: string;
   name?: string;
+  name_by_user?: string;
+  original_name?: string;
   icon?: string;
   disabled_by: string | null;
   hidden_by: string | null;

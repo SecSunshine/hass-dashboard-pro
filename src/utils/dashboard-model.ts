@@ -237,7 +237,9 @@ function buildEntityKeywordText(hass: Hass, entityId: string, area: HassArea): s
   const values = [
     entityId,
     stateObj?.attributes?.friendly_name,
+    registryEntry?.name_by_user,
     registryEntry?.name,
+    registryEntry?.original_name,
     device?.name_by_user,
     device?.name,
     area.name,

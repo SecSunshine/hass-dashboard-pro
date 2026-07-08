@@ -262,6 +262,61 @@ describe('dashboard model', () => {
     expect(ids).not.toContain('sensor.no_area');
   });
 
+  it('matches keyword filters against user-renamed entity registry names', () => {
+    const renamedHass: Hass = {
+      ...hass,
+      states: {
+        ...hass.states,
+        'light.bedside': {
+          entity_id: 'light.bedside',
+          state: 'on',
+          attributes: { friendly_name: 'Lamp' },
+          last_changed: '',
+          last_updated: '',
+        },
+      },
+      entities: {
+        ...hass.entities,
+        'light.bedside': {
+          entity_id: 'light.bedside',
+          device_id: null,
+          area_id: 'kitchen',
+          platform: 'demo',
+          disabled_by: null,
+          hidden_by: null,
+          name_by_user: 'Reading Corner',
+          original_name: 'Bedside Light',
+        },
+      },
+    };
+
+    const visibleConfig: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        devices: { visible_keywords: ['reading corner'] },
+      } as any,
+    };
+    const originalNameConfig: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        devices: { visible_keywords: ['bedside light'] },
+      } as any,
+    };
+    const hiddenConfig: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        devices: { hidden_keywords: ['reading corner'] },
+      } as any,
+    };
+
+    expect(collectVisibleEntities(renamedHass, getDashboardFilters(visibleConfig)).map(entity => entity.entity_id))
+      .toEqual(['light.bedside']);
+    expect(collectVisibleEntities(renamedHass, getDashboardFilters(originalNameConfig)).map(entity => entity.entity_id))
+      .toEqual(['light.bedside']);
+    expect(collectVisibleEntities(renamedHass, getDashboardFilters(hiddenConfig)).map(entity => entity.entity_id))
+      .not.toContain('light.bedside');
+  });
+
   it('keeps entities without an area in a virtual unassigned area', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const entities = collectVisibleEntities(hass, getDashboardFilters(config));
