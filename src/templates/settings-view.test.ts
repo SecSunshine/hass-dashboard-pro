@@ -164,6 +164,13 @@ describe('settings view', () => {
     expect(html).toContain('#st-visual-body .color-swatch-wrap');
     expect(html).toContain('#st-visual-body .am-mood-select');
     expect(html).toContain('width: min(180px, 42vw)');
+    expect(html).toContain(`#st-visual-body .seed-hex,
+  #st-visual-body .color-hex {
+    min-width: 0;
+    max-width: min(120px, 32vw);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;`);
     expect(html).toContain(`#st-visual-body .lc-size-select,
   #st-visual-body .lc-skin-select,
   #st-visual-body .am-mood-select {

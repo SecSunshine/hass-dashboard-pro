@@ -496,7 +496,11 @@ ${visualStyles}
     font-family: 'SF Mono', 'Cascadia Code', monospace;
     font-size: 12px;
     color: var(--hdp-text-secondary, #6B7280);
-    min-width: 60px;
+    min-width: 0;
+    max-width: min(120px, 32vw);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     text-align: right;
   }
   #st-visual-body select,
@@ -566,7 +570,11 @@ ${visualStyles}
   }
   #st-visual-body .seed-hex,
   #st-visual-body .color-hex {
+    min-width: 0;
+    max-width: min(120px, 32vw);
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   #st-visual-body .slider-input {
     width: 100%;
@@ -1271,7 +1279,11 @@ ${generateDesignTokenCSS(tokens)}
   }
   .seed-hex {
     font-size: 12px; font-family: 'SF Mono', 'Cascadia Code', monospace;
-    color: var(--hdp-text-secondary); min-width: 70px;
+    color: var(--hdp-text-secondary); min-width: 0;
+    max-width: min(120px, 32vw);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .seed-toggle-row {
     display: flex; align-items: center;
@@ -2161,7 +2173,11 @@ ${generateDesignTokenCSS(tokens)}
   }
   .color-hex {
     font-size: 12px; font-family: 'SF Mono', 'Cascadia Code', monospace;
-    color: var(--hdp-text-secondary); min-width: 60px;
+    color: var(--hdp-text-secondary); min-width: 0;
+    max-width: min(120px, 32vw);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     text-align: right;
   }
 </style>
