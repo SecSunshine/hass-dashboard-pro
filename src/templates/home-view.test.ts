@@ -125,6 +125,33 @@ describe('home view settings', () => {
     expect(html).not.toContain('bad_key');
   });
 
+  it('keeps people names from forcing narrow layouts', () => {
+    const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
+    const html = buildHomeHTML(hass, config);
+
+    expect(html).toContain(`.pp-grid {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    min-width: 0;`);
+    expect(html).toContain(`.pp-item {
+    display: flex;
+    flex: 1 1 64px;
+    max-width: 96px;`);
+    expect(html).toContain(`.pp-name {
+    font: inherit;`);
+    expect(html).toContain(`display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;`);
+    expect(html).toContain(`white-space: normal;
+    overflow-wrap: anywhere;`);
+    expect(html).not.toContain(`.pp-name {
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--hdp-text);
+    max-width: 72px;`);
+  });
   it('honors hdp_config hidden persons', () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',

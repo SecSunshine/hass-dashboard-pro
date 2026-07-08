@@ -11,7 +11,7 @@
 
 import type { Hass, AreaSummary, StrategyConfig } from '../types';
 import { groupAreasByFloor } from '../utils/area-entities';
-import { getAreaIcon } from '../strategies/dashboard-strategy';
+import { getAreaIcon } from '../utils/dashboard-model';
 import { escapeAttribute, escapeHTML, escapeJSONAttribute } from '../utils/html';
 import { shouldShowSettings } from '../utils/permissions';
 

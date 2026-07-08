@@ -20,7 +20,14 @@ import { buildSettingsHTML, generateSettingsJS } from '../templates/settings-vie
 import { buildBlueprintPagesHTML } from '../blueprints/blueprint-page';
 import { buildLayoutCard } from '../layout/layout-card';
 import { getEffectiveStrategyConfig } from '../utils/effective-config';
-import { buildAreaEntityMapFromModel, collectVisibleEntities, getDashboardFilters } from '../utils/dashboard-model';
+import {
+  buildAreaEntityMapFromModel,
+  buildAreaSummaries,
+  collectVisibleEntities,
+  getConfiguredAreaOrder,
+  getConfiguredHiddenAreas,
+  getDashboardFilters,
+} from '../utils/dashboard-model';
 import { shouldShowSettings } from '../utils/permissions';
 
 export class HassDashboardProViewStrategy {
@@ -51,8 +58,14 @@ export class HassDashboardProViewStrategy {
 // ─── Build Complete Layout Card ─────────────────────────────────────────────
 
 function buildFullLayoutCard(hass: Hass, config: StrategyConfig, tokens: ReturnType<typeof resolveTokens>): LovelaceCardConfig {
-  const areaEntityMap = buildAreaEntityMapFromModel(collectVisibleEntities(hass, getDashboardFilters(config)));
-  const areaSummaries = config.area_summaries || [];
+  const visibleEntities = collectVisibleEntities(hass, getDashboardFilters(config));
+  const areaEntityMap = buildAreaEntityMapFromModel(visibleEntities);
+  const areaSummaries = buildAreaSummaries(
+    hass,
+    areaEntityMap,
+    getConfiguredHiddenAreas(config),
+    getConfiguredAreaOrder(config),
+  );
   const blueprintPages = config.hdp_config?.blueprints?.pages || config.blueprint_pages || [];
   const canEditBlueprints = shouldShowSettings(hass, config);
 

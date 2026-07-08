@@ -5,7 +5,7 @@
  * apply user visibility rules, resolve area inheritance, and classify devices.
  */
 
-import type { EntityInfo, Hass, HassArea, HassEntity, StrategyConfig } from '../types';
+import type { AreaSummary, EntityInfo, Hass, HassArea, HassEntity, StrategyConfig } from '../types';
 import { HIDDEN_DOMAINS } from '../types';
 import { getEntityDeviceType, isEntityOn, isUnavailableState } from './area-entities';
 import { getEffectiveHDPConfig } from './effective-config';
@@ -191,6 +191,138 @@ export function buildAreaEntityMapFromModel(entities: DashboardEntity[]): Map<st
     map.get(entity.area_id)!.push(entity);
   }
   return map;
+}
+
+// ─── Area Summaries ────────────────────────────────────────────────────────
+
+export function buildAreaSummaries(
+  hass: Hass,
+  areaEntityMap: Map<string, EntityInfo[]>,
+  hiddenAreas: string[],
+  areaOrder: string[] = [],
+): AreaSummary[] {
+  const summaries: AreaSummary[] = [];
+
+  for (const [areaId, area] of Object.entries(hass.areas)) {
+    if (hiddenAreas.includes(areaId)) continue;
+
+    const entities = areaEntityMap.get(areaId) || [];
+    if (entities.length === 0) continue;
+    const activeCount = entities.filter(e => isEntityOn(e.state, e.domain)).length;
+
+    // Find temp/humidity sensors in this area
+    let temp: string | null = null;
+    let humidity: string | null = null;
+    const domainCounts: Record<string, number> = {};
+
+    for (const e of entities) {
+      // Count domains
+      domainCounts[e.domain] = (domainCounts[e.domain] || 0) + 1;
+
+      // Find temp/humidity
+      if (e.domain === 'sensor') {
+        if (e.unit === '°C' && !temp) temp = `${e.state}°C`;
+        if (e.unit === '%' && (e.entity_id.includes('humidity') || e.entity_id.includes('humid')) && !humidity) {
+          humidity = `${e.state}%`;
+        }
+      }
+    }
+
+    summaries.push({
+      area_id: areaId,
+      area_name: area.name,
+      icon: getAreaIcon(area.name),
+      entity_count: entities.length,
+      active_count: activeCount,
+      temp,
+      humidity,
+      domain_counts: domainCounts,
+    });
+  }
+
+  for (const [areaId, entities] of areaEntityMap.entries()) {
+    if (hass.areas[areaId] || hiddenAreas.includes(areaId)) continue;
+    const activeCount = entities.filter(e => isEntityOn(e.state, e.domain)).length;
+    const domainCounts: Record<string, number> = {};
+    for (const e of entities) {
+      domainCounts[e.domain] = (domainCounts[e.domain] || 0) + 1;
+    }
+
+    summaries.push({
+      area_id: areaId,
+      area_name: areaId === UNASSIGNED_AREA_ID ? UNASSIGNED_AREA_NAME : areaId,
+      icon: 'mdi:home-outline',
+      entity_count: entities.length,
+      active_count: activeCount,
+      temp: null,
+      humidity: null,
+      domain_counts: domainCounts,
+    });
+  }
+
+  return sortAreaSummaries(summaries, areaOrder);
+}
+
+function sortAreaSummaries(summaries: AreaSummary[], areaOrder: string[]): AreaSummary[] {
+  if (!areaOrder.length) return summaries;
+
+  const orderIndex = new Map(areaOrder.map((areaId, index) => [areaId, index]));
+  return summaries
+    .map((summary, index) => ({ summary, index }))
+    .sort((a, b) => {
+      const ai = orderIndex.get(a.summary.area_id);
+      const bi = orderIndex.get(b.summary.area_id);
+      if (ai !== undefined || bi !== undefined) {
+        return (ai ?? Number.MAX_SAFE_INTEGER) - (bi ?? Number.MAX_SAFE_INTEGER);
+      }
+      return a.index - b.index;
+    })
+    .map(item => item.summary);
+}
+
+// ─── Area Icon Mapping ─────────────────────────────────────────────────────
+
+export function getAreaIcon(name: string): string {
+  const n = name.toLowerCase();
+
+  // Living areas
+  if (/客厅|起居室|lounge|living/.test(n)) return 'mdi:sofa';
+  if (/餐厅|饭厅|dining/.test(n)) return 'mdi:silverware-fork-knife';
+  if (/厨房|kitchen/.test(n)) return 'mdi:chef-hat';
+
+  // Bedrooms
+  if (/主卧|master/.test(n)) return 'mdi:bed-king';
+  if (/卧室|bedroom|bed/.test(n)) return 'mdi:bed';
+  if (/儿童|child|kid/.test(n)) return 'mdi:teddy-bear';
+  if (/客卧|guest/.test(n)) return 'mdi:bed-empty';
+
+  // Work & study
+  if (/书房|study|office/.test(n)) return 'mdi:desk';
+
+  // Bathrooms
+  if (/浴室|卫生间|bath|toilet|wc/.test(n)) return 'mdi:shower';
+
+  // Entryways
+  if (/玄关|门厅|entry|foyer|hall/.test(n)) return 'mdi:door';
+
+  // Storage & utility
+  if (/车库|garage/.test(n)) return 'mdi:car';
+  if (/阳台|balcony|terrace/.test(n)) return 'mdi:flower';
+  if (/花园|garden|yard/.test(n)) return 'mdi:tree';
+  if (/储物|储藏|storage/.test(n)) return 'mdi:package-variant';
+  if (/洗衣|laundry/.test(n)) return 'mdi:washing-machine';
+
+  // Entertainment
+  if (/影院|影音|media|theater|theatre/.test(n)) return 'mdi:movie';
+  if (/游戏|game|play/.test(n)) return 'mdi:gamepad-variant';
+
+  // Outdoor / structural
+  if (/楼梯|stair/.test(n)) return 'mdi:stairs';
+  if (/走廊|corridor|hallway/.test(n)) return 'mdi:foot-print';
+  if (/阁楼|attic/.test(n)) return 'mdi:home-roof';
+  if (/地下|basement/.test(n)) return 'mdi:elevator-passenger';
+
+  return 'mdi:home-outline';
 }
 
 export function countVisibleDevices(hass: Hass, entities: EntityInfo[]): number {

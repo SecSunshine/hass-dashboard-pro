@@ -141,6 +141,69 @@ describe('dashboard strategy hidden filters', () => {
     expect(content).not.toContain('Bedroom Motion');
   });
 
+  it('rebuilds stale view area summaries with current hidden areas', async () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro-view',
+      view_path: 'home',
+      area_summaries: [
+        { area_id: 'kitchen', area_name: 'Kitchen', icon: 'mdi:chef-hat', entity_count: 1, active_count: 1, temp: null, humidity: null, domain_counts: { light: 1 } },
+        { area_id: 'bedroom', area_name: 'Bedroom', icon: 'mdi:bed', entity_count: 1, active_count: 0, temp: null, humidity: null, domain_counts: { light: 1 } },
+      ],
+      hdp_config: {
+        areas: { hidden_areas: ['kitchen'] },
+      } as any,
+    };
+
+    const home = await HassDashboardProViewStrategy.generate(config, hass);
+    const content = String(home.cards[0].content || '');
+
+    expect(content).toContain('data-area="bedroom"');
+    expect(content).not.toContain('data-area="kitchen"');
+    expect(content).not.toContain('<div class="hdp-view" data-view="kitchen"');
+    expect(content).not.toContain('Kitchen Light');
+  });
+
+  it('drops stale area summaries when current hidden device types empty an area', async () => {
+    const motionHass: Hass = {
+      ...hass,
+      states: {
+        'binary_sensor.bedroom_motion': {
+          entity_id: 'binary_sensor.bedroom_motion',
+          state: 'off',
+          attributes: { friendly_name: 'Bedroom Motion', device_class: 'motion' },
+          last_changed: '',
+          last_updated: '',
+        },
+      },
+      entities: {
+        'binary_sensor.bedroom_motion': {
+          entity_id: 'binary_sensor.bedroom_motion',
+          device_id: null,
+          area_id: 'bedroom',
+          platform: 'demo',
+          disabled_by: null,
+          hidden_by: null,
+        },
+      },
+    };
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro-view',
+      view_path: 'home',
+      area_summaries: [
+        { area_id: 'bedroom', area_name: 'Bedroom', icon: 'mdi:bed', entity_count: 1, active_count: 0, temp: null, humidity: null, domain_counts: { binary_sensor: 1 } },
+      ],
+      hdp_config: {
+        devices: { hidden_device_types: ['binary_sensor.motion'] },
+      } as any,
+    };
+
+    const home = await HassDashboardProViewStrategy.generate(config, motionHass);
+    const content = String(home.cards[0].content || '');
+
+    expect(content).not.toContain('data-area="bedroom"');
+    expect(content).not.toContain('<div class="hdp-view" data-view="bedroom"');
+    expect(content).not.toContain('Bedroom Motion');
+  });
   it('omits the top-level settings view when settings are restricted', async () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',

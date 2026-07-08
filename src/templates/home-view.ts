@@ -490,13 +490,16 @@ ${generateDesignTokenCSS(tokens)}
     display: flex;
     gap: 12px;
     flex-wrap: wrap;
+    min-width: 0;
   }
   .pp-item {
     display: flex;
+    flex: 1 1 64px;
+    max-width: 96px;
     flex-direction: column;
     align-items: center;
     gap: 6px;
-    min-width: 64px;
+    min-width: 0;
     text-align: center;
   }
   .pp-avatar {
@@ -519,10 +522,16 @@ ${generateDesignTokenCSS(tokens)}
     font-size: 12px;
     font-weight: 600;
     color: var(--hdp-text);
-    max-width: 72px;
+    width: 100%;
+    max-width: 96px;
+    min-width: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.2;
   }
   .pp-state {
     font: inherit;

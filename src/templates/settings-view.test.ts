@@ -162,8 +162,17 @@ describe('settings view', () => {
     expect(html).toContain('#st-visual-body .color-swatch-wrap');
     expect(html).toContain('#st-visual-body .am-mood-select');
     expect(html).toContain('width: min(180px, 42vw)');
-    expect(html).toContain('#st-visual-body .action-section');
-    expect(html).toMatch(/@media \(max-width: 480px\) \{[\s\S]*#st-visual-body \.theme-grid/);
+    expect(html).toContain(`#st-visual-body .lc-size-select,
+  #st-visual-body .lc-skin-select,
+  #st-visual-body .am-mood-select {
+    min-width: 0;
+    max-width: 100%;`);
+    expect(html).toContain(`#st-visual-body .st-visual-card[data-visual-card="settings-actions"] {
+    display: flex;
+    flex-wrap: wrap;`.replace(/\"/g, '"'));
+    expect(html).toContain('#st-visual-body .st-visual-card[data-visual-card="settings-actions"] .action-btn'.replace(/\"/g, '"'));
+    expect(html).toContain('#st-visual-body .action-section');    expect(html).toMatch(/@media \(max-width: 480px\) \{[\s\S]*#st-visual-body \.theme-grid/);
+    expect(html).toMatch(/@media \(max-width: 560px\) \{[\s\S]*#st-visual-body \.theme-grid/);
     expect(html).toMatch(/@media \(max-width: 420px\) \{[\s\S]*\.st-plan-grid \{ grid-template-columns: 1fr; \}/);
     expect(html).not.toContain('#st-visual-body @media');
     expect(html).toMatch(/settings-header-sub">[\s\S]*?<\/div>\s*<button class="settings-studio-btn"/);
@@ -174,7 +183,7 @@ describe('settings view', () => {
     expect(html).toContain('.st-row > .st-toggle');
     expect(html).toContain('.st-section,\n  .st-section *');
     expect(html).toContain('.st-section-body {\n    display: none;\n    padding: 0 18px 18px 18px;\n    width: 100%;\n    max-width: 100%;\n    min-width: 0;\n    overflow-x: hidden;');
-    expect(html).toContain('.st-chip-list {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 6px;\n    margin-top: 8px;\n    width: 100%;\n    max-width: 100%;\n    min-width: 0;\n    overflow: hidden;');
+    expect(html).toContain('.st-chip-list {\n    display: flex;\n    flex-wrap: wrap;\n    align-items: flex-start;\n    gap: 6px;\n    margin-top: 8px;\n    width: 100%;\n    max-width: 100%;\n    min-width: 0;\n    overflow: hidden;');
     expect(html).toContain('.st-chip {\n    display: inline-flex;');
     expect(html).toContain('flex: 0 1 auto;\n    padding: 5px 12px;');
     expect(html).toContain('min-height: 32px;\n    min-width: 0;\n    max-width: 100%;\n    white-space: normal;\n    word-break: break-word;\n    overflow-wrap: anywhere;');
@@ -188,7 +197,7 @@ describe('settings view', () => {
     expect(html).toContain('.st-action-row,\n  .st-link-row');
     expect(html).toContain('.st-action-row .st-btn,\n  .st-link-row .st-btn');
     expect(html).toContain('flex: 1 1 120px;\n    min-width: 0;');
-    expect(html).toContain('grid-template-columns: minmax(0, 1fr) minmax(160px, auto);');
+    expect(html).toContain('grid-template-columns: minmax(0, 1fr) minmax(0, 220px);');
     expect(html).toContain('.st-plan-hero > div');
     expect(html).toContain('.st-plan-hero > .st-btn');
     expect(html).toContain('.st-about-val {\n    font-weight: 600;\n    color: var(--hdp-text);\n    text-align: right;\n    min-width: 0;\n    overflow-wrap: anywhere;');

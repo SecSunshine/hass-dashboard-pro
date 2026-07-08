@@ -138,7 +138,12 @@ ${visualStyles}
   /* Action card full width */
   #st-visual-body .st-visual-card[data-visual-card="settings-actions"] {
     display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
     gap: 12px;
+  }
+  #st-visual-body .st-visual-card[data-visual-card="settings-actions"] .action-btn {
+    flex: 1 1 160px;
   }
   /* Selectable items in visual cards */
   #st-visual-body .theme-card,
@@ -460,6 +465,8 @@ ${visualStyles}
   #st-visual-body .seed-custom-input {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
     gap: 10px;
     min-width: 0;
   }
@@ -551,6 +558,12 @@ ${visualStyles}
   #st-visual-body .am-mood-select {
     width: min(180px, 42vw);
   }
+  #st-visual-body .lc-size-select,
+  #st-visual-body .lc-skin-select,
+  #st-visual-body .am-mood-select {
+    min-width: 0;
+    max-width: 100%;
+  }
   #st-visual-body .seed-hex,
   #st-visual-body .color-hex {
     white-space: nowrap;
@@ -593,6 +606,15 @@ ${visualStyles}
     #st-visual-body .am-mood-select,
     #st-visual-body .lc-skin-select {
       width: 100%;
+    }
+  }
+  @media (max-width: 560px) {
+    #st-visual-body .theme-grid,
+    #st-visual-body .mood-grid,
+    #st-visual-body .style-grid,
+    #st-visual-body .font-grid,
+    #st-visual-body .lc-density-row {
+      grid-template-columns: 1fr;
     }
   }
   @media (max-width: 420px) {

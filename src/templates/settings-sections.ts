@@ -91,6 +91,7 @@ export function getSettingsSectionsCSS(): string {
   .st-section select,
   .st-section textarea {
     font: inherit;
+    max-width: 100%;
   }
   .st-section a.st-btn {
     text-decoration: none;
@@ -145,6 +146,10 @@ export function getSettingsSectionsCSS(): string {
     max-width: 100%;
     min-width: 0;
     overflow-x: hidden;
+  }
+  .st-section-body > * {
+    max-width: 100%;
+    min-width: 0;
   }
   .st-section--open .st-section-body {
     display: block;
@@ -229,6 +234,7 @@ export function getSettingsSectionsCSS(): string {
   .st-chip-list {
     display: flex;
     flex-wrap: wrap;
+    align-items: flex-start;
     gap: 6px;
     margin-top: 8px;
     width: 100%;
@@ -346,7 +352,7 @@ export function getSettingsSectionsCSS(): string {
   }
   .st-plan-hero {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(160px, auto);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 220px);
     gap: 14px;
     align-items: center;
     padding: 14px;
@@ -470,6 +476,12 @@ export function getSettingsSectionsCSS(): string {
     }
     .st-btn {
       justify-content: center;
+    }
+    .st-row > :not(:first-child) {
+      flex-basis: 100%;
+    }
+    .st-row > .st-toggle {
+      flex: 0 0 44px;
     }
   }
   @media (max-width: 420px) {
