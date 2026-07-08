@@ -2,9 +2,21 @@ import { describe, expect, it } from 'vitest';
 import { generateStorageJS } from '../services/storage';
 import { generateSettingsSectionsJS } from './settings-sections';
 
+type MockChip = {
+  active: boolean;
+  pressed: string;
+  disabled: boolean;
+  attrs: Record<string, string>;
+  classList: {
+    toggle: (className: string) => void;
+    contains: (className: string) => boolean;
+  };
+  setAttribute: (name: string, value: string) => void;
+  getAttribute: (name: string) => string | undefined;
+};
 function createRuntime() {
   const store = new Map<string, string>();
-  const chips: Array<{ active: boolean; pressed: string }> = [];
+  const chips: MockChip[] = [];
   const window = {} as any;
   const localStorage = {
     getItem: (key: string) => store.get(key) ?? null,
@@ -23,9 +35,11 @@ function createRuntime() {
   );
 
   const eventForChip = () => {
-    const chip = {
+    const chip: MockChip = {
       active: false,
       pressed: 'false',
+      disabled: false,
+      attrs: {} as Record<string, string>,
       classList: {
         toggle: (className: string) => {
           if (className === 'st-chip--active') chip.active = !chip.active;
@@ -33,8 +47,11 @@ function createRuntime() {
         contains: (className: string) => className === 'st-chip--active' && chip.active,
       },
       setAttribute: (name: string, value: string) => {
+        chip.attrs[name] = value;
         if (name === 'aria-pressed') chip.pressed = value;
+        if (name === 'disabled') chip.disabled = true;
       },
+      getAttribute: (name: string) => chip.attrs[name],
     };
     chips.push(chip);
     return { target: { closest: () => chip } };
@@ -56,6 +73,19 @@ describe('settings sections client script', () => {
     expect(saved.devices.hidden_domains).toEqual(['sensor']);
     expect(saved.devices.hidden_device_types).toEqual(['binary_sensor.motion']);
     expect(chips.map(chip => chip.pressed)).toEqual(['true', 'true', 'true']);
+    expect(chips.map(chip => chip.attrs['data-saving'])).toEqual(['true', 'true', 'true']);
+    expect(chips.every(chip => chip.disabled)).toBe(true);
+  });
+
+  it('ignores repeated clicks on a chip that is already saving', () => {
+    const { runtime, store, eventForChip } = createRuntime();
+    const event = eventForChip();
+
+    runtime.hdpToggleArrayItem('areas.hidden_areas', 'kitchen', event);
+    runtime.hdpToggleArrayItem('areas.hidden_areas', 'kitchen', event);
+
+    const saved = JSON.parse(store.get('hdp_config') || '{}');
+    expect(saved.areas.hidden_areas).toEqual(['kitchen']);
   });
 
   it('removes an already hidden chip value on the second toggle', () => {

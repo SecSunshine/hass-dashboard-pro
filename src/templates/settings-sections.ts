@@ -271,6 +271,12 @@ export function getSettingsSectionsCSS(): string {
     border-color: var(--hdp-primary);
     color: var(--hdp-primary);
   }
+  .st-chip[disabled],
+  .st-chip[data-saving="true"] {
+    cursor: progress;
+    opacity: 0.72;
+    pointer-events: none;
+  }
   .st-chip:hover { transform: translateY(-1px); }
   .st-btn {
     display: flex;
@@ -539,6 +545,9 @@ window.hdpSaveSetting = function(path, value) {
 };
 
 window.hdpToggleArrayItem = function(path, item) {
+  var evt = arguments.length > 2 ? arguments[2] : window.event;
+  var chip = evt && evt.target && evt.target.closest ? evt.target.closest('.st-chip') : null;
+  if (chip && (chip.disabled || (chip.getAttribute && chip.getAttribute('data-saving') === 'true'))) return;
   var config = hdpLoadConfig();
   var parts = path.split('.');
   var current = config;
@@ -556,12 +565,13 @@ window.hdpToggleArrayItem = function(path, item) {
   else arr.push(item);
   current[key] = arr;
   hdpSaveConfig(config);
-  // Re-render chip state
-  var evt = arguments.length > 2 ? arguments[2] : window.event;
-  var chip = evt && evt.target && evt.target.closest ? evt.target.closest('.st-chip') : null;
+  // Re-render chip state and prevent double toggles before reload applies filters.
   if (chip) {
     chip.classList.toggle('st-chip--active');
     chip.setAttribute('aria-pressed', chip.classList.contains('st-chip--active') ? 'true' : 'false');
+    chip.setAttribute('data-saving', 'true');
+    chip.setAttribute('disabled', 'disabled');
+    chip.disabled = true;
   }
   // Persist to Lovelace and reload so entity filtering takes effect
   window.hdpPersistSettingsAndReload();
