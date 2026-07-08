@@ -987,7 +987,7 @@ ${generateDesignTokenCSS(tokens)}
 </style>
 <div class="settings-header" data-component="settings-header">
   <div class="settings-header-title">视觉设置</div>
-  <div class="settings-header-sub">自定义仪表盘外观，所有更改实时生效</div>
+  <div class="settings-header-sub">自定义仪表盘外观，修改会先暂存，点击保存后生效</div>
   <button class="settings-studio-btn" id="settings-studio-btn" data-action="open-theme-studio" data-component="studio-entry">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
     主题工作室
@@ -2639,9 +2639,9 @@ ${generateDesignTokenCSS(tokens)}
     <svg viewBox="0 0 24 24" fill="none"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="currentColor"/></svg>
     恢复默认
   </button>
-  <button class="action-btn action-btn--done" id="done-btn" data-action="close-settings">
+  <button class="action-btn action-btn--done" id="done-btn" data-action="save-settings">
     <svg viewBox="0 0 24 24" fill="none"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/></svg>
-    完成配置
+    保存并应用
   </button>
 </div>
 <script>
@@ -2657,7 +2657,9 @@ ${generateDesignTokenCSS(tokens)}
     var doneBtn = document.getElementById('done-btn');
     if (doneBtn) {
       doneBtn.addEventListener('click', function() {
-        history.back();
+        if (typeof window.hdpCommitSettings === 'function') {
+          window.hdpCommitSettings();
+        }
       });
     }
   })();

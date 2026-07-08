@@ -257,7 +257,9 @@ describe('settings view', () => {
     expect(html).toContain('data-action="toggle-card-shadow" data-component="shadow-toggle" role="switch" aria-checked="true" tabindex="0"');
     expect(html).toContain('data-action="select-font-family"');
     expect(html).toContain('data-action="reset-visual-config"');
-    expect(html).toContain('data-action="close-settings"');
+    expect(html).toContain('data-action="save-settings"');
+    expect(html).toContain('修改会先暂存，点击保存后生效');
+    expect(js).toContain("if (typeof window.hdpCommitSettings === 'function')");
     expect(js).toContain("this.setAttribute('aria-checked', isOn ? 'false' : 'true');");
     expect(js).toContain("this.setAttribute('aria-checked', shadowOn ? 'true' : 'false');");
     expect(js).toContain("b.setAttribute('aria-pressed'");
