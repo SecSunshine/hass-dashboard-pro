@@ -21,11 +21,12 @@ export function buildAreaEntityMap(
     const domain = entityId.split('.')[0];
     if (HIDDEN_DOMAINS.has(domain)) continue;
     if (hiddenDomains.includes(domain)) continue;
+    const registryEntry = hass.entities?.[entityId];
+    if (registryEntry?.disabled_by || registryEntry?.hidden_by) continue;
     if (hideUnavailable && isUnavailableState(stateObj.state)) continue;
     if (hiddenDeviceTypes.includes(getEntityDeviceType(entityId, stateObj.attributes))) continue;
 
     // Resolve area: entity registry → device registry → state attribute
-    const registryEntry = hass.entities?.[entityId];
     let areaId: string | undefined = registryEntry?.area_id ?? undefined;
 
     if (!areaId && registryEntry?.device_id) {
