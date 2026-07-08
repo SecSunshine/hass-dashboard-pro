@@ -147,6 +147,8 @@ describe('settings view', () => {
     expect(html).toContain('#st-visual-body .theme-grid');
     expect(html).toContain('#st-visual-body .settings-section');
     expect(html).toContain('repeat(auto-fit, minmax(160px, 1fr))');
+    expect(html).toContain('repeat(auto-fit, minmax(120px, 1fr))');
+    expect(html).toContain('repeat(auto-fit, minmax(130px, 1fr))');
     expect(html).toContain('#st-visual-body .color-row');
     expect(html).toContain('#st-visual-body .settings-studio-btn');
     expect(html).toContain('#st-visual-body .settings-studio-btn svg');
@@ -171,7 +173,8 @@ describe('settings view', () => {
     display: flex;
     flex-wrap: wrap;`.replace(/\"/g, '"'));
     expect(html).toContain('#st-visual-body .st-visual-card[data-visual-card="settings-actions"] .action-btn'.replace(/\"/g, '"'));
-    expect(html).toContain('#st-visual-body .action-section');    expect(html).toMatch(/@media \(max-width: 480px\) \{[\s\S]*#st-visual-body \.theme-grid/);
+    expect(html).toContain('#st-visual-body .action-section');
+    expect(html).toMatch(/@media \(max-width: 480px\) \{[\s\S]*#st-visual-body \.theme-grid/);
     expect(html).toMatch(/@media \(max-width: 560px\) \{[\s\S]*#st-visual-body \.theme-grid/);
     expect(html).toMatch(/@media \(max-width: 420px\) \{[\s\S]*\.st-plan-grid \{ grid-template-columns: 1fr; \}/);
     expect(html).not.toContain('#st-visual-body @media');
@@ -243,6 +246,8 @@ describe('settings view', () => {
     expect(html).not.toContain(':host, :root');
     expect(html.indexOf('Stable visual-settings layout')).toBeGreaterThan(html.indexOf('#st-visual-body .settings-header'));
     expect(html).not.toContain('grid-template-columns: repeat(4, 1fr)');
+    expect(html).not.toContain('grid-template-columns: repeat(4, minmax(0, 1fr))');
+    expect(html).not.toContain('grid-template-columns: repeat(3, minmax(0, 1fr))');
     expect(() => new Function(js)).not.toThrow();
   });
 

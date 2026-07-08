@@ -204,6 +204,27 @@ describe('dashboard strategy hidden filters', () => {
     expect(content).not.toContain('<div class="hdp-view" data-view="bedroom"');
     expect(content).not.toContain('Bedroom Motion');
   });
+  it('drops stale area summaries when current hidden domains empty an area', async () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro-view',
+      view_path: 'home',
+      area_summaries: [
+        { area_id: 'kitchen', area_name: 'Kitchen', icon: 'mdi:chef-hat', entity_count: 1, active_count: 1, temp: null, humidity: null, domain_counts: { light: 1 } },
+        { area_id: 'bedroom', area_name: 'Bedroom', icon: 'mdi:bed', entity_count: 1, active_count: 0, temp: null, humidity: null, domain_counts: { light: 1 } },
+      ],
+      hdp_config: {
+        devices: { hidden_domains: ['light'] },
+      } as any,
+    };
+
+    const home = await HassDashboardProViewStrategy.generate(config, hass);
+    const content = String(home.cards[0].content || '');
+
+    expect(content).not.toContain('data-area="kitchen"');
+    expect(content).not.toContain('data-area="bedroom"');
+    expect(content).not.toContain('Kitchen Light');
+    expect(content).not.toContain('Bedroom Light');
+  });
   it('omits the top-level settings view when settings are restricted', async () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',

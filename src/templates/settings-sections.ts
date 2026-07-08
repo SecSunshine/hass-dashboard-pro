@@ -399,7 +399,7 @@ export function getSettingsSectionsCSS(): string {
   }
   .st-plan-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
     gap: 8px;
     margin-top: 12px;
   }
@@ -464,7 +464,7 @@ export function getSettingsSectionsCSS(): string {
       justify-self: stretch;
       width: 100%;
     }
-    .st-plan-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .st-plan-grid { grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); }
     .st-row {
       align-items: flex-start;
       flex-wrap: wrap;
