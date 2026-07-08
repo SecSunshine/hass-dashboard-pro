@@ -30,7 +30,9 @@ import {
   getConfiguredAreaOrder,
   getConfiguredHiddenDeviceTypes,
   getConfiguredHiddenDomains,
+  getConfiguredHiddenKeywords,
   getConfiguredHiddenPersons,
+  getConfiguredVisibleKeywords,
   resolveEntityAreaId,
   UNASSIGNED_AREA_ID,
   UNASSIGNED_AREA_NAME,
@@ -314,6 +316,55 @@ export function getSettingsSectionsCSS(): string {
     flex: 1 1 120px;
     min-width: 0;
   }
+  .st-settings-actions {
+    position: sticky;
+    top: 8px;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-radius: var(--hdp-radius, 14px);
+    background: var(--hdp-card-bg);
+    border: 1px solid var(--hdp-border);
+    box-shadow: var(--hdp-shadow-card);
+  }
+  .st-settings-actions-text {
+    min-width: 0;
+    font: inherit;
+    font-size: 12px;
+    color: var(--hdp-text-muted);
+    overflow-wrap: anywhere;
+  }
+  .st-settings-actions-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+  .st-keyword-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+    min-width: 0;
+  }
+  .st-keyword-field {
+    min-width: 0;
+    padding: 10px;
+    border: 1px solid var(--hdp-border);
+    border-radius: var(--hdp-radius-sm, 8px);
+    background: var(--hdp-bg);
+  }
+  .st-keyword-field .st-input {
+    width: 100%;
+    max-width: none;
+    margin-top: 8px;
+  }
   .st-btn--primary {
     background: var(--hdp-primary);
     color: white;
@@ -484,6 +535,16 @@ export function getSettingsSectionsCSS(): string {
     .st-btn {
       justify-content: center;
     }
+    .st-settings-actions {
+      align-items: stretch;
+      flex-direction: column;
+    }
+    .st-settings-actions-buttons {
+      width: 100%;
+    }
+    .st-settings-actions-buttons .st-btn {
+      flex: 1 1 120px;
+    }
     .st-row > :not(:first-child) {
       flex-basis: 100%;
     }
@@ -512,13 +573,86 @@ window.hdpToggleSection = function(id) {
   }
 };
 
-window.hdpPersistSettingsAndReload = function(successDelay, fallbackDelay) {
+function hdpLoadRawSettingsConfig() {
+  try {
+    var raw = localStorage.getItem('hdp_config');
+    if (!raw) return {};
+    var parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch(e) {
+    return {};
+  }
+}
+
+function hdpCloneConfig(value) {
+  try {
+    return JSON.parse(JSON.stringify(value || {}));
+  } catch(e) {
+    return {};
+  }
+}
+
+window.hdpSettingsDraft = hdpCloneConfig(hdpLoadRawSettingsConfig());
+window.hdpSettingsDirty = false;
+
+window.hdpGetSettingsDraft = function() {
+  if (!window.hdpSettingsDraft || typeof window.hdpSettingsDraft !== 'object' || Array.isArray(window.hdpSettingsDraft)) {
+    window.hdpSettingsDraft = hdpCloneConfig(hdpLoadRawSettingsConfig());
+  }
+  return window.hdpSettingsDraft;
+};
+
+function hdpSetDraftPath(path, value) {
+  var parts = path.split('.');
+  var current = window.hdpGetSettingsDraft();
+  for (var i = 0; i < parts.length - 1; i++) {
+    if (!current[parts[i]] || typeof current[parts[i]] !== 'object' || Array.isArray(current[parts[i]])) {
+      current[parts[i]] = {};
+    }
+    current = current[parts[i]];
+  }
+  current[parts[parts.length - 1]] = value;
+  hdpMarkSettingsDirty();
+  return window.hdpGetSettingsDraft();
+}
+
+function hdpGetDraftArray(path) {
+  var parts = path.split('.');
+  var current = window.hdpGetSettingsDraft();
+  for (var i = 0; i < parts.length - 1; i++) {
+    if (!current[parts[i]] || typeof current[parts[i]] !== 'object' || Array.isArray(current[parts[i]])) {
+      current[parts[i]] = {};
+    }
+    current = current[parts[i]];
+  }
+  var key = parts[parts.length - 1];
+  if (!Array.isArray(current[key])) current[key] = [];
+  return current[key];
+}
+
+function hdpMarkSettingsDirty() {
+  window.hdpSettingsDirty = true;
+  if (typeof document === 'undefined') return;
+  var bar = document.querySelector && document.querySelector('.st-settings-actions');
+  if (bar) bar.setAttribute('data-dirty', 'true');
+  var text = document.querySelector && document.querySelector('.st-settings-actions-text');
+  if (text) text.textContent = '有未保存的更改';
+}
+
+window.hdpPersistSettingsAndReload = function(successDelay, fallbackDelay, configOverride) {
   successDelay = successDelay || 800;
   fallbackDelay = fallbackDelay || 1200;
   var showToast = typeof hdpShowToast === 'function' ? hdpShowToast : function() {};
+  var config = configOverride || window.hdpGetSettingsDraft();
+  var savedConfig = hdpCloneConfig(config);
+  try {
+    localStorage.setItem('hdp_config', JSON.stringify(savedConfig));
+  } catch(e) {
+    console.error('[HDP] Save failed:', e);
+  }
   if (typeof hdpSaveToLovelace === 'function') {
     showToast('正在保存设置...', 'info');
-    hdpSaveToLovelace(hdpLoadConfig()).then(function() {
+    hdpSaveToLovelace(savedConfig).then(function() {
       showToast('设置已保存，正在刷新...', 'success');
       setTimeout(function() { location.reload(); }, successDelay);
     }).catch(function(err) {
@@ -533,49 +667,49 @@ window.hdpPersistSettingsAndReload = function(successDelay, fallbackDelay) {
 };
 
 window.hdpSaveSetting = function(path, value) {
-  var parts = path.split('.');
-  var obj = {};
-  var current = obj;
-  for (var i = 0; i < parts.length - 1; i++) {
-    current[parts[i]] = {};
-    current = current[parts[i]];
-  }
-  current[parts[parts.length - 1]] = value;
-  hdpSaveConfig(obj);
-  window.hdpPersistSettingsAndReload();
+  hdpSetDraftPath(path, value);
 };
 
 window.hdpToggleArrayItem = function(path, item) {
   var evt = arguments.length > 2 ? arguments[2] : window.event;
   var chip = evt && evt.target && evt.target.closest ? evt.target.closest('.st-chip') : null;
-  if (chip && (chip.disabled || (chip.getAttribute && chip.getAttribute('data-saving') === 'true'))) return;
-  var config = hdpLoadConfig();
-  var parts = path.split('.');
-  var current = config;
-  for (var i = 0; i < parts.length - 1; i++) {
-    if (!current[parts[i]] || typeof current[parts[i]] !== 'object' || Array.isArray(current[parts[i]])) {
-      current[parts[i]] = {};
-    }
-    current = current[parts[i]];
-  }
-  var key = parts[parts.length - 1];
-  var arr = current[key];
-  if (!Array.isArray(arr)) arr = [];
+  var arr = hdpGetDraftArray(path);
   var idx = arr.indexOf(item);
   if (idx >= 0) arr.splice(idx, 1);
   else arr.push(item);
-  current[key] = arr;
-  hdpSaveConfig(config);
-  // Re-render chip state and prevent double toggles before reload applies filters.
+  hdpMarkSettingsDirty();
   if (chip) {
     chip.classList.toggle('st-chip--active');
     chip.setAttribute('aria-pressed', chip.classList.contains('st-chip--active') ? 'true' : 'false');
-    chip.setAttribute('data-saving', 'true');
-    chip.setAttribute('disabled', 'disabled');
-    chip.disabled = true;
   }
-  // Persist to Lovelace and reload so entity filtering takes effect
-  window.hdpPersistSettingsAndReload();
+};
+
+window.hdpSaveKeywordList = function(path, value) {
+  var arr = String(value || '')
+    .split(/[,，\\n]/)
+    .map(function(item) { return item.trim().toLowerCase(); })
+    .filter(function(item, index, list) { return item && list.indexOf(item) === index; });
+  hdpSetDraftPath(path, arr);
+};
+
+window.hdpCommitSettings = function() {
+  if (window.hdpDraftVisualDirty && typeof window.hdpLoadDraftVisualConfig === 'function') {
+    var visual = window.hdpLoadDraftVisualConfig();
+    hdpSetDraftPath('visual', visual);
+    try {
+      localStorage.setItem('hdp_visual_config', JSON.stringify(visual));
+    } catch(e) {
+      console.warn('[HDP] Failed to save visual config locally', e);
+    }
+  }
+  window.hdpPersistSettingsAndReload(700, 1000, window.hdpGetSettingsDraft());
+};
+
+window.hdpCancelSettings = function() {
+  window.hdpSettingsDraft = hdpCloneConfig(hdpLoadRawSettingsConfig());
+  window.hdpSettingsDirty = false;
+  if (typeof hdpShowToast === 'function') hdpShowToast('已放弃未保存更改', 'info');
+  setTimeout(function() { location.reload(); }, 120);
 };
 
 window.hdpResetConfig = function() {
@@ -893,6 +1027,8 @@ function hdpNormalizeHDPConfig(config) {
   var legacyHiddenAreas = hdpNormalizeStringArray(normalized.hidden_areas);
   var legacyHiddenDomains = hdpNormalizeStringArray(normalized.hidden_domains);
   var legacyHiddenDeviceTypes = hdpNormalizeStringArray(normalized.hidden_device_types);
+  var legacyHiddenKeywords = hdpNormalizeStringArray(normalized.hidden_keywords || normalized.hidden_device_keywords);
+  var legacyVisibleKeywords = hdpNormalizeStringArray(normalized.visible_keywords || normalized.visible_device_keywords);
   var legacyHiddenPersons = hdpNormalizeStringArray(normalized.hidden_persons);
   if ('visual' in normalized) {
     var visual = hdpNormalizeVisualConfig(normalized.visual);
@@ -910,17 +1046,25 @@ function hdpNormalizeHDPConfig(config) {
   if (normalized.devices && typeof normalized.devices === 'object' && !Array.isArray(normalized.devices)) {
     normalized.devices = Object.assign({}, normalized.devices, {
       hidden_domains: hdpMergeStringArrays(normalized.devices.hidden_domains, legacyHiddenDomains),
-      hidden_device_types: hdpMergeStringArrays(normalized.devices.hidden_device_types, legacyHiddenDeviceTypes)
+      hidden_device_types: hdpMergeStringArrays(normalized.devices.hidden_device_types, legacyHiddenDeviceTypes),
+      hidden_keywords: hdpMergeStringArrays(normalized.devices.hidden_keywords, legacyHiddenKeywords),
+      visible_keywords: hdpMergeStringArrays(normalized.devices.visible_keywords, legacyVisibleKeywords)
     });
-  } else if (legacyHiddenDomains.length || legacyHiddenDeviceTypes.length) {
+  } else if (legacyHiddenDomains.length || legacyHiddenDeviceTypes.length || legacyHiddenKeywords.length || legacyVisibleKeywords.length) {
     normalized.devices = {
       hidden_domains: legacyHiddenDomains,
-      hidden_device_types: legacyHiddenDeviceTypes
+      hidden_device_types: legacyHiddenDeviceTypes,
+      hidden_keywords: legacyHiddenKeywords,
+      visible_keywords: legacyVisibleKeywords
     };
   }
   delete normalized.hidden_areas;
   delete normalized.hidden_domains;
   delete normalized.hidden_device_types;
+  delete normalized.hidden_keywords;
+  delete normalized.hidden_device_keywords;
+  delete normalized.visible_keywords;
+  delete normalized.visible_device_keywords;
   if (normalized.people && typeof normalized.people === 'object' && !Array.isArray(normalized.people)) {
     normalized.people = Object.assign({}, normalized.people, {
       hidden_persons: hdpMergeStringArrays(normalized.people.hidden_persons, legacyHiddenPersons)
@@ -1380,6 +1524,8 @@ function sortAreaEntries(areaEntries: Array<[string, any]>, areaOrder: string[])
 export function buildDevicesSection(config: StrategyConfig, hass?: Hass): string {
   const hiddenDomains: string[] = getConfiguredHiddenDomains(config);
   const hiddenDeviceTypes: string[] = getConfiguredHiddenDeviceTypes(config);
+  const hiddenKeywords: string[] = getConfiguredHiddenKeywords(config);
+  const visibleKeywords: string[] = getConfiguredVisibleKeywords(config);
   const defaultDomains = ['light', 'switch', 'climate', 'fan', 'cover', 'lock', 'sensor', 'binary_sensor', 'media_player', 'camera', 'vacuum', 'button'];
   const detectedDomains = Object.keys(hass?.states || {})
     .filter(entityId => isVisibleRegistryEntity(hass, entityId))
@@ -1407,12 +1553,28 @@ export function buildDevicesSection(config: StrategyConfig, hass?: Hass): string
   }).join('');
 
   const deviceTypeHTML = buildHiddenDeviceTypeChips(hass, hiddenDomains, hiddenDeviceTypes);
+  const hiddenKeywordValue = hiddenKeywords.join(', ');
+  const visibleKeywordValue = visibleKeywords.join(', ');
 
   return sectionCard('devices', '设备类型', iconDevices(), `
     <div class="st-row-label">隐藏设备类型</div>
     <div class="st-row-desc">点击切换设备类型是否显示（高亮=隐藏）</div>
     <div class="st-chip-list">${chips}</div>
     ${deviceTypeHTML}
+    <div class="st-section-subtitle">关键词过滤</div>
+    <div class="st-row-desc">按实体 ID、实体名称、设备名称、区域名称匹配；多个关键词用逗号或换行分隔。</div>
+    <div class="st-keyword-grid">
+      <label class="st-keyword-field">
+        <div class="st-row-label">隐藏关键词</div>
+        <div class="st-row-desc">匹配到这些关键词的设备会从仪表盘隐藏。</div>
+        <input class="st-input" value="${escapeAttribute(hiddenKeywordValue)}" placeholder="例如：测试, 临时, old" data-setting="devices.hidden_keywords" oninput="hdpSaveKeywordList('devices.hidden_keywords', this.value)" />
+      </label>
+      <label class="st-keyword-field">
+        <div class="st-row-label">仅显示关键词</div>
+        <div class="st-row-desc">填写后只显示匹配这些关键词的设备；留空则显示所有未隐藏设备。</div>
+        <input class="st-input" value="${escapeAttribute(visibleKeywordValue)}" placeholder="例如：客厅, 灯, living" data-setting="devices.visible_keywords" oninput="hdpSaveKeywordList('devices.visible_keywords', this.value)" />
+      </label>
+    </div>
   `);
 }
 

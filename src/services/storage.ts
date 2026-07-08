@@ -45,6 +45,8 @@ export function getDefaultConfig(): HDPConfig {
     devices: {
       hidden_domains: [],
       hidden_device_types: [],
+      hidden_keywords: [],
+      visible_keywords: [],
     },
     blueprints: {
       pages: [],

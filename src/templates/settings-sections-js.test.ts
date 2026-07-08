@@ -61,31 +61,61 @@ function createRuntime() {
 }
 
 describe('settings sections client script', () => {
-  it('persists hidden area, domain, and device type chip toggles', () => {
+  it('keeps hidden area, domain, and device type chip toggles in a draft until commit', () => {
     const { runtime, store, eventForChip, chips } = createRuntime();
 
     runtime.hdpToggleArrayItem('areas.hidden_areas', 'kitchen', eventForChip());
     runtime.hdpToggleArrayItem('devices.hidden_domains', 'sensor', eventForChip());
     runtime.hdpToggleArrayItem('devices.hidden_device_types', 'binary_sensor.motion', eventForChip());
 
+    expect(store.get('hdp_config')).toBeUndefined();
+    expect(runtime.hdpSettingsDraft.areas.hidden_areas).toEqual(['kitchen']);
+    expect(runtime.hdpSettingsDraft.devices.hidden_domains).toEqual(['sensor']);
+    expect(runtime.hdpSettingsDraft.devices.hidden_device_types).toEqual(['binary_sensor.motion']);
+    expect(runtime.hdpSettingsDirty).toBe(true);
+    expect(chips.map(chip => chip.pressed)).toEqual(['true', 'true', 'true']);
+    expect(chips.every(chip => chip.disabled)).toBe(false);
+
+    runtime.hdpCommitSettings();
+
     const saved = JSON.parse(store.get('hdp_config') || '{}');
     expect(saved.areas.hidden_areas).toEqual(['kitchen']);
     expect(saved.devices.hidden_domains).toEqual(['sensor']);
     expect(saved.devices.hidden_device_types).toEqual(['binary_sensor.motion']);
-    expect(chips.map(chip => chip.pressed)).toEqual(['true', 'true', 'true']);
-    expect(chips.map(chip => chip.attrs['data-saving'])).toEqual(['true', 'true', 'true']);
-    expect(chips.every(chip => chip.disabled)).toBe(true);
   });
 
-  it('ignores repeated clicks on a chip that is already saving', () => {
+  it('allows repeated chip clicks without saving until commit', () => {
     const { runtime, store, eventForChip } = createRuntime();
     const event = eventForChip();
 
     runtime.hdpToggleArrayItem('areas.hidden_areas', 'kitchen', event);
     runtime.hdpToggleArrayItem('areas.hidden_areas', 'kitchen', event);
 
+    expect(runtime.hdpSettingsDraft.areas.hidden_areas).toEqual([]);
+    expect(store.get('hdp_config')).toBeUndefined();
+
+    runtime.hdpCommitSettings();
+
     const saved = JSON.parse(store.get('hdp_config') || '{}');
-    expect(saved.areas.hidden_areas).toEqual(['kitchen']);
+    expect(saved.areas.hidden_areas).toEqual([]);
+  });
+
+  it('normalizes keyword lists in the draft config', () => {
+    const { runtime, store } = createRuntime();
+
+    runtime.hdpSaveKeywordList('devices.hidden_keywords', ` Test, 客厅，test
+Old `);
+    runtime.hdpSaveKeywordList('devices.visible_keywords', 'light, Living');
+
+    expect(runtime.hdpSettingsDraft.devices.hidden_keywords).toEqual(['test', '客厅', 'old']);
+    expect(runtime.hdpSettingsDraft.devices.visible_keywords).toEqual(['light', 'living']);
+    expect(store.get('hdp_config')).toBeUndefined();
+
+    runtime.hdpCommitSettings();
+
+    const saved = JSON.parse(store.get('hdp_config') || '{}');
+    expect(saved.devices.hidden_keywords).toEqual(['test', '客厅', 'old']);
+    expect(saved.devices.visible_keywords).toEqual(['light', 'living']);
   });
 
   it('removes an already hidden chip value on the second toggle', () => {
@@ -93,6 +123,8 @@ describe('settings sections client script', () => {
 
     runtime.hdpToggleArrayItem('devices.hidden_device_types', 'sensor.temperature', eventForChip());
     runtime.hdpToggleArrayItem('devices.hidden_device_types', 'sensor.temperature', eventForChip());
+
+    runtime.hdpCommitSettings();
 
     const saved = JSON.parse(store.get('hdp_config') || '{}');
     expect(saved.devices.hidden_device_types).toEqual([]);

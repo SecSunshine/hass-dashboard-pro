@@ -51,22 +51,34 @@ function createRuntime(config: StrategyConfig = { type: 'custom:hass-dashboard-p
 }
 
 describe('settings visual client script', () => {
-  it('saves visual config through window-scoped helpers and schedules reload', async () => {
+  it('stages visual config through window-scoped helpers and saves on commit', async () => {
     const { runtime, store, timers, location } = createRuntime();
 
     await runtime.hdpSaveVisualConfigAndReload({ theme: 'dark', card_style: 'glass' }, 250);
+
+    expect(store.get('hdp_visual_config')).toBeUndefined();
+    expect(runtime.hdpLoadDraftVisualConfig()).toEqual({
+      theme: 'dark',
+      card_style: 'glass',
+    });
+    expect(runtime.hdpSettingsDraft.visual).toEqual({
+      theme: 'dark',
+      card_style: 'glass',
+    });
+    expect(timers).toEqual([]);
+    expect(location.reloaded).toBe(false);
+
+    runtime.hdpCommitSettings();
 
     expect(JSON.parse(store.get('hdp_visual_config') || '{}')).toEqual({
       theme: 'dark',
       card_style: 'glass',
     });
-    expect(JSON.parse(store.get('hdp_config') || '{}').visual).toEqual({
+    expect(JSON.parse(store.get('hdp_config') || '{}').visual).toMatchObject({
       theme: 'dark',
       card_style: 'glass',
     });
-    expect(JSON.parse(store.get('hdp_config') || '{}')).not.toHaveProperty('areas');
-    expect(JSON.parse(store.get('hdp_config') || '{}')).not.toHaveProperty('devices');
-    expect(timers.map(timer => timer.delay)).toContain(250);
+    expect(timers.map(timer => timer.delay)).toContain(700);
     timers[timers.length - 1]?.fn();
     expect(location.reloaded).toBe(true);
   });
@@ -97,6 +109,11 @@ describe('settings visual client script', () => {
 
     runtime.hdpToggleArrayItem('areas.hidden_areas', 'garage', eventForChip());
 
+    expect(runtime.hdpSettingsDraft.areas.hidden_areas).toEqual(['kitchen', 'garage']);
+    expect(JSON.parse(store.get('hdp_config') || '{}').areas.hidden_areas).toEqual(['kitchen']);
+
+    runtime.hdpCommitSettings();
+
     const saved = JSON.parse(store.get('hdp_config') || '{}');
     expect(saved.areas.hidden_areas).toEqual(['kitchen', 'garage']);
     expect(saved.devices.hidden_domains).toEqual(['sensor']);
@@ -125,6 +142,11 @@ describe('settings visual client script', () => {
     runtime.hdpToggleArrayItem('devices.hidden_domains', 'sensor', eventForChip());
     runtime.hdpToggleArrayItem('areas.hidden_areas', 'kitchen', eventForChip());
 
+    expect(runtime.hdpSettingsDraft.devices.hidden_domains).toEqual([]);
+    expect(runtime.hdpSettingsDraft.areas.hidden_areas).toEqual([]);
+
+    runtime.hdpCommitSettings();
+
     const saved = JSON.parse(store.get('hdp_config') || '{}');
     expect(saved.devices.hidden_domains).toEqual([]);
     expect(saved.areas.hidden_areas).toEqual([]);
@@ -137,8 +159,15 @@ describe('settings visual client script', () => {
 
     await runtime.hdpClearVisualConfigAndReload(100);
 
-    expect(store.get('hdp_visual_config')).toBeUndefined();
+    expect(store.get('hdp_visual_config')).toBe(JSON.stringify({ theme: 'dark' }));
+    expect(runtime.hdpLoadDraftVisualConfig()).toEqual({});
+    expect(runtime.hdpSettingsDraft.visual).toEqual({});
+    expect(timers).toEqual([]);
+
+    runtime.hdpCommitSettings();
+
+    expect(JSON.parse(store.get('hdp_visual_config') || '{}')).toEqual({});
     expect(JSON.parse(store.get('hdp_config') || '{}').visual).toEqual({});
-    expect(timers.map(timer => timer.delay)).toContain(100);
+    expect(timers.map(timer => timer.delay)).toContain(700);
   });
 });

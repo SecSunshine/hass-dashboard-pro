@@ -18,6 +18,8 @@ export interface DashboardFilters {
   hiddenDomains: string[];
   hideUnavailable: boolean;
   hiddenDeviceTypes: string[];
+  hiddenKeywords: string[];
+  visibleKeywords: string[];
 }
 
 export type EntitySemanticType =
@@ -57,6 +59,8 @@ export function getDashboardFilters(config: StrategyConfig): DashboardFilters {
     hiddenDomains: getConfiguredHiddenDomains(config),
     hideUnavailable: hdpConfig?.areas?.hide_unavailable || false,
     hiddenDeviceTypes: getConfiguredHiddenDeviceTypes(config),
+    hiddenKeywords: getConfiguredHiddenKeywords(config),
+    visibleKeywords: getConfiguredVisibleKeywords(config),
   };
 }
 
@@ -81,6 +85,26 @@ export function getConfiguredHiddenDeviceTypes(config: StrategyConfig): string[]
   return mergeStringArrays(hdpConfig?.devices?.hidden_device_types, legacyConfig?.hidden_device_types, config.hidden_device_types);
 }
 
+export function getConfiguredHiddenKeywords(config: StrategyConfig): string[] {
+  const hdpConfig = getEffectiveHDPConfig(config);
+  const legacyConfig = hdpConfig as { hidden_keywords?: unknown; hidden_device_keywords?: unknown } | undefined;
+  return normalizeKeywordList(
+    hdpConfig?.devices?.hidden_keywords,
+    legacyConfig?.hidden_keywords,
+    legacyConfig?.hidden_device_keywords,
+  );
+}
+
+export function getConfiguredVisibleKeywords(config: StrategyConfig): string[] {
+  const hdpConfig = getEffectiveHDPConfig(config);
+  const legacyConfig = hdpConfig as { visible_keywords?: unknown; visible_device_keywords?: unknown } | undefined;
+  return normalizeKeywordList(
+    hdpConfig?.devices?.visible_keywords,
+    legacyConfig?.visible_keywords,
+    legacyConfig?.visible_device_keywords,
+  );
+}
+
 export function getConfiguredHiddenPersons(config: StrategyConfig): string[] {
   const hdpConfig = getEffectiveHDPConfig(config);
   const legacyConfig = hdpConfig as { hidden_persons?: unknown } | undefined;
@@ -100,6 +124,19 @@ function mergeStringArrays(...values: Array<unknown>): string[] {
     if (!Array.isArray(value)) continue;
     for (const item of value) {
       if (typeof item === 'string' && item) seen.add(item);
+    }
+  }
+  return Array.from(seen);
+}
+
+function normalizeKeywordList(...values: Array<unknown>): string[] {
+  const seen = new Set<string>();
+  for (const value of values) {
+    if (!Array.isArray(value)) continue;
+    for (const item of value) {
+      if (typeof item !== 'string') continue;
+      const keyword = item.trim().toLowerCase();
+      if (keyword) seen.add(keyword);
     }
   }
   return Array.from(seen);
@@ -166,6 +203,7 @@ export function collectVisibleEntities(hass: Hass, filters: DashboardFilters): D
 
     const area = getEntityArea(hass, areaId);
     if (!area) continue;
+    if (!matchesKeywordVisibility(hass, entityId, area, filters)) continue;
 
     const entity = createEntityInfo(entityId, stateObj, area);
     entities.push({
@@ -177,6 +215,36 @@ export function collectVisibleEntities(hass: Hass, filters: DashboardFilters): D
   }
 
   return entities;
+}
+
+function matchesKeywordVisibility(hass: Hass, entityId: string, area: HassArea, filters: DashboardFilters): boolean {
+  const visibleKeywords = filters.visibleKeywords || [];
+  const hiddenKeywords = filters.hiddenKeywords || [];
+  if (!visibleKeywords.length && !hiddenKeywords.length) return true;
+
+  const haystack = buildEntityKeywordText(hass, entityId, area);
+  if (visibleKeywords.length && !visibleKeywords.some(keyword => haystack.includes(keyword))) return false;
+  if (hiddenKeywords.some(keyword => haystack.includes(keyword))) return false;
+  return true;
+}
+
+function buildEntityKeywordText(hass: Hass, entityId: string, area: HassArea): string {
+  const stateObj = hass.states[entityId];
+  const registryEntry = hass.entities?.[entityId];
+  const device = registryEntry?.device_id ? hass.devices?.[registryEntry.device_id] : undefined;
+  const values = [
+    entityId,
+    stateObj?.attributes?.friendly_name,
+    registryEntry?.name,
+    device?.name_by_user,
+    device?.name,
+    area.name,
+    getEntityDeviceType(entityId, stateObj?.attributes || {}),
+  ];
+  return values
+    .filter((value): value is string => typeof value === 'string' && value.length > 0)
+    .join(' ')
+    .toLowerCase();
 }
 
 function isRegistryHidden(hass: Hass, entityId: string): boolean {

@@ -402,6 +402,8 @@ export interface HDPConfig {
   devices: {
     hidden_domains: string[];
     hidden_device_types: string[];
+    hidden_keywords: string[];
+    visible_keywords: string[];
   };
   blueprints: {
     pages: BlueprintInstance[];

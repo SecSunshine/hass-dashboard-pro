@@ -225,6 +225,11 @@ describe('settings view', () => {
     expect(html).toContain("hdpToggleArrayItem('devices.hidden_device_types'");
     expect(html).toContain(', event)');
     expect(html).toContain('title="Kitchen" onclick="hdpToggleArrayItem');
+    expect(html).toContain('data-component="settings-save-bar" data-dirty="false"');
+    expect(html).toContain('data-action="cancel-settings" onclick="hdpCancelSettings()"');
+    expect(html).toContain('data-action="save-settings" onclick="hdpCommitSettings()"');
+    expect(html).toContain('data-setting="devices.hidden_keywords"');
+    expect(html).toContain('data-setting="devices.visible_keywords"');
     expect(html).toContain('data-action="toggle-section" data-section="st-dashboard" role="button" aria-expanded="false" tabindex="0"');
     expect(html).toContain('data-action="toggle-section" data-section="st-visual" role="button" aria-expanded="true" tabindex="0"');
     expect(js).toContain("hdr.setAttribute('aria-expanded'");
@@ -411,14 +416,20 @@ describe('settings view', () => {
     expect(js).not.toContain('<img');
     expect(js).toContain('\\u003C/script\\u003E');
   });
-  it('persists scalar setting changes with a reload', () => {
+  it('persists staged setting changes only when saving', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const js = generateSettingsJS(config, undefined, hass);
     const html = buildSettingsHTML(config, undefined, hass);
 
     expect(js).toContain('window.hdpPersistSettingsAndReload = function');
-    expect(js).toContain('hdpSaveConfig(obj);');
-    expect(js).toContain('hdpPersistSettingsAndReload();');
+    expect(js).toContain('window.hdpSettingsDraft = hdpCloneConfig');
+    expect(js).toContain('window.hdpGetSettingsDraft = function');
+    expect(js).toContain('function hdpSetDraftPath(path, value)');
+    expect(js).toContain('hdpSetDraftPath(path, value);');
+    expect(js).toContain('window.hdpCommitSettings = function');
+    expect(js).toContain('window.hdpCancelSettings = function');
+    expect(js).toContain('var savedConfig = hdpCloneConfig(config);');
+    expect(js).toContain("localStorage.setItem('hdp_config', JSON.stringify(savedConfig));");
     expect(js).toContain('window.hdpResetConfig = function');
     expect(js).toContain('hdpSaveToLovelace(resetConfig)');
     expect(js).toContain("throw new Error('配置文件格式不正确')");
@@ -438,10 +449,13 @@ describe('settings view', () => {
     expect(js).toContain('function hdpNormalizeHDPConfig(config)');
     expect(js).toContain('function hdpMergeStringArrays()');
     expect(js).toContain('var legacyHiddenAreas = hdpNormalizeStringArray(normalized.hidden_areas);');
+    expect(js).toContain('var legacyHiddenKeywords = hdpNormalizeStringArray(normalized.hidden_keywords || normalized.hidden_device_keywords);');
     expect(js).toContain('var legacyHiddenPersons = hdpNormalizeStringArray(normalized.hidden_persons);');
     expect(js).toContain('hidden_areas: hdpMergeStringArrays(normalized.areas.hidden_areas, legacyHiddenAreas)');
+    expect(js).toContain('hidden_keywords: hdpMergeStringArrays(normalized.devices.hidden_keywords, legacyHiddenKeywords)');
     expect(js).toContain('hidden_persons: hdpMergeStringArrays(normalized.people.hidden_persons, legacyHiddenPersons)');
     expect(js).toContain('delete normalized.hidden_device_types;');
+    expect(js).toContain('delete normalized.hidden_device_keywords;');
     expect(js).toContain('delete normalized.hidden_persons;');
     expect(js).toContain('function hdpNormalizeVisualConfig(config)');
     expect(js).toContain('function hdpNormalizeBlueprints(value)');

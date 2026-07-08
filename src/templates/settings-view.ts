@@ -662,8 +662,15 @@ ${visualStyles}
       grid-template-columns: 1fr;
     }
   }
-</style>
-${buildDashboardSection(config)}
+  </style>
+  <div class="st-settings-actions" data-component="settings-save-bar" data-dirty="false">
+    <div class="st-settings-actions-text">修改设置后点击保存生效</div>
+    <div class="st-settings-actions-buttons">
+      <button type="button" class="st-btn" data-action="cancel-settings" onclick="hdpCancelSettings()">取消</button>
+      <button type="button" class="st-btn st-btn--primary" data-action="save-settings" onclick="hdpCommitSettings()">保存并应用</button>
+    </div>
+  </div>
+  ${buildDashboardSection(config)}
 ${hass ? buildQuickGenerateSection(hass, config) : ''}
 ${buildHomeSection(config)}
 ${buildHeaderSection(config)}
@@ -788,7 +795,7 @@ function generateSettingsConfigSeedJS(config: StrategyConfig): string {
   if (!seedConfig || typeof seedConfig !== 'object' || Array.isArray(seedConfig) || !Object.keys(seedConfig).length) return;
   try {
     if (localStorage.getItem('hdp_config')) return;
-    var base = typeof hdpLoadConfig === 'function' ? hdpLoadConfig() : {};
+    var base = {};
     var merged = typeof hdpDeepMerge === 'function' ? hdpDeepMerge(base, seedConfig) : Object.assign({}, base, seedConfig);
     localStorage.setItem('hdp_config', JSON.stringify(merged));
   } catch(e) {
@@ -805,25 +812,37 @@ function buildSettingsSeedConfig(config: StrategyConfig): Record<string, unknown
     hidden_areas?: unknown;
     hidden_domains?: unknown;
     hidden_device_types?: unknown;
+    hidden_keywords?: unknown;
+    hidden_device_keywords?: unknown;
+    visible_keywords?: unknown;
+    visible_device_keywords?: unknown;
     hidden_persons?: unknown;
   };
   const hiddenAreas = mergeSeedStringArrays(getNestedSeedArray(seed, 'areas', 'hidden_areas'), legacySeed.hidden_areas, config.hidden_areas);
   const hiddenDomains = mergeSeedStringArrays(getNestedSeedArray(seed, 'devices', 'hidden_domains'), legacySeed.hidden_domains, config.hidden_domains);
   const hiddenDeviceTypes = mergeSeedStringArrays(getNestedSeedArray(seed, 'devices', 'hidden_device_types'), legacySeed.hidden_device_types, config.hidden_device_types);
+  const hiddenKeywords = mergeSeedStringArrays(getNestedSeedArray(seed, 'devices', 'hidden_keywords'), legacySeed.hidden_keywords, legacySeed.hidden_device_keywords);
+  const visibleKeywords = mergeSeedStringArrays(getNestedSeedArray(seed, 'devices', 'visible_keywords'), legacySeed.visible_keywords, legacySeed.visible_device_keywords);
   const hiddenPersons = mergeSeedStringArrays(getNestedSeedArray(seed, 'people', 'hidden_persons'), legacySeed.hidden_persons, config.hidden_persons);
 
   if (hiddenAreas.length) seed.areas = { ...getSeedSection(seed, 'areas'), hidden_areas: hiddenAreas };
-  if (hiddenDomains.length || hiddenDeviceTypes.length) {
+  if (hiddenDomains.length || hiddenDeviceTypes.length || hiddenKeywords.length || visibleKeywords.length) {
     seed.devices = {
       ...getSeedSection(seed, 'devices'),
       hidden_domains: hiddenDomains,
       hidden_device_types: hiddenDeviceTypes,
+      hidden_keywords: hiddenKeywords,
+      visible_keywords: visibleKeywords,
     };
   }
   if (hiddenPersons.length) seed.people = { ...getSeedSection(seed, 'people'), hidden_persons: hiddenPersons };
   delete legacySeed.hidden_areas;
   delete legacySeed.hidden_domains;
   delete legacySeed.hidden_device_types;
+  delete legacySeed.hidden_keywords;
+  delete legacySeed.hidden_device_keywords;
+  delete legacySeed.visible_keywords;
+  delete legacySeed.visible_device_keywords;
   delete legacySeed.hidden_persons;
   return seed;
 }
@@ -852,6 +871,7 @@ function scopeVisualScript(script: string): string {
   return script
     .replace(/document\.querySelectorAll\(/g, 'hdpVisualQueryAll(')
     .replace(/document\.getElementById\(/g, 'hdpVisualGetElementById(')
+    .replace(/JSON\.parse\(localStorage\.getItem\('hdp_visual_config'\) \|\| '{}'\)/g, 'window.hdpLoadDraftVisualConfig()')
     .replace(/\bhdpSaveVisualConfigAndReload\(/g, 'window.hdpSaveVisualConfigAndReload(')
     .replace(/\bhdpSaveVisualConfig\(/g, 'window.hdpSaveVisualConfig(')
     .replace(/\bhdpClearVisualConfigAndReload\(/g, 'window.hdpClearVisualConfigAndReload(');
@@ -890,62 +910,55 @@ function hdpLoadRawHDPConfig() {
 
 window.hdpReplaceVisualConfig = function(config) {
   var cfg = config || {};
-  var current = hdpLoadRawHDPConfig();
+  var current = typeof window.hdpGetSettingsDraft === 'function'
+    ? window.hdpGetSettingsDraft()
+    : hdpLoadRawHDPConfig();
   current.visual = cfg;
-  try {
-    localStorage.setItem('hdp_config', JSON.stringify(current));
-  } catch(e) {
-    console.warn('[HDP] Failed to save HDP visual config', e);
-  }
+  if (typeof hdpMarkSettingsDirty === 'function') hdpMarkSettingsDirty();
   return current;
+};
+
+window.hdpLoadDraftVisualConfig = function() {
+  if (!window.hdpDraftVisualConfig || typeof window.hdpDraftVisualConfig !== 'object' || Array.isArray(window.hdpDraftVisualConfig)) {
+    var current = typeof window.hdpGetSettingsDraft === 'function' ? window.hdpGetSettingsDraft() : hdpLoadRawHDPConfig();
+    var fromDraft = current && current.visual && typeof current.visual === 'object' && !Array.isArray(current.visual)
+      ? current.visual
+      : null;
+    if (fromDraft) {
+      window.hdpDraftVisualConfig = JSON.parse(JSON.stringify(fromDraft));
+    } else {
+      try {
+        window.hdpDraftVisualConfig = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
+      } catch(e) {
+        window.hdpDraftVisualConfig = {};
+      }
+    }
+  }
+  return JSON.parse(JSON.stringify(window.hdpDraftVisualConfig || {}));
 };
 
 window.hdpSaveVisualConfig = function(config) {
   var cfg = config || {};
-  try {
-    localStorage.setItem('hdp_visual_config', JSON.stringify(cfg));
-  } catch(e) {
-    console.warn('[HDP] Failed to save visual config locally', e);
-  }
+  window.hdpDraftVisualConfig = JSON.parse(JSON.stringify(cfg));
+  window.hdpDraftVisualDirty = true;
   var fullConfig = typeof window.hdpReplaceVisualConfig === 'function'
     ? window.hdpReplaceVisualConfig(cfg)
     : (typeof hdpSaveConfig === 'function' ? hdpSaveConfig({ visual: cfg }) : null);
-  if (typeof hdpSaveToLovelace === 'function' && fullConfig) {
-    return hdpSaveToLovelace(fullConfig).catch(function(err) {
-      console.warn('[HDP] Lovelace visual sync failed, saved locally only', err);
-      return cfg;
-    });
-  }
+  if (fullConfig && typeof hdpMarkSettingsDirty === 'function') hdpMarkSettingsDirty();
   return Promise.resolve(cfg);
 };
 
 window.hdpSaveVisualConfigAndReload = function(config, delay) {
-  var wait = delay == null ? 0 : delay;
-  var reload = function() {
-    setTimeout(function() { location.reload(); }, wait);
-  };
-  return window.hdpSaveVisualConfig(config).then(reload).catch(reload);
+  return window.hdpSaveVisualConfig(config);
 };
 
 window.hdpClearVisualConfigAndReload = function(delay) {
-  var wait = delay == null ? 0 : delay;
-  var reload = function() {
-    setTimeout(function() { location.reload(); }, wait);
-  };
-  try {
-    localStorage.removeItem('hdp_visual_config');
-  } catch(e) {}
+  window.hdpDraftVisualConfig = {};
+  window.hdpDraftVisualDirty = true;
   if (typeof window.hdpReplaceVisualConfig === 'function') {
     var replaced = window.hdpReplaceVisualConfig({});
   }
-  var fullConfig = replaced || (typeof hdpLoadRawHDPConfig === 'function' ? hdpLoadRawHDPConfig() : null);
-  if (typeof hdpSaveToLovelace === 'function' && fullConfig) {
-    return hdpSaveToLovelace(fullConfig).then(reload).catch(function(err) {
-      console.warn('[HDP] Lovelace visual reset sync failed, cleared locally only', err);
-      reload();
-    });
-  }
-  reload();
+  if (typeof hdpShowToast === 'function') hdpShowToast('视觉设置已恢复默认，保存后生效', 'info');
   return Promise.resolve();
 };
 `;

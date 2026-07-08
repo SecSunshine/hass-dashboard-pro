@@ -94,6 +94,8 @@ function normalizeHDPConfig(config: unknown): Partial<HDPConfig> | undefined {
   const legacyHiddenAreas = normalizeStringArray(normalized.hidden_areas);
   const legacyHiddenDomains = normalizeStringArray(normalized.hidden_domains);
   const legacyHiddenDeviceTypes = normalizeStringArray(normalized.hidden_device_types);
+  const legacyHiddenKeywords = normalizeStringArray(normalized.hidden_keywords || normalized.hidden_device_keywords);
+  const legacyVisibleKeywords = normalizeStringArray(normalized.visible_keywords || normalized.visible_device_keywords);
   const legacyHiddenPersons = normalizeStringArray(normalized.hidden_persons);
 
   if ('visual' in normalized) {
@@ -117,16 +119,24 @@ function normalizeHDPConfig(config: unknown): Partial<HDPConfig> | undefined {
       ...normalized.devices,
       hidden_domains: mergeStringArrays(normalized.devices.hidden_domains, legacyHiddenDomains),
       hidden_device_types: mergeStringArrays(normalized.devices.hidden_device_types, legacyHiddenDeviceTypes),
+      hidden_keywords: mergeStringArrays(normalized.devices.hidden_keywords, legacyHiddenKeywords),
+      visible_keywords: mergeStringArrays(normalized.devices.visible_keywords, legacyVisibleKeywords),
     };
-  } else if (legacyHiddenDomains.length || legacyHiddenDeviceTypes.length) {
+  } else if (legacyHiddenDomains.length || legacyHiddenDeviceTypes.length || legacyHiddenKeywords.length || legacyVisibleKeywords.length) {
     normalized.devices = {
       hidden_domains: legacyHiddenDomains,
       hidden_device_types: legacyHiddenDeviceTypes,
+      hidden_keywords: legacyHiddenKeywords,
+      visible_keywords: legacyVisibleKeywords,
     };
   }
   delete normalized.hidden_areas;
   delete normalized.hidden_domains;
   delete normalized.hidden_device_types;
+  delete normalized.hidden_keywords;
+  delete normalized.hidden_device_keywords;
+  delete normalized.visible_keywords;
+  delete normalized.visible_device_keywords;
 
   if (isRecord(normalized.people)) {
     normalized.people = {

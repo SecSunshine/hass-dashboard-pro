@@ -225,6 +225,24 @@ describe('dashboard model', () => {
     expect(entities.map(entity => entity.entity_id)).toContain('light.kitchen');
   });
 
+  it('applies hidden and visible device keywords consistently', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        devices: {
+          visible_keywords: ['kitchen'],
+          hidden_keywords: ['power'],
+        },
+      } as any,
+    };
+    const entities = collectVisibleEntities(hass, getDashboardFilters(config));
+    const ids = entities.map(entity => entity.entity_id);
+
+    expect(ids).toContain('light.kitchen');
+    expect(ids).not.toContain('sensor.kitchen_power');
+    expect(ids).not.toContain('sensor.no_area');
+  });
+
   it('keeps entities without an area in a virtual unassigned area', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const entities = collectVisibleEntities(hass, getDashboardFilters(config));
