@@ -723,7 +723,7 @@ ${scripts}`;
 }
 
 function generateSettingsConfigSeedJS(config: StrategyConfig): string {
-  const seedConfig = config.hdp_config || {};
+  const seedConfig = buildSettingsSeedConfig(config);
   return `
 (function() {
   var seedConfig = ${escapeScriptJSON(seedConfig)};
@@ -738,6 +738,56 @@ function generateSettingsConfigSeedJS(config: StrategyConfig): string {
   }
 })();
 `;
+}
+
+
+function buildSettingsSeedConfig(config: StrategyConfig): Record<string, unknown> {
+  const seed = { ...((config.hdp_config || {}) as Record<string, unknown>) };
+  const legacySeed = seed as {
+    hidden_areas?: unknown;
+    hidden_domains?: unknown;
+    hidden_device_types?: unknown;
+    hidden_persons?: unknown;
+  };
+  const hiddenAreas = mergeSeedStringArrays(getNestedSeedArray(seed, 'areas', 'hidden_areas'), legacySeed.hidden_areas, config.hidden_areas);
+  const hiddenDomains = mergeSeedStringArrays(getNestedSeedArray(seed, 'devices', 'hidden_domains'), legacySeed.hidden_domains, config.hidden_domains);
+  const hiddenDeviceTypes = mergeSeedStringArrays(getNestedSeedArray(seed, 'devices', 'hidden_device_types'), legacySeed.hidden_device_types, config.hidden_device_types);
+  const hiddenPersons = mergeSeedStringArrays(getNestedSeedArray(seed, 'people', 'hidden_persons'), legacySeed.hidden_persons, config.hidden_persons);
+
+  if (hiddenAreas.length) seed.areas = { ...getSeedSection(seed, 'areas'), hidden_areas: hiddenAreas };
+  if (hiddenDomains.length || hiddenDeviceTypes.length) {
+    seed.devices = {
+      ...getSeedSection(seed, 'devices'),
+      hidden_domains: hiddenDomains,
+      hidden_device_types: hiddenDeviceTypes,
+    };
+  }
+  if (hiddenPersons.length) seed.people = { ...getSeedSection(seed, 'people'), hidden_persons: hiddenPersons };
+  delete legacySeed.hidden_areas;
+  delete legacySeed.hidden_domains;
+  delete legacySeed.hidden_device_types;
+  delete legacySeed.hidden_persons;
+  return seed;
+}
+
+function getSeedSection(seed: Record<string, unknown>, section: string): Record<string, unknown> {
+  const value = seed[section];
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function getNestedSeedArray(seed: Record<string, unknown>, section: string, key: string): unknown {
+  return getSeedSection(seed, section)[key];
+}
+
+function mergeSeedStringArrays(...values: unknown[]): string[] {
+  const seen = new Set<string>();
+  for (const value of values) {
+    if (!Array.isArray(value)) continue;
+    for (const item of value) {
+      if (typeof item === 'string' && item && !seen.has(item)) seen.add(item);
+    }
+  }
+  return Array.from(seen);
 }
 
 function scopeVisualScript(script: string): string {

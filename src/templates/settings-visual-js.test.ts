@@ -101,6 +101,34 @@ describe('settings visual client script', () => {
     expect(saved.devices.hidden_device_types).toEqual(['binary_sensor.motion']);
   });
 
+  it('normalizes legacy hidden settings before toggling chips', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hidden_areas: ['kitchen'],
+      hidden_domains: ['sensor'],
+      hidden_device_types: ['binary_sensor.motion'],
+      hidden_persons: ['person.alice'],
+    };
+    const { runtime, store, eventForChip } = createRuntime(config);
+
+    expect(JSON.parse(store.get('hdp_config') || '{}')).toMatchObject({
+      areas: { hidden_areas: ['kitchen'] },
+      devices: {
+        hidden_domains: ['sensor'],
+        hidden_device_types: ['binary_sensor.motion'],
+      },
+      people: { hidden_persons: ['person.alice'] },
+    });
+
+    runtime.hdpToggleArrayItem('devices.hidden_domains', 'sensor', eventForChip());
+    runtime.hdpToggleArrayItem('areas.hidden_areas', 'kitchen', eventForChip());
+
+    const saved = JSON.parse(store.get('hdp_config') || '{}');
+    expect(saved.devices.hidden_domains).toEqual([]);
+    expect(saved.areas.hidden_areas).toEqual([]);
+    expect(saved.devices.hidden_device_types).toEqual(['binary_sensor.motion']);
+    expect(saved.people.hidden_persons).toEqual(['person.alice']);
+  });
   it('clears visual config through window-scoped helpers', async () => {
     const { runtime, store, timers } = createRuntime();
     store.set('hdp_visual_config', JSON.stringify({ theme: 'dark' }));

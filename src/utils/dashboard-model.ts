@@ -8,7 +8,7 @@
 import type { EntityInfo, Hass, HassArea, HassEntity, StrategyConfig } from '../types';
 import { HIDDEN_DOMAINS } from '../types';
 import { getEntityDeviceType, isEntityOn, isUnavailableState } from './area-entities';
-import { getEffectiveHDPConfig } from './effective-config';
+import { getEffectiveHDPConfig, readLocalHDPConfig } from './effective-config';
 
 export const UNASSIGNED_AREA_ID = '__unassigned';
 export const UNASSIGNED_AREA_NAME = '未分配区域';
@@ -63,24 +63,28 @@ export function getDashboardFilters(config: StrategyConfig): DashboardFilters {
 export function getConfiguredHiddenAreas(config: StrategyConfig): string[] {
   const hdpConfig = getEffectiveHDPConfig(config);
   const legacyConfig = hdpConfig as { hidden_areas?: unknown } | undefined;
+  if (hasLocalNestedArray('areas', 'hidden_areas')) return mergeStringArrays(hdpConfig?.areas?.hidden_areas);
   return mergeStringArrays(hdpConfig?.areas?.hidden_areas, legacyConfig?.hidden_areas, config.hidden_areas);
 }
 
 export function getConfiguredHiddenDomains(config: StrategyConfig): string[] {
   const hdpConfig = getEffectiveHDPConfig(config);
   const legacyConfig = hdpConfig as { hidden_domains?: unknown } | undefined;
+  if (hasLocalNestedArray('devices', 'hidden_domains')) return mergeStringArrays(hdpConfig?.devices?.hidden_domains);
   return mergeStringArrays(hdpConfig?.devices?.hidden_domains, legacyConfig?.hidden_domains, config.hidden_domains);
 }
 
 export function getConfiguredHiddenDeviceTypes(config: StrategyConfig): string[] {
   const hdpConfig = getEffectiveHDPConfig(config);
   const legacyConfig = hdpConfig as { hidden_device_types?: unknown } | undefined;
+  if (hasLocalNestedArray('devices', 'hidden_device_types')) return mergeStringArrays(hdpConfig?.devices?.hidden_device_types);
   return mergeStringArrays(hdpConfig?.devices?.hidden_device_types, legacyConfig?.hidden_device_types, config.hidden_device_types);
 }
 
 export function getConfiguredHiddenPersons(config: StrategyConfig): string[] {
   const hdpConfig = getEffectiveHDPConfig(config);
   const legacyConfig = hdpConfig as { hidden_persons?: unknown } | undefined;
+  if (hasLocalNestedArray('people', 'hidden_persons')) return mergeStringArrays(hdpConfig?.people?.hidden_persons);
   return mergeStringArrays(hdpConfig?.people?.hidden_persons, legacyConfig?.hidden_persons, config.hidden_persons);
 }
 
@@ -90,6 +94,11 @@ export function getConfiguredAreaOrder(config: StrategyConfig): string[] {
   return mergeStringArrays(hdpConfig?.areas?.area_order, legacyConfig?.area_order);
 }
 
+function hasLocalNestedArray(section: string, key: string): boolean {
+  const localConfig = readLocalHDPConfig() as Record<string, unknown> | null;
+  const nested = localConfig?.[section];
+  return Boolean(nested && typeof nested === 'object' && !Array.isArray(nested) && Array.isArray((nested as Record<string, unknown>)[key]));
+}
 function mergeStringArrays(...values: Array<unknown>): string[] {
   const seen = new Set<string>();
   for (const value of values) {

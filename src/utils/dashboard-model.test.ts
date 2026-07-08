@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Hass, StrategyConfig } from '../types';
 import {
   buildHomeProfile,
@@ -113,6 +113,9 @@ const hass: Hass = {
 };
 
 describe('dashboard model', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
   it('resolves area through entity registry and device fallback', () => {
     expect(resolveEntityAreaId(hass, 'sensor.kitchen_power')).toBe('kitchen');
     expect(resolveEntityAreaId(hass, 'light.kitchen')).toBe('kitchen');
@@ -148,6 +151,29 @@ describe('dashboard model', () => {
     expect(getConfiguredHiddenPersons(config)).toEqual(['person.alice']);
   });
 
+  it('lets local nested hidden settings override legacy top-level filters', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => key === 'hdp_config'
+        ? JSON.stringify({
+          areas: { hidden_areas: [] },
+          devices: { hidden_domains: [], hidden_device_types: [] },
+          people: { hidden_persons: [] },
+        })
+        : null,
+    });
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hidden_areas: ['closet'],
+      hidden_domains: ['sensor'],
+      hidden_device_types: ['binary_sensor.motion'],
+      hidden_persons: ['person.alice'],
+    };
+
+    expect(getConfiguredHiddenAreas(config)).toEqual([]);
+    expect(getConfiguredHiddenDomains(config)).toEqual([]);
+    expect(getConfiguredHiddenDeviceTypes(config)).toEqual([]);
+    expect(getConfiguredHiddenPersons(config)).toEqual([]);
+  });
   it('reads configured area order from persisted HDP config', () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',
