@@ -1283,7 +1283,7 @@ function iconReset(): string {
 
 function toggleHTML(settingPath: string, value: boolean): string {
   const cls = value ? 'st-toggle st-toggle--on' : 'st-toggle st-toggle--off';
-  return `<div class="${cls}" data-action="toggle-setting" data-setting="${escapeAttribute(settingPath)}" role="switch" aria-checked="${value ? 'true' : 'false'}" tabindex="0" onclick="hdpSaveSetting('${settingPath}', ${!value}); this.classList.toggle('st-toggle--on'); this.classList.toggle('st-toggle--off'); this.setAttribute('aria-checked', this.classList.contains('st-toggle--on') ? 'true' : 'false');" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); this.click(); }">
+  return `<div class="${cls}" data-action="toggle-setting" data-setting="${escapeAttribute(settingPath)}" role="switch" aria-checked="${value ? 'true' : 'false'}" tabindex="0" onclick="var isOn = this.classList.contains('st-toggle--on'); hdpSaveSetting('${settingPath}', !isOn); this.classList.toggle('st-toggle--on', !isOn); this.classList.toggle('st-toggle--off', isOn); this.setAttribute('aria-checked', !isOn ? 'true' : 'false');" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); this.click(); }">
     <div class="st-toggle-knob"></div>
   </div>`;
 }

@@ -118,6 +118,21 @@ Old `);
     expect(saved.devices.visible_keywords).toEqual(['light', 'living']);
   });
 
+  it('updates scalar draft settings repeatedly before commit', () => {
+    const { runtime, store } = createRuntime();
+
+    runtime.hdpSaveSetting('areas.hide_unavailable', true);
+    runtime.hdpSaveSetting('areas.hide_unavailable', false);
+
+    expect(runtime.hdpSettingsDraft.areas.hide_unavailable).toBe(false);
+    expect(store.get('hdp_config')).toBeUndefined();
+
+    runtime.hdpCommitSettings();
+
+    const saved = JSON.parse(store.get('hdp_config') || '{}');
+    expect(saved.areas.hide_unavailable).toBe(false);
+  });
+
   it('removes an already hidden chip value on the second toggle', () => {
     const { runtime, store, eventForChip } = createRuntime();
 

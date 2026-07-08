@@ -475,9 +475,9 @@ describe('settings view', () => {
     expect(js.indexOf('hdpClearConfig();', js.indexOf('window.hdpImportShareCode = function'))).toBeLessThan(
       js.indexOf('hdpSaveConfig(config);', js.indexOf('window.hdpImportShareCode = function')),
     );
-    expect(html).toContain("hdpSaveSetting('areas.hide_unavailable'");
+    expect(html).toContain("var isOn = this.classList.contains('st-toggle--on'); hdpSaveSetting('areas.hide_unavailable', !isOn);");
     expect(html).toContain('data-action="toggle-setting" data-setting="areas.hide_unavailable" role="switch" aria-checked="false" tabindex="0"');
-    expect(html).toContain("this.setAttribute('aria-checked'");
+    expect(html).toContain("this.setAttribute('aria-checked', !isOn ? 'true' : 'false');");
     expect(js).toContain("chip.setAttribute('aria-pressed'");
     expect(html).toContain("event.key === 'Enter' || event.key === ' '");
   });
