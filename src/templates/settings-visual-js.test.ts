@@ -170,4 +170,33 @@ describe('settings visual client script', () => {
     expect(JSON.parse(store.get('hdp_config') || '{}').visual).toEqual({});
     expect(timers.map(timer => timer.delay)).toContain(700);
   });
+
+  it('discards staged visual changes when cancelling settings', async () => {
+    const { runtime, store, timers } = createRuntime({
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        visual: { theme: 'light' },
+      } as any,
+    });
+
+    await runtime.hdpSaveVisualConfigAndReload({ theme: 'dark', card_style: 'glass' });
+
+    expect(runtime.hdpDraftVisualDirty).toBe(true);
+    expect(runtime.hdpSettingsDraft.visual).toEqual({ theme: 'dark', card_style: 'glass' });
+    expect(store.get('hdp_visual_config')).toBeUndefined();
+
+    runtime.hdpCancelSettings();
+
+    expect(runtime.hdpDraftVisualDirty).toBe(false);
+    expect(runtime.hdpDraftVisualConfig).toBeUndefined();
+    expect(runtime.hdpSettingsDirty).toBe(false);
+    expect(runtime.hdpSettingsDraft.visual).toEqual({ theme: 'light' });
+    expect(store.get('hdp_visual_config')).toBeUndefined();
+    expect(timers.map(timer => timer.delay)).toContain(120);
+
+    runtime.hdpCommitSettings();
+
+    expect(store.get('hdp_visual_config')).toBeUndefined();
+    expect(JSON.parse(store.get('hdp_config') || '{}').visual).toEqual({ theme: 'light' });
+  });
 });

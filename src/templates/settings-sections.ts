@@ -716,6 +716,8 @@ window.hdpCommitSettings = function() {
 
 window.hdpCancelSettings = function() {
   window.hdpSettingsDraft = hdpCloneConfig(hdpLoadRawSettingsConfig());
+  window.hdpDraftVisualConfig = undefined;
+  window.hdpDraftVisualDirty = false;
   window.hdpSettingsDirty = false;
   if (typeof hdpShowToast === 'function') hdpShowToast('已放弃未保存更改', 'info');
   setTimeout(function() { location.reload(); }, 120);
