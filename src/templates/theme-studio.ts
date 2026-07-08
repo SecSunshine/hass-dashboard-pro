@@ -65,8 +65,8 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
     const isActive = currentSkin === s.key;
     return `<button class="ts-skin-btn ${isActive ? 'ts-skin-btn--active' : ''}" data-skin="${escapeAttribute(s.key)}">
       <div class="ts-skin-preview" style="${s.preview} border-radius: 6px;">
-        <div style="width: 50%; height: 3px; border-radius: 2px; background: var(--hdp-text-muted); opacity: 0.4;"></div>
-        <div style="width: 35%; height: 3px; border-radius: 2px; background: var(--hdp-text-muted); opacity: 0.25;"></div>
+        <div class="ts-skin-preview-line ts-skin-preview-line--primary"></div>
+        <div class="ts-skin-preview-line ts-skin-preview-line--secondary"></div>
       </div>
       <span class="ts-skin-label">${escapeHTML(s.label)}</span>
     </button>`;
@@ -128,12 +128,36 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
   /* Fallback sample cards grid */
   .ts-preview-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: var(--hdp-card-gap, 12px);
     max-width: 640px;
     min-width: 0;
   }
   .ts-preview-grid .ts-preview-card--wide { grid-column: 1 / -1; }
+  .ts-preview-toggle {
+    width: 40px;
+    height: 24px;
+    border-radius: 12px;
+    background: var(--hdp-primary);
+    position: relative;
+    flex: 0 0 40px;
+  }
+  .ts-preview-toggle-knob {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: white;
+    top: 2px;
+    right: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .ts-preview-progress-fill {
+    width: 60%;
+    height: 100%;
+    border-radius: 2px;
+    background: var(--hdp-gradient-primary, var(--hdp-primary));
+  }
   /* Real dashboard content */
   .ts-preview-real {
     max-width: 900px;
@@ -280,14 +304,15 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
     padding: 6px 12px;
     border-radius: 8px;
     border: 1px solid var(--hdp-border);
-    width: 100px;
+    width: min(100px, 100%);
+    max-width: 100%;
     text-align: center;
   }
 
   /* ── Mood Presets ── */
   .ts-mood-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
     gap: 8px;
   }
   .ts-mood-btn {
@@ -331,7 +356,7 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
   /* ── Skin Selector ── */
   .ts-skin-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
     gap: 8px;
   }
   .ts-skin-btn {
@@ -361,6 +386,19 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
     align-items: center;
     justify-content: center;
     gap: 4px;
+  }
+  .ts-skin-preview-line {
+    height: 3px;
+    border-radius: 2px;
+    background: var(--hdp-text-muted);
+  }
+  .ts-skin-preview-line--primary {
+    width: 50%;
+    opacity: 0.4;
+  }
+  .ts-skin-preview-line--secondary {
+    width: 35%;
+    opacity: 0.25;
   }
   .ts-skin-label {
     font-size: 11px;
@@ -426,7 +464,7 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
   /* ── Density Selector ── */
   .ts-density-row {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
     gap: 8px;
   }
   .ts-density-btn {
@@ -453,7 +491,7 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
   /* ── Mode Toggle ── */
   .ts-mode-row {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
     gap: 8px;
   }
   .ts-mode-btn {
@@ -629,7 +667,7 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
     .ts-skin-grid,
     .ts-density-row,
     .ts-mode-row {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     }
   }
 </style>
@@ -801,8 +839,8 @@ function buildFallbackPreview(skin: string): string {
       <div style="font-size: 12px; color: var(--hdp-text-muted);">客厅灯</div>
       <div style="display: flex; align-items: center; justify-content: space-between;">
         <span style="font-size: 14px; font-weight: 600; color: var(--hdp-text);">已开启</span>
-        <div style="width: 40px; height: 24px; border-radius: 12px; background: var(--hdp-primary); position: relative;">
-          <div style="position: absolute; width: 20px; height: 20px; border-radius: 50%; background: white; top: 2px; right: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);"></div>
+        <div class="ts-preview-toggle">
+          <div class="ts-preview-toggle-knob"></div>
         </div>
       </div>
     </div>
@@ -810,7 +848,7 @@ function buildFallbackPreview(skin: string): string {
       <div style="font-size: 12px; color: var(--hdp-text-muted); margin-bottom: 8px;">实时功率</div>
       <div style="font-size: 24px; font-weight: 700; color: var(--hdp-text);">1.2 kW</div>
       <div style="height: 4px; border-radius: 2px; background: var(--hdp-divider); margin-top: 8px; overflow: hidden;">
-        <div style="width: 60%; height: 100%; border-radius: 2px; background: var(--hdp-gradient-primary, var(--hdp-primary));"></div>
+        <div class="ts-preview-progress-fill"></div>
       </div>
     </div>
     <div class="ts-preview-card ${skinCls}" style="padding: 16px; border-radius: var(--hdp-radius, 14px);">
