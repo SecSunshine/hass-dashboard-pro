@@ -105,78 +105,109 @@ export function getDomainCardCSS(): string {
   .dvc-dot--on { background: var(--hdp-success); }
   .dvc-dot--off { background: var(--hdp-text-muted); }
 
-  /* ── Climate Card ── */
-  .dc-climate {
+  /* ── Control Card Language ── */
+  .dc-control-card {
     padding: 16px;
     background:
-      linear-gradient(145deg, color-mix(in srgb, var(--hdp-card-bg) 92%, var(--hdp-info-light, rgba(59,130,246,0.12))), var(--hdp-card-bg)),
+      linear-gradient(145deg, color-mix(in srgb, var(--hdp-card-bg) 94%, var(--hdp-primary-light, rgba(79,110,247,0.1))), var(--hdp-card-bg)),
       var(--hdp-card-bg);
-    border: 1px solid color-mix(in srgb, var(--hdp-info, #3B82F6) 16%, var(--hdp-border));
+    border-color: color-mix(in srgb, var(--hdp-primary) 14%, var(--hdp-border));
   }
-  .dc-climate-top {
+  .dc-control-card:hover {
+    transform: translateY(-1px);
+  }
+  .dc-control-head {
     display: flex;
     align-items: center;
     gap: 12px;
     margin-bottom: 14px;
     min-width: 0;
   }
-  .dc-climate-current {
+  .dc-control-chip {
     margin-left: auto;
-    text-align: right;
     flex: 0 0 auto;
-    min-width: 0;
+    min-width: 72px;
+    max-width: 38%;
     padding: 8px 10px;
-    border-radius: 12px;
-    background: color-mix(in srgb, var(--hdp-card-bg) 72%, transparent);
+    border-radius: 14px;
     border: 1px solid var(--hdp-border);
+    background: color-mix(in srgb, var(--hdp-card-bg) 78%, transparent);
+    text-align: right;
   }
-  .dc-climate-current-val {
+  .dc-control-chip-value {
     font: inherit;
-    font-size: 24px;
-    font-weight: 800;
-    color: var(--hdp-info, #3B82F6);
-    line-height: 1.1;
+    font-size: 23px;
+    font-weight: 850;
+    line-height: 1.05;
+    color: var(--hdp-primary);
     overflow-wrap: anywhere;
   }
-  .dc-climate-current-label {
+  .dc-control-chip-label {
+    margin-top: 2px;
     font: inherit;
-    font-size: 10px;
+    font-size: 11px;
+    line-height: 1.2;
     color: var(--hdp-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+  }
+  .dc-control-section {
+    display: grid;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 14px;
+    border: 1px solid var(--hdp-border);
+    background: color-mix(in srgb, var(--hdp-card-bg) 76%, transparent);
+  }
+  .dc-control-section + .dc-control-section,
+  .dc-control-section + .dc-cover-actions,
+  .dc-climate-modes + .dc-climate-fan {
+    margin-top: 10px;
+  }
+  .dc-control-section-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--hdp-text-muted);
+  }
+
+  /* ── Climate Card ── */
+  .dc-climate {
+    border-color: color-mix(in srgb, var(--hdp-info, #3B82F6) 18%, var(--hdp-border));
+  }
+  .dc-climate-current {
+    --hdp-primary: var(--hdp-info, #3B82F6);
+  }
+  .dc-climate-current-val {
+    color: var(--hdp-info, #3B82F6);
+  }
+  .dc-climate-current-label {
+    color: var(--hdp-text-muted);
   }
   .dc-climate-target-row {
     display: flex;
     align-items: center;
     gap: 10px;
-    background: color-mix(in srgb, var(--hdp-primary-light, rgba(79,110,247,0.1)) 56%, transparent);
-    border-radius: 14px;
-    padding: 10px;
-    margin-bottom: 12px;
     min-width: 0;
-    border: 1px solid var(--hdp-border);
-  }
-  .dc-climate-target-label {
-    font: inherit;
-    font-size: 12px;
-    color: var(--hdp-text-secondary);
-    flex-shrink: 0;
   }
   .dc-climate-temp-btn {
     appearance: none;
-    width: 38px;
-    height: 38px;
-    border-radius: 12px;
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
     border: 1px solid var(--hdp-border);
-    background: var(--hdp-card-bg);
+    background: color-mix(in srgb, var(--hdp-card-bg) 82%, var(--hdp-primary-light, rgba(79,110,247,0.1)));
     color: var(--hdp-text);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     font: inherit;
-    font-size: 18px;
-    font-weight: 700;
+    font-size: 20px;
+    font-weight: 850;
     flex-shrink: 0;
     transition: all 0.15s ease;
     user-select: none;
@@ -191,8 +222,8 @@ export function getDomainCardCSS(): string {
   }
   .dc-climate-target-val {
     font: inherit;
-    font-size: 24px;
-    font-weight: 800;
+    font-size: 28px;
+    font-weight: 850;
     color: var(--hdp-text);
     text-align: center;
     flex: 1;
@@ -203,7 +234,6 @@ export function getDomainCardCSS(): string {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
     gap: 6px;
-    margin-bottom: 10px;
   }
   .dc-climate-mode {
     appearance: none;
@@ -211,7 +241,7 @@ export function getDomainCardCSS(): string {
     padding: 8px 10px;
     border-radius: 12px;
     border: 1px solid var(--hdp-border);
-    background: var(--hdp-card-bg);
+    background: color-mix(in srgb, var(--hdp-card-bg) 84%, transparent);
     color: var(--hdp-text-secondary);
     font: inherit;
     font-size: 12px;
@@ -241,12 +271,14 @@ export function getDomainCardCSS(): string {
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
+    padding-top: 0;
   }
   .dc-climate-fan-label {
     font: inherit;
     font-size: 11px;
     color: var(--hdp-text-muted);
     font-weight: 600;
+    flex: 0 0 auto;
     margin-right: 2px;
   }
   .dc-climate-fan-btn {
@@ -254,7 +286,7 @@ export function getDomainCardCSS(): string {
     padding: 6px 10px;
     border-radius: 10px;
     border: 1px solid var(--hdp-border);
-    background: var(--hdp-card-bg);
+    background: color-mix(in srgb, var(--hdp-card-bg) 84%, transparent);
     color: var(--hdp-text-secondary);
     font: inherit;
     font-size: 11px;
@@ -279,19 +311,16 @@ export function getDomainCardCSS(): string {
 
   /* ── Cover Card ── */
   .dc-cover {
+    border-color: color-mix(in srgb, var(--hdp-accent, #7c6ef7) 18%, var(--hdp-border));
     background:
-      radial-gradient(circle at 100% 0%, rgba(124,110,247,0.12), transparent 42%),
+      linear-gradient(145deg, color-mix(in srgb, var(--hdp-card-bg) 94%, rgba(124,110,247,0.12)), var(--hdp-card-bg)),
       var(--hdp-card-bg);
   }
-  .dc-cover .dvc-row {
-    margin-bottom: 10px;
-  }
   .dc-cover-bar-wrap {
-    background: var(--hdp-divider, rgba(0,0,0,0.06));
+    background: color-mix(in srgb, var(--hdp-divider, rgba(0,0,0,0.06)) 80%, transparent);
     border-radius: var(--hdp-radius-pill, 20px);
-    height: 8px;
+    height: 10px;
     overflow: hidden;
-    margin: 10px 0;
     position: relative;
   }
   .dc-cover-bar-fill {
@@ -300,25 +329,65 @@ export function getDomainCardCSS(): string {
     border-radius: var(--hdp-radius-pill, 20px);
     transition: width 0.3s ease;
   }
+  .dc-cover-visual {
+    position: relative;
+    min-height: 74px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--hdp-border);
+    background:
+      repeating-linear-gradient(90deg, color-mix(in srgb, var(--hdp-primary-light) 42%, transparent) 0 12px, transparent 12px 24px),
+      color-mix(in srgb, var(--hdp-card-bg) 80%, var(--hdp-primary-light, rgba(79,110,247,0.1)));
+  }
+  .dc-cover-visual::after {
+    content: '';
+    position: absolute;
+    inset: 10px;
+    border-radius: 10px;
+    border: 1px solid color-mix(in srgb, var(--hdp-primary) 18%, transparent);
+    pointer-events: none;
+  }
+  .dc-cover-curtain {
+    position: absolute;
+    inset: 0 auto 0 0;
+    min-width: 14px;
+    background:
+      linear-gradient(90deg, rgba(255,255,255,0.18), transparent),
+      var(--hdp-gradient-primary);
+    opacity: 0.88;
+  }
+  .dc-cover-percent {
+    position: absolute;
+    right: 12px;
+    bottom: 10px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--hdp-card-bg) 82%, transparent);
+    color: var(--hdp-text);
+    border: 1px solid var(--hdp-border);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 850;
+  }
   .dc-cover-actions {
-    display: flex;
-    gap: 6px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
     margin-top: 10px;
     min-width: 0;
   }
   .dc-cover-btn {
-    flex: 1;
-    padding: 8px;
-    border-radius: var(--hdp-radius-sm, 8px);
+    padding: 9px 8px;
+    border-radius: 12px;
     border: 1px solid var(--hdp-border);
-    background: var(--hdp-card-bg);
+    background: color-mix(in srgb, var(--hdp-card-bg) 84%, transparent);
     color: var(--hdp-text-secondary);
     font: inherit;
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease;
-    min-height: 36px;
+    min-height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -331,9 +400,32 @@ export function getDomainCardCSS(): string {
   .dc-cover-btn:active {
     transform: scale(0.96);
   }
+  .dc-cover-btn--primary {
+    border-color: color-mix(in srgb, var(--hdp-primary) 28%, var(--hdp-border));
+    color: var(--hdp-primary);
+  }
+  .dc-cover-btn--stop {
+    border-color: color-mix(in srgb, var(--hdp-warning, #F59E0B) 26%, var(--hdp-border));
+    color: var(--hdp-warning, #F59E0B);
+  }
   .dc-cover-btn svg {
     width: 14px;
     height: 14px;
+  }
+  @media (max-width: 420px) {
+    .dc-control-head {
+      align-items: flex-start;
+    }
+    .dc-control-chip {
+      min-width: 64px;
+      max-width: 34%;
+    }
+    .dc-climate-target-val {
+      font-size: 24px;
+    }
+    .dc-cover-actions {
+      grid-template-columns: 1fr;
+    }
   }
 
   /* ── Lock Card ── */
@@ -524,6 +616,16 @@ const FAN_MODE_LABELS: Record<string, string> = {
   'on': '开启',
 };
 
+const COVER_STATE_LABELS: Record<string, string> = {
+  open: '已打开',
+  closed: '已关闭',
+  opening: '打开中',
+  closing: '关闭中',
+  stopped: '已停止',
+  unavailable: '不可用',
+  unknown: '未知',
+};
+
 // ─── Main Entry: Build domain-specific card or return null ───────────────────
 
 /**
@@ -568,9 +670,9 @@ function buildAccessibleClimateCard(entity: EntityInfo, stateObj: HassEntity, sk
   const entityId = escapeAttribute(entity.entity_id);
 
   const currentTempHTML = currentTemp != null
-    ? `<div class="dc-climate-current">
-        <div class="dc-climate-current-val">${currentTemp.toFixed(1)}&deg;</div>
-        <div class="dc-climate-current-label">Current</div>
+    ? `<div class="dc-control-chip dc-climate-current">
+        <div class="dc-control-chip-value dc-climate-current-val">${currentTemp.toFixed(1)}&deg;</div>
+        <div class="dc-control-chip-label dc-climate-current-label">当前</div>
       </div>`
     : '';
 
@@ -589,8 +691,8 @@ function buildAccessibleClimateCard(entity: EntityInfo, stateObj: HassEntity, sk
   }).join('');
 
   const fanPills = fanModes.length > 0
-    ? `<div class="dc-climate-fan">
-        <span class="dc-climate-fan-label">Fan</span>
+    ? `<div class="dc-control-section dc-climate-fan">
+        <span class="dc-climate-fan-label">风速</span>
         ${fanModes.map(fm => {
           const label = FAN_MODE_LABELS[fm] || fm;
           const active = fanMode === fm;
@@ -603,9 +705,9 @@ function buildAccessibleClimateCard(entity: EntityInfo, stateObj: HassEntity, sk
       </div>`
     : '';
 
-  return `<div class="dvc dc-climate ${skinCls}" data-entity="${entityId}" data-no-toggle>
+  return `<div class="dvc dc-control-card dc-climate ${skinCls}" data-entity="${entityId}" data-no-toggle>
     <div class="dvc-bar"></div>
-    <div class="dc-climate-top">
+    <div class="dc-control-head">
       <div class="dvc-ico ${currentState !== 'off' ? 'dvc-ico--on' : 'dvc-ico--off'}">
         ${getClimateIcon(currentState !== 'off')}
       </div>
@@ -618,27 +720,32 @@ function buildAccessibleClimateCard(entity: EntityInfo, stateObj: HassEntity, sk
       </div>
       ${currentTempHTML}
     </div>
-    <div class="dc-climate-target-row">
-      <span class="dc-climate-target-label">Target</span>
-      <button type="button" class="dc-climate-temp-btn"
-        data-entity="${entityId}"
-        data-action="climate-temp"
-        data-step="${escapeAttribute(String(tempDownDelta))}"
-        data-min-temp="${escapeAttribute(String(minTemp))}"
-        data-max-temp="${escapeAttribute(String(maxTemp))}"
-        aria-label="Decrease target temperature"
-        >-</button>
-      <div class="dc-climate-target-val">${targetTempVal}</div>
-      <button type="button" class="dc-climate-temp-btn"
-        data-entity="${entityId}"
-        data-action="climate-temp"
-        data-step="${escapeAttribute(String(tempUpDelta))}"
-        data-min-temp="${escapeAttribute(String(minTemp))}"
-        data-max-temp="${escapeAttribute(String(maxTemp))}"
-        aria-label="Increase target temperature"
-        >+</button>
+    <div class="dc-control-section">
+      <div class="dc-control-section-label"><span>目标温度</span><span>${escapeHTML(String(minTemp))}&deg; - ${escapeHTML(String(maxTemp))}&deg;</span></div>
+      <div class="dc-climate-target-row">
+        <button type="button" class="dc-climate-temp-btn"
+          data-entity="${entityId}"
+          data-action="climate-temp"
+          data-step="${escapeAttribute(String(tempDownDelta))}"
+          data-min-temp="${escapeAttribute(String(minTemp))}"
+          data-max-temp="${escapeAttribute(String(maxTemp))}"
+          aria-label="Decrease target temperature"
+          >-</button>
+        <div class="dc-climate-target-val">${targetTempVal}</div>
+        <button type="button" class="dc-climate-temp-btn"
+          data-entity="${entityId}"
+          data-action="climate-temp"
+          data-step="${escapeAttribute(String(tempUpDelta))}"
+          data-min-temp="${escapeAttribute(String(minTemp))}"
+          data-max-temp="${escapeAttribute(String(maxTemp))}"
+          aria-label="Increase target temperature"
+          >+</button>
+      </div>
     </div>
-    <div class="dc-climate-modes">${modePills}</div>
+    <div class="dc-control-section">
+      <div class="dc-control-section-label"><span>运行模式</span></div>
+      <div class="dc-climate-modes">${modePills}</div>
+    </div>
     ${fanPills}
   </div>`;
 }
@@ -655,11 +762,12 @@ function buildCoverCard(entity: EntityInfo, stateObj: HassEntity, skin?: string)
 
   // Position bar: 0% = closed, 100% = open
   const barWidth = position != null ? position : (isActive ? 100 : 0);
-  const positionText = position != null ? `${position}%` : (isActive ? '开启' : '关闭');
+  const stateLabel = COVER_STATE_LABELS[currentState] || currentState;
+  const positionText = position != null ? `开合 ${position}%` : stateLabel;
 
-  return `<div class="dvc dc-cover ${skinCls}" data-entity="${escapeAttribute(entity.entity_id)}" data-no-toggle>
+  return `<div class="dvc dc-control-card dc-cover ${skinCls}" data-entity="${escapeAttribute(entity.entity_id)}" data-no-toggle>
     <div class="dvc-bar"></div>
-    <div class="dvc-row">
+    <div class="dc-control-head">
       <div class="dvc-ico ${isActive ? 'dvc-ico--on' : 'dvc-ico--off'}">${getCoverIcon(isActive)}</div>
       <div class="dvc-info">
         <div class="dvc-name">${escapeHTML(entity.name)}</div>
@@ -668,16 +776,27 @@ function buildCoverCard(entity: EntityInfo, stateObj: HassEntity, skin?: string)
           ${escapeHTML(positionText)}
         </div>
       </div>
+      <div class="dc-control-chip">
+        <div class="dc-control-chip-value">${position != null ? `${position}%` : '--'}</div>
+        <div class="dc-control-chip-label">${escapeHTML(stateLabel)}</div>
+      </div>
     </div>
-    <div class="dc-cover-bar-wrap">
-      <div class="dc-cover-bar-fill" style="width: ${barWidth}%"></div>
+    <div class="dc-control-section">
+      <div class="dc-control-section-label"><span>窗帘位置</span><span>${escapeHTML(stateLabel)}</span></div>
+      <div class="dc-cover-visual" aria-hidden="true">
+        <div class="dc-cover-curtain" style="width: ${barWidth}%"></div>
+        <div class="dc-cover-percent">${barWidth}%</div>
+      </div>
+      <div class="dc-cover-bar-wrap">
+        <div class="dc-cover-bar-fill" style="width: ${barWidth}%"></div>
+      </div>
     </div>
     <div class="dc-cover-actions">
-      <button type="button" class="dc-cover-btn" data-entity="${escapeAttribute(entity.entity_id)}" data-action="cover-open" aria-label="打开 ${escapeAttribute(entity.name)}">
+      <button type="button" class="dc-cover-btn dc-cover-btn--primary" data-entity="${escapeAttribute(entity.entity_id)}" data-action="cover-open" aria-label="打开 ${escapeAttribute(entity.name)}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
         打开
       </button>
-      <button type="button" class="dc-cover-btn" data-entity="${escapeAttribute(entity.entity_id)}" data-action="cover-stop" aria-label="停止 ${escapeAttribute(entity.name)}">
+      <button type="button" class="dc-cover-btn dc-cover-btn--stop" data-entity="${escapeAttribute(entity.entity_id)}" data-action="cover-stop" aria-label="停止 ${escapeAttribute(entity.name)}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
         停止
       </button>

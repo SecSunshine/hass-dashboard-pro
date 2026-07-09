@@ -54,6 +54,11 @@ describe('domain entity cards', () => {
     const html = buildDomainCard(climateEntity, climateState);
 
     expect(html).toContain('data-no-toggle');
+    expect(html).toContain('dc-control-card dc-climate');
+    expect(html).toContain('dc-control-head');
+    expect(html).toContain('目标温度');
+    expect(html).toContain('运行模式');
+    expect(html).toContain('风速');
     expect(html).toContain('<button type="button" class="dc-climate-mode');
     expect(html).toContain('data-entity="climate.living_room"');
     expect(html).toContain('data-action="climate-mode"');
@@ -76,6 +81,11 @@ describe('domain entity cards', () => {
     const html = buildDomainCard(coverEntity, coverState);
 
     expect(html).toContain('data-no-toggle');
+    expect(html).toContain('dc-control-card dc-cover');
+    expect(html).toContain('dc-cover-visual');
+    expect(html).toContain('dc-cover-curtain');
+    expect(html).toContain('开合 68%');
+    expect(html).toContain('已打开');
     expect(html).toContain('data-action="cover-open"');
     expect(html).toContain('data-action="cover-stop"');
     expect(html).toContain('data-action="cover-close"');
@@ -91,7 +101,11 @@ describe('domain entity cards', () => {
 
     expect(css).toContain('.dvc button');
     expect(css).toContain('appearance: none;');
+    expect(css).toContain('.dc-control-card');
+    expect(css).toContain('.dc-control-section');
     expect(css).toContain('.dc-climate-mode');
+    expect(css).toContain('.dc-cover-visual');
+    expect(css).toContain('.dc-cover-btn--stop');
     expect(css).toContain('text-align: center;');
     expect(css).toContain('.dvc[data-no-toggle]');
   });

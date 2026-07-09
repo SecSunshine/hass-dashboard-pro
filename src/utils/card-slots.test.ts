@@ -168,6 +168,9 @@ describe('card slots', () => {
     expect(css).toContain('.hdp-bento--dragging');
     expect(css).toContain('.hdp-card-slot--draft-hidden');
     expect(css).toContain('.hdp-card-slot--theme-ready');
+    expect(css).toContain('.hdp-slot-template-bar');
+    expect(css).toContain('.hdp-slot-editor-preview[data-state="error"]');
+    expect(css).toContain('.hdp-slot-editor-actions button:disabled');
     expect(js).toContain('window.hdpToggleCardEditMode = function');
     expect(js).toContain('function hdpInitCardSlotDragging');
     expect(js).toContain("root.addEventListener('dragstart'");
@@ -178,6 +181,11 @@ describe('card slots', () => {
     expect(js).toContain('window.hdpCancelCardEdits = function');
     expect(js).toContain('function hdpApplyCardSlotImageThemes');
     expect(js).toContain('new Image()');
+    expect(js).toContain('data-template="entity-control"');
+    expect(js).toContain('function hdpGetSlotTemplate(template, slotId)');
+    expect(js).toContain('textarea.addEventListener(\'input\', schedulePreview)');
+    expect(js).toContain('function hdpFindUnsafeSlotLine(text)');
+    expect(js).toContain("if (save) save.disabled = true;");
     expect(js).toContain("if (typeof window.hdpCommitSettings === 'function')");
     expect(js).toContain("if (typeof window.hdpCancelSettings === 'function')");
   });

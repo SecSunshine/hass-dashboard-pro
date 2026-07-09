@@ -204,6 +204,28 @@ export function getCardSlotCSS(): string {
     gap: 12px;
     min-height: 0;
   }
+  .hdp-slot-template-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .hdp-slot-template-bar button {
+    appearance: none;
+    min-height: 34px;
+    padding: 7px 11px;
+    border-radius: 999px;
+    border: 1px solid var(--hdp-border);
+    background: var(--hdp-card-bg);
+    color: var(--hdp-text);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .hdp-slot-template-bar button:hover {
+    border-color: var(--hdp-primary);
+    color: var(--hdp-primary);
+  }
   .hdp-slot-editor-body textarea {
     width: 100%;
     min-width: 0;
@@ -224,12 +246,22 @@ export function getCardSlotCSS(): string {
     border: 1px dashed var(--hdp-border);
     background: var(--hdp-card-bg);
   }
+  .hdp-slot-editor-preview[data-state="error"] {
+    border-color: var(--hdp-danger, #ef4444);
+    background: var(--hdp-danger-light, rgba(239,68,68,0.08));
+  }
+  .hdp-slot-editor-preview[data-state="ok"] {
+    border-color: var(--hdp-success, #22c55e);
+  }
   .hdp-slot-editor-error {
     min-height: 18px;
     color: var(--hdp-danger, #ef4444);
     font: inherit;
     font-size: 12px;
     font-weight: 700;
+  }
+  .hdp-slot-editor-error[data-state="ok"] {
+    color: var(--hdp-success, #22c55e);
   }
   .hdp-slot-editor-actions button,
   .hdp-home-edit-bar button {
@@ -244,6 +276,10 @@ export function getCardSlotCSS(): string {
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
+  }
+  .hdp-slot-editor-actions button:disabled {
+    cursor: not-allowed;
+    opacity: 0.48;
   }
   .hdp-slot-editor-actions .hdp-primary,
   .hdp-home-edit-bar .hdp-primary {
@@ -628,17 +664,35 @@ function hdpOpenSlotEditor(slotId, yaml) {
   modal.innerHTML =
     '<div class="hdp-slot-editor-dialog" role="dialog" aria-modal="true">' +
       '<div class="hdp-slot-editor-head"><div><div class="hdp-slot-editor-title">编辑卡片槽位：' + hdpEscapeSlotText(slotId) + '</div><div class="hdp-slot-editor-error" id="hdp-slot-editor-error"></div></div><button type="button" data-action="close">×</button></div>' +
+      '<div class="hdp-slot-template-bar" aria-label="卡片模板">' +
+        '<button type="button" data-template="entity-control">控制卡</button>' +
+        '<button type="button" data-template="metric-soft">数据卡</button>' +
+        '<button type="button" data-template="status-list">状态列表</button>' +
+        '<button type="button" data-template="blank">空白</button>' +
+      '</div>' +
       '<div class="hdp-slot-editor-body"><textarea id="hdp-slot-yaml" spellcheck="false"></textarea><div class="hdp-slot-editor-preview" id="hdp-slot-preview"></div></div>' +
       '<div class="hdp-slot-editor-actions"><button type="button" data-action="clear">清除自定义</button><span></span><button type="button" data-action="preview">预览</button><button type="button" class="hdp-primary" data-action="save">保存到草稿</button></div>' +
     '</div>';
   document.body.appendChild(modal);
   var textarea = modal.querySelector('#hdp-slot-yaml');
-  textarea.value = yaml || 'type: custom:html-pro-card\\ncontent: |\\n  <div class="my-card" data-entity="light.example">自定义卡片</div>';
+  textarea.value = yaml || hdpGetSlotTemplate('entity-control', slotId);
   var close = function() { modal.remove(); };
+  var previewTimer = null;
+  var schedulePreview = function() {
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(function() { hdpPreviewSlotYaml(textarea.value); }, 180);
+  };
+  textarea.addEventListener('input', schedulePreview);
   modal.addEventListener('click', function(e) {
     var target = e.target;
     var action = target && target.getAttribute && target.getAttribute('data-action');
+    var template = target && target.getAttribute && target.getAttribute('data-template');
     if (target === modal || action === 'close') close();
+    if (template) {
+      textarea.value = hdpGetSlotTemplate(template, slotId);
+      hdpPreviewSlotYaml(textarea.value);
+      textarea.focus();
+    }
     if (action === 'preview') hdpPreviewSlotYaml(textarea.value);
     if (action === 'clear') {
       hdpEnsureCardSlot(slotId).yaml = '';
@@ -659,25 +713,89 @@ function hdpOpenSlotEditor(slotId, yaml) {
 function hdpPreviewSlotYaml(yaml) {
   var err = document.getElementById('hdp-slot-editor-error');
   var preview = document.getElementById('hdp-slot-preview');
+  var save = document.querySelector('#hdp-slot-editor-modal [data-action="save"]');
   var parsed = hdpParseSafeHtmlProYaml(yaml);
   if (!parsed.ok) {
-    if (err) err.textContent = parsed.error;
-    if (preview) preview.textContent = '';
+    if (err) {
+      err.textContent = parsed.error;
+      err.setAttribute('data-state', 'error');
+    }
+    if (preview) {
+      preview.textContent = '';
+      preview.setAttribute('data-state', 'error');
+    }
+    if (save) save.disabled = true;
     return false;
   }
-  if (err) err.textContent = '';
-  if (preview) preview.innerHTML = hdpSanitizeSlotHTML(parsed.content);
+  if (err) {
+    err.textContent = '预览正常';
+    err.setAttribute('data-state', 'ok');
+  }
+  if (preview) {
+    preview.innerHTML = hdpSanitizeSlotHTML(parsed.content);
+    preview.setAttribute('data-state', 'ok');
+  }
+  if (save) save.disabled = false;
   return true;
 }
 
 function hdpParseSafeHtmlProYaml(yaml) {
   var text = String(yaml || '');
   if (!/type:\\s*custom:html-pro-card/.test(text)) return { ok: false, error: '仅支持 type: custom:html-pro-card' };
-  if (/<\\s*script\\b|\\son[a-z]+\\s*=|javascript\\s*:/i.test(text)) return { ok: false, error: '第一版禁止自定义 JS、on* 事件和 javascript URL' };
+  var unsafeLine = hdpFindUnsafeSlotLine(text);
+  if (unsafeLine) return { ok: false, error: '第 ' + unsafeLine + ' 行包含禁止内容：自定义 JS、on* 事件或 javascript URL' };
   var match = text.match(/content:\\s*[|>]\\s*\\n([\\s\\S]*)$/);
   if (!match) return { ok: false, error: '需要 content: | 多行内容' };
   var content = match[1].split('\\n').map(function(line) { return line.replace(/^\\s{2,}/, ''); }).join('\\n');
   return { ok: true, content: content };
+}
+
+function hdpFindUnsafeSlotLine(text) {
+  var lines = String(text || '').split('\\n');
+  for (var i = 0; i < lines.length; i++) {
+    if (/<\\s*script\\b|\\son[a-z]+\\s*=|javascript\\s*:/i.test(lines[i])) return i + 1;
+  }
+  return 0;
+}
+
+function hdpGetSlotTemplate(template, slotId) {
+  var title = String(slotId || 'custom.card').replace(/^home\\./, '').replace(/[_.-]+/g, ' ');
+  var templates = {
+    'entity-control': [
+      'type: custom:html-pro-card',
+      'content: |',
+      '  <div class="hdp-custom-control" data-entity="light.example" data-action="toggle">',
+      '    <strong>' + hdpEscapeSlotText(title) + '</strong>',
+      '    <span>点击切换设备</span>',
+      '  </div>'
+    ],
+    'metric-soft': [
+      'type: custom:html-pro-card',
+      'content: |',
+      '  <section class="hdp-custom-metric" data-view="home" style="padding:16px;border-radius:18px;background:rgba(255,255,255,.78)">',
+      '    <small>今日数据</small>',
+      '    <strong style="display:block;font-size:30px;margin-top:8px">24.6°C</strong>',
+      '    <span style="color:#16a34a">+2.4% 更舒适</span>',
+      '  </section>'
+    ],
+    'status-list': [
+      'type: custom:html-pro-card',
+      'content: |',
+      '  <div class="hdp-custom-list">',
+      '    <button type="button" data-entity="light.example" data-action="toggle">灯光</button>',
+      '    <button type="button" data-entity="cover.example" data-action="cover-open">窗帘打开</button>',
+      '    <button type="button" data-entity="cover.example" data-action="cover-close">窗帘关闭</button>',
+      '  </div>'
+    ],
+    'blank': [
+      'type: custom:html-pro-card',
+      'content: |',
+      '  <div data-view="home">',
+      '    自定义卡片',
+      '  </div>'
+    ]
+  };
+  return (templates[template] || templates['entity-control']).join('\\n');
 }
 
 function hdpSanitizeSlotHTML(html) {
