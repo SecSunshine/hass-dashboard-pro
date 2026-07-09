@@ -64,6 +64,10 @@ describe('hass websocket script', () => {
     const js = generateConnectionDiscoveryJS();
 
     expect(js).toContain('function hdpApplyThemeVarsToOverlay(overlay)');
+    expect(js).toContain("'--hdp-surface-card', '--hdp-surface-muted'");
+    expect(js).toContain("'--hdp-modal-bg', '--hdp-overlay-bg'");
+    expect(js).toContain('background:var(--hdp-modal-bg,var(--hdp-bg,#fff))');
+    expect(js).toContain('background:var(--hdp-surface-card,var(--hdp-card-bg,#fff))');
     expect(js).toContain("window.hdpOpenDeviceDomainModal = hdpOpenDeviceDomainModal;");
     expect(js).toContain('window.hdpShowDeviceDomain = function(domain)');
     expect(js).toContain('hdpOpenDeviceDomainModal(domain);');
@@ -71,6 +75,7 @@ describe('hass websocket script', () => {
     expect(js).toContain('function hdpIsDomainEntityAvailable(state)');
     expect(js).toContain('if (a.available !== b.available) return a.available ? -1 : 1;');
     expect(js).toContain('hdp-domain-modal-row--unavailable');
+    expect(js).toContain('@media (max-width:520px)');
     expect(js).toContain('function hdpOpenAutomationConfig()');
     expect(js).toContain("src=\"/config/automation/dashboard\"");
     expect(js).toContain("new CustomEvent('hass-more-info'");

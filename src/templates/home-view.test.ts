@@ -166,6 +166,20 @@ describe('home view settings', () => {
     expect(html).toContain("onclick=\"hdpShowEnvironmentHistory('humidity')\"");
   });
 
+  it('keeps environment info cards structurally valid and visually aligned', () => {
+    const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
+    const html = buildHomeHTML(hass, config);
+    const securityIconIndex = html.indexOf('<div class="env-icon env-icon--sec">');
+    const securityChunk = html.slice(securityIconIndex, securityIconIndex + 420);
+
+    expect(securityIconIndex).toBeGreaterThan(-1);
+    expect(securityChunk).toContain('</div>');
+    expect(securityChunk).not.toContain('</button>');
+    expect(html).toContain('background: var(--hdp-surface-card, var(--hdp-card-bg));');
+    expect(html).toContain('button.env-item:hover');
+    expect(html).toContain('background: var(--hdp-surface-raised, var(--hdp-card-bg));');
+  });
+
   it('uses topology layout presets for home section ordering and sizing', () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',

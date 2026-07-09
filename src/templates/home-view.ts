@@ -739,7 +739,7 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
         <div class="env-val">${alarmDisplay}</div>
         <div class="env-lbl">瀹夐槻鐘舵€?/div>
       </div>
-    </button>`);
+    </div>`);
   }
 
   // Active automations count
@@ -787,7 +787,7 @@ ${generateDesignTokenCSS(tokens)}
     align-items: center;
     text-align: left;
     gap: 12px;
-    background: var(--hdp-card-bg);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
     color: inherit;
     border-radius: var(--hdp-radius);
     padding: 14px;
@@ -796,7 +796,8 @@ ${generateDesignTokenCSS(tokens)}
     cursor: default;
   }
   button.env-item { cursor: pointer; }
-  .env-item:hover {
+  button.env-item:hover {
+    background: var(--hdp-surface-raised, var(--hdp-card-bg));
     transform: translateY(-2px);
     box-shadow: var(--hdp-shadow-elevated);
   }
@@ -814,7 +815,7 @@ ${generateDesignTokenCSS(tokens)}
   .env-icon--temp { background: var(--hdp-danger-light); color: var(--hdp-danger); }
   .env-icon--hum { background: var(--hdp-info-light); color: var(--hdp-info); }
   .env-icon--sec { background: var(--hdp-success-light); color: var(--hdp-success); }
-  .env-icon--auto { background: rgba(124,110,247,0.1); color: var(--hdp-accent); }
+  .env-icon--auto { background: var(--hdp-primary-light); color: var(--hdp-accent); }
   .env-data { min-width: 0; }
   .env-val {
     font: inherit;

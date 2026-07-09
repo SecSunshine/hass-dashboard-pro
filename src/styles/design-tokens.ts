@@ -106,6 +106,13 @@ export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
     /* ── Surfaces ── */
     --hdp-bg: ${bgOverride || 'var(--lovelace-background, var(--primary-background-color, #F4F6FA))'};
     --hdp-card-bg: ${cardBgOverride || 'var(--ha-card-background, var(--card-background-color, #FFFFFF))'};
+    --hdp-surface-card: var(--hdp-card-bg);
+    --hdp-surface-muted: color-mix(in srgb, var(--hdp-card-bg) 82%, var(--hdp-bg));
+    --hdp-surface-raised: color-mix(in srgb, var(--hdp-card-bg) 92%, var(--hdp-primary-light) 8%);
+    --hdp-control-bg: color-mix(in srgb, var(--hdp-card-bg) 84%, transparent);
+    --hdp-control-bg-hover: color-mix(in srgb, var(--hdp-card-bg) 72%, var(--hdp-primary-light) 28%);
+    --hdp-modal-bg: color-mix(in srgb, var(--hdp-bg) 88%, var(--hdp-card-bg) 12%);
+    --hdp-overlay-bg: color-mix(in srgb, var(--hdp-text) 42%, transparent);
 
     /* ── Text ── */
     --hdp-text: ${textOverride || 'var(--primary-text-color, #1A1D26)'};

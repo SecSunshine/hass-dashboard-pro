@@ -108,9 +108,7 @@ export function getDomainCardCSS(): string {
   /* ── Control Card Language ── */
   .dc-control-card {
     padding: 16px;
-    background:
-      linear-gradient(145deg, color-mix(in srgb, var(--hdp-card-bg) 94%, var(--hdp-primary-light, rgba(79,110,247,0.1))), var(--hdp-card-bg)),
-      var(--hdp-card-bg);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
     border-color: color-mix(in srgb, var(--hdp-primary) 14%, var(--hdp-border));
   }
   .dc-control-card:hover {
@@ -129,9 +127,9 @@ export function getDomainCardCSS(): string {
     min-width: 72px;
     max-width: 38%;
     padding: 8px 10px;
-    border-radius: 14px;
+    border-radius: var(--hdp-radius);
     border: 1px solid var(--hdp-border);
-    background: color-mix(in srgb, var(--hdp-card-bg) 78%, transparent);
+    background: var(--hdp-surface-muted, color-mix(in srgb, var(--hdp-card-bg) 78%, transparent));
     text-align: right;
   }
   .dc-control-chip-value {
@@ -153,9 +151,9 @@ export function getDomainCardCSS(): string {
     display: grid;
     gap: 8px;
     padding: 10px;
-    border-radius: 14px;
+    border-radius: var(--hdp-radius);
     border: 1px solid var(--hdp-border);
-    background: color-mix(in srgb, var(--hdp-card-bg) 76%, transparent);
+    background: var(--hdp-surface-muted, color-mix(in srgb, var(--hdp-card-bg) 76%, transparent));
   }
   .dc-control-section + .dc-control-section,
   .dc-control-section + .dc-cover-actions,
@@ -197,9 +195,9 @@ export function getDomainCardCSS(): string {
     appearance: none;
     width: 42px;
     height: 42px;
-    border-radius: 14px;
+    border-radius: var(--hdp-radius);
     border: 1px solid var(--hdp-border);
-    background: color-mix(in srgb, var(--hdp-card-bg) 82%, var(--hdp-primary-light, rgba(79,110,247,0.1)));
+    background: var(--hdp-control-bg, color-mix(in srgb, var(--hdp-card-bg) 82%, var(--hdp-primary-light, rgba(79,110,247,0.1))));
     color: var(--hdp-text);
     display: flex;
     align-items: center;
@@ -213,7 +211,7 @@ export function getDomainCardCSS(): string {
     user-select: none;
   }
   .dc-climate-temp-btn:hover {
-    background: var(--hdp-primary-light, rgba(79,110,247,0.1));
+    background: var(--hdp-control-bg-hover, var(--hdp-primary-light, rgba(79,110,247,0.1)));
     border-color: var(--hdp-primary);
     color: var(--hdp-primary);
   }
@@ -239,9 +237,9 @@ export function getDomainCardCSS(): string {
     appearance: none;
     justify-content: center;
     padding: 8px 10px;
-    border-radius: 12px;
+    border-radius: var(--hdp-radius);
     border: 1px solid var(--hdp-border);
-    background: color-mix(in srgb, var(--hdp-card-bg) 84%, transparent);
+    background: var(--hdp-control-bg, color-mix(in srgb, var(--hdp-card-bg) 84%, transparent));
     color: var(--hdp-text-secondary);
     font: inherit;
     font-size: 12px;
@@ -255,6 +253,7 @@ export function getDomainCardCSS(): string {
     text-align: center;
   }
   .dc-climate-mode:hover {
+    background: var(--hdp-control-bg-hover, var(--hdp-primary-light, rgba(79,110,247,0.1)));
     border-color: var(--hdp-info, #3B82F6);
     color: var(--hdp-info, #3B82F6);
   }
@@ -284,9 +283,9 @@ export function getDomainCardCSS(): string {
   .dc-climate-fan-btn {
     appearance: none;
     padding: 6px 10px;
-    border-radius: 10px;
+    border-radius: var(--hdp-radius-sm);
     border: 1px solid var(--hdp-border);
-    background: color-mix(in srgb, var(--hdp-card-bg) 84%, transparent);
+    background: var(--hdp-control-bg, color-mix(in srgb, var(--hdp-card-bg) 84%, transparent));
     color: var(--hdp-text-secondary);
     font: inherit;
     font-size: 11px;
@@ -297,6 +296,7 @@ export function getDomainCardCSS(): string {
     text-align: center;
   }
   .dc-climate-fan-btn:hover {
+    background: var(--hdp-control-bg-hover, var(--hdp-primary-light, rgba(79,110,247,0.1)));
     border-color: var(--hdp-primary);
     color: var(--hdp-primary);
   }
@@ -312,9 +312,7 @@ export function getDomainCardCSS(): string {
   /* ── Cover Card ── */
   .dc-cover {
     border-color: color-mix(in srgb, var(--hdp-accent, #7c6ef7) 18%, var(--hdp-border));
-    background:
-      linear-gradient(145deg, color-mix(in srgb, var(--hdp-card-bg) 94%, rgba(124,110,247,0.12)), var(--hdp-card-bg)),
-      var(--hdp-card-bg);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
   }
   .dc-cover-bar-wrap {
     background: color-mix(in srgb, var(--hdp-divider, rgba(0,0,0,0.06)) 80%, transparent);
@@ -332,12 +330,12 @@ export function getDomainCardCSS(): string {
   .dc-cover-visual {
     position: relative;
     min-height: 74px;
-    border-radius: 14px;
+    border-radius: var(--hdp-radius);
     overflow: hidden;
     border: 1px solid var(--hdp-border);
     background:
       repeating-linear-gradient(90deg, color-mix(in srgb, var(--hdp-primary-light) 42%, transparent) 0 12px, transparent 12px 24px),
-      color-mix(in srgb, var(--hdp-card-bg) 80%, var(--hdp-primary-light, rgba(79,110,247,0.1)));
+      var(--hdp-surface-muted, color-mix(in srgb, var(--hdp-card-bg) 80%, var(--hdp-primary-light, rgba(79,110,247,0.1))));
   }
   .dc-cover-visual::after {
     content: '';
@@ -362,7 +360,7 @@ export function getDomainCardCSS(): string {
     bottom: 10px;
     padding: 4px 9px;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--hdp-card-bg) 82%, transparent);
+    background: var(--hdp-surface-card, color-mix(in srgb, var(--hdp-card-bg) 82%, transparent));
     color: var(--hdp-text);
     border: 1px solid var(--hdp-border);
     font: inherit;
@@ -378,9 +376,9 @@ export function getDomainCardCSS(): string {
   }
   .dc-cover-btn {
     padding: 9px 8px;
-    border-radius: 12px;
+    border-radius: var(--hdp-radius);
     border: 1px solid var(--hdp-border);
-    background: color-mix(in srgb, var(--hdp-card-bg) 84%, transparent);
+    background: var(--hdp-control-bg, color-mix(in srgb, var(--hdp-card-bg) 84%, transparent));
     color: var(--hdp-text-secondary);
     font: inherit;
     font-size: 12px;
@@ -394,6 +392,7 @@ export function getDomainCardCSS(): string {
     gap: 4px;
   }
   .dc-cover-btn:hover {
+    background: var(--hdp-control-bg-hover, var(--hdp-primary-light, rgba(79,110,247,0.1)));
     border-color: var(--hdp-primary);
     color: var(--hdp-primary);
   }
