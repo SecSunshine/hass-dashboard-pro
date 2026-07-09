@@ -455,23 +455,21 @@ function hdpBuildEnvironmentSeries(hass, sensors, history) {
       };
     }
     var points = byEntity[sensor.entity_id];
+    var currentValue = hdpReadCurrentSensorValue(hass, sensor.entity_id);
     if (!Array.isArray(points) || !points.length) {
-      var current = hass.states[sensor.entity_id] && parseFloat(hass.states[sensor.entity_id].state);
-      if (!isNaN(current)) areas[sensor.area_id].buckets[23].values.push(current);
+      if (!isNaN(currentValue)) areas[sensor.area_id].buckets[23].values.push(currentValue);
       return;
     }
-    var added = false;
     points.forEach(function(point) {
       var value = parseFloat(point.state != null ? point.state : point.s);
       var changed = hdpParseHistoryTimestamp(point);
       if (isNaN(value) || isNaN(changed)) return;
       var index = Math.max(0, Math.min(23, Math.floor((changed - start) / (60 * 60 * 1000))));
+      if (index === 23 && !isNaN(currentValue)) return;
       areas[sensor.area_id].buckets[index].values.push(value);
-      added = true;
     });
-    if (!added) {
-      var fallback = hass.states[sensor.entity_id] && parseFloat(hass.states[sensor.entity_id].state);
-      if (!isNaN(fallback)) areas[sensor.area_id].buckets[23].values.push(fallback);
+    if (!isNaN(currentValue)) {
+      areas[sensor.area_id].buckets[23].values.push(currentValue);
     }
   });
 
@@ -495,6 +493,11 @@ function hdpBuildEnvironmentSeries(hass, sensors, history) {
   }).sort(function(a, b) {
     return a.area_name.localeCompare(b.area_name);
   });
+}
+
+function hdpReadCurrentSensorValue(hass, entityId) {
+  var stateObj = hass.states && hass.states[entityId];
+  return stateObj ? parseFloat(stateObj.state) : NaN;
 }
 
 function hdpNormalizeHistoryByEntity(history, sensors) {

@@ -100,6 +100,8 @@ describe('hass websocket script', () => {
     expect(js).toContain('function hdpParseHistoryTimestamp(point)');
     expect(js).toContain("point.last_changed || point.last_updated || point.lastChanged || point.lastUpdated");
     expect(js).toContain("if (typeof raw === 'number') return raw > 1000000000000 ? raw : raw * 1000;");
+    expect(js).toContain('function hdpReadCurrentSensorValue(hass, entityId)');
+    expect(js).toContain('if (index === 23 && !isNaN(currentValue)) return;');
     expect(js).toContain('function hdpBuildSparkline');
     expect(js).toContain('window.hdpShowEnvironmentHistory = hdpShowEnvironmentHistory;');
   });
@@ -152,6 +154,30 @@ describe('hass websocket script', () => {
 
     expect(series).toHaveLength(1);
     expect(series[0].values[23]).toBe(48);
+  });
+
+  it('uses current sensor state as the latest bucket anchor', () => {
+    const runtime = createHistoryRuntime();
+    const timestampSeconds = Math.floor((Date.now() - 5 * 60 * 1000) / 1000);
+    const hass = {
+      states: {
+        'sensor.living_temperature': { state: '22.8', attributes: {} },
+      },
+    };
+    const sensors = [{
+      entity_id: 'sensor.living_temperature',
+      area_id: 'living',
+      area_name: 'Living',
+      unit: 'C',
+    }];
+
+    const series = runtime.hdpBuildEnvironmentSeries(hass, sensors, {
+      result: [[{ entity_id: 'sensor.living_temperature', s: '19.1', lu: timestampSeconds }]],
+    });
+
+    expect(series).toHaveLength(1);
+    expect(series[0].values[23]).toBe(22.8);
+    expect(series[0].values).not.toContain(19.1);
   });
 
   it('parses both second and millisecond history timestamps', () => {
