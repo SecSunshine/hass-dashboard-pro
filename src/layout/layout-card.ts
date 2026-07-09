@@ -105,7 +105,7 @@ ${generateDesignTokenCSS(tokens)}
   * { box-sizing: border-box; margin: 0; padding: 0; }
   .hdp-root {
     display: flex;
-    min-height: 100vh;
+    min-height: var(--hdp-available-height, 100dvh);
     background: var(--hdp-bg);
     font: inherit;
     color: var(--hdp-text);
@@ -115,6 +115,7 @@ ${generateDesignTokenCSS(tokens)}
   .hdp-main {
     flex: 1;
     min-width: 0;
+    max-height: var(--hdp-available-height, 100dvh);
     padding: var(--hdp-content-padding, 20px);
     overflow-y: auto;
   }

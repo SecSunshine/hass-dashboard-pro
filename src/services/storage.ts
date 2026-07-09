@@ -21,6 +21,7 @@ export function getDefaultConfig(): HDPConfig {
     dashboard: {
       name: '智能家居',
       icon: 'mdi:home',
+      avatar_url: '',
     },
     home: {
       section_order: ['status_badges', 'people', 'environment', 'power_usage', 'favorites', 'summary'],

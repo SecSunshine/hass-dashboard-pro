@@ -380,6 +380,7 @@ export interface HDPConfig {
   dashboard: {
     name: string;
     icon: string;
+    avatar_url?: string;
   };
   home: {
     section_order: string[];

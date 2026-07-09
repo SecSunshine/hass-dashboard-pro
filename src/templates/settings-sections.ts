@@ -214,6 +214,10 @@ export function getSettingsSectionsCSS(): string {
     min-height: 36px;
     width: min(240px, 45vw);
   }
+  .st-input--wide {
+    width: min(420px, 52vw);
+    max-width: 420px;
+  }
   .st-input:focus {
     border-color: var(--hdp-primary);
     box-shadow: 0 0 0 3px var(--hdp-primary-glow, rgba(79,110,247,0.12));
@@ -540,6 +544,10 @@ export function getSettingsSectionsCSS(): string {
       width: 100%;
       max-width: none;
       flex: 1 1 180px;
+    }
+    .st-input--wide {
+      width: 100%;
+      max-width: none;
     }
     .st-btn {
       justify-content: center;
@@ -1309,6 +1317,7 @@ function chipHTML(action: string, path: string, value: string, label: string, ac
 
 export function buildDashboardSection(config: StrategyConfig): string {
   const name = config.hdp_config?.dashboard?.name || config.title || '智能家居';
+  const avatarUrl = config.hdp_config?.dashboard?.avatar_url || '';
   return sectionCard('dashboard', '仪表盘', iconDashboard(), `
     <div class="st-row">
       <div>
@@ -1316,6 +1325,13 @@ export function buildDashboardSection(config: StrategyConfig): string {
         <div class="st-row-desc">仪表盘显示名称</div>
       </div>
       <input class="st-input" value="${escapeAttribute(name)}" onchange="hdpSaveSetting('dashboard.name', this.value)" />
+    </div>
+    <div class="st-row">
+      <div>
+        <div class="st-row-label">用户头像</div>
+        <div class="st-row-desc">支持 /local/...、https://... 或 data:image/...；留空使用用户名首字母</div>
+      </div>
+      <input class="st-input st-input--wide" type="url" value="${escapeAttribute(avatarUrl)}" placeholder="/local/hass-dashboard-pro/avatar.png" onchange="hdpSaveSetting('dashboard.avatar_url', this.value.trim())" />
     </div>
   `);
 }

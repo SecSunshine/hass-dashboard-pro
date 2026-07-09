@@ -22,6 +22,17 @@ export function buildNavigationScript(defaultView = 'home'): string {
   var root = document.getElementById('hdp-root');
   if (!root) return;
 
+  function hdpSyncViewportHeight() {
+    var rect = root.getBoundingClientRect ? root.getBoundingClientRect() : { top: 0 };
+    var available = Math.max(320, window.innerHeight - Math.max(0, rect.top));
+    root.style.setProperty('--hdp-available-height', available + 'px');
+  }
+
+  function hdpClampSidebarWidth(width) {
+    var maxWidth = Math.min(400, Math.max(200, Math.floor(window.innerWidth * 0.42)));
+    return Math.max(180, Math.min(maxWidth, width));
+  }
+
   // Read initial view from URL
   var params = new URLSearchParams(window.location.search);
   var initialView = params.get('hdp_area') || ${defaultViewJSON};
@@ -127,7 +138,7 @@ export function buildNavigationScript(defaultView = 'home'): string {
     // Restore saved width
     try {
       var saved = localStorage.getItem('hdp_sidebar_width');
-      if (saved) sidebar.style.width = saved + 'px';
+      if (saved) sidebar.style.width = hdpClampSidebarWidth(Number(saved) || sidebar.offsetWidth) + 'px';
     } catch(e) {}
 
     handle.addEventListener('mousedown', function(e) {
@@ -137,7 +148,7 @@ export function buildNavigationScript(defaultView = 'home'): string {
 
       function onMove(e) {
         var delta = e.clientX - startX;
-        var newWidth = Math.max(200, Math.min(400, startWidth + delta));
+        var newWidth = hdpClampSidebarWidth(startWidth + delta);
         sidebar.style.width = newWidth + 'px';
       }
 
@@ -160,7 +171,7 @@ export function buildNavigationScript(defaultView = 'home'): string {
 
       function onTouchMove(e) {
         var delta = e.touches[0].clientX - startX;
-        var newWidth = Math.max(200, Math.min(400, startWidth + delta));
+        var newWidth = hdpClampSidebarWidth(startWidth + delta);
         sidebar.style.width = newWidth + 'px';
       }
 
@@ -199,7 +210,30 @@ export function buildNavigationScript(defaultView = 'home'): string {
     window.dispatchEvent(event);
   };
 
+  window.hdpOpenAvatarOverlay = function() {
+    var overlay = document.getElementById('hdp-avatar-overlay');
+    if (!overlay) return;
+    overlay.classList.add('hdp-avatar-overlay--open');
+    overlay.setAttribute('aria-hidden', 'false');
+  };
+
+  window.hdpCloseAvatarOverlay = function() {
+    var overlay = document.getElementById('hdp-avatar-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('hdp-avatar-overlay--open');
+    overlay.setAttribute('aria-hidden', 'true');
+  };
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && typeof window.hdpCloseAvatarOverlay === 'function') {
+      window.hdpCloseAvatarOverlay();
+    }
+  });
+
   // Initialize
+  hdpSyncViewportHeight();
+  window.addEventListener('resize', hdpSyncViewportHeight);
+  window.addEventListener('orientationchange', hdpSyncViewportHeight);
   hdpShowView(initialView);
 
   // Initialize entity click handlers (toggle entities by clicking cards)

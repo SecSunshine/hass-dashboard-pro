@@ -12,7 +12,7 @@
 import type { Hass, AreaSummary, StrategyConfig } from '../types';
 import { groupAreasByFloor } from '../utils/area-entities';
 import { getAreaIcon } from '../utils/dashboard-model';
-import { escapeAttribute, escapeHTML, escapeJSONAttribute } from '../utils/html';
+import { escapeAttribute, escapeHTML, escapeJSONAttribute, escapeURLAttribute } from '../utils/html';
 import { shouldShowSettings } from '../utils/permissions';
 
 export interface SidebarOptions {
@@ -31,6 +31,7 @@ export function buildSidebarHTML(opts: SidebarOptions): string {
   const visibleAreas = areas.filter(a => !hiddenAreas.includes(a.area_id));
   const floorGroups = groupAreasByFloor(hass);
   const showSettings = shouldShowSettings(hass, config);
+  const avatar = buildAvatarHTML(hass, config);
 
   // Build floor sections
   const floorSections: string[] = [];
@@ -87,6 +88,7 @@ export function buildSidebarHTML(opts: SidebarOptions): string {
 
   return `<div class="sb-header">
     <div class="sb-title">${escapeHTML(title)}</div>
+    ${avatar.buttonHTML}
   </div>
   <nav class="sb-nav">
     <button class="sb-nav-btn sb-nav-btn--active" data-view="home" onclick="hdpShowView('home')">
@@ -107,7 +109,8 @@ export function buildSidebarHTML(opts: SidebarOptions): string {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       <span>设置</span>
     </button>
-  </div>`;
+  </div>
+  ${avatar.overlayHTML}`;
 }
 
 export { shouldShowSettings };
@@ -118,10 +121,11 @@ export { shouldShowSettings };
 export function getSidebarCSS(): string {
   return `
     .hdp-sidebar {
-      width: var(--hdp-sidebar-width, 260px);
-      min-width: 200px;
-      max-width: 400px;
-      height: 100vh;
+      width: clamp(200px, var(--hdp-sidebar-width, 260px), min(400px, 42vw));
+      min-width: 180px;
+      max-width: min(400px, 42vw);
+      height: var(--hdp-available-height, 100dvh);
+      max-height: var(--hdp-available-height, 100dvh);
       background: var(--hdp-card-bg);
       border-right: 1px solid var(--hdp-border);
       display: flex;
@@ -132,7 +136,8 @@ export function getSidebarCSS(): string {
       flex-shrink: 0;
     }
     .sb-header {
-      padding: 20px 16px 12px;
+      padding: 18px 14px 12px;
+      flex-shrink: 0;
     }
     .sb-title {
       font: inherit;
@@ -140,11 +145,78 @@ export function getSidebarCSS(): string {
       font-weight: 700;
       color: var(--hdp-text);
     }
+    .sb-profile-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      min-width: 0;
+      margin-top: 14px;
+      padding: 8px;
+      border: 1px solid var(--hdp-border);
+      border-radius: var(--hdp-radius);
+      background: var(--hdp-bg);
+      color: var(--hdp-text);
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+      font: inherit;
+    }
+    .sb-profile-btn:hover {
+      border-color: var(--hdp-primary);
+      background: var(--hdp-primary-light, rgba(79,110,247,0.08));
+      transform: translateY(-1px);
+    }
+    .sb-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 40px;
+      overflow: hidden;
+      background: var(--hdp-gradient-primary, var(--hdp-primary));
+      color: white;
+      font-size: 15px;
+      font-weight: 800;
+      line-height: 1;
+      border: 2px solid var(--hdp-card-bg);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+    .sb-avatar-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .sb-profile-meta {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .sb-profile-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--hdp-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sb-profile-hint {
+      font-size: 11px;
+      color: var(--hdp-text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .sb-nav {
       padding: 0 8px;
       display: flex;
       flex-direction: column;
       gap: 2px;
+      flex-shrink: 0;
     }
     .sb-nav-btn {
       display: flex;
@@ -180,9 +252,11 @@ export function getSidebarCSS(): string {
       height: 1px;
       background: var(--hdp-border);
       margin: 8px 16px;
+      flex-shrink: 0;
     }
     .sb-areas {
       flex: 1;
+      min-height: 0;
       overflow-y: auto;
       padding: 0 8px;
     }
@@ -271,6 +345,8 @@ export function getSidebarCSS(): string {
     .sb-footer {
       padding: 8px;
       border-top: 1px solid var(--hdp-border);
+      flex-shrink: 0;
+      background: var(--hdp-card-bg);
     }
     .hdp-resize-handle {
       width: 4px;
@@ -283,7 +359,118 @@ export function getSidebarCSS(): string {
     .hdp-resize-handle:active {
       background: var(--hdp-primary);
     }
+    .hdp-avatar-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(5, 8, 16, 0.82);
+      backdrop-filter: blur(10px);
+    }
+    .hdp-avatar-overlay--open {
+      display: flex;
+    }
+    .hdp-avatar-dialog {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      max-width: min(92vw, 720px);
+      max-height: 92vh;
+      color: white;
+      text-align: center;
+    }
+    .hdp-avatar-full {
+      width: min(72vmin, 520px);
+      height: min(72vmin, 520px);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background: var(--hdp-gradient-primary, var(--hdp-primary));
+      color: white;
+      font-size: clamp(64px, 22vmin, 160px);
+      font-weight: 800;
+      border: 4px solid rgba(255,255,255,0.18);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.35);
+    }
+    .hdp-avatar-full img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .hdp-avatar-full-name {
+      font-size: clamp(18px, 3vw, 28px);
+      font-weight: 700;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+    }
+    .hdp-avatar-close {
+      position: fixed;
+      top: max(18px, env(safe-area-inset-top));
+      right: max(18px, env(safe-area-inset-right));
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.24);
+      background: rgba(255,255,255,0.12);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .hdp-avatar-close svg {
+      width: 22px;
+      height: 22px;
+    }
   `;
+}
+
+function buildAvatarHTML(hass: Hass, config: StrategyConfig): { buttonHTML: string; overlayHTML: string } {
+  const dashboard = config.hdp_config?.dashboard as { avatar_url?: string; avatar?: string } | undefined;
+  const rawAvatarUrl = dashboard?.avatar_url || dashboard?.avatar || '';
+  const avatarUrl = escapeURLAttribute(rawAvatarUrl);
+  const userName = hass.user?.name || config.hdp_config?.dashboard?.name || 'Home';
+  const initials = getInitials(userName);
+  const avatarInner = avatarUrl
+    ? `<img class="sb-avatar-img" src="${avatarUrl}" alt="${escapeAttribute(userName)}" loading="lazy" />`
+    : escapeHTML(initials);
+  const fullInner = avatarUrl
+    ? `<img src="${avatarUrl}" alt="${escapeAttribute(userName)}" loading="lazy" />`
+    : escapeHTML(initials);
+
+  return {
+    buttonHTML: `<button type="button" class="sb-profile-btn" data-action="show-avatar" onclick="hdpOpenAvatarOverlay()" aria-label="查看用户头像">
+      <span class="sb-avatar">${avatarInner}</span>
+      <span class="sb-profile-meta">
+        <span class="sb-profile-name">${escapeHTML(userName)}</span>
+        <span class="sb-profile-hint">点击查看头像</span>
+      </span>
+    </button>`,
+    overlayHTML: `<div class="hdp-avatar-overlay" id="hdp-avatar-overlay" aria-hidden="true" role="dialog" aria-modal="true" onclick="if(event.target === this) hdpCloseAvatarOverlay()">
+      <button type="button" class="hdp-avatar-close" onclick="hdpCloseAvatarOverlay()" aria-label="关闭头像预览">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>
+      </button>
+      <div class="hdp-avatar-dialog">
+        <div class="hdp-avatar-full">${fullInner}</div>
+        <div class="hdp-avatar-full-name">${escapeHTML(userName)}</div>
+      </div>
+    </div>`,
+  };
+}
+
+function getInitials(name: string): string {
+  const parts = String(name || 'Home').trim().split(/\s+/).filter(Boolean);
+  const letters = parts.length > 1
+    ? `${parts[0][0] || ''}${parts[1][0] || ''}`
+    : (parts[0] || 'H').slice(0, 2);
+  return letters.toUpperCase();
 }
 
 // ─── Area Icon SVGs ────────────────────────────────────────────────────────

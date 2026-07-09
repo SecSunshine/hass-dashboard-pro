@@ -118,4 +118,55 @@ describe('layout card', () => {
     expect(card.content).not.toContain("hdpShowView('kitchen'bad')");
     expect(card.content).toContain('function findView(viewId)');
   });
+
+  it('renders a configurable sidebar avatar with fullscreen preview', () => {
+    const card = buildLayoutCard({
+      hass: {
+        ...hass,
+        user: { name: 'Alice Admin', is_admin: true },
+      },
+      config: {
+        type: 'custom:hass-dashboard-pro',
+        hdp_config: {
+          dashboard: { name: 'Home', icon: 'mdi:home', avatar_url: '/local/avatar.png' },
+        } as any,
+      },
+      homeHTML: '',
+      areaSections: [],
+      devicesHTML: '',
+      settingsHTML: '',
+      areaSummaries: [],
+      blueprintPages: [],
+    });
+
+    expect(card.content).toContain('class="sb-profile-btn"');
+    expect(card.content).toContain('src="/local/avatar.png"');
+    expect(card.content).toContain('id="hdp-avatar-overlay"');
+    expect(card.content).toContain('window.hdpOpenAvatarOverlay = function()');
+    expect(card.content).toContain('Alice Admin');
+  });
+
+  it('falls back to user initials and rejects unsafe avatar URLs', () => {
+    const card = buildLayoutCard({
+      hass: {
+        ...hass,
+        user: { name: 'Bob Builder', is_admin: true },
+      },
+      config: {
+        type: 'custom:hass-dashboard-pro',
+        hdp_config: {
+          dashboard: { name: 'Home', icon: 'mdi:home', avatar_url: 'javascript:alert(1)' },
+        } as any,
+      },
+      homeHTML: '',
+      areaSections: [],
+      devicesHTML: '',
+      settingsHTML: '',
+      areaSummaries: [],
+      blueprintPages: [],
+    });
+
+    expect(card.content).toContain('<span class="sb-avatar">BB</span>');
+    expect(card.content).not.toContain('javascript:alert');
+  });
 });

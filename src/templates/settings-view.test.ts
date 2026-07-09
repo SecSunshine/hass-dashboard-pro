@@ -420,12 +420,19 @@ describe('settings view', () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',
       hdp_config: {
-        dashboard: { name: '"><script>alert(1)</script>', icon: 'mdi:home' },
+        dashboard: {
+          name: '"><script>alert(1)</script>',
+          icon: 'mdi:home',
+          avatar_url: '"><img src=x onerror=alert(1)>',
+        },
       } as any,
     };
     const html = buildSettingsHTML(config, undefined, hass);
     expect(html).toContain('value="&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;"');
+    expect(html).toContain('value="&quot;&gt;&lt;img src=x onerror=alert(1)&gt;"');
+    expect(html).toContain("hdpSaveSetting('dashboard.avatar_url', this.value.trim())");
     expect(html).not.toContain('value=""><script>');
+    expect(html).not.toContain('value=""><img');
   });
 
 

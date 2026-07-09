@@ -97,9 +97,13 @@ describe('settings sections client script', () => {
     expect(store.get('hdp_config')).toBeUndefined();
 
     runtime.hdpSaveSetting('dashboard.name', 'Draft Home');
+    runtime.hdpSaveSetting('dashboard.avatar_url', '/local/draft-avatar.png');
     expect(runtime.hdpSettingsDraft.dashboard.name).toBe('Draft Home');
+    expect(runtime.hdpSettingsDraft.dashboard.avatar_url).toBe('/local/draft-avatar.png');
+    expect(store.get('hdp_config')).toBeUndefined();
     runtime.hdpCancelSettings();
     expect(runtime.hdpSettingsDraft.dashboard.name).toBe('Seeded Home');
+    expect(runtime.hdpSettingsDraft.dashboard.avatar_url).toBeUndefined();
     expect(store.get('hdp_config')).toBeUndefined();
   });
 
