@@ -126,6 +126,7 @@ describe('domain entity cards', () => {
 
     expect(css).toContain('.dvc button');
     expect(css).toContain('appearance: none;');
+    expect(css).toContain('.dvc {');
     expect(css).toContain('.dc-control-card');
     expect(css).toContain('background: var(--hdp-surface-card, var(--hdp-card-bg));');
     expect(css).toContain('.dc-control-section');
@@ -135,6 +136,13 @@ describe('domain entity cards', () => {
     expect(css).toContain('.dc-climate-mode');
     expect(css).toContain('.dc-cover-visual');
     expect(css).toContain('.dc-cover-btn--stop');
+    expect(css).toContain('.dc-lock-btn');
+    expect(css).toContain('border: 1px solid transparent;');
+    expect(css).toContain('color: var(--hdp-text-inverse, white);');
+    expect(css).toContain('border: 2px solid var(--hdp-surface-card, white);');
+    expect(css).toContain('box-shadow: var(--hdp-shadow-card, 0 1px 4px rgba(0,0,0,0.2));');
+    expect(css).toContain('.dc-media-btn');
+    expect(css).toContain('.dc-vacuum-btn');
     expect(css).toContain('text-align: center;');
     expect(css).toContain('.dvc[data-no-toggle]');
   });

@@ -22,7 +22,7 @@ export function getDomainCardCSS(): string {
   return `
   /* ── Base card (self-contained, matches dvc/ec styles) ── */
   .dvc {
-    background: var(--hdp-card-bg);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
     border-radius: var(--hdp-radius);
     padding: var(--hdp-density-entity-padding, 14px);
     border: 1px solid var(--hdp-border);
@@ -260,10 +260,10 @@ export function getDomainCardCSS(): string {
   .dc-climate-mode--active {
     background: var(--hdp-info, #3B82F6);
     border-color: var(--hdp-info, #3B82F6);
-    color: white;
+    color: var(--hdp-text-inverse, white);
   }
   .dc-climate-mode--active:hover {
-    color: white;
+    color: var(--hdp-text-inverse, white);
   }
   .dc-climate-fan {
     display: flex;
@@ -303,10 +303,10 @@ export function getDomainCardCSS(): string {
   .dc-climate-fan-btn--active {
     background: var(--hdp-primary);
     border-color: var(--hdp-primary);
-    color: white;
+    color: var(--hdp-text-inverse, white);
   }
   .dc-climate-fan-btn--active:hover {
-    color: white;
+    color: var(--hdp-text-inverse, white);
   }
 
   /* ── Cover Card ── */
@@ -440,14 +440,14 @@ export function getDomainCardCSS(): string {
     cursor: pointer;
     transition: all 0.15s ease;
     min-height: 40px;
-    border: none;
+    border: 1px solid transparent;
     display: flex;
     align-items: center;
     gap: 6px;
   }
   .dc-lock-btn--locked {
     background: var(--hdp-success, #16A34A);
-    color: white;
+    color: var(--hdp-text-inverse, white);
   }
   .dc-lock-btn--locked:hover {
     filter: brightness(1.08);
@@ -455,7 +455,7 @@ export function getDomainCardCSS(): string {
   }
   .dc-lock-btn--unlocked {
     background: var(--hdp-danger, #EF4444);
-    color: white;
+    color: var(--hdp-text-inverse, white);
   }
   .dc-lock-btn--unlocked:hover {
     filter: brightness(1.08);
@@ -500,8 +500,8 @@ export function getDomainCardCSS(): string {
     border-radius: 50%;
     background: var(--hdp-primary);
     cursor: pointer;
-    border: 2px solid white;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    border: 2px solid var(--hdp-surface-card, white);
+    box-shadow: var(--hdp-shadow-card, 0 1px 4px rgba(0,0,0,0.2));
   }
   .dc-media-vol-slider::-moz-range-thumb {
     width: 14px;
@@ -509,8 +509,8 @@ export function getDomainCardCSS(): string {
     border-radius: 50%;
     background: var(--hdp-primary);
     cursor: pointer;
-    border: 2px solid white;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    border: 2px solid var(--hdp-surface-card, white);
+    box-shadow: var(--hdp-shadow-card, 0 1px 4px rgba(0,0,0,0.2));
   }
   .dc-media-vol-val {
     font: inherit;
@@ -532,7 +532,7 @@ export function getDomainCardCSS(): string {
     padding: 8px;
     border-radius: var(--hdp-radius-sm, 8px);
     border: 1px solid var(--hdp-border);
-    background: var(--hdp-card-bg);
+    background: var(--hdp-control-bg, var(--hdp-card-bg));
     color: var(--hdp-text);
     font: inherit;
     cursor: pointer;
@@ -544,6 +544,7 @@ export function getDomainCardCSS(): string {
   }
   .dc-media-btn:hover {
     border-color: var(--hdp-primary);
+    background: var(--hdp-control-bg-hover, var(--hdp-primary-light, rgba(79,110,247,0.1)));
     color: var(--hdp-primary);
   }
   .dc-media-btn:active {
@@ -553,10 +554,10 @@ export function getDomainCardCSS(): string {
   .dc-media-btn--play {
     background: var(--hdp-primary);
     border-color: var(--hdp-primary);
-    color: white;
+    color: var(--hdp-text-inverse, white);
   }
   .dc-media-btn--play:hover {
-    color: white;
+    color: var(--hdp-text-inverse, white);
     filter: brightness(1.08);
   }
 
@@ -571,7 +572,7 @@ export function getDomainCardCSS(): string {
     padding: 8px;
     border-radius: var(--hdp-radius-sm, 8px);
     border: 1px solid var(--hdp-border);
-    background: var(--hdp-card-bg);
+    background: var(--hdp-control-bg, var(--hdp-card-bg));
     color: var(--hdp-text-secondary);
     font: inherit;
     font-size: 12px;
@@ -586,6 +587,7 @@ export function getDomainCardCSS(): string {
   }
   .dc-vacuum-btn:hover {
     border-color: var(--hdp-primary);
+    background: var(--hdp-control-bg-hover, var(--hdp-primary-light, rgba(79,110,247,0.1)));
     color: var(--hdp-primary);
   }
   .dc-vacuum-btn:active {
