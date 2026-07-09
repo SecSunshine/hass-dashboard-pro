@@ -39,10 +39,13 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
     if (!domainMap.has(e.domain)) domainMap.set(e.domain, []);
     domainMap.get(e.domain)!.push(e);
   }
+  for (const entities of domainMap.values()) sortEntitiesForDisplay(entities);
 
   // Sort: controllable first, then sensors
   const priority = ['light', 'switch', 'climate', 'cover', 'fan', 'lock', 'media_player', 'vacuum', 'camera', 'sensor', 'binary_sensor', 'button'];
   const sorted = Array.from(domainMap.entries()).sort((a, b) => {
+    const activeDiff = b[1].filter(e => isEntityOn(e.state, e.domain)).length - a[1].filter(e => isEntityOn(e.state, e.domain)).length;
+    if (activeDiff !== 0) return activeDiff;
     const ai = priority.indexOf(a[0]);
     const bi = priority.indexOf(b[0]);
     return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
@@ -181,8 +184,19 @@ ${sectionsHTML || bentoWrap('<div class="dv-empty">暂无设备</div>', resolveC
 export function generateDevicesJS(): string {
   return `
 window.hdpScrollToDomain = function(domain) {
-  var el = document.getElementById('dv-domain-' + domain);
+  var targetDomain = String(domain || '');
+  var el = document.getElementById('dv-domain-' + targetDomain);
+  if (!el && targetDomain.indexOf('.') > -1) {
+    el = document.getElementById('dv-domain-' + targetDomain.split('.')[0]);
+  }
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+window.hdpShowDeviceDomain = function(domain) {
+  if (typeof window.hdpShowView === 'function') window.hdpShowView('devices');
+  window.setTimeout(function() {
+    if (typeof window.hdpScrollToDomain === 'function') window.hdpScrollToDomain(domain);
+  }, 80);
 };`;
 }
 
@@ -207,6 +221,20 @@ function buildDomainSection(domain: string, entities: EntityInfo[], skin?: strin
     </div>
     <div class="dv-grid">${cardsHTML}</div>
   </div>`;
+}
+
+function sortEntitiesForDisplay(entities: EntityInfo[]): void {
+  entities.sort((a, b) => {
+    const activeDiff = Number(isEntityOn(b.state, b.domain)) - Number(isEntityOn(a.state, a.domain));
+    if (activeDiff !== 0) return activeDiff;
+    const unavailableDiff = Number(isUnavailable(a.state)) - Number(isUnavailable(b.state));
+    if (unavailableDiff !== 0) return unavailableDiff;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+function isUnavailable(state: string): boolean {
+  return state === 'unavailable' || state === 'unknown';
 }
 
 // ─── Entity Card CSS (shared) ───────────────────────────────────────────────

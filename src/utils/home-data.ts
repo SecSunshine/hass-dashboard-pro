@@ -275,6 +275,8 @@ export interface HomeSummary {
   automations_count: number;
   total_entities: number;
   total_devices: number;
+  total_areas: number;
+  active_entities: number;
 }
 
 function isRegistryVisible(hass: Hass, entityId: string): boolean {
@@ -316,6 +318,12 @@ export function getHomeSummaries(hass: Hass, config?: StrategyConfig): HomeSumma
     automations_count: countActiveAutomations(hass),
     total_entities: visibleEntities ? visibleEntities.length : Object.keys(hass.states).length,
     total_devices: visibleEntities ? countVisibleDevices(hass, visibleEntities) : Object.keys(hass.devices || {}).length,
+    total_areas: visibleEntities
+      ? new Set(visibleEntities.map(entity => entity.area_id)).size
+      : Object.keys(hass.areas || {}).length,
+    active_entities: visibleEntities
+      ? visibleEntities.filter(entity => isEntityOn(entity.state, entity.domain)).length
+      : Object.entries(hass.states).filter(([entityId, stateObj]) => isEntityOn(stateObj.state, entityId.split('.')[0])).length,
   };
 }
 

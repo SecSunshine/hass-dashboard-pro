@@ -19,7 +19,7 @@
  * Settings are staged in hdpSettingsDraft and saved only from hdpCommitSettings().
  */
 
-import type { Hass, StrategyConfig, BlueprintInstance, HomeSectionKey } from '../types';
+import type { Hass, StrategyConfig, BlueprintInstance, HomeLayoutPreset, HomeSectionKey } from '../types';
 import { HIDDEN_DOMAINS, HOME_SECTION_LABELS } from '../types';
 import { buildBlueprintGalleryHTML } from '../blueprints/blueprint-gallery';
 import { buildDashboardDesignPlan, buildPlanAlternatives, type DashboardDesignPlan } from '../utils/design-plan';
@@ -378,6 +378,49 @@ export function getSettingsSectionsCSS(): string {
     max-width: none;
     margin-top: 8px;
   }
+  .st-layout-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px;
+    margin-top: 10px;
+    min-width: 0;
+  }
+  .st-layout-choice {
+    appearance: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    min-height: 84px;
+    padding: 12px;
+    border-radius: var(--hdp-radius-sm, 8px);
+    border: 1px solid var(--hdp-border);
+    background: var(--hdp-card-bg);
+    color: var(--hdp-text);
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .st-layout-choice:hover {
+    transform: translateY(-1px);
+    border-color: var(--hdp-primary);
+  }
+  .st-layout-choice--active {
+    border-color: var(--hdp-primary);
+    box-shadow: 0 0 0 3px var(--hdp-primary-glow, rgba(79,110,247,0.12));
+  }
+  .st-layout-choice-name {
+    font: inherit;
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--hdp-text);
+  }
+  .st-layout-choice-desc {
+    font: inherit;
+    font-size: 11px;
+    color: var(--hdp-text-muted);
+    line-height: 1.35;
+  }
   .st-btn--primary {
     background: var(--hdp-primary);
     color: white;
@@ -696,6 +739,23 @@ window.hdpSaveSetting = function(path, value) {
   hdpSetDraftPath(path, value);
 };
 
+window.hdpSelectHomeLayout = function(preset, evt) {
+  var allowed = ['grid', 'rows', 'l_shape', 'l_mirror', 'u_shape', 'custom'];
+  var safePreset = allowed.indexOf(preset) >= 0 ? preset : 'grid';
+  hdpSetDraftPath('home.layout_preset', safePreset);
+  if (evt && evt.currentTarget && evt.currentTarget.closest) {
+    var root = evt.currentTarget.closest('.st-layout-grid');
+    if (root && root.querySelectorAll) {
+      var buttons = root.querySelectorAll('.st-layout-choice');
+      for (var i = 0; i < buttons.length; i++) {
+        var active = buttons[i] === evt.currentTarget;
+        buttons[i].classList.toggle('st-layout-choice--active', active);
+        buttons[i].setAttribute('aria-pressed', active ? 'true' : 'false');
+      }
+    }
+  }
+};
+
 window.hdpToggleArrayItem = function(path, item) {
   var evt = arguments.length > 2 ? arguments[2] : window.event;
   var chip = evt && evt.target && evt.target.closest ? evt.target.closest('.st-chip') : null;
@@ -967,6 +1027,11 @@ function hdpSanitizeLayoutDensity(value) {
   return allowed.indexOf(value) >= 0 ? value : 'standard';
 }
 
+function hdpSanitizeHomeLayoutPreset(value) {
+  var allowed = ['grid', 'rows', 'l_shape', 'l_mirror', 'u_shape', 'custom'];
+  return allowed.indexOf(value) >= 0 ? value : 'grid';
+}
+
 function hdpNormalizeStringArray(value) {
   if (!Array.isArray(value)) return [];
   return value.filter(function(item) { return typeof item === 'string' && item.length > 0; });
@@ -1105,7 +1170,8 @@ function hdpNormalizeHDPConfig(config) {
     normalized.home = Object.assign({}, normalized.home, {
       section_order: hdpNormalizeStringArray(normalized.home.section_order),
       hidden_sections: hdpNormalizeStringArray(normalized.home.hidden_sections),
-      hidden_info_cards: hdpNormalizeStringArray(normalized.home.hidden_info_cards)
+      hidden_info_cards: hdpNormalizeStringArray(normalized.home.hidden_info_cards),
+      layout_preset: hdpSanitizeHomeLayoutPreset(normalized.home.layout_preset)
     });
   }
   if (normalized.blueprints && typeof normalized.blueprints === 'object' && !Array.isArray(normalized.blueprints)) {
@@ -1380,13 +1446,24 @@ export function buildQuickGenerateSection(hass: Hass, config: StrategyConfig): s
 export function buildHomeSection(config: StrategyConfig): string {
   const hiddenSections: string[] = (config as any).hdp_config?.home?.hidden_sections || [];
   const hiddenInfoCards: string[] = (config as any).hdp_config?.home?.hidden_info_cards || [];
+  const layoutPreset = sanitizeHomeLayoutPreset((config as any).hdp_config?.home?.layout_preset);
   const sectionKeys: HomeSectionKey[] = ['status_badges', 'people', 'environment', 'power_usage', 'favorites', 'summary'];
   const infoCardLabels: Record<string, string> = {
-    updates: 'Updates',
-    repairs: 'Repairs',
-    entities: 'Entities',
-    devices: 'Devices',
-    automations: 'Automations',
+    updates: '可用更新',
+    repairs: '待修复',
+    entities: '实体',
+    devices: '设备',
+    areas: '区域',
+    active: '运行中',
+    automations: '自动化',
+  };
+  const layoutLabels: Record<HomeLayoutPreset, { label: string; desc: string }> = {
+    grid: { label: '行列式布局', desc: '均衡网格，适合通用家庭总览。' },
+    rows: { label: '纵向行布局', desc: '大卡片逐行展开，适合窄屏和信息阅读。' },
+    l_shape: { label: 'L 型布局', desc: '左侧主视觉，右侧信息列，首屏重心稳定。' },
+    l_mirror: { label: '镜像 L 型', desc: '右侧主视觉，左侧状态群，更适合右手操作区。' },
+    u_shape: { label: 'U 型布局', desc: '上下横向信息包围核心卡片，适合大屏展示。' },
+    custom: { label: '自定义顺序', desc: '使用手动区块顺序和卡片尺寸。' },
   };
 
   const chips = sectionKeys.map(key => {
@@ -1399,15 +1476,33 @@ export function buildHomeSection(config: StrategyConfig): string {
     const hidden = hiddenInfoCards.includes(key);
     return chipHTML('toggle-home-info-card', 'home.hidden_info_cards', key, label, hidden);
   }).join('');
+  const layoutChoices = (Object.keys(layoutLabels) as HomeLayoutPreset[]).map(preset => {
+    const active = preset === layoutPreset;
+    const meta = layoutLabels[preset];
+    return `<button type="button" class="st-layout-choice ${active ? 'st-layout-choice--active' : ''}" data-layout-preset="${escapeAttribute(preset)}" aria-pressed="${active ? 'true' : 'false'}" onclick="hdpSelectHomeLayout('${escapeAttribute(preset)}', event)">
+      <span class="st-layout-choice-name">${escapeHTML(meta.label)}</span>
+      <span class="st-layout-choice-desc">${escapeHTML(meta.desc)}</span>
+    </button>`;
+  }).join('');
 
   return sectionCard('home', '首页', iconHome(), `
+    <div class="st-row-label">首页版式</div>
+    <div class="st-row-desc">从美学构图选择首页行列关系，保存后生效</div>
+    <div class="st-layout-grid">${layoutChoices}</div>
+    <div class="st-section-subtitle">显示区块</div>
     <div class="st-row-label">显示区块</div>
     <div class="st-row-desc">选择首页要显示的内容区块</div>
     <div class="st-chip-list">${chips}</div>
-    <div class="st-section-subtitle">Summary info cards</div>
-    <div class="st-row-desc">Highlighted chips are hidden from the home summary.</div>
+    <div class="st-section-subtitle">系统概览项目</div>
+    <div class="st-row-desc">高亮项目会从系统概览隐藏</div>
     <div class="st-chip-list">${infoChips}</div>
   `);
+}
+
+function sanitizeHomeLayoutPreset(value: unknown): HomeLayoutPreset {
+  return typeof value === 'string' && ['grid', 'rows', 'l_shape', 'l_mirror', 'u_shape', 'custom'].includes(value)
+    ? value as HomeLayoutPreset
+    : 'grid';
 }
 
 // ─── 3. Header ──────────────────────────────────────────────────────────────

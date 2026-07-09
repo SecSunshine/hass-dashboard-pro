@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Hass, StrategyConfig } from '../types';
-import { buildDevicesHTML } from './devices-view';
+import { buildDevicesHTML, generateDevicesJS } from './devices-view';
 
 const hass: Hass = {
   states: {
@@ -26,6 +26,20 @@ const hass: Hass = {
       entity_id: 'binary_sensor.kitchen_motion',
       state: 'off',
       attributes: { friendly_name: 'Kitchen Motion', device_class: 'motion' },
+      last_changed: '',
+      last_updated: '',
+    },
+    'switch.z_inactive': {
+      entity_id: 'switch.z_inactive',
+      state: 'off',
+      attributes: { friendly_name: 'Z Inactive Switch' },
+      last_changed: '',
+      last_updated: '',
+    },
+    'switch.a_active': {
+      entity_id: 'switch.a_active',
+      state: 'on',
+      attributes: { friendly_name: 'A Active Switch' },
       last_changed: '',
       last_updated: '',
     },
@@ -60,6 +74,22 @@ const hass: Hass = {
       disabled_by: null,
       hidden_by: null,
     },
+    'switch.z_inactive': {
+      entity_id: 'switch.z_inactive',
+      device_id: null,
+      area_id: 'kitchen',
+      platform: 'demo',
+      disabled_by: null,
+      hidden_by: null,
+    },
+    'switch.a_active': {
+      entity_id: 'switch.a_active',
+      device_id: null,
+      area_id: 'kitchen',
+      platform: 'demo',
+      disabled_by: null,
+      hidden_by: null,
+    },
   },
 };
 
@@ -84,6 +114,14 @@ describe('devices view', () => {
     expect(html).toContain('flex: 0 0 auto;');
     expect(html).toContain('data-action="scroll-domain"');
     expect(html).toContain('appearance: none;');
+  });
+
+  it('generates status-badge navigation helpers for device domains', () => {
+    const js = generateDevicesJS();
+
+    expect(js).toContain('window.hdpShowDeviceDomain = function(domain)');
+    expect(js).toContain("window.hdpShowView('devices')");
+    expect(js).toContain('window.hdpScrollToDomain(domain)');
   });
 
   it('applies hidden areas to the all devices view', () => {
@@ -125,5 +163,13 @@ describe('devices view', () => {
     expect(html).toContain('data-entity="sensor.power_meter"');
     expect(html).not.toContain('data-entity="sensor.power_meter" data-action="toggle"');
     expect(html).toContain('.dvc[role="button"]:focus-visible');
+  });
+
+  it('sorts running devices before inactive devices within a domain', () => {
+    const html = buildDevicesHTML(hass, { type: 'custom:hass-dashboard-pro' });
+
+    expect(html.indexOf('A Active Switch')).toBeGreaterThan(-1);
+    expect(html.indexOf('Z Inactive Switch')).toBeGreaterThan(-1);
+    expect(html.indexOf('A Active Switch')).toBeLessThan(html.indexOf('Z Inactive Switch'));
   });
 });

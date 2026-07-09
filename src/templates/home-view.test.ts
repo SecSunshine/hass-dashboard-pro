@@ -125,6 +125,60 @@ describe('home view settings', () => {
     expect(html).not.toContain('bad_key');
   });
 
+  it('renders status badges as device-domain navigation buttons', () => {
+    const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
+    const html = buildHomeHTML(hass, config);
+
+    expect(html).toContain('<button type="button" class="sd-badge');
+    expect(html).toContain('data-action="show-device-domain"');
+    expect(html).toContain('data-domain="light"');
+    expect(html).toContain('onclick="hdpShowDeviceDomain(&quot;light&quot;)"');
+    expect(html).toContain('cursor: pointer;');
+    expect(html).not.toContain('<div class="sd-badge');
+  });
+
+  it('renders environment metrics as 24-hour history buttons', () => {
+    const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
+    const html = buildHomeHTML({
+      ...hass,
+      states: {
+        ...hass.states,
+        'sensor.living_temperature': {
+          entity_id: 'sensor.living_temperature',
+          state: '23.5',
+          attributes: { friendly_name: 'Living Temperature', device_class: 'temperature', unit_of_measurement: '°C' },
+          last_changed: '',
+          last_updated: '',
+        },
+        'sensor.living_humidity': {
+          entity_id: 'sensor.living_humidity',
+          state: '58',
+          attributes: { friendly_name: 'Living Humidity', device_class: 'humidity', unit_of_measurement: '%' },
+          last_changed: '',
+          last_updated: '',
+        },
+      },
+    }, config);
+
+    expect(html).toContain('data-action="show-environment-history" data-metric="temperature"');
+    expect(html).toContain("onclick=\"hdpShowEnvironmentHistory('temperature')\"");
+    expect(html).toContain('data-action="show-environment-history" data-metric="humidity"');
+    expect(html).toContain("onclick=\"hdpShowEnvironmentHistory('humidity')\"");
+  });
+
+  it('uses topology layout presets for home section ordering and sizing', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        home: { layout_preset: 'rows' },
+      } as any,
+    };
+    const html = buildHomeHTML(hass, config);
+
+    expect(html).toContain('hdp-bento hdp-bento--wide');
+    expect(html).not.toContain('layout_preset');
+  });
+
   it('keeps people names from forcing narrow layouts', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const html = buildHomeHTML(hass, config);

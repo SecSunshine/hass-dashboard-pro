@@ -16,10 +16,6 @@ import type { Hass, HassEntity, EntityInfo } from '../types';
 import { escapeAttribute, escapeHTML } from '../utils/html';
 import { cardSkinClass } from '../utils/card-skin';
 
-function jsArg(value: unknown): string {
-  return escapeAttribute(JSON.stringify(String(value ?? '')));
-}
-
 // ─── CSS (shared, injected by views) ─────────────────────────────────────────
 
 export function getDomainCardCSS(): string {
@@ -42,6 +38,9 @@ export function getDomainCardCSS(): string {
     box-shadow: var(--hdp-shadow-elevated);
   }
   .dvc--on { border-color: var(--hdp-primary); }
+  .dvc[data-no-toggle] {
+    cursor: default;
+  }
   .dvc button {
     appearance: none;
     font: inherit;
@@ -108,8 +107,10 @@ export function getDomainCardCSS(): string {
 
   /* ── Climate Card ── */
   .dc-climate {
-    grid-column: 1 / -1;
     padding: var(--hdp-density-entity-padding, 14px);
+    background:
+      radial-gradient(circle at 100% 0%, var(--hdp-info-light, rgba(59,130,246,0.12)), transparent 42%),
+      var(--hdp-card-bg);
   }
   .dc-climate-top {
     display: flex;
@@ -126,7 +127,7 @@ export function getDomainCardCSS(): string {
   }
   .dc-climate-current-val {
     font: inherit;
-    font-size: 28px;
+    font-size: 24px;
     font-weight: 800;
     color: var(--hdp-info, #3B82F6);
     line-height: 1.1;
@@ -148,6 +149,7 @@ export function getDomainCardCSS(): string {
     padding: 8px 12px;
     margin-bottom: 12px;
     min-width: 0;
+    border: 1px solid var(--hdp-border);
   }
   .dc-climate-target-label {
     font: inherit;
@@ -271,7 +273,12 @@ export function getDomainCardCSS(): string {
 
   /* ── Cover Card ── */
   .dc-cover {
-    grid-column: 1 / -1;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(124,110,247,0.12), transparent 42%),
+      var(--hdp-card-bg);
+  }
+  .dc-cover .dvc-row {
+    margin-bottom: 10px;
   }
   .dc-cover-bar-wrap {
     background: var(--hdp-divider, rgba(0,0,0,0.06));
@@ -290,7 +297,8 @@ export function getDomainCardCSS(): string {
   .dc-cover-actions {
     display: flex;
     gap: 6px;
-    margin-top: 4px;
+    margin-top: 10px;
+    min-width: 0;
   }
   .dc-cover-btn {
     flex: 1;
@@ -571,8 +579,7 @@ function buildAccessibleClimateCard(entity: EntityInfo, stateObj: HassEntity, sk
       data-entity="${entityId}"
       data-action="climate-mode"
       data-mode="${escapeAttribute(mode)}"
-      aria-pressed="${active ? 'true' : 'false'}"
-      onclick="hdpSetClimateMode(${jsArg(entity.entity_id)}, ${jsArg(mode)})">${escapeHTML(label)}</button>`;
+      aria-pressed="${active ? 'true' : 'false'}">${escapeHTML(label)}</button>`;
   }).join('');
 
   const fanPills = fanModes.length > 0
@@ -585,8 +592,7 @@ function buildAccessibleClimateCard(entity: EntityInfo, stateObj: HassEntity, sk
             data-entity="${entityId}"
             data-action="climate-fan"
             data-fan-mode="${escapeAttribute(fm)}"
-            aria-pressed="${active ? 'true' : 'false'}"
-            onclick="hdpSetClimateFanMode(${jsArg(entity.entity_id)}, ${jsArg(fm)})">${escapeHTML(label)}</button>`;
+            aria-pressed="${active ? 'true' : 'false'}">${escapeHTML(label)}</button>`;
         }).join('')}
       </div>`
     : '';
@@ -612,15 +618,19 @@ function buildAccessibleClimateCard(entity: EntityInfo, stateObj: HassEntity, sk
         data-entity="${entityId}"
         data-action="climate-temp"
         data-step="${escapeAttribute(String(tempDownDelta))}"
+        data-min-temp="${escapeAttribute(String(minTemp))}"
+        data-max-temp="${escapeAttribute(String(maxTemp))}"
         aria-label="Decrease target temperature"
-        onclick="hdpSetClimateTemp(${jsArg(entity.entity_id)}, ${tempDownDelta}, ${minTemp}, ${maxTemp})">-</button>
+        >-</button>
       <div class="dc-climate-target-val">${targetTempVal}</div>
       <button type="button" class="dc-climate-temp-btn"
         data-entity="${entityId}"
         data-action="climate-temp"
         data-step="${escapeAttribute(String(tempUpDelta))}"
+        data-min-temp="${escapeAttribute(String(minTemp))}"
+        data-max-temp="${escapeAttribute(String(maxTemp))}"
         aria-label="Increase target temperature"
-        onclick="hdpSetClimateTemp(${jsArg(entity.entity_id)}, ${tempUpDelta}, ${minTemp}, ${maxTemp})">+</button>
+        >+</button>
     </div>
     <div class="dc-climate-modes">${modePills}</div>
     ${fanPills}
@@ -657,15 +667,15 @@ function buildCoverCard(entity: EntityInfo, stateObj: HassEntity, skin?: string)
       <div class="dc-cover-bar-fill" style="width: ${barWidth}%"></div>
     </div>
     <div class="dc-cover-actions">
-      <button class="dc-cover-btn" data-action="cover-open" onclick="hdpCoverAction(${jsArg(entity.entity_id)}, 'open')">
+      <button type="button" class="dc-cover-btn" data-entity="${escapeAttribute(entity.entity_id)}" data-action="cover-open">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
         打开
       </button>
-      <button class="dc-cover-btn" data-action="cover-stop" onclick="hdpCoverAction(${jsArg(entity.entity_id)}, 'stop')">
+      <button type="button" class="dc-cover-btn" data-entity="${escapeAttribute(entity.entity_id)}" data-action="cover-stop">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
         停止
       </button>
-      <button class="dc-cover-btn" data-action="cover-close" onclick="hdpCoverAction(${jsArg(entity.entity_id)}, 'close')">
+      <button type="button" class="dc-cover-btn" data-entity="${escapeAttribute(entity.entity_id)}" data-action="cover-close">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         关闭
       </button>
@@ -699,7 +709,7 @@ function buildLockCard(entity: EntityInfo, stateObj: HassEntity, skin?: string):
         </div>
       </div>
       <div class="dc-lock-action">
-        <button class="${btnCls}" data-action="lock-${btnAction}" onclick="hdpLockAction(${jsArg(entity.entity_id)}, ${jsArg(btnAction)})">
+        <button type="button" class="${btnCls}" data-entity="${escapeAttribute(entity.entity_id)}" data-action="lock-${btnAction}">
           ${btnIcon}
           ${btnLabel}
         </button>
@@ -744,17 +754,17 @@ function buildMediaPlayerCard(entity: EntityInfo, stateObj: HassEntity, skin?: s
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
       </div>
       <input type="range" class="dc-media-vol-slider" min="0" max="100" value="${volumePct}"
-        data-action="media-volume" oninput="hdpSetMediaVolume(${jsArg(entity.entity_id)}, this.value / 100)" />
+        data-entity="${escapeAttribute(entity.entity_id)}" data-action="media-volume" />
       <span class="dc-media-vol-val">${volumePct}%</span>
     </div>
     <div class="dc-media-controls">
-      <button class="dc-media-btn" data-action="media-previous" onclick="hdpMediaAction(${jsArg(entity.entity_id)}, 'previous')">
+      <button type="button" class="dc-media-btn" data-entity="${escapeAttribute(entity.entity_id)}" data-action="media-previous">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
       </button>
-      <button class="dc-media-btn dc-media-btn--play" data-action="media-play-pause" onclick="hdpMediaAction(${jsArg(entity.entity_id)}, 'play_pause')">
+      <button type="button" class="dc-media-btn dc-media-btn--play" data-entity="${escapeAttribute(entity.entity_id)}" data-action="media-play-pause">
         ${playPauseIcon}
       </button>
-      <button class="dc-media-btn" data-action="media-next" onclick="hdpMediaAction(${jsArg(entity.entity_id)}, 'next')">
+      <button type="button" class="dc-media-btn" data-entity="${escapeAttribute(entity.entity_id)}" data-action="media-next">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zm-9.5 6l8.5-6v12z"/></svg>
       </button>
     </div>
@@ -793,15 +803,15 @@ function buildVacuumCard(entity: EntityInfo, stateObj: HassEntity, skin?: string
       </div>
     </div>
     <div class="dc-vacuum-actions">
-      <button class="dc-vacuum-btn" data-action="vacuum-start" onclick="hdpVacuumAction(${jsArg(entity.entity_id)}, 'start')">
+      <button type="button" class="dc-vacuum-btn" data-entity="${escapeAttribute(entity.entity_id)}" data-action="vacuum-start">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
         开始
       </button>
-      <button class="dc-vacuum-btn" data-action="vacuum-pause" onclick="hdpVacuumAction(${jsArg(entity.entity_id)}, 'pause')">
+      <button type="button" class="dc-vacuum-btn" data-entity="${escapeAttribute(entity.entity_id)}" data-action="vacuum-pause">
         <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
         暂停
       </button>
-      <button class="dc-vacuum-btn" data-action="vacuum-dock" onclick="hdpVacuumAction(${jsArg(entity.entity_id)}, 'dock')">
+      <button type="button" class="dc-vacuum-btn" data-entity="${escapeAttribute(entity.entity_id)}" data-action="vacuum-dock">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
         回充
       </button>

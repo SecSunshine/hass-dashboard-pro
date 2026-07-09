@@ -19,7 +19,7 @@
  *   - Min touch target: 44px
  */
 
-import type { Hass, HomeSectionKey, LovelaceCardConfig, StrategyConfig } from '../types';
+import type { Hass, HomeLayoutPreset, HomeSectionKey, LovelaceCardConfig, StrategyConfig } from '../types';
 import { generateDesignTokenCSS } from '../styles/design-tokens';
 import type { ResolvedTokens } from '../utils/visual-config';
 import { bentoWrap, resolveCardSize } from '../utils/bento-layout';
@@ -40,6 +40,75 @@ import { cardSkinClass } from '../utils/card-skin';
 import { getConfiguredHiddenPersons } from '../utils/dashboard-model';
 
 const DEFAULT_HOME_SECTION_ORDER: HomeSectionKey[] = ['status_badges', 'people', 'environment', 'power_usage', 'favorites', 'summary'];
+
+type HomeCardId = 'home_welcome' | 'home_status_badges' | 'home_people' | 'home_environment' | 'home_power' | 'home_favorites' | 'home_summary';
+type HomeLayoutSizeMap = Record<HomeCardId, 'sm' | 'md' | 'lg' | 'wide' | 'tall'>;
+
+const HOME_LAYOUT_PRESETS: Record<Exclude<HomeLayoutPreset, 'custom'>, {
+  order: HomeSectionKey[];
+  sizes: HomeLayoutSizeMap;
+}> = {
+  grid: {
+    order: ['status_badges', 'people', 'environment', 'power_usage', 'favorites', 'summary'],
+    sizes: {
+      home_welcome: 'lg',
+      home_status_badges: 'wide',
+      home_people: 'md',
+      home_environment: 'md',
+      home_power: 'md',
+      home_favorites: 'wide',
+      home_summary: 'md',
+    },
+  },
+  rows: {
+    order: ['status_badges', 'environment', 'summary', 'people', 'power_usage', 'favorites'],
+    sizes: {
+      home_welcome: 'wide',
+      home_status_badges: 'wide',
+      home_people: 'wide',
+      home_environment: 'wide',
+      home_power: 'wide',
+      home_favorites: 'wide',
+      home_summary: 'wide',
+    },
+  },
+  l_shape: {
+    order: ['status_badges', 'environment', 'summary', 'people', 'power_usage', 'favorites'],
+    sizes: {
+      home_welcome: 'lg',
+      home_status_badges: 'md',
+      home_people: 'md',
+      home_environment: 'md',
+      home_power: 'md',
+      home_favorites: 'md',
+      home_summary: 'md',
+    },
+  },
+  l_mirror: {
+    order: ['status_badges', 'environment', 'summary', 'people', 'power_usage', 'favorites'],
+    sizes: {
+      home_welcome: 'lg',
+      home_status_badges: 'md',
+      home_people: 'md',
+      home_environment: 'md',
+      home_power: 'md',
+      home_favorites: 'md',
+      home_summary: 'md',
+    },
+  },
+  u_shape: {
+    order: ['status_badges', 'environment', 'summary', 'people', 'power_usage', 'favorites'],
+    sizes: {
+      home_welcome: 'wide',
+      home_status_badges: 'md',
+      home_people: 'md',
+      home_environment: 'md',
+      home_power: 'md',
+      home_favorites: 'md',
+      home_summary: 'md',
+    },
+  },
+};
 
 export function buildHomeView(hass: Hass, config: StrategyConfig, tokens?: ResolvedTokens): LovelaceCardConfig[] {
   const cards: LovelaceCardConfig[] = [];
@@ -90,45 +159,46 @@ export function buildHomeView(hass: Hass, config: StrategyConfig, tokens?: Resol
 export function buildHomeHTML(hass: Hass, config: StrategyConfig, tokens?: ResolvedTokens): string {
   const sections: string[] = [];
   const cs = tokens?.card_sizes;
+  const layout = getHomeLayout(config);
 
-  sections.push(bentoWrap(extractCardHTML(buildWelcomeCard(hass, config, tokens)), resolveCardSize('home_welcome', 'lg', cs)));
+  sections.push(bentoWrap(extractCardHTML(buildWelcomeCard(hass, config, tokens)), resolveCardSize('home_welcome', layout.sizes.home_welcome, cs)));
 
-  for (const section of getOrderedHomeSections(config)) {
+  for (const section of layout.order) {
     if (!isHomeSectionVisible(config, section)) continue;
     switch (section) {
       case 'status_badges': {
         const domains = getStatusDomains(hass, config);
         if (domains.length > 0) {
-          sections.push(bentoWrap(extractCardHTML(buildStatusBadges(domains, tokens)), resolveCardSize('home_status_badges', 'wide', cs)));
+          sections.push(bentoWrap(extractCardHTML(buildStatusBadges(domains, tokens)), resolveCardSize('home_status_badges', layout.sizes.home_status_badges, cs)));
         }
         break;
       }
       case 'people': {
         const persons = getPersons(hass, getHiddenPersons(config));
         if (persons.length > 0) {
-          sections.push(bentoWrap(extractCardHTML(buildPeopleCard(persons, tokens)), resolveCardSize('home_people', 'md', cs)));
+          sections.push(bentoWrap(extractCardHTML(buildPeopleCard(persons, tokens)), resolveCardSize('home_people', layout.sizes.home_people, cs)));
         }
         break;
       }
       case 'environment':
-        sections.push(bentoWrap(extractCardHTML(buildEnvironmentCard(hass, config, tokens)), resolveCardSize('home_environment', 'md', cs)));
+        sections.push(bentoWrap(extractCardHTML(buildEnvironmentCard(hass, config, tokens)), resolveCardSize('home_environment', layout.sizes.home_environment, cs)));
         break;
       case 'power_usage': {
         const power = buildHousePowerUsage(hass, config);
         if (power.has_data) {
-          sections.push(bentoWrap(extractCardHTML(buildPowerCard(power, tokens)), resolveCardSize('home_power', 'md', cs)));
+          sections.push(bentoWrap(extractCardHTML(buildPowerCard(power, tokens)), resolveCardSize('home_power', layout.sizes.home_power, cs)));
         }
         break;
       }
       case 'favorites': {
         const favorites = getFavorites(hass, config);
         if (favorites.length > 0) {
-          sections.push(bentoWrap(extractCardHTML(buildFavoritesCard(favorites, tokens)), resolveCardSize('home_favorites', 'wide', cs)));
+          sections.push(bentoWrap(extractCardHTML(buildFavoritesCard(favorites, tokens)), resolveCardSize('home_favorites', layout.sizes.home_favorites, cs)));
         }
         break;
       }
       case 'summary':
-        sections.push(bentoWrap(extractCardHTML(buildSummaryCard(hass, tokens, config)), resolveCardSize('home_summary', 'md', cs)));
+        sections.push(bentoWrap(extractCardHTML(buildSummaryCard(hass, tokens, config)), resolveCardSize('home_summary', layout.sizes.home_summary, cs)));
         break;
     }
   }
@@ -147,6 +217,17 @@ function extractCardHTML(card: LovelaceCardConfig): string {
 
 function isHomeSectionVisible(config: StrategyConfig, key: HomeSectionKey): boolean {
   return !getHiddenHomeSections(config).includes(key);
+}
+
+function getHomeLayout(config: StrategyConfig): { order: HomeSectionKey[]; sizes: HomeLayoutSizeMap } {
+  const preset = config.hdp_config?.home?.layout_preset;
+  if (preset && preset !== 'custom' && HOME_LAYOUT_PRESETS[preset]) {
+    return HOME_LAYOUT_PRESETS[preset];
+  }
+  return {
+    order: getOrderedHomeSections(config),
+    sizes: HOME_LAYOUT_PRESETS.grid.sizes,
+  };
 }
 
 function getHiddenHomeSections(config: StrategyConfig): HomeSectionKey[] {
@@ -372,11 +453,12 @@ ${generateDesignTokenCSS(tokens)}
 function buildStatusBadges(domains: DomainStatus[], tokens?: ResolvedTokens): LovelaceCardConfig {
   const badges = domains.map(d => {
     const countText = d.active > 0 ? `<span class="sd-cnt">${d.active}</span>` : '';
-    return `<div class="sd-badge sd-badge--${d.color_class}">
+    const domainArg = escapeAttribute(JSON.stringify(d.domain));
+    return `<button type="button" class="sd-badge sd-badge--${d.color_class}" data-domain="${escapeAttribute(d.domain)}" data-action="show-device-domain" onclick="hdpShowDeviceDomain(${domainArg})">
       <span class="sd-icon">${d.icon_svg}</span>
       <span class="sd-label">${d.label}</span>
       ${countText}
-    </div>`;
+    </button>`;
   }).join('');
 
   return {
@@ -396,16 +478,24 @@ ${generateDesignTokenCSS(tokens)}
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    min-height: 44px;
     padding: 8px 14px;
     border-radius: var(--hdp-radius-pill);
     background: var(--hdp-card-bg);
     border: 1px solid var(--hdp-border);
     transition: all 0.2s ease;
-    cursor: default;
+    cursor: pointer;
+    appearance: none;
+    font: inherit;
   }
   .sd-badge:hover {
     transform: translateY(-1px);
     box-shadow: var(--hdp-shadow-card);
+    border-color: var(--hdp-primary);
+  }
+  .sd-badge:focus-visible {
+    outline: 2px solid var(--hdp-primary);
+    outline-offset: 2px;
   }
   .sd-icon {
     width: 14px; height: 14px;
@@ -564,7 +654,7 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
   const items: string[] = [];
 
   if (climate.has_data) {
-    items.push(`<div class="env-item ${skinCls}">
+    items.push(`<button type="button" class="env-item ${skinCls}" data-action="show-environment-history" data-metric="temperature" onclick="hdpShowEnvironmentHistory('temperature')">
       <div class="env-icon env-icon--temp">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
       </div>
@@ -572,11 +662,11 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
         <div class="env-val">${climate.avg_temp}</div>
         <div class="env-lbl">室内温度</div>
       </div>
-    </div>`);
+    </button>`);
   }
 
   if (climate.has_data && climate.avg_humidity !== '--') {
-    items.push(`<div class="env-item ${skinCls}">
+    items.push(`<button type="button" class="env-item ${skinCls}" data-action="show-environment-history" data-metric="humidity" onclick="hdpShowEnvironmentHistory('humidity')">
       <div class="env-icon env-icon--hum">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8 8 4 12 4 16a8 8 0 0 0 16 0c0-4-4-8-8-14z"/></svg>
       </div>
@@ -584,7 +674,7 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
         <div class="env-val">${climate.avg_humidity}</div>
         <div class="env-lbl">室内湿度</div>
       </div>
-    </div>`);
+    </button>`);
   }
 
   // Security summary
@@ -642,18 +732,29 @@ ${generateDesignTokenCSS(tokens)}
     gap: 12px;
   }
   .env-item {
+    appearance: none;
+    font: inherit;
+    width: 100%;
     display: flex;
     align-items: center;
+    text-align: left;
     gap: 12px;
     background: var(--hdp-card-bg);
+    color: inherit;
     border-radius: var(--hdp-radius);
     padding: 14px;
     border: 1px solid var(--hdp-border);
     transition: all 0.2s ease;
+    cursor: default;
   }
+  button.env-item { cursor: pointer; }
   .env-item:hover {
     transform: translateY(-2px);
     box-shadow: var(--hdp-shadow-elevated);
+  }
+  button.env-item:focus-visible {
+    outline: 2px solid var(--hdp-primary);
+    outline-offset: 2px;
   }
   .env-icon {
     width: 36px; height: 36px;
@@ -961,13 +1062,33 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: Strategy
   </div>`);
   }
 
-  if (summaries.total_devices > 0 && isInfoCardVisible('devices')) {
+  if (isInfoCardVisible('devices')) {
     items.push(`<div class="sum-item ${skinCls}" data-info-card="devices">
       <div class="sum-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
       </div>
       <div class="sum-val">${summaries.total_devices}</div>
       <div class="sum-lbl">设备</div>
+    </div>`);
+  }
+
+  if (isInfoCardVisible('areas')) {
+    items.push(`<div class="sum-item ${skinCls}" data-info-card="areas">
+      <div class="sum-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg>
+      </div>
+      <div class="sum-val">${summaries.total_areas}</div>
+      <div class="sum-lbl">区域</div>
+    </div>`);
+  }
+
+  if (isInfoCardVisible('active')) {
+    items.push(`<div class="sum-item ${skinCls}" data-info-card="active">
+      <div class="sum-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h8l-1 8 11-13h-8l1-7z"/></svg>
+      </div>
+      <div class="sum-val">${summaries.active_entities}</div>
+      <div class="sum-lbl">运行中</div>
     </div>`);
   }
 
@@ -978,6 +1099,13 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: Strategy
       </div>
       <div class="sum-val">${summaries.automations_count}</div>
       <div class="sum-lbl">自动化</div>
+    </div>`);
+  }
+
+  if (!items.length) {
+    items.push(`<div class="sum-empty ${skinCls}">
+      <div class="sum-empty-title">暂无概览信息</div>
+      <div class="sum-empty-desc">可以在设置中重新显示系统概览项目</div>
     </div>`);
   }
 
@@ -1043,6 +1171,25 @@ ${generateDesignTokenCSS(tokens)}
   .sum-item--warn .sum-icon { color: var(--hdp-warning); }
   .sum-item--info .sum-val { color: var(--hdp-info); }
   .sum-item--warn .sum-val { color: var(--hdp-warning); }
+  .sum-empty {
+    grid-column: 1 / -1;
+    padding: 18px;
+    border-radius: var(--hdp-radius);
+    border: 1px dashed var(--hdp-border);
+    background: var(--hdp-card-bg);
+  }
+  .sum-empty-title {
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--hdp-text);
+  }
+  .sum-empty-desc {
+    margin-top: 4px;
+    font: inherit;
+    font-size: 12px;
+    color: var(--hdp-text-muted);
+  }
 </style>
 <div class="sum-hdr">
   <span class="sum-title">系统概览</span>

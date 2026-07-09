@@ -29,6 +29,26 @@ const climateState: HassEntity = {
   last_updated: '',
 };
 
+const coverEntity: EntityInfo = {
+  entity_id: 'cover.bedroom_curtain',
+  name: 'Bedroom Curtain',
+  domain: 'cover',
+  icon: null,
+  state: 'open',
+  unit: null,
+  area_name: 'Bedroom',
+};
+
+const coverState: HassEntity = {
+  entity_id: 'cover.bedroom_curtain',
+  state: 'open',
+  attributes: {
+    current_position: 68,
+  },
+  last_changed: '',
+  last_updated: '',
+};
+
 describe('domain entity cards', () => {
   it('renders climate controls as declarative buttons', () => {
     const html = buildDomainCard(climateEntity, climateState);
@@ -46,7 +66,21 @@ describe('domain entity cards', () => {
     expect(html).toContain('aria-label="Increase target temperature"');
     expect(html).toContain('data-step="-0.5"');
     expect(html).toContain('data-step="0.5"');
+    expect(html).toContain('data-min-temp="16"');
+    expect(html).toContain('data-max-temp="30"');
+    expect(html).not.toContain('onclick="hdpSetClimate');
     expect(html).not.toContain('<div class="' + 'dc-climate-temp-btn"');
+  });
+
+  it('renders cover controls as delegated service buttons', () => {
+    const html = buildDomainCard(coverEntity, coverState);
+
+    expect(html).toContain('data-no-toggle');
+    expect(html).toContain('data-action="cover-open"');
+    expect(html).toContain('data-action="cover-stop"');
+    expect(html).toContain('data-action="cover-close"');
+    expect(html).toContain('data-entity="cover.bedroom_curtain"');
+    expect(html).not.toContain('onclick="hdpCoverAction');
   });
 
   it('normalizes domain-card button appearance', () => {
@@ -56,5 +90,6 @@ describe('domain entity cards', () => {
     expect(css).toContain('appearance: none;');
     expect(css).toContain('.dc-climate-mode');
     expect(css).toContain('text-align: center;');
+    expect(css).toContain('.dvc[data-no-toggle]');
   });
 });

@@ -21,10 +21,12 @@ export function buildNavigationScript(defaultView = 'home'): string {
 (function() {
   var root = document.getElementById('hdp-root');
   if (!root) return;
+  var hdpFallbackFullscreen = false;
 
   function hdpSyncViewportHeight() {
     var rect = root.getBoundingClientRect ? root.getBoundingClientRect() : { top: 0 };
-    var available = Math.max(320, window.innerHeight - Math.max(0, rect.top));
+    var fullscreen = root.classList.contains('hdp-root--fullscreen');
+    var available = fullscreen ? window.innerHeight : Math.max(320, window.innerHeight - Math.max(0, rect.top));
     root.style.setProperty('--hdp-available-height', available + 'px');
   }
 
@@ -210,23 +212,63 @@ export function buildNavigationScript(defaultView = 'home'): string {
     window.dispatchEvent(event);
   };
 
-  window.hdpOpenAvatarOverlay = function() {
-    var overlay = document.getElementById('hdp-avatar-overlay');
-    if (!overlay) return;
-    overlay.classList.add('hdp-avatar-overlay--open');
-    overlay.setAttribute('aria-hidden', 'false');
+  function updateDashboardFullscreenUI(active) {
+    root.classList.toggle('hdp-root--fullscreen', active);
+    root.setAttribute('data-dashboard-fullscreen', active ? 'true' : 'false');
+    var buttons = root.querySelectorAll('[data-action="toggle-dashboard-fullscreen"]');
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].setAttribute('aria-pressed', active ? 'true' : 'false');
+      var hint = buttons[i].querySelector('.sb-profile-hint');
+      if (hint) hint.textContent = active ? '再次点击退出全屏' : '点击全屏仪表盘';
+    }
+    hdpSyncViewportHeight();
+  }
+
+  function isDashboardFullscreen() {
+    return document.fullscreenElement === root || root.classList.contains('hdp-root--fullscreen');
+  }
+
+  window.hdpToggleDashboardFullscreen = function() {
+    if (isDashboardFullscreen()) {
+      if (document.fullscreenElement === root && document.exitFullscreen) {
+        document.exitFullscreen().catch(function() {
+          hdpFallbackFullscreen = false;
+          updateDashboardFullscreenUI(false);
+        });
+      } else {
+        hdpFallbackFullscreen = false;
+        updateDashboardFullscreenUI(false);
+      }
+      return;
+    }
+
+    if (root.requestFullscreen) {
+      root.requestFullscreen().then(function() {
+        hdpFallbackFullscreen = false;
+        updateDashboardFullscreenUI(true);
+      }).catch(function() {
+        hdpFallbackFullscreen = true;
+        updateDashboardFullscreenUI(true);
+      });
+    } else {
+      hdpFallbackFullscreen = true;
+      updateDashboardFullscreenUI(true);
+    }
   };
 
-  window.hdpCloseAvatarOverlay = function() {
-    var overlay = document.getElementById('hdp-avatar-overlay');
-    if (!overlay) return;
-    overlay.classList.remove('hdp-avatar-overlay--open');
-    overlay.setAttribute('aria-hidden', 'true');
-  };
+  document.addEventListener('fullscreenchange', function() {
+    if (document.fullscreenElement === root) {
+      hdpFallbackFullscreen = false;
+      updateDashboardFullscreenUI(true);
+    } else if (!hdpFallbackFullscreen) {
+      updateDashboardFullscreenUI(false);
+    }
+  });
 
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && typeof window.hdpCloseAvatarOverlay === 'function') {
-      window.hdpCloseAvatarOverlay();
+    if (e.key === 'Escape' && hdpFallbackFullscreen) {
+      hdpFallbackFullscreen = false;
+      updateDashboardFullscreenUI(false);
     }
   });
 

@@ -89,6 +89,50 @@ export function generateBentoCSS(): string {
     height: 100%;
   }
 
+  /* ── Home Layout Presets ── */
+  .hdp-home-content--rows .hdp-bento {
+    grid-column: 1 / -1;
+    grid-row: span 1;
+  }
+
+  .hdp-home-content--l_shape .hdp-bento:nth-child(1) {
+    grid-column: 1 / span 2;
+    grid-row: span 2;
+  }
+  .hdp-home-content--l_shape .hdp-bento:nth-child(2),
+  .hdp-home-content--l_shape .hdp-bento:nth-child(3) {
+    grid-column: 3 / span 2;
+  }
+  .hdp-home-content--l_shape .hdp-bento:nth-child(n+4) {
+    grid-column: span 2;
+  }
+
+  .hdp-home-content--l_mirror .hdp-bento:nth-child(1) {
+    grid-column: 3 / span 2;
+    grid-row: 1 / span 2;
+  }
+  .hdp-home-content--l_mirror .hdp-bento:nth-child(2),
+  .hdp-home-content--l_mirror .hdp-bento:nth-child(3) {
+    grid-column: 1 / span 2;
+  }
+  .hdp-home-content--l_mirror .hdp-bento:nth-child(n+4) {
+    grid-column: span 2;
+  }
+
+  .hdp-home-content--u_shape .hdp-bento:nth-child(1),
+  .hdp-home-content--u_shape .hdp-bento:nth-child(6) {
+    grid-column: 1 / -1;
+  }
+  .hdp-home-content--u_shape .hdp-bento:nth-child(2),
+  .hdp-home-content--u_shape .hdp-bento:nth-child(5) {
+    grid-column: span 1;
+    grid-row: span 2;
+  }
+  .hdp-home-content--u_shape .hdp-bento:nth-child(3),
+  .hdp-home-content--u_shape .hdp-bento:nth-child(4) {
+    grid-column: span 2;
+  }
+
   /* ── Non-bento children span full width (settings, blueprints, etc.) ── */
   .hdp-area-content > :not(.hdp-bento) {
     grid-column: 1 / -1;
@@ -104,6 +148,17 @@ export function generateBentoCSS(): string {
     .hdp-bento--lg   { grid-column: span 2; grid-row: span 2; }
     .hdp-bento--wide { grid-column: span 2; grid-row: span 1; }
     .hdp-bento--tall { grid-column: span 1; grid-row: span 2; }
+    .hdp-home-content--l_shape .hdp-bento,
+    .hdp-home-content--l_mirror .hdp-bento,
+    .hdp-home-content--u_shape .hdp-bento {
+      grid-column: span 2;
+      grid-row: span 1;
+    }
+    .hdp-home-content--l_shape .hdp-bento:nth-child(1),
+    .hdp-home-content--l_mirror .hdp-bento:nth-child(1) {
+      grid-column: span 2;
+      grid-row: span 2;
+    }
   }
 
   /* ── Mobile Responsive (≤639px): Home → 1 column, Area → 1 column ── */
@@ -119,6 +174,13 @@ export function generateBentoCSS(): string {
     .hdp-bento--lg,
     .hdp-bento--wide,
     .hdp-bento--tall {
+      grid-column: span 1;
+      grid-row: span 1;
+    }
+    .hdp-home-content--l_shape .hdp-bento,
+    .hdp-home-content--l_mirror .hdp-bento,
+    .hdp-home-content--u_shape .hdp-bento,
+    .hdp-home-content--rows .hdp-bento {
       grid-column: span 1;
       grid-row: span 1;
     }

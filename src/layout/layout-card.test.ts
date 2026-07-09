@@ -119,7 +119,28 @@ describe('layout card', () => {
     expect(card.content).toContain('function findView(viewId)');
   });
 
-  it('renders a configurable sidebar avatar with fullscreen preview', () => {
+  it('applies the selected home layout preset to the home content grid', () => {
+    const card = buildLayoutCard({
+      hass,
+      config: {
+        type: 'custom:hass-dashboard-pro',
+        hdp_config: {
+          home: { layout_preset: 'l_shape' },
+        } as any,
+      },
+      homeHTML: '',
+      areaSections: [],
+      devicesHTML: '',
+      settingsHTML: '',
+      areaSummaries: [],
+      blueprintPages: [],
+    });
+
+    expect(card.content).toContain('class="hdp-home-content hdp-home-content--l_shape"');
+    expect(card.content).toContain('data-layout-preset="l_shape"');
+  });
+
+  it('uses the configurable sidebar avatar to toggle dashboard fullscreen', () => {
     const card = buildLayoutCard({
       hass: {
         ...hass,
@@ -141,8 +162,12 @@ describe('layout card', () => {
 
     expect(card.content).toContain('class="sb-profile-btn"');
     expect(card.content).toContain('src="/local/avatar.png"');
-    expect(card.content).toContain('id="hdp-avatar-overlay"');
-    expect(card.content).toContain('window.hdpOpenAvatarOverlay = function()');
+    expect(card.content).toContain('data-action="toggle-dashboard-fullscreen"');
+    expect(card.content).toContain('onclick="hdpToggleDashboardFullscreen()"');
+    expect(card.content).toContain('window.hdpToggleDashboardFullscreen = function()');
+    expect(card.content).toContain('.hdp-root--fullscreen');
+    expect(card.content).not.toContain('id="hdp-avatar-overlay"');
+    expect(card.content).not.toContain('hdpOpenAvatarOverlay');
     expect(card.content).toContain('Alice Admin');
   });
 

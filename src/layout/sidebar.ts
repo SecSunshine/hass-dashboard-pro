@@ -109,8 +109,7 @@ export function buildSidebarHTML(opts: SidebarOptions): string {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       <span>设置</span>
     </button>
-  </div>
-  ${avatar.overlayHTML}`;
+  </div>`;
 }
 
 export { shouldShowSettings };
@@ -359,80 +358,10 @@ export function getSidebarCSS(): string {
     .hdp-resize-handle:active {
       background: var(--hdp-primary);
     }
-    .hdp-avatar-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 9999;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      background: rgba(5, 8, 16, 0.82);
-      backdrop-filter: blur(10px);
-    }
-    .hdp-avatar-overlay--open {
-      display: flex;
-    }
-    .hdp-avatar-dialog {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      max-width: min(92vw, 720px);
-      max-height: 92vh;
-      color: white;
-      text-align: center;
-    }
-    .hdp-avatar-full {
-      width: min(72vmin, 520px);
-      height: min(72vmin, 520px);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      background: var(--hdp-gradient-primary, var(--hdp-primary));
-      color: white;
-      font-size: clamp(64px, 22vmin, 160px);
-      font-weight: 800;
-      border: 4px solid rgba(255,255,255,0.18);
-      box-shadow: 0 24px 80px rgba(0,0,0,0.35);
-    }
-    .hdp-avatar-full img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-    .hdp-avatar-full-name {
-      font-size: clamp(18px, 3vw, 28px);
-      font-weight: 700;
-      max-width: 100%;
-      overflow-wrap: anywhere;
-    }
-    .hdp-avatar-close {
-      position: fixed;
-      top: max(18px, env(safe-area-inset-top));
-      right: max(18px, env(safe-area-inset-right));
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      border: 1px solid rgba(255,255,255,0.24);
-      background: rgba(255,255,255,0.12);
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-    }
-    .hdp-avatar-close svg {
-      width: 22px;
-      height: 22px;
-    }
   `;
 }
 
-function buildAvatarHTML(hass: Hass, config: StrategyConfig): { buttonHTML: string; overlayHTML: string } {
+function buildAvatarHTML(hass: Hass, config: StrategyConfig): { buttonHTML: string } {
   const dashboard = config.hdp_config?.dashboard as { avatar_url?: string; avatar?: string } | undefined;
   const rawAvatarUrl = dashboard?.avatar_url || dashboard?.avatar || '';
   const avatarUrl = escapeURLAttribute(rawAvatarUrl);
@@ -441,27 +370,15 @@ function buildAvatarHTML(hass: Hass, config: StrategyConfig): { buttonHTML: stri
   const avatarInner = avatarUrl
     ? `<img class="sb-avatar-img" src="${avatarUrl}" alt="${escapeAttribute(userName)}" loading="lazy" />`
     : escapeHTML(initials);
-  const fullInner = avatarUrl
-    ? `<img src="${avatarUrl}" alt="${escapeAttribute(userName)}" loading="lazy" />`
-    : escapeHTML(initials);
 
   return {
-    buttonHTML: `<button type="button" class="sb-profile-btn" data-action="show-avatar" onclick="hdpOpenAvatarOverlay()" aria-label="查看用户头像">
+    buttonHTML: `<button type="button" class="sb-profile-btn" data-action="toggle-dashboard-fullscreen" onclick="hdpToggleDashboardFullscreen()" aria-label="切换仪表盘全屏" aria-pressed="false">
       <span class="sb-avatar">${avatarInner}</span>
       <span class="sb-profile-meta">
         <span class="sb-profile-name">${escapeHTML(userName)}</span>
-        <span class="sb-profile-hint">点击查看头像</span>
+        <span class="sb-profile-hint">点击全屏仪表盘</span>
       </span>
     </button>`,
-    overlayHTML: `<div class="hdp-avatar-overlay" id="hdp-avatar-overlay" aria-hidden="true" role="dialog" aria-modal="true" onclick="if(event.target === this) hdpCloseAvatarOverlay()">
-      <button type="button" class="hdp-avatar-close" onclick="hdpCloseAvatarOverlay()" aria-label="关闭头像预览">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>
-      </button>
-      <div class="hdp-avatar-dialog">
-        <div class="hdp-avatar-full">${fullInner}</div>
-        <div class="hdp-avatar-full-name">${escapeHTML(userName)}</div>
-      </div>
-    </div>`,
   };
 }
 

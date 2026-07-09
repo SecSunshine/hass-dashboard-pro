@@ -335,9 +335,17 @@ describe('settings view', () => {
     };
     const html = buildSettingsHTML(config, undefined, hass);
 
-    expect(html).toContain('Summary info cards');
+    expect(html).toContain('首页版式');
+    expect(html).toContain('行列式布局');
+    expect(html).toContain('L 型布局');
+    expect(html).toContain('镜像 L 型');
+    expect(html).toContain('U 型布局');
+    expect(html).toContain("hdpSelectHomeLayout('l_shape', event)");
+    expect(html).toContain('系统概览项目');
     expect(html).toContain("hdpToggleArrayItem('home.hidden_info_cards', &quot;entities&quot;, event)");
     expect(html).toContain('data-action="toggle-home-info-card" data-setting="home.hidden_info_cards" data-value="entities" aria-pressed="true"');
+    expect(html).toContain("hdpToggleArrayItem('home.hidden_info_cards', &quot;areas&quot;, event)");
+    expect(html).toContain("hdpToggleArrayItem('home.hidden_info_cards', &quot;active&quot;, event)");
     expect(html).toContain("hdpToggleArrayItem('home.hidden_info_cards', &quot;automations&quot;, event)");
   });
 

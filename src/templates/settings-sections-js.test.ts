@@ -179,6 +179,45 @@ Old `);
     expect(saved.areas.hide_unavailable).toBe(false);
   });
 
+  it('stages home layout preset changes until commit', () => {
+    const { runtime, store } = createRuntime();
+    const buttons = [
+      {
+        active: false,
+        attrs: {} as Record<string, string>,
+        classList: {
+          toggle: (_className: string, value: boolean) => { buttons[0].active = value; },
+        },
+        setAttribute: (name: string, value: string) => { buttons[0].attrs[name] = value; },
+      },
+      {
+        active: false,
+        attrs: {} as Record<string, string>,
+        classList: {
+          toggle: (_className: string, value: boolean) => { buttons[1].active = value; },
+        },
+        setAttribute: (name: string, value: string) => { buttons[1].attrs[name] = value; },
+      },
+    ];
+    const event = {
+      currentTarget: buttons[1],
+    } as any;
+    event.currentTarget.closest = () => ({ querySelectorAll: () => buttons });
+
+    runtime.hdpSelectHomeLayout('l_mirror', event);
+
+    expect(runtime.hdpSettingsDraft.home.layout_preset).toBe('l_mirror');
+    expect(store.get('hdp_config')).toBeUndefined();
+    expect(buttons[0].active).toBe(false);
+    expect(buttons[1].active).toBe(true);
+    expect(buttons[1].attrs['aria-pressed']).toBe('true');
+
+    runtime.hdpCommitSettings();
+
+    const saved = JSON.parse(store.get('hdp_config') || '{}');
+    expect(saved.home.layout_preset).toBe('l_mirror');
+  });
+
   it('restores the save bar state when cancelling staged settings', () => {
     const { runtime, store, saveBar, saveText, timers, getReloadCount } = createRuntime();
 

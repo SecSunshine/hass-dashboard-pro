@@ -52,6 +52,7 @@ export function buildLayoutCard(opts: LayoutCardOptions): LovelaceCardConfig {
 
   const title = config.hdp_config?.dashboard?.name || config.sidebar_title || config.title || '智能家居';
   const hiddenAreas = getConfiguredHiddenAreas(config);
+  const homeLayoutPreset = sanitizeHomeLayoutPreset(config.hdp_config?.home?.layout_preset);
   const showSettings = shouldShowSettings(hass, config);
   const settingsViewHTML = showSettings
     ? `<div class="hdp-view" data-view="settings" style="display:none">
@@ -105,10 +106,32 @@ ${generateDesignTokenCSS(tokens)}
   * { box-sizing: border-box; margin: 0; padding: 0; }
   .hdp-root {
     display: flex;
+    height: var(--hdp-available-height, 100dvh);
     min-height: var(--hdp-available-height, 100dvh);
+    max-height: var(--hdp-available-height, 100dvh);
+    overflow: hidden;
     background: var(--hdp-bg);
     font: inherit;
     color: var(--hdp-text);
+  }
+  .hdp-root--fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    width: 100vw;
+    height: 100dvh;
+    min-height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+  .hdp-root--fullscreen .hdp-sidebar {
+    height: 100dvh;
+    max-height: 100dvh;
+    position: relative;
+    top: 0;
+  }
+  .hdp-root--fullscreen .hdp-main {
+    max-height: 100dvh;
   }
   ${getSidebarCSS()}
   ${getBottomNavCSS()}
@@ -147,7 +170,7 @@ ${generateDesignTokenCSS(tokens)}
   <div class="hdp-resize-handle"></div>
   <main class="hdp-main">
     <div class="hdp-view" data-view="home">
-      <div class="hdp-home-content">${homeHTML}</div>
+      <div class="hdp-home-content hdp-home-content--${escapeAttribute(homeLayoutPreset)}" data-layout-preset="${escapeAttribute(homeLayoutPreset)}">${homeHTML}</div>
     </div>
     <div class="hdp-view" data-view="devices" style="display:none">
       <div class="hdp-area-header-bar">
@@ -179,4 +202,10 @@ ${buildNavigationScript(opts.initialView || 'home')}
     do_not_parse: true,
     content,
   };
+}
+
+function sanitizeHomeLayoutPreset(value: unknown): string {
+  return typeof value === 'string' && ['grid', 'rows', 'l_shape', 'l_mirror', 'u_shape', 'custom'].includes(value)
+    ? value
+    : 'grid';
 }
