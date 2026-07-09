@@ -546,16 +546,33 @@ function hdpOpenEnvironmentHistoryModal(metric, sensors, series, loading) {
     '</div>' +
     '<style>' + hdpEnvironmentHistoryCSS() + '</style>';
   overlay.addEventListener('click', function(e) {
-    if (e.target === overlay || e.target.closest('.hdp-env-history-close')) overlay.remove();
+    if (e.target === overlay || e.target.closest('.hdp-env-history-close')) hdpCloseRuntimeModal(overlay);
   });
-  document.addEventListener('keydown', hdpCloseEnvironmentHistoryOnEsc, { once: true });
+  hdpBindRuntimeModalEscClose();
   document.body.appendChild(overlay);
 }
 
-function hdpCloseEnvironmentHistoryOnEsc(e) {
+function hdpCloseRuntimeModal(overlay) {
+  if (overlay) overlay.remove();
+  document.removeEventListener('keydown', hdpCloseRuntimeModalOnEsc);
+}
+
+function hdpBindRuntimeModalEscClose() {
+  document.removeEventListener('keydown', hdpCloseRuntimeModalOnEsc);
+  document.addEventListener('keydown', hdpCloseRuntimeModalOnEsc);
+}
+
+function hdpCloseRuntimeModalOnEsc(e) {
   if (e.key !== 'Escape') return;
-  var modal = document.getElementById('hdp-env-history-modal');
-  if (modal) modal.remove();
+  var ids = ['hdp-env-history-modal', 'hdp-automation-config-modal', 'hdp-device-domain-modal'];
+  for (var i = 0; i < ids.length; i++) {
+    var modal = document.getElementById(ids[i]);
+    if (modal) {
+      hdpCloseRuntimeModal(modal);
+      return;
+    }
+  }
+  document.removeEventListener('keydown', hdpCloseRuntimeModalOnEsc);
 }
 
 function hdpRenderEnvironmentCharts(series, metric, sensors) {
@@ -644,8 +661,9 @@ function hdpOpenAutomationConfig() {
       '.hdp-automation-config-frame{width:100%;height:100%;border:0;background:var(--hdp-bg,#fff);color:var(--hdp-text,#111)}' +
     '</style>';
   overlay.addEventListener('click', function(e) {
-    if (e.target === overlay || e.target.closest('.hdp-env-history-close')) overlay.remove();
+    if (e.target === overlay || e.target.closest('.hdp-env-history-close')) hdpCloseRuntimeModal(overlay);
   });
+  hdpBindRuntimeModalEscClose();
   document.body.appendChild(overlay);
 }
 
@@ -678,13 +696,14 @@ function hdpOpenDeviceDomainModal(domain) {
     '<style>' + hdpEnvironmentHistoryCSS() + hdpDeviceDomainModalCSS() + '</style>';
   overlay.addEventListener('click', function(e) {
     if (e.target === overlay || e.target.closest('.hdp-env-history-close')) {
-      overlay.remove();
+      hdpCloseRuntimeModal(overlay);
       return;
     }
     var row = e.target.closest('[data-domain-modal-entity]');
     if (!row) return;
     hdpOpenMoreInfo(row.getAttribute('data-domain-modal-entity'));
   });
+  hdpBindRuntimeModalEscClose();
   document.body.appendChild(overlay);
 }
 

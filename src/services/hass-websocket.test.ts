@@ -107,6 +107,15 @@ describe('hass websocket script', () => {
     expect(js).toContain('@media (max-width:520px)');
     expect(js).toContain('function hdpOpenAutomationConfig()');
     expect(js).toContain("src=\"/config/automation/dashboard\"");
+    expect(js).toContain('function hdpCloseRuntimeModal(overlay)');
+    expect(js).toContain('function hdpBindRuntimeModalEscClose()');
+    expect(js).toContain('document.removeEventListener(\'keydown\', hdpCloseRuntimeModalOnEsc);');
+    expect(js).toContain('document.addEventListener(\'keydown\', hdpCloseRuntimeModalOnEsc);');
+    expect(js).toContain('function hdpCloseRuntimeModalOnEsc(e)');
+    expect(js).toContain("if (e.key !== 'Escape') return;");
+    expect(js).toContain("'hdp-env-history-modal', 'hdp-automation-config-modal', 'hdp-device-domain-modal'");
+    expect(js).not.toContain("document.addEventListener('keydown', hdpCloseEnvironmentHistoryOnEsc, { once: true })");
+    expect(js).toContain('hdpBindRuntimeModalEscClose();');
     expect(js).toContain("new CustomEvent('hass-more-info'");
   });
 });
