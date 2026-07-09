@@ -128,12 +128,17 @@ export function getCardSlotCSS(): string {
     height: 32px;
     border-radius: 8px;
     border: 1px solid var(--hdp-border);
-    background: var(--hdp-card-bg);
+    background: var(--hdp-control-bg, var(--hdp-card-bg));
     color: var(--hdp-text);
     font: inherit;
     font-size: 12px;
     font-weight: 700;
     cursor: pointer;
+  }
+  .hdp-slot-edit-panel button:hover,
+  .hdp-slot-edit-panel select:hover {
+    border-color: var(--hdp-primary);
+    background: var(--hdp-control-bg-hover, var(--hdp-primary-light));
   }
   .hdp-slot-edit-panel select {
     width: 68px;
@@ -170,7 +175,7 @@ export function getCardSlotCSS(): string {
     align-items: center;
     justify-content: center;
     padding: 18px;
-    background: rgba(8,12,22,0.46);
+    background: var(--hdp-overlay-bg, rgba(8,12,22,0.46));
     backdrop-filter: blur(10px);
   }
   .hdp-slot-editor-dialog {
@@ -180,10 +185,10 @@ export function getCardSlotCSS(): string {
     flex-direction: column;
     gap: 12px;
     padding: 18px;
-    border-radius: 18px;
-    background: var(--hdp-bg);
+    border-radius: var(--hdp-radius-lg, 18px);
+    background: var(--hdp-modal-bg, var(--hdp-bg));
     border: 1px solid var(--hdp-border);
-    box-shadow: 0 24px 80px rgba(0,0,0,0.28);
+    box-shadow: var(--hdp-shadow-elevated, 0 24px 80px rgba(0,0,0,0.28));
   }
   .hdp-slot-editor-head,
   .hdp-slot-editor-actions {
@@ -215,7 +220,7 @@ export function getCardSlotCSS(): string {
     padding: 7px 11px;
     border-radius: 999px;
     border: 1px solid var(--hdp-border);
-    background: var(--hdp-card-bg);
+    background: var(--hdp-control-bg, var(--hdp-card-bg));
     color: var(--hdp-text);
     font: inherit;
     font-size: 12px;
@@ -225,6 +230,7 @@ export function getCardSlotCSS(): string {
   .hdp-slot-template-bar button:hover {
     border-color: var(--hdp-primary);
     color: var(--hdp-primary);
+    background: var(--hdp-control-bg-hover, var(--hdp-primary-light));
   }
   .hdp-slot-editor-body textarea {
     width: 100%;
@@ -233,7 +239,7 @@ export function getCardSlotCSS(): string {
     resize: vertical;
     border-radius: 12px;
     border: 1px solid var(--hdp-border);
-    background: var(--hdp-card-bg);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
     color: var(--hdp-text);
     font: 12px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
     padding: 12px;
@@ -244,7 +250,7 @@ export function getCardSlotCSS(): string {
     padding: 12px;
     border-radius: 12px;
     border: 1px dashed var(--hdp-border);
-    background: var(--hdp-card-bg);
+    background: var(--hdp-surface-muted, var(--hdp-card-bg));
   }
   .hdp-slot-editor-preview[data-state="error"] {
     border-color: var(--hdp-danger, #ef4444);
@@ -270,12 +276,18 @@ export function getCardSlotCSS(): string {
     padding: 8px 14px;
     border-radius: 10px;
     border: 1px solid var(--hdp-border);
-    background: var(--hdp-card-bg);
+    background: var(--hdp-control-bg, var(--hdp-card-bg));
     color: var(--hdp-text);
     font: inherit;
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
+  }
+  .hdp-slot-editor-actions button:hover,
+  .hdp-home-edit-bar button:hover {
+    border-color: var(--hdp-primary);
+    background: var(--hdp-control-bg-hover, var(--hdp-primary-light));
+    transform: translateY(-1px);
   }
   .hdp-slot-editor-actions button:disabled {
     cursor: not-allowed;
@@ -284,8 +296,13 @@ export function getCardSlotCSS(): string {
   .hdp-slot-editor-actions .hdp-primary,
   .hdp-home-edit-bar .hdp-primary {
     background: var(--hdp-primary);
-    color: white;
+    color: var(--hdp-text-inverse, white);
     border-color: var(--hdp-primary);
+  }
+  .hdp-slot-editor-actions .hdp-primary:hover,
+  .hdp-home-edit-bar .hdp-primary:hover {
+    background: var(--hdp-primary);
+    color: var(--hdp-text-inverse, white);
   }
   .hdp-card-slot--image {
     --hdp-slot-bg-opacity: 1;
@@ -599,6 +616,7 @@ window.hdpOpenHiddenCardSlots = function() {
   var modal = document.createElement('div');
   modal.id = 'hdp-hidden-slots-modal';
   modal.className = 'hdp-slot-editor-modal';
+  if (typeof hdpApplyThemeVarsToOverlay === 'function') hdpApplyThemeVarsToOverlay(modal);
   var rows = hidden.length
     ? hidden.map(function(item) {
         return '<div class="hdp-hidden-slot-row"><span>' + hdpEscapeSlotText(item.label) + '</span><button type="button" data-slot="' + hdpEscapeSlotText(item.id) + '">恢复默认</button></div>';
@@ -661,6 +679,7 @@ function hdpOpenSlotEditor(slotId, yaml) {
   var modal = document.createElement('div');
   modal.id = 'hdp-slot-editor-modal';
   modal.className = 'hdp-slot-editor-modal';
+  if (typeof hdpApplyThemeVarsToOverlay === 'function') hdpApplyThemeVarsToOverlay(modal);
   modal.innerHTML =
     '<div class="hdp-slot-editor-dialog" role="dialog" aria-modal="true">' +
       '<div class="hdp-slot-editor-head"><div><div class="hdp-slot-editor-title">编辑卡片槽位：' + hdpEscapeSlotText(slotId) + '</div><div class="hdp-slot-editor-error" id="hdp-slot-editor-error"></div></div><button type="button" data-action="close">×</button></div>' +

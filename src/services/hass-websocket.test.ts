@@ -64,9 +64,15 @@ describe('hass websocket script', () => {
   it('opens themed popups for status badges and automation settings', () => {
     const js = generateConnectionDiscoveryJS();
 
+    expect(js).toContain('function hdpToastStyle(type)');
+    expect(js).toContain("toast.className = 'hdp-toast hdp-toast--'");
+    expect(js.indexOf('toast.style.cssText = hdpToastStyle(type);')).toBeLessThan(js.indexOf('hdpApplyThemeVarsToOverlay(toast);'));
+    expect(js).toContain('hdpApplyThemeVarsToOverlay(toast);');
+    expect(js).toContain("'var(--hdp-surface-raised,var(--hdp-card-bg,#1a1d26))'");
     expect(js).toContain('function hdpApplyThemeVarsToOverlay(overlay)');
     expect(js).toContain("'--hdp-surface-card', '--hdp-surface-muted'");
     expect(js).toContain("'--hdp-modal-bg', '--hdp-overlay-bg'");
+    expect(js).toContain("'--hdp-text', '--hdp-text-inverse', '--hdp-text-secondary'");
     expect(js).toContain('background:var(--hdp-modal-bg,var(--hdp-bg,#fff))');
     expect(js).toContain('background:var(--hdp-surface-card,var(--hdp-card-bg,#fff))');
     expect(js).toContain("window.hdpOpenDeviceDomainModal = hdpOpenDeviceDomainModal;");

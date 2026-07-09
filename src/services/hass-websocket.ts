@@ -80,11 +80,9 @@ function hdpSearchShadowRoots(root, depth) {
 function hdpShowToast(msg, type) {
   type = type || 'info';
   var toast = document.createElement('div');
-  toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:' +
-    (type === 'error' ? '#ef4444' : type === 'success' ? '#22c55e' : '#1a1d26') +
-    ';color:white;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:600;z-index:999999;' +
-    'box-shadow:0 4px 16px rgba(0,0,0,0.15);opacity:0;transition:opacity 0.3s ease,transform 0.3s ease;' +
-    'max-width:90vw;text-align:center;';
+  toast.className = 'hdp-toast hdp-toast--' + (type === 'error' || type === 'success' ? type : 'info');
+  toast.style.cssText = hdpToastStyle(type);
+  hdpApplyThemeVarsToOverlay(toast);
   toast.textContent = msg;
   document.body.appendChild(toast);
   requestAnimationFrame(function() {
@@ -98,6 +96,22 @@ function hdpShowToast(msg, type) {
   }, 2500);
 }
 
+function hdpToastStyle(type) {
+  var bg = type === 'error'
+    ? 'var(--hdp-danger,var(--error-color,#ef4444))'
+    : type === 'success'
+      ? 'var(--hdp-success,var(--success-color,#22c55e))'
+      : 'var(--hdp-surface-raised,var(--hdp-card-bg,#1a1d26))';
+  var color = type === 'info' ? 'var(--hdp-text,#fff)' : 'var(--hdp-text-inverse,#fff)';
+  var border = type === 'info'
+    ? '1px solid var(--hdp-border,rgba(255,255,255,.16))'
+    : '1px solid color-mix(in srgb, ' + bg + ' 72%, white 28%)';
+  return 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:' + bg +
+    ';color:' + color + ';border:' + border + ';padding:12px 24px;border-radius:var(--hdp-radius,10px);' +
+    'font:inherit;font-size:14px;font-weight:700;z-index:999999;box-shadow:var(--hdp-shadow-elevated,0 8px 28px rgba(0,0,0,.18));' +
+    'opacity:0;transition:opacity 0.3s ease,transform 0.3s ease;max-width:min(90vw,520px);text-align:center;';
+}
+
 function hdpApplyThemeVarsToOverlay(overlay) {
   var root = document.getElementById('hdp-root');
   if (!overlay || !root || !window.getComputedStyle) return;
@@ -105,7 +119,7 @@ function hdpApplyThemeVarsToOverlay(overlay) {
   [
     '--hdp-bg', '--hdp-card-bg', '--hdp-surface-card', '--hdp-surface-muted',
     '--hdp-surface-raised', '--hdp-control-bg', '--hdp-control-bg-hover',
-    '--hdp-modal-bg', '--hdp-overlay-bg', '--hdp-text', '--hdp-text-secondary',
+    '--hdp-modal-bg', '--hdp-overlay-bg', '--hdp-text', '--hdp-text-inverse', '--hdp-text-secondary',
     '--hdp-text-muted', '--hdp-border', '--hdp-primary', '--hdp-primary-light',
     '--hdp-success', '--hdp-success-light', '--hdp-info', '--hdp-info-light',
     '--hdp-warning', '--hdp-warning-light', '--hdp-danger', '--hdp-danger-light',

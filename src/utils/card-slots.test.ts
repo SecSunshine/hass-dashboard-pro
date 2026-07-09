@@ -171,7 +171,12 @@ describe('card slots', () => {
     expect(css).toContain('.hdp-slot-template-bar');
     expect(css).toContain('.hdp-slot-editor-preview[data-state="error"]');
     expect(css).toContain('.hdp-slot-editor-actions button:disabled');
+    expect(css).toContain('background: var(--hdp-overlay-bg');
+    expect(css).toContain('background: var(--hdp-modal-bg, var(--hdp-bg))');
+    expect(css).toContain('background: var(--hdp-control-bg, var(--hdp-card-bg))');
+    expect(css).toContain('background: var(--hdp-control-bg-hover, var(--hdp-primary-light))');
     expect(js).toContain('window.hdpToggleCardEditMode = function');
+    expect(js).toContain("if (typeof hdpApplyThemeVarsToOverlay === 'function') hdpApplyThemeVarsToOverlay(modal);");
     expect(js).toContain('function hdpInitCardSlotDragging');
     expect(js).toContain("root.addEventListener('dragstart'");
     expect(js).toContain("root.addEventListener('drop'");
