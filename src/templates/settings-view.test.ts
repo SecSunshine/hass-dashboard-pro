@@ -156,7 +156,9 @@ describe('settings view', () => {
     expect(html).toContain('display: grid !important;');
     expect(html).toContain('grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)) !important;');
     expect(html).toContain('display: flex !important;\n    flex-direction: column !important;');
-    expect(html).toContain('max-height: 132px;');
+    expect(html).toContain('min-height: 112px;');
+    expect(html).toContain('flex: 1 1 auto;');
+    expect(html).not.toContain('max-height: 132px;');
     expect(html).toContain('flex: 0 0 14px;');
     expect(html).toContain('#st-visual-body .mood-icon {\n    font-size: 20px;');
     expect(html).toContain('#st-visual-body button {\n    appearance: none;');

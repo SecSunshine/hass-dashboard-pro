@@ -350,8 +350,7 @@ ${visualStyles}
   }
   #st-visual-body .theme-card,
   #st-visual-body .mood-card {
-    min-height: 104px;
-    max-height: 132px;
+    min-height: 112px;
   }
   #st-visual-body .theme-card,
   #st-visual-body .mood-card,
@@ -405,6 +404,7 @@ ${visualStyles}
     border-top: 1px solid var(--hdp-divider, rgba(0,0,0,0.04));
     min-height: 44px;
     min-width: 0;
+    flex: 1 1 auto;
   }
   #st-visual-body .theme-dot-row {
     display: flex;
