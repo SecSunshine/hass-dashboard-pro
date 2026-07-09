@@ -1,6 +1,46 @@
 import { describe, expect, it } from 'vitest';
 import { generateConnectionDiscoveryJS, generateLovelaceConfigJS } from './hass-websocket';
 
+function createHistoryRuntime() {
+  const document = {
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    getElementById: () => null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    body: { appendChild: () => {} },
+    createElement: () => ({
+      style: { setProperty: () => {} },
+      addEventListener: () => {},
+      remove: () => {},
+    }),
+  };
+  const window = {};
+  return new Function(
+    'document',
+    'window',
+    'requestAnimationFrame',
+    'setTimeout',
+    'console',
+    `${generateConnectionDiscoveryJS()}
+return {
+  hdpBuildEnvironmentSeries: hdpBuildEnvironmentSeries,
+  hdpNormalizeHistoryByEntity: hdpNormalizeHistoryByEntity,
+  hdpParseHistoryTimestamp: hdpParseHistoryTimestamp
+};`,
+  )(
+    document,
+    window,
+    () => {},
+    () => {},
+    console,
+  ) as {
+    hdpBuildEnvironmentSeries: (hass: any, sensors: any[], history: any) => any[];
+    hdpNormalizeHistoryByEntity: (history: any, sensors: any[]) => Record<string, any[]>;
+    hdpParseHistoryTimestamp: (point: Record<string, unknown>) => number;
+  };
+}
+
 describe('hass websocket script', () => {
   it('saves Lovelace config against the dashboard path instead of the active view', () => {
     const js = generateLovelaceConfigJS();
@@ -52,13 +92,76 @@ describe('hass websocket script', () => {
     expect(js).toContain('function hdpBuildEnvironmentSeries');
     expect(js).toContain('if (!hdpRuntimeEntityVisible(hass, entityId, filters)) return;');
     expect(js).toContain('function hdpNormalizeHistoryByEntity(history, sensors)');
+    expect(js).toContain('history = hdpUnwrapHistoryResult(history);');
+    expect(js).toContain('function hdpUnwrapHistoryResult(value)');
     expect(js).toContain('if (!entityId && sensors[index]) entityId = sensors[index].entity_id;');
     expect(js).toContain('else if (value && Array.isArray(value.points)) byEntity[entityId] = value.points;');
     expect(js).toContain('point.state != null ? point.state : point.s');
     expect(js).toContain('function hdpParseHistoryTimestamp(point)');
-    expect(js).toContain("if (typeof raw === 'number') return raw * 1000;");
+    expect(js).toContain("point.last_changed || point.last_updated || point.lastChanged || point.lastUpdated");
+    expect(js).toContain("if (typeof raw === 'number') return raw > 1000000000000 ? raw : raw * 1000;");
     expect(js).toContain('function hdpBuildSparkline');
     expect(js).toContain('window.hdpShowEnvironmentHistory = hdpShowEnvironmentHistory;');
+  });
+
+  it('builds environment series from wrapped HA history responses', () => {
+    const runtime = createHistoryRuntime();
+    const timestampSeconds = Math.floor((Date.now() - 60 * 60 * 1000) / 1000);
+    const hass = {
+      states: {
+        'sensor.living_temperature': { state: '22.8', attributes: {} },
+      },
+    };
+    const sensors = [{
+      entity_id: 'sensor.living_temperature',
+      area_id: 'living',
+      area_name: 'Living',
+      unit: 'C',
+    }];
+    const history = {
+      success: true,
+      result: [[{ entity_id: 'sensor.living_temperature', s: '21.5', lu: timestampSeconds }]],
+    };
+
+    const normalized = runtime.hdpNormalizeHistoryByEntity(history, sensors);
+    expect(normalized['sensor.living_temperature']).toHaveLength(1);
+
+    const series = runtime.hdpBuildEnvironmentSeries(hass, sensors, history);
+    expect(series).toHaveLength(1);
+    expect(series[0].area_name).toBe('Living');
+    expect(series[0].values.some((value: number | null) => value === 21.5)).toBe(true);
+  });
+
+  it('falls back to current sensor state when history points are unusable', () => {
+    const runtime = createHistoryRuntime();
+    const hass = {
+      states: {
+        'sensor.bedroom_humidity': { state: '48', attributes: {} },
+      },
+    };
+    const sensors = [{
+      entity_id: 'sensor.bedroom_humidity',
+      area_id: 'bedroom',
+      area_name: 'Bedroom',
+      unit: '%',
+    }];
+
+    const series = runtime.hdpBuildEnvironmentSeries(hass, sensors, {
+      result: [[{ entity_id: 'sensor.bedroom_humidity', s: 'unknown', lu: null }]],
+    });
+
+    expect(series).toHaveLength(1);
+    expect(series[0].values[23]).toBe(48);
+  });
+
+  it('parses both second and millisecond history timestamps', () => {
+    const runtime = createHistoryRuntime();
+    const milliseconds = Date.now() - 30 * 60 * 1000;
+    const seconds = Math.floor(milliseconds / 1000);
+
+    expect(runtime.hdpParseHistoryTimestamp({ lu: seconds })).toBe(seconds * 1000);
+    expect(runtime.hdpParseHistoryTimestamp({ last_changed_ts: milliseconds })).toBe(milliseconds);
+    expect(runtime.hdpParseHistoryTimestamp({ lastChanged: String(seconds) })).toBe(seconds * 1000);
   });
 
   it('opens themed popups for status badges and automation settings', () => {

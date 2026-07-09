@@ -460,13 +460,19 @@ function hdpBuildEnvironmentSeries(hass, sensors, history) {
       if (!isNaN(current)) areas[sensor.area_id].buckets[23].values.push(current);
       return;
     }
+    var added = false;
     points.forEach(function(point) {
       var value = parseFloat(point.state != null ? point.state : point.s);
       var changed = hdpParseHistoryTimestamp(point);
       if (isNaN(value) || isNaN(changed)) return;
       var index = Math.max(0, Math.min(23, Math.floor((changed - start) / (60 * 60 * 1000))));
       areas[sensor.area_id].buckets[index].values.push(value);
+      added = true;
     });
+    if (!added) {
+      var fallback = hass.states[sensor.entity_id] && parseFloat(hass.states[sensor.entity_id].state);
+      if (!isNaN(fallback)) areas[sensor.area_id].buckets[23].values.push(fallback);
+    }
   });
 
   return Object.keys(areas).map(function(areaId) {
@@ -493,8 +499,17 @@ function hdpBuildEnvironmentSeries(hass, sensors, history) {
 
 function hdpNormalizeHistoryByEntity(history, sensors) {
   var byEntity = {};
+  history = hdpUnwrapHistoryResult(history);
   if (Array.isArray(history)) {
     history.forEach(function(item, index) {
+      item = hdpUnwrapHistoryResult(item);
+      if (item && !Array.isArray(item) && typeof item === 'object') {
+        var entityKeys = Object.keys(item).filter(function(key) { return Array.isArray(item[key]); });
+        if (entityKeys.length && !Array.isArray(item.states) && !Array.isArray(item.history) && !Array.isArray(item.points)) {
+          entityKeys.forEach(function(entityId) { byEntity[entityId] = item[entityId]; });
+          return;
+        }
+      }
       var points = Array.isArray(item) ? item : (item && (item.states || item.history || item.points));
       if (!Array.isArray(points) || !points.length) return;
       var first = points[0];
@@ -515,12 +530,34 @@ function hdpNormalizeHistoryByEntity(history, sensors) {
   return byEntity;
 }
 
+function hdpUnwrapHistoryResult(value) {
+  var current = value;
+  for (var i = 0; i < 3; i++) {
+    if (!current || typeof current !== 'object' || Array.isArray(current)) return current;
+    if (current.result != null) {
+      current = current.result;
+      continue;
+    }
+    if (current.data != null) {
+      current = current.data;
+      continue;
+    }
+    return current;
+  }
+  return current;
+}
+
 function hdpParseHistoryTimestamp(point) {
-  var raw = point.last_changed || point.last_updated;
+  var raw = point.last_changed || point.last_updated || point.lastChanged || point.lastUpdated ||
+    point.last_changed_ts || point.last_updated_ts || point.last_changed_timestamp || point.last_updated_timestamp ||
+    point.time || point.ts || point.t;
   if (raw == null) raw = point.lc != null ? point.lc : point.lu;
   if (raw == null) return NaN;
-  if (typeof raw === 'number') return raw * 1000;
-  if (typeof raw === 'string' && /^\\d+(\\.\\d+)?$/.test(raw)) return parseFloat(raw) * 1000;
+  if (typeof raw === 'number') return raw > 1000000000000 ? raw : raw * 1000;
+  if (typeof raw === 'string' && /^\\d+(\\.\\d+)?$/.test(raw)) {
+    var parsed = parseFloat(raw);
+    return parsed > 1000000000000 ? parsed : parsed * 1000;
+  }
   return Date.parse(raw);
 }
 
