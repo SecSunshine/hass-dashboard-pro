@@ -140,6 +140,38 @@ describe('layout card', () => {
     expect(card.content).toContain('data-layout-preset="l_shape"');
   });
 
+  it('exports dashboard filters for runtime popups', () => {
+    const card = buildLayoutCard({
+      hass,
+      config: {
+        type: 'custom:hass-dashboard-pro',
+        hdp_config: {
+          areas: { hidden_areas: ['garage'], hide_unavailable: true },
+          devices: {
+            hidden_domains: ['camera'],
+            hidden_device_types: ['sensor.power'],
+            hidden_keywords: ['guest'],
+            visible_keywords: ['main'],
+          },
+        } as any,
+      },
+      homeHTML: '',
+      areaSections: [],
+      devicesHTML: '',
+      settingsHTML: '',
+      areaSummaries: [],
+      blueprintPages: [],
+    });
+
+    expect(card.content).toContain('data-dashboard-filters="');
+    expect(card.content).toContain('&quot;hiddenAreas&quot;:[&quot;garage&quot;]');
+    expect(card.content).toContain('&quot;hiddenDomains&quot;:[&quot;camera&quot;]');
+    expect(card.content).toContain('&quot;hideUnavailable&quot;:true');
+    expect(card.content).toContain('&quot;hiddenDeviceTypes&quot;:[&quot;sensor.power&quot;]');
+    expect(card.content).toContain('&quot;hiddenKeywords&quot;:[&quot;guest&quot;]');
+    expect(card.content).toContain('&quot;visibleKeywords&quot;:[&quot;main&quot;]');
+  });
+
   it('uses the configurable sidebar avatar to toggle dashboard fullscreen', () => {
     const card = buildLayoutCard({
       hass: {

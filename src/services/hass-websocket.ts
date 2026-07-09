@@ -303,12 +303,12 @@ window.hdpShowEnvironmentHistory = hdpShowEnvironmentHistory;
 
 function hdpFindEnvironmentSensors(hass, metric) {
   var result = [];
+  var filters = hdpGetRuntimeDashboardFilters();
   Object.keys(hass.states || {}).forEach(function(entityId) {
     if (entityId.indexOf('sensor.') !== 0) return;
+    if (!hdpRuntimeEntityVisible(hass, entityId, filters)) return;
     var stateObj = hass.states[entityId];
     if (!stateObj || !stateObj.attributes) return;
-    var registry = hass.entities && hass.entities[entityId];
-    if (registry && (registry.disabled_by || registry.hidden_by)) return;
     var attrs = stateObj.attributes;
     var deviceClass = attrs.device_class || '';
     var unit = attrs.unit_of_measurement || '';
@@ -348,6 +348,75 @@ function hdpResolveEntityArea(hass, entityId) {
     id: areaId || '__unassigned__',
     name: area && area.name ? area.name : (areaId || '未分配区域')
   };
+}
+
+function hdpGetRuntimeDashboardFilters() {
+  var root = document.getElementById('hdp-root');
+  var raw = root && root.getAttribute('data-dashboard-filters');
+  var parsed = {};
+  if (raw) {
+    try { parsed = JSON.parse(raw); } catch(e) { parsed = {}; }
+  }
+  return {
+    hiddenAreas: hdpCleanRuntimeList(parsed.hiddenAreas),
+    hiddenDomains: hdpCleanRuntimeList(parsed.hiddenDomains),
+    hideUnavailable: parsed.hideUnavailable === true,
+    hiddenDeviceTypes: hdpCleanRuntimeList(parsed.hiddenDeviceTypes),
+    hiddenKeywords: hdpCleanRuntimeList(parsed.hiddenKeywords),
+    visibleKeywords: hdpCleanRuntimeList(parsed.visibleKeywords)
+  };
+}
+
+function hdpCleanRuntimeList(value) {
+  if (!Array.isArray(value)) return [];
+  return value.map(function(item) { return String(item || '').trim().toLowerCase(); })
+    .filter(function(item) { return item.length > 0; });
+}
+
+function hdpRuntimeEntityVisible(hass, entityId, filters) {
+  var stateObj = hass.states && hass.states[entityId];
+  if (!stateObj) return false;
+  var domain = entityId.split('.')[0];
+  if (filters.hiddenDomains.indexOf(domain.toLowerCase()) >= 0) return false;
+  var registry = hass.entities && hass.entities[entityId];
+  if (registry && (registry.disabled_by || registry.hidden_by)) return false;
+  var state = String(stateObj.state == null ? 'unknown' : stateObj.state);
+  if (filters.hideUnavailable && !hdpIsDomainEntityAvailable(state)) return false;
+  var deviceType = hdpGetRuntimeEntityDeviceType(entityId, stateObj.attributes || {});
+  if (filters.hiddenDeviceTypes.indexOf(deviceType.toLowerCase()) >= 0) return false;
+  var area = hdpResolveEntityArea(hass, entityId);
+  if (filters.hiddenAreas.indexOf(String(area.id || '').toLowerCase()) >= 0) return false;
+  return hdpMatchesRuntimeKeywordVisibility(hass, entityId, area, deviceType, filters);
+}
+
+function hdpGetRuntimeEntityDeviceType(entityId, attrs) {
+  var domain = entityId.split('.')[0];
+  var deviceClass = attrs && attrs.device_class;
+  return typeof deviceClass === 'string' && deviceClass ? domain + '.' + deviceClass : domain;
+}
+
+function hdpMatchesRuntimeKeywordVisibility(hass, entityId, area, deviceType, filters) {
+  if (!filters.visibleKeywords.length && !filters.hiddenKeywords.length) return true;
+  var stateObj = hass.states && hass.states[entityId];
+  var registry = hass.entities && hass.entities[entityId];
+  var device = registry && registry.device_id && hass.devices ? hass.devices[registry.device_id] : null;
+  var values = [
+    entityId,
+    stateObj && stateObj.attributes && stateObj.attributes.friendly_name,
+    registry && registry.name_by_user,
+    registry && registry.name,
+    registry && registry.original_name,
+    device && device.name_by_user,
+    device && device.name,
+    area && area.name,
+    deviceType
+  ];
+  var haystack = values.filter(function(value) {
+    return typeof value === 'string' && value.length > 0;
+  }).join(' ').toLowerCase();
+  if (filters.visibleKeywords.length && !filters.visibleKeywords.some(function(keyword) { return haystack.indexOf(keyword) >= 0; })) return false;
+  if (filters.hiddenKeywords.some(function(keyword) { return haystack.indexOf(keyword) >= 0; })) return false;
+  return true;
 }
 
 function hdpBuildEnvironmentSeries(hass, sensors, history) {
@@ -611,10 +680,10 @@ window.hdpShowDeviceDomain = function(domain) {
 
 function hdpCollectDomainEntities(hass, domain) {
   var rows = [];
+  var filters = hdpGetRuntimeDashboardFilters();
   Object.keys(hass.states || {}).forEach(function(entityId) {
     if (entityId.split('.')[0] !== domain) return;
-    var registry = hass.entities && hass.entities[entityId];
-    if (registry && (registry.disabled_by || registry.hidden_by)) return;
+    if (!hdpRuntimeEntityVisible(hass, entityId, filters)) return;
     var stateObj = hass.states[entityId];
     var attrs = stateObj.attributes || {};
     var area = hdpResolveEntityArea(hass, entityId);

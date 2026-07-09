@@ -50,6 +50,7 @@ describe('hass websocket script', () => {
     expect(js).toContain("unit === '°F'");
     expect(js).toContain('significant_changes_only: false');
     expect(js).toContain('function hdpBuildEnvironmentSeries');
+    expect(js).toContain('if (!hdpRuntimeEntityVisible(hass, entityId, filters)) return;');
     expect(js).toContain('function hdpNormalizeHistoryByEntity(history, sensors)');
     expect(js).toContain('if (!entityId && sensors[index]) entityId = sensors[index].entity_id;');
     expect(js).toContain('else if (value && Array.isArray(value.points)) byEntity[entityId] = value.points;');
@@ -72,6 +73,16 @@ describe('hass websocket script', () => {
     expect(js).toContain('window.hdpShowDeviceDomain = function(domain)');
     expect(js).toContain('hdpOpenDeviceDomainModal(domain);');
     expect(js).toContain('function hdpCollectDomainEntities(hass, domain)');
+    expect(js).toContain('var filters = hdpGetRuntimeDashboardFilters();');
+    expect(js).toContain('function hdpGetRuntimeDashboardFilters()');
+    expect(js).toContain("root.getAttribute('data-dashboard-filters')");
+    expect(js).toContain('function hdpRuntimeEntityVisible(hass, entityId, filters)');
+    expect(js).toContain('filters.hiddenDomains.indexOf(domain.toLowerCase()) >= 0');
+    expect(js).toContain('filters.hiddenDeviceTypes.indexOf(deviceType.toLowerCase()) >= 0');
+    expect(js).toContain("filters.hiddenAreas.indexOf(String(area.id || '').toLowerCase()) >= 0");
+    expect(js).toContain('function hdpMatchesRuntimeKeywordVisibility');
+    expect(js).toContain('filters.visibleKeywords.length && !filters.visibleKeywords.some');
+    expect(js).toContain('filters.hiddenKeywords.some');
     expect(js).toContain('function hdpIsDomainEntityAvailable(state)');
     expect(js).toContain('if (a.available !== b.available) return a.available ? -1 : 1;');
     expect(js).toContain('hdp-domain-modal-row--unavailable');

@@ -25,7 +25,7 @@ import { buildImportModalHTML, generateBlueprintModalJS } from '../blueprints/bl
 import { buildThemeStudioHTML, generateThemeStudioJS } from '../templates/theme-studio';
 import { escapeAttribute, escapeHTML, escapeInlineStyleValue, escapeURLAttribute } from '../utils/html';
 import { safeBlueprintViewId } from '../utils/dom-id';
-import { getConfiguredHiddenAreas } from '../utils/dashboard-model';
+import { getConfiguredHiddenAreas, getDashboardFilters } from '../utils/dashboard-model';
 import { generateCardSlotEditorJS, getCardSlotCSS } from '../utils/card-slots';
 
 export interface LayoutCardOptions {
@@ -59,6 +59,7 @@ export function buildLayoutCard(opts: LayoutCardOptions): LovelaceCardConfig {
     ? ` style="--hdp-dashboard-bg-image: url(${escapeInlineStyleValue(dashboardBackground)});"`
     : '';
   const dashboardBgClass = dashboardBackground ? ' hdp-root--image-bg' : '';
+  const runtimeFilters = escapeAttribute(JSON.stringify(getDashboardFilters(config)));
   const showSettings = shouldShowSettings(hass, config);
   const settingsViewHTML = showSettings
     ? `<div class="hdp-view" data-view="settings" style="display:none">
@@ -222,7 +223,7 @@ ${generateDesignTokenCSS(tokens)}
   }
   ${generateBentoCSS()}
 </style>
-<div class="hdp-root${dashboardBgClass}" id="hdp-root"${dashboardStyle}>
+<div class="hdp-root${dashboardBgClass}" id="hdp-root" data-dashboard-filters="${runtimeFilters}"${dashboardStyle}>
   <aside class="hdp-sidebar">${sidebarHTML}</aside>
   <div class="hdp-resize-handle"></div>
   <main class="hdp-main">
