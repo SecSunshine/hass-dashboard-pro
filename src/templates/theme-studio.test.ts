@@ -38,6 +38,7 @@ describe('theme studio', () => {
     expect(js).toContain('state.skin = sanitizeSkin(cfg.card_style);');
     expect(js).toContain('if (config.skin) state.skin = sanitizeSkin(config.skin);');
     expect(js).toContain('cfg.card_style = sanitizeSkin(state.skin);');
+    expect(js).toContain("'soft-data'");
   });
 
   it('uses responsive shrink-safe studio layout css', () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { EntityInfo, Hass } from '../types';
+import type { EntityInfo, Hass, StrategyConfig } from '../types';
 import { buildAreaHTML } from './area-view';
 
 const hass: Hass = {
@@ -72,5 +72,56 @@ describe('area view', () => {
     expect(html).toContain('data-entity="sensor.power_meter"');
     expect(html).not.toContain('data-entity="sensor.power_meter" data-action="toggle"');
     expect(html).toContain('.ec[role="button"]:focus-visible');
+  });
+
+  it('lets area domain slots replace default domain sections', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        cards: {
+          slots: {
+            'area.domain.light': {
+              yaml: [
+                'type: custom:html-pro-card',
+                'content: |',
+                '  <div class="custom-area-light" data-view="area" data-action="toggle">Area Light Slot</div>',
+              ].join('\n'),
+            },
+          },
+        },
+      } as any,
+    };
+
+    const html = buildAreaHTML('Kitchen With A Very Long Area Name', entities, hass, undefined, undefined, config);
+    expect(html).toContain('Area Light Slot');
+    expect(html).toContain('data-card-slot="area.domain.light"');
+    expect(html).toContain('data-card-custom="true"');
+    expect(html).not.toContain('Kitchen Counter');
+    expect(html).toContain('Power Meter With An Extremely Long Friendly Name');
+  });
+
+  it('lets entity domain slots replace area entity cards', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        cards: {
+          slots: {
+            'entity.domain.sensor': {
+              yaml: [
+                'type: custom:html-pro-card',
+                'content: |',
+                '  <button class="custom-sensor" data-entity="sensor.power_meter" data-action="more-info">Sensor Slot</button>',
+              ].join('\n'),
+            },
+          },
+        },
+      } as any,
+    };
+
+    const html = buildAreaHTML('Kitchen With A Very Long Area Name', entities, hass, undefined, undefined, config);
+    expect(html).toContain('Sensor Slot');
+    expect(html).toContain('data-card-slot="entity.domain.sensor"');
+    expect(html).toContain('data-card-custom="true"');
+    expect(html).not.toContain('Power Meter With An Extremely Long Friendly Name');
   });
 });

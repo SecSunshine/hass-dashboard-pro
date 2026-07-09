@@ -19,18 +19,21 @@ describe('hass websocket script', () => {
     const js = generateConnectionDiscoveryJS();
 
     expect(js).toContain('function hdpHandleDomainControl(control)');
-    expect(js).toContain("var domainControl = e.target.closest('[data-action][data-entity]');");
-    expect(js).toContain("if (domainControl && domainControl.closest('[data-no-toggle]'))");
+    expect(js).toContain('function hdpClosestFromEvent(e, selector)');
+    expect(js).toContain("typeof e.composedPath === 'function' ? e.composedPath() : []");
+    expect(js).toContain("var domainControl = hdpClosestFromEvent(e, '[data-action][data-entity]');");
+    expect(js).toContain("if (domainControl && hdpClosestFromEvent(e, '[data-no-toggle]'))");
     expect(js).toContain("hdpSetClimateMode(entityId, control.getAttribute('data-mode') || 'auto');");
     expect(js).toContain("hdpCoverAction(entityId, action.replace('cover-', ''));");
-    expect(js).toContain("if (e.target.closest('[data-no-toggle]')) return;");
+    expect(js).toContain("}, true);");
+    expect(js).toContain("if (hdpClosestFromEvent(e, '[data-no-toggle]')) return;");
   });
 
   it('adds keyboard activation for declarative toggle cards', () => {
     const js = generateConnectionDiscoveryJS();
 
     expect(js).toContain("document.addEventListener('keydown'");
-    expect(js).toContain("e.target.closest('[data-action=\"toggle\"][data-entity]')");
+    expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"toggle\"][data-entity]')");
     expect(js).toContain('card.click();');
   });
 
@@ -40,8 +43,27 @@ describe('hass websocket script', () => {
     expect(js).toContain('function hdpShowEnvironmentHistory(metric)');
     expect(js).toContain("type: 'history/history_during_period'");
     expect(js).toContain('entity_ids: sensors.map');
+    expect(js).toContain("unit === '°C'");
+    expect(js).toContain("unit === '°F'");
+    expect(js).toContain('significant_changes_only: false');
     expect(js).toContain('function hdpBuildEnvironmentSeries');
+    expect(js).toContain('point.state != null ? point.state : point.s');
+    expect(js).toContain('function hdpParseHistoryTimestamp(point)');
+    expect(js).toContain("if (typeof raw === 'number') return raw * 1000;");
     expect(js).toContain('function hdpBuildSparkline');
     expect(js).toContain('window.hdpShowEnvironmentHistory = hdpShowEnvironmentHistory;');
+  });
+
+  it('opens themed popups for status badges and automation settings', () => {
+    const js = generateConnectionDiscoveryJS();
+
+    expect(js).toContain('function hdpApplyThemeVarsToOverlay(overlay)');
+    expect(js).toContain("window.hdpOpenDeviceDomainModal = hdpOpenDeviceDomainModal;");
+    expect(js).toContain('window.hdpShowDeviceDomain = function(domain)');
+    expect(js).toContain('hdpOpenDeviceDomainModal(domain);');
+    expect(js).toContain('function hdpCollectDomainEntities(hass, domain)');
+    expect(js).toContain('function hdpOpenAutomationConfig()');
+    expect(js).toContain("src=\"/config/automation/dashboard\"");
+    expect(js).toContain("new CustomEvent('hass-more-info'");
   });
 });

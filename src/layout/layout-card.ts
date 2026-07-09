@@ -23,9 +23,10 @@ import { generateStorageJS } from '../services/storage';
 import { generateBlueprintJS } from '../blueprints/blueprint-storage';
 import { buildImportModalHTML, generateBlueprintModalJS } from '../blueprints/blueprint-gallery';
 import { buildThemeStudioHTML, generateThemeStudioJS } from '../templates/theme-studio';
-import { escapeAttribute, escapeHTML } from '../utils/html';
+import { escapeAttribute, escapeHTML, escapeInlineStyleValue, escapeURLAttribute } from '../utils/html';
 import { safeBlueprintViewId } from '../utils/dom-id';
 import { getConfiguredHiddenAreas } from '../utils/dashboard-model';
+import { generateCardSlotEditorJS, getCardSlotCSS } from '../utils/card-slots';
 
 export interface LayoutCardOptions {
   hass: Hass;
@@ -53,6 +54,11 @@ export function buildLayoutCard(opts: LayoutCardOptions): LovelaceCardConfig {
   const title = config.hdp_config?.dashboard?.name || config.sidebar_title || config.title || '智能家居';
   const hiddenAreas = getConfiguredHiddenAreas(config);
   const homeLayoutPreset = sanitizeHomeLayoutPreset(config.hdp_config?.home?.layout_preset);
+  const dashboardBackground = escapeURLAttribute(config.hdp_config?.dashboard?.background_image_url || '');
+  const dashboardStyle = dashboardBackground
+    ? ` style="--hdp-dashboard-bg-image: url(${escapeInlineStyleValue(dashboardBackground)});"`
+    : '';
+  const dashboardBgClass = dashboardBackground ? ' hdp-root--image-bg' : '';
   const showSettings = shouldShowSettings(hass, config);
   const settingsViewHTML = showSettings
     ? `<div class="hdp-view" data-view="settings" style="display:none">
@@ -63,6 +69,15 @@ export function buildLayoutCard(opts: LayoutCardOptions): LovelaceCardConfig {
     </div>`
     : '';
   const settingsScript = showSettings ? settingsJS || '' : '';
+  const cardSlotEditorScript = showSettings ? generateCardSlotEditorJS() : '';
+  const homeEditBarHTML = showSettings
+    ? `<div class="hdp-home-edit-bar" data-editing="false">
+      <button type="button" data-action="enter-card-edit" onclick="hdpToggleCardEditMode(true)">编辑首页</button>
+      <button type="button" data-action="manage-hidden-cards" onclick="hdpOpenHiddenCardSlots()">管理隐藏</button>
+      <button type="button" class="hdp-primary" data-action="save-card-edits" onclick="hdpSaveCardEdits()">保存并应用</button>
+      <button type="button" data-action="cancel-card-edits" onclick="hdpCancelCardEdits()">取消</button>
+    </div>`
+    : '';
   const themeStudioHTML = showSettings ? buildThemeStudioHTML(tokens, hass, config) : '';
   const themeStudioJS = showSettings ? generateThemeStudioJS() : '';
   const blueprintAdminHTML = showSettings ? buildImportModalHTML() : '';
@@ -113,6 +128,31 @@ ${generateDesignTokenCSS(tokens)}
     background: var(--hdp-bg);
     font: inherit;
     color: var(--hdp-text);
+    position: relative;
+  }
+  .hdp-root::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: var(--hdp-dashboard-bg-image, none);
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .hdp-root--image-bg::before {
+    opacity: 1;
+  }
+  .hdp-root--image-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--hdp-bg) 88%, transparent), color-mix(in srgb, var(--hdp-bg) 70%, transparent));
+    pointer-events: none;
+  }
+  .hdp-root > * {
+    position: relative;
+    z-index: 1;
   }
   .hdp-root--fullscreen {
     position: fixed;
@@ -135,6 +175,7 @@ ${generateDesignTokenCSS(tokens)}
   }
   ${getSidebarCSS()}
   ${getBottomNavCSS()}
+  ${getCardSlotCSS()}
   .hdp-main {
     flex: 1;
     min-width: 0;
@@ -144,6 +185,22 @@ ${generateDesignTokenCSS(tokens)}
   }
   .hdp-view {
     animation: hdpFadeIn 0.2s ease;
+  }
+  .hdp-home-edit-bar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    min-width: 0;
+  }
+  .hdp-home-edit-bar[data-editing="false"] [data-action="save-card-edits"],
+  .hdp-home-edit-bar[data-editing="false"] [data-action="cancel-card-edits"],
+  .hdp-home-edit-bar[data-editing="false"] [data-action="manage-hidden-cards"] {
+    display: none;
+  }
+  .hdp-home-edit-bar[data-editing="true"] [data-action="enter-card-edit"] {
+    display: none;
   }
   @keyframes hdpFadeIn {
     from { opacity: 0; transform: translateY(4px); }
@@ -165,11 +222,12 @@ ${generateDesignTokenCSS(tokens)}
   }
   ${generateBentoCSS()}
 </style>
-<div class="hdp-root" id="hdp-root">
+<div class="hdp-root${dashboardBgClass}" id="hdp-root"${dashboardStyle}>
   <aside class="hdp-sidebar">${sidebarHTML}</aside>
   <div class="hdp-resize-handle"></div>
   <main class="hdp-main">
     <div class="hdp-view" data-view="home">
+      ${homeEditBarHTML}
       <div class="hdp-home-content hdp-home-content--${escapeAttribute(homeLayoutPreset)}" data-layout-preset="${escapeAttribute(homeLayoutPreset)}">${homeHTML}</div>
     </div>
     <div class="hdp-view" data-view="devices" style="display:none">
@@ -192,6 +250,7 @@ ${generateStorageJS()}
 ${blueprintAdminJS}
 ${devicesJS || ''}
 ${settingsScript}
+${cardSlotEditorScript}
 ${themeStudioJS}
 ${buildNavigationScript(opts.initialView || 'home')}
 </script>`;

@@ -23,6 +23,7 @@ import { buildDomainCard, getDomainCardCSS } from './entity-cards';
 import { collectVisibleEntities, getDashboardFilters } from '../utils/dashboard-model';
 import { escapeAttribute, escapeHTML } from '../utils/html';
 import { cardSkinClass, sanitizeCardSkin } from '../utils/card-skin';
+import { resolveSlottedCard, sortSlottedCards, type SlottedCard } from '../utils/card-slots';
 
 // ─── Main Export ────────────────────────────────────────────────────────────
 
@@ -65,11 +66,27 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
   // Domain sections
   const skin = sanitizeCardSkin(tokens?.card_style);
   const cs = tokens?.card_sizes;
-  const sectionsHTML = sorted.map(([domain, entities]) => {
-    const sectionHTML = buildDomainSection(domain, entities, skin, hass);
+  const slottedSections: SlottedCard[] = sorted.map(([domain, entities], index) => {
+    const sectionHTML = buildDomainSection(domain, entities, skin, hass, config);
     const defaultSize = entities.length <= 4 ? 'md' : 'wide';
-    return bentoWrap(sectionHTML, resolveCardSize(`device_domain_${domain}`, defaultSize, cs));
-  }).join('');
+    return resolveSlottedCard(
+      config,
+      `device.domain.${domain}`,
+      sectionHTML,
+      resolveCardSize(`device_domain_${domain}`, defaultSize, cs),
+      index + 1,
+    );
+  });
+  const sectionsHTML = sortSlottedCards(slottedSections)
+    .map(section => bentoWrap(section.html, section.size))
+    .join('');
+  const chipsSlot = resolveSlottedCard(
+    config,
+    'devices.chips',
+    `<div class="dv-chips">${chipsHTML}</div>`,
+    resolveCardSize('devices_chips', 'wide', cs),
+    0,
+  );
 
   return `
 <style>
@@ -173,7 +190,7 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
   ${getDeviceEntityCardCSS()}
   ${getDomainCardCSS()}
 </style>
-${bentoWrap(`<div class="dv-chips">${chipsHTML}</div>`, resolveCardSize('devices_chips', 'wide', cs))}
+${chipsSlot.hidden ? '' : bentoWrap(chipsSlot.html, chipsSlot.size)}
 ${sectionsHTML || bentoWrap('<div class="dv-empty">暂无设备</div>', resolveCardSize('devices_empty', 'wide', cs))}`;
 }
 
@@ -193,6 +210,10 @@ window.hdpScrollToDomain = function(domain) {
 };
 
 window.hdpShowDeviceDomain = function(domain) {
+  if (typeof window.hdpOpenDeviceDomainModal === 'function') {
+    window.hdpOpenDeviceDomainModal(domain);
+    return;
+  }
   if (typeof window.hdpShowView === 'function') window.hdpShowView('devices');
   window.setTimeout(function() {
     if (typeof window.hdpScrollToDomain === 'function') window.hdpScrollToDomain(domain);
@@ -202,12 +223,12 @@ window.hdpShowDeviceDomain = function(domain) {
 
 // ─── Domain Section ─────────────────────────────────────────────────────────
 
-function buildDomainSection(domain: string, entities: EntityInfo[], skin?: string, hass?: Hass): string {
+function buildDomainSection(domain: string, entities: EntityInfo[], skin?: string, hass?: Hass, config?: StrategyConfig): string {
   const label = DOMAIN_GROUPS[domain]?.label || domain;
   const activeCount = entities.filter(e => isEntityOn(e.state, e.domain)).length;
   const iconColor = getDomainColor(domain);
 
-  const cardsHTML = entities.map(e => buildDeviceEntityCard(e, skin, hass)).join('');
+  const cardsHTML = entities.map(e => buildDeviceEntityCard(e, skin, hass, config)).join('');
 
   const safeDomain = escapeAttribute(domain);
 
@@ -364,14 +385,19 @@ function getDeviceEntityCardCSS(): string {
 
 // ─── Entity Card ────────────────────────────────────────────────────────────
 
-function buildDeviceEntityCard(entity: EntityInfo, skin?: string, hass?: Hass): string {
+function buildDeviceEntityCard(entity: EntityInfo, skin?: string, hass?: Hass, config?: StrategyConfig): string {
+  let generated = '';
   // Try domain-specific card first (climate, cover, lock, media_player, vacuum)
   if (hass) {
     const stateObj = hass.states[entity.entity_id];
     if (stateObj) {
       const domainCard = buildDomainCard(entity, stateObj, skin);
-      if (domainCard) return domainCard;
+      if (domainCard) generated = domainCard;
     }
+  }
+
+  if (generated) {
+    return resolveSlottedCard(config || { type: 'custom:hass-dashboard-pro' }, `entity.domain.${entity.domain}`, generated, 'md', 0).html;
   }
 
   // Default card for light, switch, fan, sensor, etc.
@@ -394,7 +420,7 @@ function buildDeviceEntityCard(entity: EntityInfo, skin?: string, hass?: Hass): 
         </div>
       </div>`;
 
-  return `<div class="${cardCls}" ${cardAttrs}>
+  generated = `<div class="${cardCls}" ${cardAttrs}>
     <div class="dvc-bar"></div>
     <div class="dvc-row">
       <div class="dvc-ico ${active ? 'dvc-ico--on' : 'dvc-ico--off'}">${iconSVG}</div>
@@ -409,6 +435,7 @@ function buildDeviceEntityCard(entity: EntityInfo, skin?: string, hass?: Hass): 
       ${rightHTML}
     </div>
   </div>`;
+  return resolveSlottedCard(config || { type: 'custom:hass-dashboard-pro' }, `entity.domain.${entity.domain}`, generated, 'md', 0).html;
 }
 
 // ─── Domain Color Map ───────────────────────────────────────────────────────

@@ -44,6 +44,14 @@ export function parseBlueprintYAML(yaml: string): BlueprintDefinition {
   return { meta, card };
 }
 
+export function parseCardYAML(yaml: string): LovelaceCardConfig {
+  const trimmed = yaml.trim();
+  if (!trimmed) return { type: '' };
+  if (/^card\s*:/m.test(trimmed)) return parseBlueprintYAML(trimmed).card;
+  const indented = trimmed.split('\n').map(line => line ? `  ${line}` : line).join('\n');
+  return parseBlueprintYAML(`card:\n${indented}`).card;
+}
+
 /**
  * Parse the meta section of blueprint YAML.
  */
@@ -190,7 +198,7 @@ function parseSimpleYAMLObject(lines: string[]): LovelaceCardConfig {
 
     // Check for multi-line string indicator
     if (trimmed.endsWith('|') || trimmed.endsWith('>')) {
-      const key = trimmed.replace(/[|>]\s*$/, '').replace(/:$/, '').trim();
+      const key = trimmed.replace(/[|>]\s*$/, '').trim().replace(/:$/, '').trim();
       const isFolded = trimmed.endsWith('>');
       const blockLines: string[] = [];
       let blockIndent = -1;

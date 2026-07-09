@@ -98,6 +98,23 @@ function hdpShowToast(msg, type) {
   }, 2500);
 }
 
+function hdpApplyThemeVarsToOverlay(overlay) {
+  var root = document.getElementById('hdp-root');
+  if (!overlay || !root || !window.getComputedStyle) return;
+  var styles = window.getComputedStyle(root);
+  [
+    '--hdp-bg', '--hdp-card-bg', '--hdp-text', '--hdp-text-secondary',
+    '--hdp-text-muted', '--hdp-border', '--hdp-primary', '--hdp-primary-light',
+    '--hdp-success', '--hdp-success-light', '--hdp-info', '--hdp-info-light',
+    '--hdp-warning', '--hdp-warning-light', '--hdp-danger', '--hdp-danger-light',
+    '--hdp-radius', '--hdp-radius-sm', '--hdp-radius-pill', '--hdp-shadow-card',
+    '--hdp-shadow-elevated'
+  ].forEach(function(name) {
+    var value = styles.getPropertyValue(name);
+    if (value) overlay.style.setProperty(name, value);
+  });
+}
+
 function hdpToggleEntity(entityId) {
   var hass = hdpFindHass();
   if (!hass || !hass.callService) {
@@ -265,7 +282,8 @@ function hdpShowEnvironmentHistory(metric) {
     end_time: end.toISOString(),
     entity_ids: sensors.map(function(sensor) { return sensor.entity_id; }),
     minimal_response: true,
-    no_attributes: true
+    no_attributes: true,
+    significant_changes_only: false
   }).then(function(history) {
     hdpOpenEnvironmentHistoryModal(metric, sensors, hdpBuildEnvironmentSeries(hass, sensors, history), false);
   }).catch(function(err) {
@@ -363,8 +381,8 @@ function hdpBuildEnvironmentSeries(hass, sensors, history) {
       return;
     }
     points.forEach(function(point) {
-      var value = parseFloat(point.state);
-      var changed = Date.parse(point.last_changed || point.last_updated || point.lu || point.lc || '');
+      var value = parseFloat(point.state != null ? point.state : point.s);
+      var changed = hdpParseHistoryTimestamp(point);
       if (isNaN(value) || isNaN(changed)) return;
       var index = Math.max(0, Math.min(23, Math.floor((changed - start) / (60 * 60 * 1000))));
       areas[sensor.area_id].buckets[index].values.push(value);
@@ -393,12 +411,22 @@ function hdpBuildEnvironmentSeries(hass, sensors, history) {
   });
 }
 
+function hdpParseHistoryTimestamp(point) {
+  var raw = point.last_changed || point.last_updated;
+  if (raw == null) raw = point.lc != null ? point.lc : point.lu;
+  if (raw == null) return NaN;
+  if (typeof raw === 'number') return raw * 1000;
+  if (typeof raw === 'string' && /^\\d+(\\.\\d+)?$/.test(raw)) return parseFloat(raw) * 1000;
+  return Date.parse(raw);
+}
+
 function hdpOpenEnvironmentHistoryModal(metric, sensors, series, loading) {
   var existing = document.getElementById('hdp-env-history-modal');
   if (existing) existing.remove();
   var overlay = document.createElement('div');
   overlay.id = 'hdp-env-history-modal';
   overlay.className = 'hdp-env-history-modal';
+  hdpApplyThemeVarsToOverlay(overlay);
   var title = metric === 'humidity' ? '各区域湿度 24 小时曲线' : '各区域温度 24 小时曲线';
   var body = loading
     ? '<div class="hdp-env-history-loading">正在读取历史数据...</div>'
@@ -489,6 +517,173 @@ function hdpEnvironmentHistoryCSS() {
     '.hdp-env-history-loading,.hdp-env-history-empty{grid-column:1/-1;padding:28px;text-align:center;color:var(--hdp-text-muted,#64748b);border:1px dashed var(--hdp-border,rgba(0,0,0,.08));border-radius:14px}';
 }
 
+function hdpOpenAutomationConfig() {
+  var existing = document.getElementById('hdp-automation-config-modal');
+  if (existing) existing.remove();
+  var overlay = document.createElement('div');
+  overlay.id = 'hdp-automation-config-modal';
+  overlay.className = 'hdp-env-history-modal hdp-automation-config-modal';
+  hdpApplyThemeVarsToOverlay(overlay);
+  overlay.innerHTML =
+    '<div class="hdp-env-history-dialog hdp-automation-config-dialog" role="dialog" aria-modal="true" aria-label="自动化配置">' +
+      '<div class="hdp-env-history-head">' +
+        '<div><div class="hdp-env-history-title">自动化配置</div>' +
+        '<div class="hdp-env-history-sub">在 Home Assistant 自动化页面中查看和编辑规则</div></div>' +
+        '<button type="button" class="hdp-env-history-close" aria-label="关闭">×</button>' +
+      '</div>' +
+      '<iframe class="hdp-automation-config-frame" src="/config/automation/dashboard" title="自动化配置"></iframe>' +
+    '</div>' +
+    '<style>' + hdpEnvironmentHistoryCSS() +
+      '.hdp-automation-config-dialog{width:min(1120px,96vw);height:min(820px,92dvh)}' +
+      '.hdp-automation-config-frame{width:100%;height:100%;border:0;background:var(--hdp-bg,#fff);color:var(--hdp-text,#111)}' +
+    '</style>';
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay || e.target.closest('.hdp-env-history-close')) overlay.remove();
+  });
+  document.body.appendChild(overlay);
+}
+
+window.hdpOpenAutomationConfig = hdpOpenAutomationConfig;
+
+function hdpOpenDeviceDomainModal(domain) {
+  var hass = hdpFindHass();
+  if (!hass || !hass.states) {
+    hdpShowToast('无法读取 Home Assistant 设备状态', 'error');
+    return;
+  }
+  domain = String(domain || '').split('.')[0];
+  var entities = hdpCollectDomainEntities(hass, domain);
+  var existing = document.getElementById('hdp-device-domain-modal');
+  if (existing) existing.remove();
+  var overlay = document.createElement('div');
+  overlay.id = 'hdp-device-domain-modal';
+  overlay.className = 'hdp-env-history-modal hdp-device-domain-modal';
+  hdpApplyThemeVarsToOverlay(overlay);
+  var label = hdpDomainLabel(domain);
+  overlay.innerHTML =
+    '<div class="hdp-env-history-dialog hdp-device-domain-dialog" role="dialog" aria-modal="true" aria-label="' + hdpEscapeText(label) + '">' +
+      '<div class="hdp-env-history-head">' +
+        '<div><div class="hdp-env-history-title">' + hdpEscapeText(label) + '</div>' +
+        '<div class="hdp-env-history-sub">优先显示运行中的设备，点击条目打开设备详情</div></div>' +
+        '<button type="button" class="hdp-env-history-close" aria-label="关闭">×</button>' +
+      '</div>' +
+      '<div class="hdp-domain-modal-body">' + hdpRenderDomainEntityList(entities, domain) + '</div>' +
+    '</div>' +
+    '<style>' + hdpEnvironmentHistoryCSS() + hdpDeviceDomainModalCSS() + '</style>';
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay || e.target.closest('.hdp-env-history-close')) {
+      overlay.remove();
+      return;
+    }
+    var row = e.target.closest('[data-domain-modal-entity]');
+    if (!row) return;
+    hdpOpenMoreInfo(row.getAttribute('data-domain-modal-entity'));
+  });
+  document.body.appendChild(overlay);
+}
+
+window.hdpOpenDeviceDomainModal = hdpOpenDeviceDomainModal;
+window.hdpShowDeviceDomain = function(domain) {
+  hdpOpenDeviceDomainModal(domain);
+};
+
+function hdpCollectDomainEntities(hass, domain) {
+  var rows = [];
+  Object.keys(hass.states || {}).forEach(function(entityId) {
+    if (entityId.split('.')[0] !== domain) return;
+    var registry = hass.entities && hass.entities[entityId];
+    if (registry && (registry.disabled_by || registry.hidden_by)) return;
+    var stateObj = hass.states[entityId];
+    var attrs = stateObj.attributes || {};
+    var area = hdpResolveEntityArea(hass, entityId);
+    rows.push({
+      entity_id: entityId,
+      name: attrs.friendly_name || entityId.replace(domain + '.', '').replace(/_/g, ' '),
+      state: stateObj.state,
+      area_name: area.name,
+      active: hdpIsEntityRunning(stateObj.state, domain)
+    });
+  });
+  return rows.sort(function(a, b) {
+    if (a.active !== b.active) return a.active ? -1 : 1;
+    return a.area_name.localeCompare(b.area_name) || a.name.localeCompare(b.name);
+  });
+}
+
+function hdpIsEntityRunning(state, domain) {
+  if (domain === 'climate') return state !== 'off' && state !== 'unavailable' && state !== 'unknown';
+  if (domain === 'cover') return state === 'open' || state === 'opening';
+  if (domain === 'lock') return state === 'unlocked';
+  if (domain === 'media_player') return state === 'playing' || state === 'on';
+  return state === 'on';
+}
+
+function hdpRenderDomainEntityList(entities, domain) {
+  if (!entities.length) return '<div class="hdp-env-history-empty">暂无可显示设备</div>';
+  return entities.map(function(entity) {
+    return '<button type="button" class="hdp-domain-modal-row ' + (entity.active ? 'hdp-domain-modal-row--active' : '') + '" data-domain-modal-entity="' + hdpEscapeText(entity.entity_id) + '">' +
+      '<span class="hdp-domain-modal-dot"></span>' +
+      '<span class="hdp-domain-modal-main"><strong>' + hdpEscapeText(entity.name) + '</strong><small>' + hdpEscapeText(entity.area_name) + '</small></span>' +
+      '<span class="hdp-domain-modal-state">' + hdpEscapeText(hdpFormatDomainState(entity.state, domain)) + '</span>' +
+    '</button>';
+  }).join('');
+}
+
+function hdpOpenMoreInfo(entityId) {
+  window.dispatchEvent(new CustomEvent('hass-more-info', {
+    bubbles: true,
+    composed: true,
+    detail: { entityId: entityId }
+  }));
+}
+
+function hdpDomainLabel(domain) {
+  var labels = {
+    light: '灯光', switch: '开关', climate: '空调', fan: '风扇', cover: '窗帘',
+    lock: '门锁', sensor: '传感器', binary_sensor: '传感器', media_player: '媒体',
+    camera: '摄像头', vacuum: '扫地机', button: '按钮'
+  };
+  return labels[domain] || domain;
+}
+
+function hdpFormatDomainState(state, domain) {
+  var labels = {
+    on: '开启', off: '关闭', open: '开启', closed: '关闭', opening: '开启中',
+    closing: '关闭中', locked: '已锁', unlocked: '未锁', playing: '播放中',
+    paused: '暂停', idle: '待机', unavailable: '不可用', unknown: '未知',
+    heat: '制热', cool: '制冷', auto: '自动', dry: '除湿', fan_only: '送风'
+  };
+  return labels[state] || state;
+}
+
+function hdpDeviceDomainModalCSS() {
+  return '.hdp-device-domain-dialog{width:min(860px,96vw);max-height:min(760px,90dvh)}' +
+    '.hdp-domain-modal-body{padding:14px;overflow:auto;display:grid;gap:10px}' +
+    '.hdp-domain-modal-row{appearance:none;width:100%;min-width:0;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;border:1px solid var(--hdp-border,rgba(0,0,0,.08));background:var(--hdp-card-bg,#fff);color:var(--hdp-text,#111);text-align:left;font:inherit;cursor:pointer;box-shadow:var(--hdp-shadow-card,none)}' +
+    '.hdp-domain-modal-row:hover{border-color:var(--hdp-primary,#4f6ef7);transform:translateY(-1px)}' +
+    '.hdp-domain-modal-dot{width:10px;height:10px;border-radius:999px;background:var(--hdp-text-muted,#94a3b8)}' +
+    '.hdp-domain-modal-row--active .hdp-domain-modal-dot{background:var(--hdp-success,#22c55e);box-shadow:0 0 0 4px var(--hdp-success-light,rgba(34,197,94,.14))}' +
+    '.hdp-domain-modal-main{min-width:0;display:grid;gap:2px}.hdp-domain-modal-main strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}.hdp-domain-modal-main small{color:var(--hdp-text-muted,#64748b);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+    '.hdp-domain-modal-state{font-size:12px;font-weight:800;color:var(--hdp-primary,#4f6ef7);background:var(--hdp-primary-light,rgba(79,110,247,.12));border-radius:999px;padding:5px 10px;white-space:nowrap}';
+}
+
+function hdpClosestFromEvent(e, selector) {
+  if (e && e.target && e.target.closest) {
+    var direct = e.target.closest(selector);
+    if (direct) return direct;
+  }
+  var path = e && typeof e.composedPath === 'function' ? e.composedPath() : [];
+  for (var i = 0; i < path.length; i++) {
+    var node = path[i];
+    if (node && node.matches && node.matches(selector)) return node;
+    if (node && node.closest) {
+      var found = node.closest(selector);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
 function hdpHandleDomainControl(control) {
   if (!control || !control.getAttribute) return false;
   var action = control.getAttribute('data-action') || '';
@@ -535,16 +730,16 @@ function hdpHandleDomainControl(control) {
 function hdpInitEntityClickHandlers() {
   // Event delegation on the main content area
   document.addEventListener('click', function(e) {
-    var domainControl = e.target.closest('[data-action][data-entity]');
-    if (domainControl && domainControl.closest('[data-no-toggle]')) {
+    var domainControl = hdpClosestFromEvent(e, '[data-action][data-entity]');
+    if (domainControl && hdpClosestFromEvent(e, '[data-no-toggle]')) {
       e.preventDefault();
       e.stopPropagation();
       if (hdpHandleDomainControl(domainControl)) return;
     }
     // Domain-specific cards own their inner buttons and service calls.
-    if (e.target.closest('[data-no-toggle]')) return;
+    if (hdpClosestFromEvent(e, '[data-no-toggle]')) return;
     // Check if click is on an entity card or its toggle
-    var card = e.target.closest('[data-entity]');
+    var card = hdpClosestFromEvent(e, '[data-entity]');
     if (!card) return;
     // Domain-specific cards (climate, cover, lock, etc.) have their own buttons
     if (card.hasAttribute('data-no-toggle')) return;
@@ -554,20 +749,20 @@ function hdpInitEntityClickHandlers() {
     var domain = entityId.split('.')[0];
     if (domain === 'sensor' || domain === 'binary_sensor' || domain === 'camera') return;
     hdpToggleEntity(entityId);
-  });
+  }, true);
   document.addEventListener('keydown', function(e) {
     if (e.key !== 'Enter' && e.key !== ' ') return;
-    if (e.target.closest('[data-no-toggle]')) return;
-    var card = e.target.closest('[data-action="toggle"][data-entity]');
+    if (hdpClosestFromEvent(e, '[data-no-toggle]')) return;
+    var card = hdpClosestFromEvent(e, '[data-action="toggle"][data-entity]');
     if (!card) return;
     e.preventDefault();
     card.click();
   });
   document.addEventListener('input', function(e) {
-    var control = e.target.closest('[data-action="media-volume"][data-entity]');
+    var control = hdpClosestFromEvent(e, '[data-action="media-volume"][data-entity]');
     if (!control) return;
     hdpSetMediaVolume(control.getAttribute('data-entity'), Number(control.value) / 100);
-  });
+  }, true);
 }
 `;
 }

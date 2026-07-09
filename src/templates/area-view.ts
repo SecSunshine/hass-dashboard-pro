@@ -13,7 +13,7 @@
  *   - Hover: translateY(-2px), transition: all 0.2s ease
  */
 
-import type { Hass, LovelaceCardConfig, EntityInfo } from '../types';
+import type { Hass, LovelaceCardConfig, EntityInfo, StrategyConfig } from '../types';
 import { generateDesignTokenCSS } from '../styles/design-tokens';
 import type { ResolvedTokens } from '../utils/visual-config';
 import { bentoWrap, resolveCardSize } from '../utils/bento-layout';
@@ -22,6 +22,7 @@ import { formatState, isEntityOn } from '../utils/area-entities';
 import { buildDomainCard, getDomainCardCSS } from './entity-cards';
 import { escapeAttribute, escapeHTML } from '../utils/html';
 import { cardSkinClass, sanitizeCardSkin } from '../utils/card-skin';
+import { resolveSlottedCard, sortSlottedCards, type SlottedCard } from '../utils/card-slots';
 
 // ─── Area-specific Skin Resolution (Phase 6) ────────────────────────────────
 
@@ -88,26 +89,46 @@ export function buildAreaView(areaName: string, entities: EntityInfo[], hass: Ha
  * Build area content as raw HTML string (for embedding in layout card).
  * Phase 6: now accepts areaId and areaSkins for per-area skin resolution.
  */
-export function buildAreaHTML(areaName: string, entities: EntityInfo[], hass: Hass, tokens?: ResolvedTokens, areaId?: string): string {
+export function buildAreaHTML(areaName: string, entities: EntityInfo[], hass: Hass, tokens?: ResolvedTokens, areaId?: string, config?: StrategyConfig): string {
   const groups = groupByDomain(entities);
-  const sections: string[] = [];
+  const sections: SlottedCard[] = [];
   const globalSkin = tokens?.card_style;
   const areaSkin = areaId ? resolveAreaSkin(areaId, areaName, tokens?.area_skins, globalSkin) : sanitizeCardSkin(globalSkin);
   const cs = tokens?.card_sizes;
+  const slotConfig = config || { type: 'custom:hass-dashboard-pro' };
 
-  sections.push(bentoWrap(extractAreaHTML(buildAreaHeader(areaName, entities, hass, tokens)), resolveCardSize('area_header', 'wide', cs)));
+  sections.push(resolveSlottedCard(
+    slotConfig,
+    'area.header',
+    extractAreaHTML(buildAreaHeader(areaName, entities, hass, tokens)),
+    resolveCardSize('area_header', 'wide', cs),
+    0,
+  ));
 
   if (groups.length <= 1) {
-    sections.push(bentoWrap(extractAreaHTML(buildEntityGrid(entities, tokens, areaSkin, hass)), resolveCardSize('area_grid', 'wide', cs)));
+    sections.push(resolveSlottedCard(
+      slotConfig,
+      'area.grid',
+      extractAreaHTML(buildEntityGrid(entities, tokens, areaSkin, hass, slotConfig)),
+      resolveCardSize('area_grid', 'wide', cs),
+      1,
+    ));
   } else {
-    for (const group of groups) {
+    for (let index = 0; index < groups.length; index++) {
+      const group = groups[index];
       // Small domain sections (≤4 entities) take half width, large ones full width
       const defaultSize = group.entities.length <= 4 ? 'md' : 'wide';
-      sections.push(bentoWrap(extractAreaHTML(buildDomainSection(group, tokens, areaSkin, hass)), resolveCardSize(`area_domain_${group.domain}`, defaultSize, cs)));
+      sections.push(resolveSlottedCard(
+        slotConfig,
+        `area.domain.${group.domain}`,
+        extractAreaHTML(buildDomainSection(group, tokens, areaSkin, hass, slotConfig)),
+        resolveCardSize(`area_domain_${group.domain}`, defaultSize, cs),
+        index + 1,
+      ));
     }
   }
 
-  return sections.join('\n');
+  return sortSlottedCards(sections).map(section => bentoWrap(section.html, section.size)).join('\n');
 }
 
 function extractAreaHTML(card: LovelaceCardConfig): string {
@@ -394,14 +415,19 @@ const ENTITY_CARD_CSS = /* css */ `
 
 // ─── Entity Card ───────────────────────────────────────────────────────────
 
-function buildEntityCard(entity: EntityInfo, skin?: string, hass?: Hass): string {
+function buildEntityCard(entity: EntityInfo, skin?: string, hass?: Hass, config?: StrategyConfig): string {
+  let generated = '';
   // Try domain-specific card first (climate, cover, lock, media_player, vacuum)
   if (hass) {
     const stateObj = hass.states[entity.entity_id];
     if (stateObj) {
       const domainCard = buildDomainCard(entity, stateObj, skin);
-      if (domainCard) return domainCard;
+      if (domainCard) generated = domainCard;
     }
+  }
+
+  if (generated) {
+    return resolveSlottedCard(config || { type: 'custom:hass-dashboard-pro' }, `entity.domain.${entity.domain}`, generated, 'md', 0).html;
   }
 
   // Default card for light, switch, fan, sensor, etc.
@@ -424,7 +450,7 @@ function buildEntityCard(entity: EntityInfo, skin?: string, hass?: Hass): string
         </div>
       </div>`;
 
-  return `<div class="${cardCls}" ${cardAttrs}>
+  generated = `<div class="${cardCls}" ${cardAttrs}>
     <div class="ec-bar"></div>
     <div class="ec-row">
       <div class="ec-ico ${active ? 'ec-ico--on' : 'ec-ico--off'}">${iconSVG}</div>
@@ -438,13 +464,14 @@ function buildEntityCard(entity: EntityInfo, skin?: string, hass?: Hass): string
       ${rightHTML}
     </div>
   </div>`;
+  return resolveSlottedCard(config || { type: 'custom:hass-dashboard-pro' }, `entity.domain.${entity.domain}`, generated, 'md', 0).html;
 }
 
 // ─── Domain Section (with entity card CSS) ─────────────────────────────────
 
-function buildDomainSection(group: DomainSection, tokens?: ResolvedTokens, areaSkin?: string, hass?: Hass): LovelaceCardConfig {
+function buildDomainSection(group: DomainSection, tokens?: ResolvedTokens, areaSkin?: string, hass?: Hass, config?: StrategyConfig): LovelaceCardConfig {
   const skin = areaSkin || tokens?.card_style;
-  const cards = group.entities.map(e => buildEntityCard(e, skin, hass)).join('');
+  const cards = group.entities.map(e => buildEntityCard(e, skin, hass, config)).join('');
   const countBadge = group.active_count > 0
     ? `<span class="ds-cnt ds-cnt--${group.color_class}">${group.active_count}/${group.total}</span>`
     : `<span class="ds-cnt ds-cnt--off">${group.total}</span>`;
@@ -517,9 +544,9 @@ ${generateDesignTokenCSS(tokens)}
   };
 }
 
-function buildEntityGrid(entities: EntityInfo[], tokens?: ResolvedTokens, areaSkin?: string, hass?: Hass): LovelaceCardConfig {
+function buildEntityGrid(entities: EntityInfo[], tokens?: ResolvedTokens, areaSkin?: string, hass?: Hass, config?: StrategyConfig): LovelaceCardConfig {
   const skin = areaSkin || tokens?.card_style;
-  const cards = entities.map(e => buildEntityCard(e, skin, hass)).join('');
+  const cards = entities.map(e => buildEntityCard(e, skin, hass, config)).join('');
 
   return {
     type: 'custom:html-pro-card',

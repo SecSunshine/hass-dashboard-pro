@@ -77,7 +77,7 @@ function buildFullLayoutCard(
     areaSections.push({
       area_id: summary.area_id,
       area_name: summary.area_name,
-      html: buildAreaHTML(summary.area_name, entities, hass, tokens, summary.area_id),
+      html: buildAreaHTML(summary.area_name, entities, hass, tokens, summary.area_id, config),
     });
   }
 

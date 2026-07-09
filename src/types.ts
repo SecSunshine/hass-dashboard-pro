@@ -88,8 +88,8 @@ export interface VisualConfig {
   /** Primary gradient CSS value */
   gradient_primary?: string;
 
-  /** Card style preset: classic | glass | gradient | aurora | soft | neon */
-  card_style?: 'classic' | 'glass' | 'gradient' | 'aurora' | 'soft' | 'neon';
+  /** Card style preset: classic | glass | gradient | aurora | soft | neon | soft-data */
+  card_style?: 'classic' | 'glass' | 'gradient' | 'aurora' | 'soft' | 'neon' | 'soft-data';
 
   /** Border radius override (px) — default 14 (html-pro-card spec) */
   border_radius?: number;
@@ -381,6 +381,7 @@ export interface HDPConfig {
     name: string;
     icon: string;
     avatar_url?: string;
+    background_image_url?: string;
   };
   home: {
     section_order: string[];
@@ -413,6 +414,9 @@ export interface HDPConfig {
     pages: BlueprintInstance[];
     replacements: Record<string, string>;
   };
+  cards: {
+    slots: Record<string, CardSlotConfig>;
+  };
   visual: StoredVisualConfig;
   permissions: {
     restrict_non_admin: boolean;
@@ -439,6 +443,15 @@ export interface StoredVisualConfig {
     midnight?: string;
   };
   area_skins?: Record<string, string>;
+}
+
+export interface CardSlotConfig {
+  enabled?: boolean;
+  order?: number;
+  size?: string;
+  background_image_url?: string;
+  theme_from_image?: boolean;
+  yaml?: string;
 }
 
 // ─── v4.0: Blueprint Types ────────────────────────────────────────────────

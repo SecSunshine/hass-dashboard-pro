@@ -80,6 +80,9 @@ describe('domain entity cards', () => {
     expect(html).toContain('data-action="cover-stop"');
     expect(html).toContain('data-action="cover-close"');
     expect(html).toContain('data-entity="cover.bedroom_curtain"');
+    expect(html).toContain('aria-label="打开 Bedroom Curtain"');
+    expect(html).toContain('aria-label="停止 Bedroom Curtain"');
+    expect(html).toContain('aria-label="关闭 Bedroom Curtain"');
     expect(html).not.toContain('onclick="hdpCoverAction');
   });
 

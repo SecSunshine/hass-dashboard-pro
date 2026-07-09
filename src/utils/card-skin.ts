@@ -1,4 +1,4 @@
-export const CARD_SKINS = ['classic', 'glass', 'gradient', 'aurora', 'soft', 'neon'] as const;
+export const CARD_SKINS = ['classic', 'glass', 'gradient', 'aurora', 'soft', 'neon', 'soft-data'] as const;
 
 export type CardSkin = typeof CARD_SKINS[number];
 

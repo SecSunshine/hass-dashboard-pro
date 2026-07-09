@@ -1018,7 +1018,7 @@ function hdpSaveImportReport(kind, mapping) {
 }
 
 function hdpSanitizeCardSkin(value) {
-  var allowed = ['classic', 'glass', 'gradient', 'aurora', 'soft', 'neon'];
+  var allowed = ['classic', 'glass', 'gradient', 'aurora', 'soft', 'neon', 'soft-data'];
   return allowed.indexOf(value) >= 0 ? value : 'classic';
 }
 
@@ -1062,7 +1062,7 @@ function hdpNormalizeCardSizes(value) {
 
 function hdpNormalizeSkinMap(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
-  var allowed = ['classic', 'glass', 'gradient', 'aurora', 'soft', 'neon'];
+  var allowed = ['classic', 'glass', 'gradient', 'aurora', 'soft', 'neon', 'soft-data'];
   var result = {};
   Object.keys(value).forEach(function(key) {
     if (key && allowed.indexOf(value[key]) >= 0) result[key] = value[key];
@@ -1112,6 +1112,25 @@ function hdpNormalizeBlueprints(value) {
     normalized.inputs = page.inputs && typeof page.inputs === 'object' && !Array.isArray(page.inputs) ? page.inputs : {};
     return normalized;
   });
+}
+
+function hdpNormalizeCardSlots(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  var allowedSizes = ['sm', 'md', 'lg', 'wide', 'tall'];
+  var result = {};
+  Object.keys(value).forEach(function(slotId) {
+    var slot = value[slotId];
+    if (!slot || typeof slot !== 'object' || Array.isArray(slot)) return;
+    var normalized = {};
+    if (slot.enabled === false) normalized.enabled = false;
+    if (typeof slot.order === 'number' && isFinite(slot.order)) normalized.order = slot.order;
+    if (allowedSizes.indexOf(slot.size) >= 0) normalized.size = slot.size;
+    if (typeof slot.background_image_url === 'string') normalized.background_image_url = slot.background_image_url;
+    if (slot.theme_from_image === true) normalized.theme_from_image = true;
+    if (typeof slot.yaml === 'string') normalized.yaml = slot.yaml;
+    result[slotId] = normalized;
+  });
+  return result;
 }
 
 function hdpNormalizeHDPConfig(config) {
@@ -1180,6 +1199,11 @@ function hdpNormalizeHDPConfig(config) {
       replacements: normalized.blueprints.replacements && typeof normalized.blueprints.replacements === 'object' && !Array.isArray(normalized.blueprints.replacements)
         ? normalized.blueprints.replacements
         : {}
+    });
+  }
+  if (normalized.cards && typeof normalized.cards === 'object' && !Array.isArray(normalized.cards)) {
+    normalized.cards = Object.assign({}, normalized.cards, {
+      slots: hdpNormalizeCardSlots(normalized.cards.slots)
     });
   }
   return normalized;
@@ -1384,6 +1408,7 @@ function chipHTML(action: string, path: string, value: string, label: string, ac
 export function buildDashboardSection(config: StrategyConfig): string {
   const name = config.hdp_config?.dashboard?.name || config.title || '智能家居';
   const avatarUrl = config.hdp_config?.dashboard?.avatar_url || '';
+  const backgroundUrl = config.hdp_config?.dashboard?.background_image_url || '';
   return sectionCard('dashboard', '仪表盘', iconDashboard(), `
     <div class="st-row">
       <div>
@@ -1398,6 +1423,13 @@ export function buildDashboardSection(config: StrategyConfig): string {
         <div class="st-row-desc">支持 /local/...、https://... 或 data:image/...；留空使用用户名首字母</div>
       </div>
       <input class="st-input st-input--wide" type="url" value="${escapeAttribute(avatarUrl)}" placeholder="/local/hass-dashboard-pro/avatar.png" onchange="hdpSaveSetting('dashboard.avatar_url', this.value.trim())" />
+    </div>
+    <div class="st-row">
+      <div>
+        <div class="st-row-label">背景图片</div>
+        <div class="st-row-desc">支持 /local/...、https://... 或 data:image/...；用于整个仪表盘背景</div>
+      </div>
+      <input class="st-input st-input--wide" type="url" value="${escapeAttribute(backgroundUrl)}" placeholder="/local/hass-dashboard-pro/background.jpg" onchange="hdpSaveSetting('dashboard.background_image_url', this.value.trim())" />
     </div>
   `);
 }

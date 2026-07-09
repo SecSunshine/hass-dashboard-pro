@@ -1,18 +1,18 @@
-/**
+﻿/**
  * Template: Home Dashboard View (v3.0)
  *
  * Full dwains-dashboard-next inspired home page:
- *   1. Welcome hero — greeting, weather, alarm status
- *   2. Status domain badges — horizontal row of active device counts
- *   3. People card — person.* entities with home/away status
- *   4. Indoor climate — averaged temperature & humidity
- *   5. House power usage — total watts + per-room percentage bars
- *   6. Favorites — configurable pinned entities
- *   7. Summary — repairs, updates, entity/device counts
+ *   1. Welcome hero 鈥?greeting, weather, alarm status
+ *   2. Status domain badges 鈥?horizontal row of active device counts
+ *   3. People card 鈥?person.* entities with home/away status
+ *   4. Indoor climate 鈥?averaged temperature & humidity
+ *   5. House power usage 鈥?total watts + per-room percentage bars
+ *   6. Favorites 鈥?configurable pinned entities
+ *   7. Summary 鈥?repairs, updates, entity/device counts
  *
  * html-card-pro conventions:
- *   - All colors via HA theme tokens (--hdp-* → var(--primary-color), etc.)
- *   - No inline styles for colors — all in <style> blocks
+ *   - All colors via HA theme tokens (--hdp-* 鈫?var(--primary-color), etc.)
+ *   - No inline styles for colors 鈥?all in <style> blocks
  *   - border-radius via --hdp-radius
  *   - do_not_parse: true on every card
  *   - Hover: translateY(-2px), transition: all 0.2s ease
@@ -38,6 +38,7 @@ import type { PersonInfo, DomainStatus, FavoriteEntity } from '../utils/home-dat
 import { escapeAttribute, escapeHTML, escapeInlineStyleValue, escapeURLAttribute } from '../utils/html';
 import { cardSkinClass } from '../utils/card-skin';
 import { getConfiguredHiddenPersons } from '../utils/dashboard-model';
+import { resolveSlottedCard, sortSlottedCards, type SlottedCard } from '../utils/card-slots';
 
 const DEFAULT_HOME_SECTION_ORDER: HomeSectionKey[] = ['status_badges', 'people', 'environment', 'power_usage', 'favorites', 'summary'];
 
@@ -157,53 +158,99 @@ export function buildHomeView(hass: Hass, config: StrategyConfig, tokens?: Resol
  * already provides them.
  */
 export function buildHomeHTML(hass: Hass, config: StrategyConfig, tokens?: ResolvedTokens): string {
-  const sections: string[] = [];
+  const sections: SlottedCard[] = [];
   const cs = tokens?.card_sizes;
   const layout = getHomeLayout(config);
 
-  sections.push(bentoWrap(extractCardHTML(buildWelcomeCard(hass, config, tokens)), resolveCardSize('home_welcome', layout.sizes.home_welcome, cs)));
+  sections.push(resolveSlottedCard(
+    config,
+    'home.welcome',
+    extractCardHTML(buildWelcomeCard(hass, config, tokens)),
+    resolveCardSize('home_welcome', layout.sizes.home_welcome, cs),
+    0,
+  ));
 
-  for (const section of layout.order) {
+  for (let index = 0; index < layout.order.length; index++) {
+    const section = layout.order[index];
+    const defaultOrder = index + 1;
     if (!isHomeSectionVisible(config, section)) continue;
     switch (section) {
       case 'status_badges': {
         const domains = getStatusDomains(hass, config);
         if (domains.length > 0) {
-          sections.push(bentoWrap(extractCardHTML(buildStatusBadges(domains, tokens)), resolveCardSize('home_status_badges', layout.sizes.home_status_badges, cs)));
+          sections.push(resolveSlottedCard(
+            config,
+            'home.status_badges',
+            extractCardHTML(buildStatusBadges(domains, tokens)),
+            resolveCardSize('home_status_badges', layout.sizes.home_status_badges, cs),
+            defaultOrder,
+          ));
         }
         break;
       }
       case 'people': {
         const persons = getPersons(hass, getHiddenPersons(config));
         if (persons.length > 0) {
-          sections.push(bentoWrap(extractCardHTML(buildPeopleCard(persons, tokens)), resolveCardSize('home_people', layout.sizes.home_people, cs)));
+          sections.push(resolveSlottedCard(
+            config,
+            'home.people',
+            extractCardHTML(buildPeopleCard(persons, tokens)),
+            resolveCardSize('home_people', layout.sizes.home_people, cs),
+            defaultOrder,
+          ));
         }
         break;
       }
       case 'environment':
-        sections.push(bentoWrap(extractCardHTML(buildEnvironmentCard(hass, config, tokens)), resolveCardSize('home_environment', layout.sizes.home_environment, cs)));
+        sections.push(resolveSlottedCard(
+          config,
+          'home.environment',
+          extractCardHTML(buildEnvironmentCard(hass, config, tokens)),
+          resolveCardSize('home_environment', layout.sizes.home_environment, cs),
+          defaultOrder,
+        ));
         break;
       case 'power_usage': {
         const power = buildHousePowerUsage(hass, config);
         if (power.has_data) {
-          sections.push(bentoWrap(extractCardHTML(buildPowerCard(power, tokens)), resolveCardSize('home_power', layout.sizes.home_power, cs)));
+          sections.push(resolveSlottedCard(
+            config,
+            'home.power_usage',
+            extractCardHTML(buildPowerCard(power, tokens)),
+            resolveCardSize('home_power', layout.sizes.home_power, cs),
+            defaultOrder,
+          ));
         }
         break;
       }
       case 'favorites': {
         const favorites = getFavorites(hass, config);
         if (favorites.length > 0) {
-          sections.push(bentoWrap(extractCardHTML(buildFavoritesCard(favorites, tokens)), resolveCardSize('home_favorites', layout.sizes.home_favorites, cs)));
+          sections.push(resolveSlottedCard(
+            config,
+            'home.favorites',
+            extractCardHTML(buildFavoritesCard(favorites, tokens)),
+            resolveCardSize('home_favorites', layout.sizes.home_favorites, cs),
+            defaultOrder,
+          ));
         }
         break;
       }
       case 'summary':
-        sections.push(bentoWrap(extractCardHTML(buildSummaryCard(hass, tokens, config)), resolveCardSize('home_summary', layout.sizes.home_summary, cs)));
+        sections.push(resolveSlottedCard(
+          config,
+          'home.summary',
+          extractCardHTML(buildSummaryCard(hass, tokens, config)),
+          resolveCardSize('home_summary', layout.sizes.home_summary, cs),
+          defaultOrder,
+        ));
         break;
     }
   }
 
-  return sections.join('\n');
+  return sortSlottedCards(sections)
+    .map(card => bentoWrap(card.html, card.size))
+    .join('\n');
 }
 /**
  * Extract the inner HTML content from a card config, stripping
@@ -271,7 +318,7 @@ function getHeaderConfig(config: StrategyConfig): {
   };
 }
 
-// ─── Greeting ──────────────────────────────────────────────────────────────
+// 鈹€鈹€鈹€ Greeting 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -279,7 +326,8 @@ function getGreeting(): string {
   if (hour < 12) return '早上好';
   if (hour < 14) return '中午好';
   if (hour < 18) return '下午好';
-  return '晚上好';
+  if (hour < 22) return '晚上好';
+  return '夜深了';
 }
 
 function getDateString(): string {
@@ -288,7 +336,7 @@ function getDateString(): string {
   return `${now.getMonth() + 1}月${now.getDate()}日 ${weekdays[now.getDay()]}`;
 }
 
-// ─── 1. Welcome Card ───────────────────────────────────────────────────────
+// 鈹€鈹€鈹€ 1. Welcome Card 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
 function buildWelcomeCard(hass: Hass, config: StrategyConfig, tokens?: ResolvedTokens): LovelaceCardConfig {
   const header = getHeaderConfig(config);
@@ -448,7 +496,7 @@ ${generateDesignTokenCSS(tokens)}
   };
 }
 
-// ─── 2. Status Domain Badges ───────────────────────────────────────────────
+// 鈹€鈹€鈹€ 2. Status Domain Badges 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
 function buildStatusBadges(domains: DomainStatus[], tokens?: ResolvedTokens): LovelaceCardConfig {
   const badges = domains.map(d => {
@@ -530,7 +578,7 @@ ${generateDesignTokenCSS(tokens)}
   };
 }
 
-// ─── 3. People Card ────────────────────────────────────────────────────────
+// 鈹€鈹€鈹€ 3. People Card 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
 function buildPeopleCard(persons: PersonInfo[], tokens?: ResolvedTokens): LovelaceCardConfig {
   const homeCount = persons.filter(p => p.is_home).length;
@@ -634,14 +682,14 @@ ${generateDesignTokenCSS(tokens)}
   .pp-state--away { background: var(--hdp-divider); color: var(--hdp-text-muted); }
 </style>
 <div class="pp-hdr">
-  <span class="pp-title">家庭成员</span>
-  <span class="pp-count">${homeCount} 人在家</span>
+  <span class="pp-title">瀹跺涵鎴愬憳</span>
+  <span class="pp-count">${homeCount} 浜哄湪瀹?/span>
 </div>
 <div class="pp-grid">${people}</div>`,
   };
 }
 
-// ─── 4. Environment Card (Climate + Security) ──────────────────────────────
+// 鈹€鈹€鈹€ 4. Environment Card (Climate + Security) 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
 function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: ResolvedTokens): LovelaceCardConfig {
   const header = getHeaderConfig(config);
@@ -660,7 +708,7 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
       </div>
       <div class="env-data">
         <div class="env-val">${climate.avg_temp}</div>
-        <div class="env-lbl">室内温度</div>
+        <div class="env-lbl">瀹ゅ唴娓╁害</div>
       </div>
     </button>`);
   }
@@ -672,7 +720,7 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
       </div>
       <div class="env-data">
         <div class="env-val">${climate.avg_humidity}</div>
-        <div class="env-lbl">室内湿度</div>
+        <div class="env-lbl">瀹ゅ唴婀垮害</div>
       </div>
     </button>`);
   }
@@ -689,15 +737,15 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
       </div>
       <div class="env-data">
         <div class="env-val">${alarmDisplay}</div>
-        <div class="env-lbl">安防状态</div>
+        <div class="env-lbl">瀹夐槻鐘舵€?/div>
       </div>
-    </div>`);
+    </button>`);
   }
 
   // Active automations count
   const autoCount = countActiveAutomations(hass);
   if (autoCount > 0) {
-    items.push(`<div class="env-item ${skinCls}">
+    items.push(`<button type="button" class="env-item ${skinCls}" data-action="open-automation-config" onclick="hdpOpenAutomationConfig()">
       <div class="env-icon env-icon--auto">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
       </div>
@@ -705,7 +753,7 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
         <div class="env-val">${autoCount}</div>
         <div class="env-lbl">自动化运行</div>
       </div>
-    </div>`);
+    </button>`);
   }
 
   return {
@@ -783,13 +831,13 @@ ${generateDesignTokenCSS(tokens)}
   }
 </style>
 <div class="env-hdr">
-  <span class="env-title">家居环境</span>
+  <span class="env-title">瀹跺眳鐜</span>
 </div>
 <div class="env-grid">${items.join('')}</div>`,
   };
 }
 
-// ─── 5. Power Usage Card ───────────────────────────────────────────────────
+// 鈹€鈹€鈹€ 5. Power Usage Card 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
 function buildPowerCard(power: ReturnType<typeof buildHousePowerUsage>, tokens?: ResolvedTokens): LovelaceCardConfig {
   const roomRows = power.rooms.slice(0, 6).map(r => {
@@ -890,7 +938,7 @@ ${generateDesignTokenCSS(tokens)}
   }
 </style>
 <div class="pw-hdr">
-  <span class="pw-title">全屋功率</span>
+  <span class="pw-title">鍏ㄥ眿鍔熺巼</span>
   <div class="pw-total">
     <div class="pw-total-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
@@ -902,7 +950,7 @@ ${roomRows}`,
   };
 }
 
-// ─── 6. Favorites Card ─────────────────────────────────────────────────────
+// 鈹€鈹€鈹€ 6. Favorites Card 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
 function buildFavoritesCard(favorites: FavoriteEntity[], tokens?: ResolvedTokens): LovelaceCardConfig {
   const skinCls = cardSkinClass(tokens?.card_style);
@@ -989,7 +1037,7 @@ ${generateDesignTokenCSS(tokens)}
   }
 </style>
 <div class="fav-hdr">
-  <span class="fav-title">收藏设备</span>
+  <span class="fav-title">鏀惰棌璁惧</span>
 </div>
 <div class="fav-list">${items}</div>`,
   };
@@ -1022,7 +1070,7 @@ function getFavoriteIcon(domain: string, active: boolean): string {
   }
 }
 
-// ─── 7. Summary Card ───────────────────────────────────────────────────────
+// 鈹€鈹€鈹€ 7. Summary Card 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
 function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: StrategyConfig): LovelaceCardConfig {
   const summaries = getHomeSummaries(hass, config);
@@ -1038,7 +1086,7 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: Strategy
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       </div>
       <div class="sum-val">${summaries.updates_count}</div>
-      <div class="sum-lbl">可用更新</div>
+      <div class="sum-lbl">鍙敤鏇存柊</div>
     </div>`);
   }
 
@@ -1048,7 +1096,7 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: Strategy
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       </div>
       <div class="sum-val">${summaries.repairs_count}</div>
-      <div class="sum-lbl">待修复</div>
+      <div class="sum-lbl">寰呬慨澶?/div>
     </div>`);
   }
 
@@ -1058,7 +1106,7 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: Strategy
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="12" cy="12" r="3"/></svg>
     </div>
     <div class="sum-val">${summaries.total_entities}</div>
-    <div class="sum-lbl">实体</div>
+    <div class="sum-lbl">瀹炰綋</div>
   </div>`);
   }
 
@@ -1068,7 +1116,7 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: Strategy
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
       </div>
       <div class="sum-val">${summaries.total_devices}</div>
-      <div class="sum-lbl">设备</div>
+      <div class="sum-lbl">璁惧</div>
     </div>`);
   }
 
@@ -1078,7 +1126,7 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: Strategy
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg>
       </div>
       <div class="sum-val">${summaries.total_areas}</div>
-      <div class="sum-lbl">区域</div>
+      <div class="sum-lbl">鍖哄煙</div>
     </div>`);
   }
 
@@ -1093,19 +1141,19 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: Strategy
   }
 
   if (summaries.automations_count > 0 && isInfoCardVisible('automations')) {
-    items.push(`<div class="sum-item ${skinCls}" data-info-card="automations">
+    items.push(`<button type="button" class="sum-item ${skinCls}" data-info-card="automations" data-action="open-automation-config" onclick="hdpOpenAutomationConfig()">
       <div class="sum-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg>
       </div>
       <div class="sum-val">${summaries.automations_count}</div>
       <div class="sum-lbl">自动化</div>
-    </div>`);
+    </button>`);
   }
 
   if (!items.length) {
     items.push(`<div class="sum-empty ${skinCls}">
-      <div class="sum-empty-title">暂无概览信息</div>
-      <div class="sum-empty-desc">可以在设置中重新显示系统概览项目</div>
+      <div class="sum-empty-title">鏆傛棤姒傝淇℃伅</div>
+      <div class="sum-empty-desc">鍙互鍦ㄨ缃腑閲嶆柊鏄剧ず绯荤粺姒傝椤圭洰</div>
     </div>`);
   }
 
@@ -1133,6 +1181,12 @@ ${generateDesignTokenCSS(tokens)}
     gap: 10px;
   }
   .sum-item {
+    appearance: none;
+    width: 100%;
+    min-width: 0;
+    color: inherit;
+    font: inherit;
+    cursor: default;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1147,6 +1201,13 @@ ${generateDesignTokenCSS(tokens)}
   .sum-item:hover {
     transform: translateY(-2px);
     box-shadow: var(--hdp-shadow-card);
+  }
+  button.sum-item {
+    cursor: pointer;
+  }
+  button.sum-item:focus-visible {
+    outline: 2px solid var(--hdp-primary);
+    outline-offset: 2px;
   }
   .sum-icon {
     width: 32px; height: 32px;
@@ -1192,7 +1253,7 @@ ${generateDesignTokenCSS(tokens)}
   }
 </style>
 <div class="sum-hdr">
-  <span class="sum-title">系统概览</span>
+  <span class="sum-title">绯荤粺姒傝</span>
 </div>
 <div class="sum-grid">${items.join('')}</div>`,
   };

@@ -5,6 +5,8 @@ describe('card skin helpers', () => {
   it('keeps valid built-in skins', () => {
     expect(sanitizeCardSkin('glass')).toBe('glass');
     expect(sanitizeCardSkin('neon')).toBe('neon');
+    expect(sanitizeCardSkin('soft-data')).toBe('soft-data');
+    expect(cardSkinClass('soft-data')).toBe('hdp-card hdp-card--soft-data');
   });
 
   it('falls back for untrusted skin values', () => {

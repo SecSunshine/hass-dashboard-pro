@@ -282,4 +282,62 @@ describe('home view settings', () => {
     expect(html).toContain('class="fav-item fav-item--active fav--active');
     expect(html).toContain('.fav-item--active');
   });
+
+  it('renders automations summary as a configuration popup button', () => {
+    const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
+    const html = buildHomeHTML({
+      ...hass,
+      states: {
+        ...hass.states,
+        'automation.morning': {
+          entity_id: 'automation.morning',
+          state: 'on',
+          attributes: { friendly_name: 'Morning' },
+          last_changed: '',
+          last_updated: '',
+        },
+      },
+    }, config);
+
+    expect(html).toContain('data-info-card="automations"');
+    expect(html).toContain('data-action="open-automation-config"');
+    expect(html).toContain('onclick="hdpOpenAutomationConfig()"');
+    expect(html).toContain('<button type="button" class="env-item');
+    expect(html).toContain('<div class="env-lbl">自动化运行</div>');
+  });
+
+  it('lets card slots replace, hide, resize and reorder home cards', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        cards: {
+          slots: {
+            'home.summary': {
+              order: -5,
+              size: 'wide',
+              yaml: [
+                'type: custom:html-pro-card',
+                'content: |',
+                '  <div class="custom-summary" data-view="home" data-action="inspect">Custom Summary</div>',
+              ].join('\n'),
+            },
+            'home.people': { enabled: false },
+          },
+        },
+      } as any,
+    };
+
+    const html = buildHomeHTML(hass, config);
+    const customIndex = html.indexOf('Custom Summary');
+    const statusIndex = html.indexOf('data-card-slot="home.status_badges"');
+
+    expect(customIndex).toBeGreaterThan(-1);
+    expect(statusIndex).toBeGreaterThan(-1);
+    expect(customIndex).toBeLessThan(statusIndex);
+    expect(html).toContain('hdp-bento hdp-bento--wide');
+    expect(html).toContain('data-card-slot="home.summary"');
+    expect(html).toContain('data-card-custom="true"');
+    expect(html).not.toContain('data-card-slot="home.people"');
+    expect(html).not.toContain('Bob');
+  });
 });

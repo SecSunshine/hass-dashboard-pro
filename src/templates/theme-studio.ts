@@ -921,7 +921,7 @@ export function generateThemeStudioJS(): string {
   }
 
   function sanitizeSkin(value) {
-    var skins = ['classic', 'glass', 'gradient', 'aurora', 'soft', 'neon'];
+    var skins = ['classic', 'glass', 'gradient', 'aurora', 'soft', 'neon', 'soft-data'];
     return skins.indexOf(value) !== -1 ? value : 'classic';
   }
 

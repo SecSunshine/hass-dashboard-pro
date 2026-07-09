@@ -194,4 +194,55 @@ describe('layout card', () => {
     expect(card.content).toContain('<span class="sb-avatar">BB</span>');
     expect(card.content).not.toContain('javascript:alert');
   });
+
+  it('renders dashboard background and home card edit controls when settings are allowed', () => {
+    const card = buildLayoutCard({
+      hass: {
+        ...hass,
+        user: { name: 'Alice Admin', is_admin: true },
+      },
+      config: {
+        type: 'custom:hass-dashboard-pro',
+        hdp_config: {
+          dashboard: { name: 'Home', icon: 'mdi:home', background_image_url: '/local/dashboard.jpg' },
+        } as any,
+      },
+      homeHTML: '<div data-card-slot="home.summary"></div>',
+      areaSections: [],
+      devicesHTML: '',
+      settingsHTML: '',
+      areaSummaries: [],
+      blueprintPages: [],
+    });
+
+    expect(card.content).toContain('hdp-root hdp-root--image-bg');
+    expect(card.content).toContain('--hdp-dashboard-bg-image: url(/local/dashboard.jpg)');
+    expect(card.content).toContain('class="hdp-home-edit-bar"');
+    expect(card.content).toContain('onclick="hdpToggleCardEditMode(true)"');
+    expect(card.content).toContain('onclick="hdpOpenHiddenCardSlots()"');
+    expect(card.content).toContain('window.hdpToggleCardEditMode = function');
+    expect(card.content).toContain('window.hdpOpenHiddenCardSlots = function');
+    expect(card.content).toContain('function hdpApplyCardSlotImageThemes');
+  });
+
+  it('does not render card edit controls when settings are restricted', () => {
+    const card = buildLayoutCard({
+      hass,
+      config: {
+        type: 'custom:hass-dashboard-pro',
+        hdp_config: {
+          permissions: { restrict_settings: true },
+        } as any,
+      },
+      homeHTML: '',
+      areaSections: [],
+      devicesHTML: '',
+      settingsHTML: '',
+      areaSummaries: [],
+      blueprintPages: [],
+    });
+
+    expect(card.content).not.toContain('class="hdp-home-edit-bar"');
+    expect(card.content).not.toContain('window.hdpToggleCardEditMode = function');
+  });
 });

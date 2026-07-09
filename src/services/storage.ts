@@ -22,6 +22,7 @@ export function getDefaultConfig(): HDPConfig {
       name: '智能家居',
       icon: 'mdi:home',
       avatar_url: '',
+      background_image_url: '',
     },
     home: {
       section_order: ['status_badges', 'people', 'environment', 'power_usage', 'favorites', 'summary'],
@@ -53,6 +54,9 @@ export function getDefaultConfig(): HDPConfig {
     blueprints: {
       pages: [],
       replacements: {},
+    },
+    cards: {
+      slots: {},
     },
     visual: {
       theme_id: 'light',

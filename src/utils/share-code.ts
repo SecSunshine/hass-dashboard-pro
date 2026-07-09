@@ -168,6 +168,13 @@ function normalizeHDPConfig(config: unknown): Partial<HDPConfig> | undefined {
     };
   }
 
+  if (isRecord(normalized.cards)) {
+    normalized.cards = {
+      ...normalized.cards,
+      slots: normalizeCardSlots(normalized.cards.slots),
+    };
+  }
+
   return normalized as Partial<HDPConfig>;
 }
 
@@ -203,6 +210,23 @@ function normalizeBlueprints(value: unknown): BlueprintInstance[] {
     icon: typeof page.icon === 'string' ? page.icon : 'mdi:puzzle',
     inputs: page.inputs && typeof page.inputs === 'object' && !Array.isArray(page.inputs) ? page.inputs : {},
   }));
+}
+
+function normalizeCardSlots(value: unknown): Record<string, unknown> {
+  if (!isRecord(value)) return {};
+  const result: Record<string, unknown> = {};
+  for (const [slotId, slotValue] of Object.entries(value)) {
+    if (!slotId || !isRecord(slotValue)) continue;
+    const slot: Record<string, unknown> = {};
+    if (slotValue.enabled === false) slot.enabled = false;
+    if (typeof slotValue.order === 'number' && Number.isFinite(slotValue.order)) slot.order = slotValue.order;
+    if (typeof slotValue.size === 'string' && sanitizeBentoSize(slotValue.size, 'md') === slotValue.size) slot.size = slotValue.size;
+    if (typeof slotValue.background_image_url === 'string') slot.background_image_url = slotValue.background_image_url;
+    if (slotValue.theme_from_image === true) slot.theme_from_image = true;
+    if (typeof slotValue.yaml === 'string') slot.yaml = slotValue.yaml;
+    result[slotId] = slot;
+  }
+  return result;
 }
 
 function normalizeStringArray(value: unknown): string[] {

@@ -171,7 +171,7 @@ export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
     /* ── v4.0: Focus & Interaction ── */
     --hdp-primary-glow: rgba(79, 110, 247, 0.15);
 
-    /* ── Card Skin (classic | glass | gradient | aurora | soft | neon) ── */
+/* ── Card Skin (classic | glass | gradient | aurora | soft | neon | soft-data) ── */
     --hdp-card-skin: ${cardSkin};
   }
 
@@ -264,6 +264,24 @@ export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
     box-shadow:
       8px 8px 16px color-mix(in srgb, var(--hdp-text) 8%, transparent),
       -8px -8px 16px color-mix(in srgb, var(--hdp-card-bg) 80%, var(--hdp-bg));
+  }
+
+  .hdp-card.hdp-card--soft-data {
+    background: linear-gradient(145deg,
+      color-mix(in srgb, var(--hdp-card-bg) 94%, white 6%),
+      color-mix(in srgb, var(--hdp-card-bg) 88%, var(--hdp-primary) 12%));
+    border: 1px solid color-mix(in srgb, var(--hdp-primary) 10%, var(--hdp-border));
+    box-shadow: 0 16px 36px color-mix(in srgb, var(--hdp-primary) 10%, transparent);
+  }
+  .hdp-card.hdp-card--soft-data:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 44px color-mix(in srgb, var(--hdp-primary) 16%, transparent);
+  }
+  .hdp-card.hdp-card--soft-data .dvc-ico,
+  .hdp-card.hdp-card--soft-data .ec-ico,
+  .hdp-card.hdp-card--soft-data .env-icon,
+  .hdp-card.hdp-card--soft-data .sum-icon {
+    border-radius: 14px;
   }
 
   .hdp-card.hdp-card--neon {

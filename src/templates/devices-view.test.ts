@@ -120,6 +120,8 @@ describe('devices view', () => {
     const js = generateDevicesJS();
 
     expect(js).toContain('window.hdpShowDeviceDomain = function(domain)');
+    expect(js).toContain("if (typeof window.hdpOpenDeviceDomainModal === 'function')");
+    expect(js).toContain('window.hdpOpenDeviceDomainModal(domain);');
     expect(js).toContain("window.hdpShowView('devices')");
     expect(js).toContain('window.hdpScrollToDomain(domain)');
   });
@@ -171,5 +173,55 @@ describe('devices view', () => {
     expect(html.indexOf('A Active Switch')).toBeGreaterThan(-1);
     expect(html.indexOf('Z Inactive Switch')).toBeGreaterThan(-1);
     expect(html.indexOf('A Active Switch')).toBeLessThan(html.indexOf('Z Inactive Switch'));
+  });
+
+  it('lets device domain slots replace default domain sections', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        cards: {
+          slots: {
+            'device.domain.light': {
+              yaml: [
+                'type: custom:html-pro-card',
+                'content: |',
+                '  <div class="custom-device-light" data-view="devices" data-action="toggle">Device Light Slot</div>',
+              ].join('\n'),
+            },
+          },
+        },
+      } as any,
+    };
+
+    const html = buildDevicesHTML(hass, config);
+    expect(html).toContain('Device Light Slot');
+    expect(html).toContain('data-card-slot="device.domain.light"');
+    expect(html).toContain('data-card-custom="true"');
+    expect(html).not.toContain('Kitchen Counter Light With A Very Long Name');
+  });
+
+  it('lets entity domain slots replace default device entity cards', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        cards: {
+          slots: {
+            'entity.domain.sensor': {
+              yaml: [
+                'type: custom:html-pro-card',
+                'content: |',
+                '  <button class="custom-device-sensor" data-entity="sensor.power_meter" data-action="more-info">Device Sensor Slot</button>',
+              ].join('\n'),
+            },
+          },
+        },
+      } as any,
+    };
+
+    const html = buildDevicesHTML(hass, config);
+    expect(html).toContain('Device Sensor Slot');
+    expect(html).toContain('data-card-slot="entity.domain.sensor"');
+    expect(html).toContain('data-card-custom="true"');
+    expect(html).not.toContain('Power Meter With An Extremely Long Friendly Name');
   });
 });

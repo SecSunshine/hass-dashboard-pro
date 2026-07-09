@@ -328,6 +328,17 @@ Old `);
       hdp_config: {
         dashboard: { name: 'Imported Home' },
         devices: { hidden_domains: ['sensor'] },
+        cards: {
+          slots: {
+            'home.summary': {
+              size: 'wide',
+              order: 2,
+              background_image_url: '/local/summary.jpg',
+              theme_from_image: true,
+              yaml: 'type: custom:html-pro-card\ncontent: |\n  <div>Imported</div>',
+            },
+          },
+        },
       },
       visual_config: { theme: 'dark' },
       blueprints: [],
@@ -346,6 +357,12 @@ Old `);
       expect(alerts).toEqual([]);
       expect(JSON.parse(store.get('hdp_config') || '{}').dashboard.name).toBe('Imported Home');
       expect(JSON.parse(store.get('hdp_config') || '{}').devices.hidden_domains).toEqual(['sensor']);
+      expect(JSON.parse(store.get('hdp_config') || '{}').cards.slots['home.summary']).toMatchObject({
+        size: 'wide',
+        order: 2,
+        background_image_url: '/local/summary.jpg',
+        theme_from_image: true,
+      });
       expect(JSON.parse(store.get('hdp_visual_config') || '{}')).toEqual({ theme: 'dark' });
       expect(JSON.parse(store.get('hdp_last_import_report') || '{}').unmapped).toEqual(['light.source_lamp']);
       expect(getReloadCount()).toBe(0);

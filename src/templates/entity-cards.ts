@@ -107,10 +107,11 @@ export function getDomainCardCSS(): string {
 
   /* ── Climate Card ── */
   .dc-climate {
-    padding: var(--hdp-density-entity-padding, 14px);
+    padding: 16px;
     background:
-      radial-gradient(circle at 100% 0%, var(--hdp-info-light, rgba(59,130,246,0.12)), transparent 42%),
+      linear-gradient(145deg, color-mix(in srgb, var(--hdp-card-bg) 92%, var(--hdp-info-light, rgba(59,130,246,0.12))), var(--hdp-card-bg)),
       var(--hdp-card-bg);
+    border: 1px solid color-mix(in srgb, var(--hdp-info, #3B82F6) 16%, var(--hdp-border));
   }
   .dc-climate-top {
     display: flex;
@@ -122,8 +123,12 @@ export function getDomainCardCSS(): string {
   .dc-climate-current {
     margin-left: auto;
     text-align: right;
-    flex: 0 1 36%;
+    flex: 0 0 auto;
     min-width: 0;
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--hdp-card-bg) 72%, transparent);
+    border: 1px solid var(--hdp-border);
   }
   .dc-climate-current-val {
     font: inherit;
@@ -143,10 +148,10 @@ export function getDomainCardCSS(): string {
   .dc-climate-target-row {
     display: flex;
     align-items: center;
-    gap: 12px;
-    background: var(--hdp-divider, rgba(0,0,0,0.03));
-    border-radius: var(--hdp-radius-sm, 8px);
-    padding: 8px 12px;
+    gap: 10px;
+    background: color-mix(in srgb, var(--hdp-primary-light, rgba(79,110,247,0.1)) 56%, transparent);
+    border-radius: 14px;
+    padding: 10px;
     margin-bottom: 12px;
     min-width: 0;
     border: 1px solid var(--hdp-border);
@@ -159,9 +164,9 @@ export function getDomainCardCSS(): string {
   }
   .dc-climate-temp-btn {
     appearance: none;
-    width: 36px;
-    height: 36px;
-    border-radius: var(--hdp-radius-sm, 8px);
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
     border: 1px solid var(--hdp-border);
     background: var(--hdp-card-bg);
     color: var(--hdp-text);
@@ -186,7 +191,7 @@ export function getDomainCardCSS(): string {
   }
   .dc-climate-target-val {
     font: inherit;
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 800;
     color: var(--hdp-text);
     text-align: center;
@@ -195,15 +200,16 @@ export function getDomainCardCSS(): string {
     overflow-wrap: anywhere;
   }
   .dc-climate-modes {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
     gap: 6px;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
   .dc-climate-mode {
     appearance: none;
-    padding: 7px 14px;
-    border-radius: var(--hdp-radius-pill, 20px);
+    justify-content: center;
+    padding: 8px 10px;
+    border-radius: 12px;
     border: 1px solid var(--hdp-border);
     background: var(--hdp-card-bg);
     color: var(--hdp-text-secondary);
@@ -212,7 +218,7 @@ export function getDomainCardCSS(): string {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease;
-    min-height: 32px;
+    min-height: 36px;
     display: flex;
     align-items: center;
     gap: 4px;
@@ -233,7 +239,7 @@ export function getDomainCardCSS(): string {
   .dc-climate-fan {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     flex-wrap: wrap;
   }
   .dc-climate-fan-label {
@@ -245,8 +251,8 @@ export function getDomainCardCSS(): string {
   }
   .dc-climate-fan-btn {
     appearance: none;
-    padding: 4px 10px;
-    border-radius: var(--hdp-radius-pill, 20px);
+    padding: 6px 10px;
+    border-radius: 10px;
     border: 1px solid var(--hdp-border);
     background: var(--hdp-card-bg);
     color: var(--hdp-text-secondary);
@@ -255,7 +261,7 @@ export function getDomainCardCSS(): string {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease;
-    min-height: 28px;
+    min-height: 32px;
     text-align: center;
   }
   .dc-climate-fan-btn:hover {
@@ -667,15 +673,15 @@ function buildCoverCard(entity: EntityInfo, stateObj: HassEntity, skin?: string)
       <div class="dc-cover-bar-fill" style="width: ${barWidth}%"></div>
     </div>
     <div class="dc-cover-actions">
-      <button type="button" class="dc-cover-btn" data-entity="${escapeAttribute(entity.entity_id)}" data-action="cover-open">
+      <button type="button" class="dc-cover-btn" data-entity="${escapeAttribute(entity.entity_id)}" data-action="cover-open" aria-label="打开 ${escapeAttribute(entity.name)}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
         打开
       </button>
-      <button type="button" class="dc-cover-btn" data-entity="${escapeAttribute(entity.entity_id)}" data-action="cover-stop">
+      <button type="button" class="dc-cover-btn" data-entity="${escapeAttribute(entity.entity_id)}" data-action="cover-stop" aria-label="停止 ${escapeAttribute(entity.name)}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
         停止
       </button>
-      <button type="button" class="dc-cover-btn" data-entity="${escapeAttribute(entity.entity_id)}" data-action="cover-close">
+      <button type="button" class="dc-cover-btn" data-entity="${escapeAttribute(entity.entity_id)}" data-action="cover-close" aria-label="关闭 ${escapeAttribute(entity.name)}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         关闭
       </button>

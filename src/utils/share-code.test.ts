@@ -79,6 +79,19 @@ describe('share code', () => {
           visible_keywords: ['light'],
         },
         people: { hidden_persons: ['person.alice', ''] },
+        cards: {
+          slots: {
+            'home.summary': {
+              enabled: false,
+              order: 3,
+              size: 'wide',
+              background_image_url: '/local/card.jpg',
+              theme_from_image: true,
+              yaml: 'type: custom:html-pro-card\ncontent: |\n  <div data-action="toggle">Safe</div>',
+            },
+            bad: { size: 'huge', order: 'first', enabled: 'no', background_image_url: 1 },
+          },
+        },
         blueprints: {
           pages: [
             { id: 'broken' },
@@ -121,6 +134,15 @@ describe('share code', () => {
     expect(imported.hdp_config?.devices?.hidden_keywords).toEqual(['test', 'demo', 'old']);
     expect(imported.hdp_config?.devices?.visible_keywords).toEqual(['light', 'kitchen']);
     expect(imported.hdp_config?.people?.hidden_persons).toEqual(['person.alice', 'person.bob']);
+    expect(imported.hdp_config?.cards?.slots?.['home.summary']).toEqual({
+      enabled: false,
+      order: 3,
+      size: 'wide',
+      background_image_url: '/local/card.jpg',
+      theme_from_image: true,
+      yaml: 'type: custom:html-pro-card\ncontent: |\n  <div data-action="toggle">Safe</div>',
+    });
+    expect(imported.hdp_config?.cards?.slots?.bad).toEqual({});
     expect(imported.hdp_config).not.toHaveProperty('hidden_areas');
     expect(imported.hdp_config).not.toHaveProperty('hidden_domains');
     expect(imported.hdp_config).not.toHaveProperty('hidden_device_types');

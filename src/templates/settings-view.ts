@@ -1764,6 +1764,12 @@ function buildCardStyleCard(stored: StoredVisualConfig, tokens?: ResolvedTokens)
       preview: 'background: var(--hdp-bg); border: none; box-shadow: 4px 4px 8px rgba(0,0,0,0.06), -4px -4px 8px rgba(255,255,255,0.8);',
     },
     {
+      key: 'soft-data',
+      label: '柔和数据卡',
+      desc: '白底留白 · 蓝紫强调',
+      preview: 'background: linear-gradient(145deg, #fff 0%, rgba(79,110,247,0.12) 100%); border: 1px solid rgba(79,110,247,0.12); box-shadow: 0 14px 32px rgba(79,110,247,0.12);',
+    },
+    {
       key: 'neon',
       label: '霓虹',
       desc: '发光边框 · 赛博风格',
