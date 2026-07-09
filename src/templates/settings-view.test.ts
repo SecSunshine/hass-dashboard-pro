@@ -144,6 +144,9 @@ describe('settings view', () => {
     expect(html).toContain('.theme-grid');
     expect(html).toContain('<style>\n');
     expect(html).toContain('.settings-header');
+    expect(html).toContain('#st-visual-body .settings-header-title');
+    expect(html).toContain('#st-visual-body .settings-header-sub');
+    expect(html).toContain('letter-spacing: 0;');
     expect(html).toContain('#st-visual-body .theme-grid');
     expect(html).toContain('#st-visual-body .settings-section');
     expect(html).toContain('repeat(auto-fit, minmax(160px, 1fr))');
@@ -345,6 +348,20 @@ describe('settings view', () => {
     expect(html).toContain("hdpToggleArrayItem('devices.hidden_device_types', &quot;binary_sensor.motion&quot;, event)");
     expect(html).toContain("hdpToggleArrayItem('devices.hidden_device_types', &quot;sensor.temperature&quot;, event)");
     expect(html).toContain('温度传感器');
+  });
+
+  it('keeps common device subtype controls visible when their domain is hidden', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        devices: { hidden_domains: ['sensor'] },
+      } as any,
+    };
+    const html = buildSettingsHTML(config, undefined, hass);
+
+    expect(html).toContain("hdpToggleArrayItem('devices.hidden_domains', &quot;sensor&quot;, event)");
+    expect(html).toContain('data-action="toggle-hidden-domain" data-setting="devices.hidden_domains" data-value="sensor" aria-pressed="true"');
+    expect(html).toContain("hdpToggleArrayItem('devices.hidden_device_types', &quot;sensor.temperature&quot;, event)");
   });
 
   it('keeps hidden device type chips visible even when no matching entity is visible', () => {

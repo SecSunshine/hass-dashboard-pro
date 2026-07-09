@@ -9,7 +9,7 @@
  * - Font family selector with sample text
  * - Reset / Done action buttons
  *
- * All changes save to localStorage and apply via CSS variables in real-time.
+ * Changes are staged in a settings draft and applied when the user saves.
  */
 
 import type { LovelaceCardConfig, StrategyConfig, ThemePreset, Hass } from '../types';
@@ -201,6 +201,21 @@ ${visualStyles}
     align-items: flex-start;
     gap: 4px;
     min-width: 0;
+    width: 100%;
+  }
+  #st-visual-body .settings-header-title {
+    font-size: 22px;
+    line-height: 1.25;
+    font-weight: 700;
+    letter-spacing: 0;
+    color: var(--hdp-text, #1A1D26);
+    overflow-wrap: anywhere;
+  }
+  #st-visual-body .settings-header-sub {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--hdp-text-secondary, #6B7280);
+    overflow-wrap: anywhere;
   }
   #st-visual-body .settings-title,
   #st-visual-body .lc-title {
@@ -979,7 +994,7 @@ ${generateDesignTokenCSS(tokens)}
   }
   .settings-header-title {
     font-size: 22px; font-weight: 700; color: var(--hdp-text);
-    letter-spacing: -0.3px; margin-bottom: 4px;
+    letter-spacing: 0; margin-bottom: 4px;
   }
   .settings-header-sub {
     font-size: 13px; color: var(--hdp-text-secondary);

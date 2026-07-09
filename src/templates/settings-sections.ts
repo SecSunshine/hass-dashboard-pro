@@ -1605,8 +1605,7 @@ function buildHiddenDeviceTypeChips(hass: Hass | undefined, hiddenDomains: strin
     'binary_sensor.occupancy': '占用',
     'binary_sensor.presence': '存在',
   };
-  const defaultDeviceTypes = Object.keys(deviceTypeLabels)
-    .filter(type => !hiddenDomains.includes(type.split('.')[0]));
+  const defaultDeviceTypes = Object.keys(deviceTypeLabels);
   const detectedDeviceTypes = Object.entries(hass?.states || {})
     .filter(([entityId]) => isVisibleRegistryEntity(hass, entityId))
     .map(([entityId, stateObj]) => getEntityDeviceType(entityId, stateObj.attributes || {}))
