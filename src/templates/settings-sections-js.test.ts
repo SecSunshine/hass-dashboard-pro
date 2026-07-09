@@ -234,10 +234,8 @@ Old `);
     expect(saveBar.attrs['data-dirty']).toBe('false');
     expect(saveText.textContent).toBe('修改设置后点击保存生效');
     expect(runtime.hdpSettingsDraft).toEqual({});
-    expect(timers.map(timer => timer.delay)).toContain(120);
+    expect(timers.map(timer => timer.delay)).not.toContain(120);
     expect(getReloadCount()).toBe(0);
-    timers[timers.length - 1]?.fn();
-    expect(getReloadCount()).toBe(1);
     expect(store.get('hdp_config')).toBeUndefined();
   });
 

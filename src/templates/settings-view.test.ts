@@ -487,6 +487,9 @@ describe('settings view', () => {
     expect(js).toContain('hdpSetDraftPath(path, value);');
     expect(js).toContain('window.hdpCommitSettings = function');
     expect(js).toContain('window.hdpCancelSettings = function');
+    const cancelBlock = js.slice(js.indexOf('window.hdpCancelSettings = function'), js.indexOf('window.hdpResetConfig = function'));
+    expect(cancelBlock).not.toContain('location.reload()');
+    expect(cancelBlock).not.toContain('setTimeout(function() { location.reload(); }, 120);');
     expect(js).toContain('var savedConfig = hdpCloneConfig(config);');
     expect(js).toContain("localStorage.setItem('hdp_config', JSON.stringify(savedConfig));");
     expect(js).toContain('window.hdpResetConfig = function');

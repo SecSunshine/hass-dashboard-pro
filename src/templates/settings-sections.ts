@@ -797,7 +797,6 @@ window.hdpCancelSettings = function() {
   window.hdpDraftVisualDirty = false;
   hdpMarkSettingsClean();
   if (typeof hdpShowToast === 'function') hdpShowToast('已放弃未保存更改', 'info');
-  setTimeout(function() { location.reload(); }, 120);
 };
 
 window.hdpResetConfig = function() {

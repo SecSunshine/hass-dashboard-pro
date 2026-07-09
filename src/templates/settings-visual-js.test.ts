@@ -194,7 +194,7 @@ describe('settings visual client script', () => {
     expect(runtime.hdpSettingsDirty).toBe(false);
     expect(runtime.hdpSettingsDraft.visual).toEqual({ theme: 'light' });
     expect(store.get('hdp_visual_config')).toBeUndefined();
-    expect(timers.map(timer => timer.delay)).toContain(120);
+    expect(timers.map(timer => timer.delay)).not.toContain(120);
 
     runtime.hdpCommitSettings();
 
