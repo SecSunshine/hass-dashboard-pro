@@ -105,8 +105,31 @@ describe('card slots', () => {
 
     const card = resolveSlottedCard(config, 'home.summary', '<div>Default</div>', 'md');
     expect(card.custom).toBe(false);
-    expect(card.html).toContain('自定义卡片解析失败');
+    expect(card.html).toContain('自定义卡片解析失败：仅支持 type: custom:html-pro-card');
+    expect(card.html).toContain('data-card-slot-error="home.summary"');
+    expect(card.html).toContain('hdpResetCardSlot(&quot;home.summary&quot;)');
     expect(card.html).toContain('<div>Default</div>');
+  });
+
+  it('explains missing custom content and keeps a default fallback', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        cards: {
+          slots: {
+            'home.environment': {
+              yaml: 'type: custom:html-pro-card\nname: Missing content',
+            },
+          },
+        },
+      } as any,
+    };
+
+    const card = resolveSlottedCard(config, 'home.environment', '<div>Environment</div>', 'md');
+    expect(card.custom).toBe(false);
+    expect(card.html).toContain('自定义卡片解析失败：需要 content: | 多行内容');
+    expect(card.html).toContain('恢复默认');
+    expect(card.html).toContain('<div>Environment</div>');
   });
 
   it('filters unsafe background URLs and marks image theme slots', () => {

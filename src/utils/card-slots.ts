@@ -12,6 +12,11 @@ export interface SlottedCard {
   custom: boolean;
 }
 
+interface CustomSlotRenderResult {
+  html: string;
+  error?: string;
+}
+
 export function resolveSlottedCard(
   config: StrategyConfig,
   slotId: string,
@@ -25,16 +30,16 @@ export function resolveSlottedCard(
   const order = typeof slot?.order === 'number' && Number.isFinite(slot.order) ? slot.order : defaultOrder;
   if (hidden) return { slotId, html: '', size, order, hidden: true, custom: false };
 
-  const customHTML = renderCustomSlotHTML(slotId, slot);
-  const content = customHTML || defaultHTML;
-  const error = slot?.yaml && !customHTML ? buildSlotErrorHTML(slotId) : '';
+  const custom = renderCustomSlotHTML(slotId, slot);
+  const content = custom.html || defaultHTML;
+  const error = custom.error ? buildSlotErrorHTML(slotId, custom.error) : '';
   return {
     slotId,
-    html: wrapSlotHTML(slotId, `${error}${content}`, slot, Boolean(customHTML)),
+    html: wrapSlotHTML(slotId, `${error}${content}`, slot, Boolean(custom.html)),
     size,
     order,
     hidden: false,
-    custom: Boolean(customHTML),
+    custom: Boolean(custom.html),
   };
 }
 
@@ -256,6 +261,10 @@ export function getCardSlotCSS(): string {
     --hdp-primary-light: var(--hdp-slot-primary-light);
   }
   .hdp-card-slot-error {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
     margin-bottom: 8px;
     padding: 10px 12px;
     border-radius: var(--hdp-radius-sm, 8px);
@@ -265,6 +274,23 @@ export function getCardSlotCSS(): string {
     font: inherit;
     font-size: 12px;
     font-weight: 700;
+  }
+  .hdp-card-slot-error span {
+    min-width: 0;
+  }
+  .hdp-card-slot-error button {
+    appearance: none;
+    flex: 0 0 auto;
+    min-height: 30px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    border: 1px solid currentColor;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
   }
   .hdp-hidden-slot-list {
     display: grid;
@@ -292,15 +318,21 @@ export function getCardSlotCSS(): string {
   `;
 }
 
-function renderCustomSlotHTML(slotId: string, slot?: CardSlotConfig): string {
+function renderCustomSlotHTML(slotId: string, slot?: CardSlotConfig): CustomSlotRenderResult {
   const yaml = slot?.yaml?.trim();
-  if (!yaml) return '';
+  if (!yaml) return { html: '' };
   try {
     const card = parseCardYAML(yaml);
-    if (card.type !== 'custom:html-pro-card' || typeof card.content !== 'string') return '';
-    return cardConfigToHTML(card, slotId);
-  } catch {
-    return '';
+    if (card.type !== 'custom:html-pro-card') {
+      return { html: '', error: '仅支持 type: custom:html-pro-card' };
+    }
+    if (typeof card.content !== 'string' || !card.content.trim()) {
+      return { html: '', error: '需要 content: | 多行内容' };
+    }
+    return { html: cardConfigToHTML(card, slotId) };
+  } catch (err) {
+    const message = err instanceof Error && err.message ? `YAML 解析失败：${err.message}` : 'YAML 解析失败';
+    return { html: '', error: message };
   }
 }
 
@@ -322,8 +354,12 @@ function wrapSlotHTML(slotId: string, html: string, slot: CardSlotConfig | undef
   </div>`;
 }
 
-function buildSlotErrorHTML(slotId: string): string {
-  return `<div class="hdp-card-slot-error" data-card-slot-error="${escapeAttribute(slotId)}">${escapeHTML('自定义卡片解析失败，已显示默认卡片')}</div>`;
+function buildSlotErrorHTML(slotId: string, reason: string): string {
+  const safeSlot = escapeAttribute(JSON.stringify(slotId));
+  return `<div class="hdp-card-slot-error" data-card-slot-error="${escapeAttribute(slotId)}">
+    <span>${escapeHTML(`自定义卡片解析失败：${reason}。已显示默认卡片。`)}</span>
+    <button type="button" onclick="if(window.hdpResetCardSlot) hdpResetCardSlot(${safeSlot})">恢复默认</button>
+  </div>`;
 }
 
 function buildSlotEditPanel(slotId: string, slot?: CardSlotConfig): string {
