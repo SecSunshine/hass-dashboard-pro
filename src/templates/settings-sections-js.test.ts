@@ -8,15 +8,44 @@ type MockChip = {
   disabled: boolean;
   attrs: Record<string, string>;
   classList: {
-    toggle: (className: string) => void;
+    toggle: (className: string, force?: boolean) => void;
     contains: (className: string) => boolean;
   };
   setAttribute: (name: string, value: string) => void;
   getAttribute: (name: string) => string | undefined;
 };
+
+function createMockSettingElement(attrs: Record<string, string>, value = '') {
+  const element = {
+    value,
+    active: false,
+    attrs: { ...attrs },
+    classList: {
+      toggle: (className: string, force?: boolean) => {
+        if (className === 'st-chip--active' || className === 'st-toggle--on' || className === 'st-layout-choice--active') {
+          element.active = force == null ? !element.active : force;
+        }
+        if (className === 'st-toggle--off') {
+          element.active = force == null ? !element.active : !force;
+        }
+      },
+      contains: (className: string) => {
+        if (className === 'st-chip--active' || className === 'st-toggle--on' || className === 'st-layout-choice--active') return element.active;
+        if (className === 'st-toggle--off') return !element.active;
+        return false;
+      },
+    },
+    setAttribute: (name: string, attrValue: string) => { element.attrs[name] = attrValue; },
+    getAttribute: (name: string) => element.attrs[name],
+  };
+  return element;
+}
+
 function createRuntime(initialSettingsConfig?: Record<string, unknown>) {
   const store = new Map<string, string>();
   const chips: MockChip[] = [];
+  const settingControls: Array<ReturnType<typeof createMockSettingElement>> = [];
+  const layoutChoices: Array<ReturnType<typeof createMockSettingElement>> = [];
   const timers: Array<{ delay: number; fn: () => void }> = [];
   let reloadCount = 0;
   const window = initialSettingsConfig ? { hdpInitialSettingsConfig: initialSettingsConfig } as any : {} as any;
@@ -30,6 +59,11 @@ function createRuntime(initialSettingsConfig?: Record<string, unknown>) {
       if (selector === '.st-settings-actions') return saveBar;
       if (selector === '.st-settings-actions-text') return saveText;
       return null;
+    },
+    querySelectorAll: (selector: string) => {
+      if (selector === '[data-setting]') return settingControls;
+      if (selector === '[data-layout-preset]') return layoutChoices;
+      return [];
     },
   };
   const localStorage = {
@@ -75,7 +109,7 @@ function createRuntime(initialSettingsConfig?: Record<string, unknown>) {
     return { target: { closest: () => chip } };
   };
 
-  return { runtime, store, eventForChip, chips, saveBar, saveText, timers, getReloadCount: () => reloadCount };
+  return { runtime, store, eventForChip, chips, settingControls, layoutChoices, saveBar, saveText, timers, getReloadCount: () => reloadCount };
 }
 
 function encodeShareCode(bundle: unknown): string {
@@ -219,9 +253,22 @@ Old `);
   });
 
   it('restores the save bar state when cancelling staged settings', () => {
-    const { runtime, store, saveBar, saveText, timers, getReloadCount } = createRuntime();
+    const { runtime, store, settingControls, layoutChoices, saveBar, saveText, timers, getReloadCount } = createRuntime();
+    const nameInput = createMockSettingElement({ 'data-setting': 'dashboard.name' }, 'Draft Home');
+    const hiddenDomainChip = createMockSettingElement({ 'data-setting': 'devices.hidden_domains', 'data-value': 'sensor' });
+    const unavailableToggle = createMockSettingElement({ 'data-setting': 'areas.hide_unavailable', role: 'switch' });
+    const gridLayout = createMockSettingElement({ 'data-layout-preset': 'grid' });
+    const mirrorLayout = createMockSettingElement({ 'data-layout-preset': 'l_mirror' });
+    hiddenDomainChip.active = true;
+    unavailableToggle.active = true;
+    mirrorLayout.active = true;
+    settingControls.push(nameInput, hiddenDomainChip, unavailableToggle);
+    layoutChoices.push(gridLayout, mirrorLayout);
 
     runtime.hdpSaveSetting('areas.hide_unavailable', true);
+    runtime.hdpSaveSetting('dashboard.name', 'Draft Home');
+    runtime.hdpToggleArrayItem('devices.hidden_domains', 'sensor');
+    runtime.hdpSelectHomeLayout('l_mirror');
 
     expect(runtime.hdpSettingsDirty).toBe(true);
     expect(saveBar.attrs['data-dirty']).toBe('true');
@@ -234,6 +281,15 @@ Old `);
     expect(saveBar.attrs['data-dirty']).toBe('false');
     expect(saveText.textContent).toBe('修改设置后点击保存生效');
     expect(runtime.hdpSettingsDraft).toEqual({});
+    expect(nameInput.value).toBe('');
+    expect(hiddenDomainChip.active).toBe(false);
+    expect(hiddenDomainChip.attrs['aria-pressed']).toBe('false');
+    expect(unavailableToggle.active).toBe(false);
+    expect(unavailableToggle.attrs['aria-checked']).toBe('false');
+    expect(gridLayout.active).toBe(true);
+    expect(gridLayout.attrs['aria-pressed']).toBe('true');
+    expect(mirrorLayout.active).toBe(false);
+    expect(mirrorLayout.attrs['aria-pressed']).toBe('false');
     expect(timers.map(timer => timer.delay)).not.toContain(120);
     expect(getReloadCount()).toBe(0);
     expect(store.get('hdp_config')).toBeUndefined();

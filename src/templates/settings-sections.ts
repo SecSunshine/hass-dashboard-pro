@@ -690,6 +690,54 @@ function hdpGetDraftArray(path) {
   return current[key];
 }
 
+function hdpGetDraftPathValue(path) {
+  var parts = String(path || '').split('.');
+  var current = window.hdpGetSettingsDraft();
+  for (var i = 0; i < parts.length; i++) {
+    if (!current || typeof current !== 'object') return undefined;
+    current = current[parts[i]];
+  }
+  return current;
+}
+
+function hdpSyncSettingsControlsFromDraft() {
+  if (typeof document === 'undefined' || !document.querySelectorAll) return;
+  var controls = document.querySelectorAll('[data-setting]');
+  for (var i = 0; i < controls.length; i++) {
+    var control = controls[i];
+    if (!control || !control.getAttribute) continue;
+    var path = control.getAttribute('data-setting');
+    if (!path) continue;
+    var value = hdpGetDraftPathValue(path);
+    var item = control.getAttribute('data-value');
+    if (item != null && control.classList) {
+      var active = Array.isArray(value) && value.indexOf(item) >= 0;
+      control.classList.toggle('st-chip--active', active);
+      control.setAttribute('aria-pressed', active ? 'true' : 'false');
+      continue;
+    }
+    if (control.getAttribute('role') === 'switch' && control.classList) {
+      var on = value === true;
+      control.classList.toggle('st-toggle--on', on);
+      control.classList.toggle('st-toggle--off', !on);
+      control.setAttribute('aria-checked', on ? 'true' : 'false');
+      continue;
+    }
+    if ('value' in control) {
+      control.value = Array.isArray(value) ? value.join(', ') : (value == null ? '' : String(value));
+    }
+  }
+  var layoutPreset = hdpGetDraftPathValue('home.layout_preset') || 'grid';
+  var layoutButtons = document.querySelectorAll('[data-layout-preset]');
+  for (var j = 0; j < layoutButtons.length; j++) {
+    var button = layoutButtons[j];
+    if (!button || !button.getAttribute || !button.classList) continue;
+    var selected = button.getAttribute('data-layout-preset') === layoutPreset;
+    button.classList.toggle('st-layout-choice--active', selected);
+    button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+  }
+}
+
 function hdpMarkSettingsDirty() {
   window.hdpSettingsDirty = true;
   if (typeof document === 'undefined') return;
@@ -795,6 +843,7 @@ window.hdpCancelSettings = function() {
   window.hdpSettingsDraft = hdpCloneConfig(hdpLoadRawSettingsConfig());
   window.hdpDraftVisualConfig = undefined;
   window.hdpDraftVisualDirty = false;
+  hdpSyncSettingsControlsFromDraft();
   hdpMarkSettingsClean();
   if (typeof hdpShowToast === 'function') hdpShowToast('已放弃未保存更改', 'info');
 };
@@ -1414,21 +1463,21 @@ export function buildDashboardSection(config: StrategyConfig): string {
         <div class="st-row-label">名称</div>
         <div class="st-row-desc">仪表盘显示名称</div>
       </div>
-      <input class="st-input" value="${escapeAttribute(name)}" onchange="hdpSaveSetting('dashboard.name', this.value)" />
+      <input class="st-input" data-setting="dashboard.name" value="${escapeAttribute(name)}" onchange="hdpSaveSetting('dashboard.name', this.value)" />
     </div>
     <div class="st-row">
       <div>
         <div class="st-row-label">用户头像</div>
         <div class="st-row-desc">支持 /local/...、https://... 或 data:image/...；留空使用用户名首字母</div>
       </div>
-      <input class="st-input st-input--wide" type="url" value="${escapeAttribute(avatarUrl)}" placeholder="/local/hass-dashboard-pro/avatar.png" onchange="hdpSaveSetting('dashboard.avatar_url', this.value.trim())" />
+      <input class="st-input st-input--wide" data-setting="dashboard.avatar_url" type="url" value="${escapeAttribute(avatarUrl)}" placeholder="/local/hass-dashboard-pro/avatar.png" onchange="hdpSaveSetting('dashboard.avatar_url', this.value.trim())" />
     </div>
     <div class="st-row">
       <div>
         <div class="st-row-label">背景图片</div>
         <div class="st-row-desc">支持 /local/...、https://... 或 data:image/...；用于整个仪表盘背景</div>
       </div>
-      <input class="st-input st-input--wide" type="url" value="${escapeAttribute(backgroundUrl)}" placeholder="/local/hass-dashboard-pro/background.jpg" onchange="hdpSaveSetting('dashboard.background_image_url', this.value.trim())" />
+      <input class="st-input st-input--wide" data-setting="dashboard.background_image_url" type="url" value="${escapeAttribute(backgroundUrl)}" placeholder="/local/hass-dashboard-pro/background.jpg" onchange="hdpSaveSetting('dashboard.background_image_url', this.value.trim())" />
     </div>
   `);
 }
@@ -1573,14 +1622,14 @@ export function buildHeaderSection(config: StrategyConfig): string {
         <div class="st-row-label">天气实体</div>
         <div class="st-row-desc">weather.* 实体 ID（留空自动检测）</div>
       </div>
-      <input class="st-input" value="${escapeAttribute(weatherEntity)}" placeholder="自动检测" onchange="hdpSaveSetting('header.weather_entity', this.value)" />
+      <input class="st-input" data-setting="header.weather_entity" value="${escapeAttribute(weatherEntity)}" placeholder="自动检测" onchange="hdpSaveSetting('header.weather_entity', this.value)" />
     </div>
     <div class="st-row">
       <div>
         <div class="st-row-label">报警实体</div>
         <div class="st-row-desc">alarm_control_panel.* 实体 ID</div>
       </div>
-      <input class="st-input" value="${escapeAttribute(alarmEntity)}" placeholder="自动检测" onchange="hdpSaveSetting('header.alarm_entity', this.value)" />
+      <input class="st-input" data-setting="header.alarm_entity" value="${escapeAttribute(alarmEntity)}" placeholder="自动检测" onchange="hdpSaveSetting('header.alarm_entity', this.value)" />
     </div>
   `);
 }

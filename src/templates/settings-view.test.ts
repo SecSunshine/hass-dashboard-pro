@@ -484,6 +484,10 @@ describe('settings view', () => {
     expect(js).toContain('window.hdpSettingsDraft = hdpCloneConfig');
     expect(js).toContain('window.hdpGetSettingsDraft = function');
     expect(js).toContain('function hdpSetDraftPath(path, value)');
+    expect(js).toContain('function hdpSyncSettingsControlsFromDraft()');
+    expect(js).toContain("document.querySelectorAll('[data-setting]')");
+    expect(js).toContain("document.querySelectorAll('[data-layout-preset]')");
+    expect(js).toContain('hdpSyncSettingsControlsFromDraft();');
     expect(js).toContain('hdpSetDraftPath(path, value);');
     expect(js).toContain('window.hdpCommitSettings = function');
     expect(js).toContain('window.hdpCancelSettings = function');
@@ -532,6 +536,11 @@ describe('settings view', () => {
       js.indexOf('hdpSaveConfig(config);', js.indexOf('window.hdpImportShareCode = function')),
     );
     expect(html).toContain("var isOn = this.classList.contains('st-toggle--on'); hdpSaveSetting('areas.hide_unavailable', !isOn);");
+    expect(html).toContain('data-setting="dashboard.name"');
+    expect(html).toContain('data-setting="dashboard.avatar_url"');
+    expect(html).toContain('data-setting="dashboard.background_image_url"');
+    expect(html).toContain('data-setting="header.weather_entity"');
+    expect(html).toContain('data-setting="header.alarm_entity"');
     expect(html).toContain('data-action="toggle-setting" data-setting="areas.hide_unavailable" role="switch" aria-checked="false" tabindex="0"');
     expect(html).toContain("this.setAttribute('aria-checked', !isOn ? 'true' : 'false');");
     expect(js).toContain("chip.setAttribute('aria-pressed'");
