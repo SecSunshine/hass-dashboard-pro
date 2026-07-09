@@ -345,7 +345,7 @@ function hdpResolveEntityArea(hass, entityId) {
   }
   var area = areaId && hass.areas && hass.areas[areaId] ? hass.areas[areaId] : null;
   return {
-    id: areaId || '__unassigned__',
+    id: areaId || '__unassigned',
     name: area && area.name ? area.name : (areaId || '未分配区域')
   };
 }

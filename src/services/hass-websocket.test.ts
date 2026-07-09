@@ -77,6 +77,8 @@ describe('hass websocket script', () => {
     expect(js).toContain('function hdpGetRuntimeDashboardFilters()');
     expect(js).toContain("root.getAttribute('data-dashboard-filters')");
     expect(js).toContain('function hdpRuntimeEntityVisible(hass, entityId, filters)');
+    expect(js).toContain("id: areaId || '__unassigned'");
+    expect(js).not.toContain("id: areaId || '__unassigned__'");
     expect(js).toContain('filters.hiddenDomains.indexOf(domain.toLowerCase()) >= 0');
     expect(js).toContain('filters.hiddenDeviceTypes.indexOf(deviceType.toLowerCase()) >= 0');
     expect(js).toContain("filters.hiddenAreas.indexOf(String(area.id || '').toLowerCase()) >= 0");
