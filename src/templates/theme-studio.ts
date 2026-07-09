@@ -947,6 +947,9 @@ export function generateThemeStudioJS(): string {
   }
 
   function clearVisualConfig() {
+    if (typeof hdpClearVisualConfigAndReload === 'function') {
+      return hdpClearVisualConfigAndReload();
+    }
     try {
       localStorage.removeItem('hdp_visual_config');
     } catch(e) {}
@@ -1476,10 +1479,10 @@ export function generateThemeStudioJS(): string {
 
     saveVisualConfig(cfg).then(function() {
       closeStudio();
-      location.reload();
+      if (typeof hdpShowToast === 'function') hdpShowToast('主题已暂存，点击保存并应用后生效', 'success');
     }).catch(function() {
       closeStudio();
-      location.reload();
+      if (typeof hdpShowToast === 'function') hdpShowToast('主题暂存失败', 'error');
     });
   });
 
@@ -1489,10 +1492,10 @@ export function generateThemeStudioJS(): string {
     if (!confirm('确定重置为默认主题吗？所有视觉设置将被清除。')) return;
     clearVisualConfig().then(function() {
       closeStudio();
-      location.reload();
+      if (typeof hdpShowToast === 'function') hdpShowToast('主题重置已暂存，点击保存并应用后生效', 'success');
     }).catch(function() {
       closeStudio();
-      location.reload();
+      if (typeof hdpShowToast === 'function') hdpShowToast('主题重置暂存失败', 'error');
     });
     // Remove palette override style
     var existing = document.getElementById('hdp-palette-override');

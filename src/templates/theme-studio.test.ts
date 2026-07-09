@@ -2,17 +2,33 @@ import { describe, expect, it } from 'vitest';
 import { buildThemeStudioHTML, generateThemeStudioJS } from './theme-studio';
 
 describe('theme studio', () => {
-  it('persists saved and reset visual settings to dashboard config', () => {
+  it('stages saved and reset visual settings through settings APIs', () => {
     const js = generateThemeStudioJS();
 
     expect(js).toContain('function saveVisualConfig(cfg)');
+    expect(js).toContain("if (typeof hdpSaveVisualConfig === 'function')");
     expect(js).toContain('hdpSaveVisualConfig(cfg)');
+    expect(js).toContain("if (typeof hdpClearVisualConfigAndReload === 'function')");
+    expect(js).toContain('hdpClearVisualConfigAndReload()');
     expect(js).toContain('fullConfig.visual = cfg || {}');
     expect(js).toContain('function clearVisualConfig()');
     expect(js).toContain('fullConfig.visual = {}');
     expect(js).toContain('hdpSaveToLovelace(fullConfig)');
     expect(js).toContain('saveVisualConfig(cfg).then(function()');
     expect(js).toContain('clearVisualConfig().then(function()');
+    expect(js).toContain("hdpShowToast('主题已暂存，点击保存并应用后生效', 'success')");
+    expect(js).toContain("hdpShowToast('主题重置已暂存，点击保存并应用后生效', 'success')");
+
+    const saveBlock = js.slice(
+      js.indexOf('saveVisualConfig(cfg).then(function()'),
+      js.indexOf('  // ── Reset ──'),
+    );
+    const resetBlock = js.slice(
+      js.indexOf('clearVisualConfig().then(function()'),
+      js.indexOf('    // Remove palette override style'),
+    );
+    expect(saveBlock).not.toContain('location.reload()');
+    expect(resetBlock).not.toContain('location.reload()');
   });
 
   it('sanitizes imported and persisted card skins', () => {
