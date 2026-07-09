@@ -114,6 +114,9 @@ describe('devices view', () => {
     expect(html).toContain('flex: 0 0 auto;');
     expect(html).toContain('data-action="scroll-domain"');
     expect(html).toContain('appearance: none;');
+    expect(html).toContain('background: var(--hdp-surface-card, var(--hdp-card-bg));');
+    expect(html).toContain('background: var(--hdp-surface-card, white);');
+    expect(html).toContain('box-shadow: var(--hdp-shadow-card, 0 1px 3px rgba(0,0,0,0.15));');
   });
 
   it('generates status-badge navigation helpers for device domains', () => {

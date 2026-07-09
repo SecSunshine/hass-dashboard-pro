@@ -263,7 +263,7 @@ function isUnavailable(state: string): boolean {
 function getDeviceEntityCardCSS(): string {
   return `
   .dvc {
-    background: var(--hdp-card-bg);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
     border-radius: var(--hdp-radius);
     padding: var(--hdp-density-entity-padding, 14px);
     border: 1px solid var(--hdp-border);
@@ -377,8 +377,8 @@ function getDeviceEntityCardCSS(): string {
   .dvc-tg-knob {
     width: 20px; height: 20px;
     border-radius: 50%;
-    background: white;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    background: var(--hdp-surface-card, white);
+    box-shadow: var(--hdp-shadow-card, 0 1px 3px rgba(0,0,0,0.15));
   }
   .dvc-tg-knob--off { border: 1px solid var(--hdp-border); }`;
 }
