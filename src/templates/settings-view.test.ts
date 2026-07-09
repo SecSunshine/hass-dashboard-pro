@@ -442,6 +442,21 @@ describe('settings view', () => {
     expect(js).not.toContain('<img');
     expect(js).toContain('\\u003C/script\\u003E');
   });
+
+  it('initializes settings drafts from seeded config without persisting it', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        dashboard: { name: 'Seeded Home', icon: 'mdi:home' },
+      } as any,
+    };
+    const js = generateSettingsJS(config, undefined, hass);
+
+    expect(js).toContain('window.hdpInitialSettingsConfig = merged;');
+    expect(js).toContain('hdpCloneConfig(window.hdpInitialSettingsConfig || {})');
+    expect(js).not.toContain("localStorage.setItem('hdp_config', JSON.stringify(merged));");
+  });
+
   it('persists staged setting changes only when saving', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const js = generateSettingsJS(config, undefined, hass);

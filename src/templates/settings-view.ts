@@ -809,12 +809,11 @@ function generateSettingsConfigSeedJS(config: StrategyConfig): string {
   var seedConfig = ${escapeScriptJSON(seedConfig)};
   if (!seedConfig || typeof seedConfig !== 'object' || Array.isArray(seedConfig) || !Object.keys(seedConfig).length) return;
   try {
-    if (localStorage.getItem('hdp_config')) return;
     var base = {};
     var merged = typeof hdpDeepMerge === 'function' ? hdpDeepMerge(base, seedConfig) : Object.assign({}, base, seedConfig);
-    localStorage.setItem('hdp_config', JSON.stringify(merged));
+    window.hdpInitialSettingsConfig = merged;
   } catch(e) {
-    console.warn('[HDP] Failed to seed settings config', e);
+    console.warn('[HDP] Failed to initialize settings draft seed', e);
   }
 })();
 `;

@@ -16,7 +16,7 @@
  *   12. Reset — reset config, export/import
  *
  * All sections generate HTML strings for embedding in the layout card.
- * Settings are saved via client-side hdpSaveConfig() (from storage.ts).
+ * Settings are staged in hdpSettingsDraft and saved only from hdpCommitSettings().
  */
 
 import type { Hass, StrategyConfig, BlueprintInstance, HomeSectionKey } from '../types';
@@ -585,11 +585,11 @@ window.hdpToggleSection = function(id) {
 function hdpLoadRawSettingsConfig() {
   try {
     var raw = localStorage.getItem('hdp_config');
-    if (!raw) return {};
+    if (!raw) return hdpCloneConfig(window.hdpInitialSettingsConfig || {});
     var parsed = JSON.parse(raw);
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
   } catch(e) {
-    return {};
+    return hdpCloneConfig(window.hdpInitialSettingsConfig || {});
   }
 }
 

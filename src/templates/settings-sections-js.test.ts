@@ -14,12 +14,12 @@ type MockChip = {
   setAttribute: (name: string, value: string) => void;
   getAttribute: (name: string) => string | undefined;
 };
-function createRuntime() {
+function createRuntime(initialSettingsConfig?: Record<string, unknown>) {
   const store = new Map<string, string>();
   const chips: MockChip[] = [];
   const timers: Array<{ delay: number; fn: () => void }> = [];
   let reloadCount = 0;
-  const window = {} as any;
+  const window = initialSettingsConfig ? { hdpInitialSettingsConfig: initialSettingsConfig } as any : {} as any;
   const saveBar = {
     attrs: {} as Record<string, string>,
     setAttribute: (name: string, value: string) => { saveBar.attrs[name] = value; },
@@ -79,6 +79,23 @@ function createRuntime() {
 }
 
 describe('settings sections client script', () => {
+  it('loads initial settings config into the draft without saving it', () => {
+    const { runtime, store } = createRuntime({
+      dashboard: { name: 'Seeded Home' },
+      devices: { hidden_domains: ['sensor'] },
+    });
+
+    expect(runtime.hdpSettingsDraft.dashboard.name).toBe('Seeded Home');
+    expect(runtime.hdpSettingsDraft.devices.hidden_domains).toEqual(['sensor']);
+    expect(store.get('hdp_config')).toBeUndefined();
+
+    runtime.hdpSaveSetting('dashboard.name', 'Draft Home');
+    expect(runtime.hdpSettingsDraft.dashboard.name).toBe('Draft Home');
+    runtime.hdpCancelSettings();
+    expect(runtime.hdpSettingsDraft.dashboard.name).toBe('Seeded Home');
+    expect(store.get('hdp_config')).toBeUndefined();
+  });
+
   it('keeps hidden area, domain, and device type chip toggles in a draft until commit', () => {
     const { runtime, store, eventForChip, chips } = createRuntime();
 

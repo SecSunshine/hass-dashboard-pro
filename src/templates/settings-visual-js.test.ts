@@ -98,7 +98,8 @@ describe('settings visual client script', () => {
     };
     const { runtime, store, eventForChip } = createRuntime(config);
 
-    expect(JSON.parse(store.get('hdp_config') || '{}')).toMatchObject({
+    expect(store.get('hdp_config')).toBeUndefined();
+    expect(runtime.hdpSettingsDraft).toMatchObject({
       dashboard: { name: 'Family Dashboard' },
       areas: { hidden_areas: ['kitchen'] },
       devices: {
@@ -110,7 +111,7 @@ describe('settings visual client script', () => {
     runtime.hdpToggleArrayItem('areas.hidden_areas', 'garage', eventForChip());
 
     expect(runtime.hdpSettingsDraft.areas.hidden_areas).toEqual(['kitchen', 'garage']);
-    expect(JSON.parse(store.get('hdp_config') || '{}').areas.hidden_areas).toEqual(['kitchen']);
+    expect(store.get('hdp_config')).toBeUndefined();
 
     runtime.hdpCommitSettings();
 
@@ -130,7 +131,8 @@ describe('settings visual client script', () => {
     };
     const { runtime, store, eventForChip } = createRuntime(config);
 
-    expect(JSON.parse(store.get('hdp_config') || '{}')).toMatchObject({
+    expect(store.get('hdp_config')).toBeUndefined();
+    expect(runtime.hdpSettingsDraft).toMatchObject({
       areas: { hidden_areas: ['kitchen'] },
       devices: {
         hidden_domains: ['sensor'],
