@@ -169,9 +169,9 @@ ${visualStyles}
     position: absolute;
     width: 20px; height: 20px;
     border-radius: 50%;
-    background: white;
+    background: var(--hdp-surface-card, white);
     top: 2px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    box-shadow: var(--hdp-shadow-card, 0 1px 3px rgba(0,0,0,0.15));
     transition: transform 0.2s ease;
   }
   #st-visual-body .toggle-switch--on::after { transform: translateX(20px); }
@@ -487,8 +487,8 @@ ${visualStyles}
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: #fff;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+    background: var(--hdp-surface-card, #fff);
+    box-shadow: var(--hdp-shadow-card, 0 1px 3px rgba(0,0,0,0.18));
     transition: left 0.2s ease, transform 0.2s ease;
   }
   #st-visual-body .toggle-switch--on .toggle-switch-knob {
@@ -1604,8 +1604,8 @@ ${generateDesignTokenCSS(tokens)}
   .toggle-switch-knob {
     width: 22px; height: 22px;
     border-radius: 50%;
-    background: white;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    background: var(--hdp-surface-card, white);
+    box-shadow: var(--hdp-shadow-card, 0 1px 4px rgba(0,0,0,0.15));
     position: absolute;
     top: 2px;
     transition: left var(--hdp-motion-base) var(--hdp-motion-easing);
@@ -2364,8 +2364,8 @@ ${generateDesignTokenCSS(tokens)}
   .toggle-switch-knob {
     width: 22px; height: 22px;
     border-radius: 50%;
-    background: white;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    background: var(--hdp-surface-card, white);
+    box-shadow: var(--hdp-shadow-card, 0 1px 4px rgba(0,0,0,0.15));
     position: absolute;
     top: 2px;
     transition: left var(--hdp-motion-base) var(--hdp-motion-easing);

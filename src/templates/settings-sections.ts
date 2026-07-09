@@ -242,8 +242,8 @@ export function getSettingsSectionsCSS(): string {
   .st-toggle-knob {
     width: 20px; height: 20px;
     border-radius: 50%;
-    background: white;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    background: var(--hdp-surface-card, white);
+    box-shadow: var(--hdp-shadow-card, 0 1px 3px rgba(0,0,0,0.15));
   }
   .st-chip-list {
     display: flex;

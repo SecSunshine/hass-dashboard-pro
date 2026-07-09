@@ -147,10 +147,10 @@ export function buildThemeStudioHTML(tokens?: ResolvedTokens, hass?: Hass, confi
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: white;
+    background: var(--hdp-surface-card, white);
     top: 2px;
     right: 2px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    box-shadow: var(--hdp-shadow-card, 0 1px 3px rgba(0,0,0,0.2));
   }
   .ts-preview-progress-fill {
     width: 60%;

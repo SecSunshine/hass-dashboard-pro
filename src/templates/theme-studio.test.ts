@@ -70,6 +70,8 @@ describe('theme studio', () => {
     expect(html).toContain('.ts-skin-preview-line');
     expect(html).toContain('.ts-preview-toggle');
     expect(html).toContain('.ts-preview-progress-fill');
+    expect(html).toContain('background: var(--hdp-surface-card, white);');
+    expect(html).toContain('box-shadow: var(--hdp-shadow-card, 0 1px 3px rgba(0,0,0,0.2));');
     expect(html).not.toContain('style="width: 40px; height: 24px;');
     expect(html).not.toContain('width: 100px;');
     expect(html).not.toContain('grid-template-columns: repeat(3, minmax(0, 1fr))');

@@ -168,6 +168,11 @@ describe('settings view', () => {
     expect(html).toContain('white-space: normal;\n    text-align: center;');
     expect(html).toContain('#st-visual-body .toggle-switch::after');
     expect(html).toContain('#st-visual-body .toggle-switch-knob');
+    expect(html).toContain('background: var(--hdp-surface-card, white);');
+    expect(html).toContain('background: var(--hdp-surface-card, #fff);');
+    expect(html).toContain('box-shadow: var(--hdp-shadow-card, 0 1px 3px rgba(0,0,0,0.15));');
+    expect(html).toContain('box-shadow: var(--hdp-shadow-card, 0 1px 3px rgba(0,0,0,0.18));');
+    expect(html).toContain('box-shadow: var(--hdp-shadow-card, 0 1px 4px rgba(0,0,0,0.15));');
     expect(html).toContain('#st-visual-body .lc-size-row');
     expect(html).toContain('#st-visual-body .am-toggle-row');
     expect(html).toContain('#st-visual-body input[type="color"]');
