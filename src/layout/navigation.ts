@@ -13,7 +13,8 @@
 /**
  * Generate the complete client-side navigation <script> content.
  */
-export function buildNavigationScript(): string {
+export function buildNavigationScript(defaultView = 'home'): string {
+  const defaultViewJSON = JSON.stringify(defaultView);
   return `
 // ─── HDP Navigation ─────────────────────────────────────────────────────
 
@@ -23,7 +24,7 @@ export function buildNavigationScript(): string {
 
   // Read initial view from URL
   var params = new URLSearchParams(window.location.search);
-  var initialView = params.get('hdp_area') || 'home';
+  var initialView = params.get('hdp_area') || ${defaultViewJSON};
 
   function findView(viewId) {
     var views = root.querySelectorAll('.hdp-view');

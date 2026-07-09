@@ -259,4 +259,30 @@ describe('dashboard strategy hidden filters', () => {
     expect(paths).toContain('home');
     expect(paths).not.toContain('hdp-settings');
   });
+
+  it('renders the top-level devices view with the devices panel open', async () => {
+    const view = await HassDashboardProViewStrategy.generate({
+      type: 'custom:hass-dashboard-pro-view',
+      view_path: 'devices',
+    }, hass);
+    const content = String(view.cards[0].content || '');
+
+    expect(view.cards).toHaveLength(1);
+    expect(content).toContain('var initialView = params.get(\'hdp_area\') || "devices";');
+    expect(content).toContain('<div class="hdp-view" data-view="devices" style="display:none">');
+    expect(content).toContain('data-view="settings"');
+  });
+
+  it('renders the top-level settings view with the settings panel open', async () => {
+    const view = await HassDashboardProViewStrategy.generate({
+      type: 'custom:hass-dashboard-pro-view',
+      view_path: 'hdp-settings',
+    }, hass);
+    const content = String(view.cards[0].content || '');
+
+    expect(view.cards).toHaveLength(1);
+    expect(content).toContain('var initialView = params.get(\'hdp_area\') || "settings";');
+    expect(content).toContain('<div class="hdp-view" data-view="settings" style="display:none">');
+    expect(content).toContain('data-view="devices"');
+  });
 });

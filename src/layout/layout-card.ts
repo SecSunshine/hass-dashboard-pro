@@ -40,6 +40,7 @@ export interface LayoutCardOptions {
   areaSummaries: AreaSummary[];
   blueprintPages: BlueprintInstance[];
   blueprintHTML?: Array<{ id: string; html: string }>;
+  initialView?: string;
 }
 
 /**
@@ -168,7 +169,7 @@ ${blueprintAdminJS}
 ${devicesJS || ''}
 ${settingsScript}
 ${themeStudioJS}
-${buildNavigationScript()}
+${buildNavigationScript(opts.initialView || 'home')}
 </script>`;
 
   return {

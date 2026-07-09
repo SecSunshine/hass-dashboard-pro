@@ -1,14 +1,8 @@
 /**
- * View Strategy v4.0 — Monolithic Layout Card Router
+ * View Strategy v4.0 - Monolithic Layout Card Router
  *
- * The home view generates the complete layout card containing:
- *   - Sidebar with area navigation
- *   - All content sections (home, devices, areas, blueprints, settings)
- *   - Client-side navigation script
- *
- * All other HA views (devices, blueprint pages, settings) return empty cards
- * because the home view's layout card handles all navigation client-side.
- * Users interact with the sidebar/bottom-nav, never with HA's tab bar.
+ * Every top-level HA view renders the complete layout card so Home Assistant's
+ * native tab bar and HDP's internal navigation open the same interface.
  */
 
 import type { Hass, StrategyConfig, ViewStrategyResult, LovelaceCardConfig, EntityInfo } from '../types';
@@ -43,21 +37,24 @@ export class HassDashboardProViewStrategy {
       viewPath,
     );
 
-    // Home view → build the full monolithic layout card
-    if (viewPath === 'home') {
-      const card = buildFullLayoutCard(hass, effectiveConfig, tokens);
-      return { cards: [card] };
-    }
-
-    // All other views return empty — the home view's layout card handles
-    // client-side navigation (sidebar clicks, bottom nav, URL params)
-    return { cards: [] };
+    const card = buildFullLayoutCard(hass, effectiveConfig, tokens, resolveInitialView(viewPath));
+    return { cards: [card] };
   }
 }
 
 // ─── Build Complete Layout Card ─────────────────────────────────────────────
 
-function buildFullLayoutCard(hass: Hass, config: StrategyConfig, tokens: ReturnType<typeof resolveTokens>): LovelaceCardConfig {
+function resolveInitialView(viewPath: string): string {
+  if (viewPath === 'hdp-settings') return 'settings';
+  return viewPath || 'home';
+}
+
+function buildFullLayoutCard(
+  hass: Hass,
+  config: StrategyConfig,
+  tokens: ReturnType<typeof resolveTokens>,
+  initialView = 'home',
+): LovelaceCardConfig {
   const visibleEntities = collectVisibleEntities(hass, getDashboardFilters(config));
   const areaEntityMap = buildAreaEntityMapFromModel(visibleEntities);
   const areaSummaries = buildAreaSummaries(
@@ -108,5 +105,6 @@ function buildFullLayoutCard(hass: Hass, config: StrategyConfig, tokens: ReturnT
     areaSummaries,
     blueprintPages,
     blueprintHTML,
+    initialView,
   });
 }
