@@ -72,7 +72,7 @@ export function buildBlueprintGalleryHTML(pages: BlueprintInstance[]): string {
     transition: all 0.2s ease;
     min-height: 44px;
     border: 1px solid var(--hdp-border);
-    background: var(--hdp-card-bg);
+    background: var(--hdp-control-bg, var(--hdp-card-bg));
     color: var(--hdp-text);
     max-width: 100%;
     min-width: 0;
@@ -83,20 +83,23 @@ export function buildBlueprintGalleryHTML(pages: BlueprintInstance[]): string {
   .bp-btn:hover {
     transform: translateY(-2px);
     border-color: var(--hdp-primary);
+    background: var(--hdp-control-bg-hover, var(--hdp-primary-light));
   }
   .bp-btn--primary {
     background: var(--hdp-primary);
-    color: white;
+    color: var(--hdp-text-inverse, white);
     border-color: var(--hdp-primary);
   }
   .bp-btn--primary:hover {
+    background: var(--hdp-primary);
+    color: var(--hdp-text-inverse, white);
     opacity: 0.9;
   }
   .bp-btn svg {
     width: 16px; height: 16px;
   }
   .bp-item {
-    background: var(--hdp-card-bg);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
     border-radius: var(--hdp-radius);
     padding: 14px;
     border: 1px solid var(--hdp-border);
@@ -157,11 +160,11 @@ export function buildBlueprintGalleryHTML(pages: BlueprintInstance[]): string {
     cursor: pointer;
     transition: all 0.2s ease;
     border: 1px solid var(--hdp-border);
-    background: transparent;
+    background: var(--hdp-control-bg, transparent);
     color: var(--hdp-text-secondary);
   }
   .bp-item-btn:hover {
-    background: var(--hdp-divider);
+    background: var(--hdp-control-bg-hover, var(--hdp-divider));
     color: var(--hdp-text);
   }
   .bp-item-btn--danger:hover {
@@ -283,7 +286,7 @@ export function buildImportModalHTML(): string {
     display: none;
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.5);
+    background: var(--hdp-overlay-bg, rgba(0,0,0,0.5));
     z-index: 999;
     align-items: center;
     justify-content: center;
@@ -292,8 +295,8 @@ export function buildImportModalHTML(): string {
   }
   .bp-modal-overlay--active { display: flex; }
   .bp-modal {
-    background: var(--hdp-card-bg, #fff);
-    border-radius: var(--hdp-radius, 14px);
+    background: var(--hdp-modal-bg, var(--hdp-bg, #fff));
+    border-radius: var(--hdp-radius-lg, var(--hdp-radius, 14px));
     padding: 24px;
     width: min(560px, 100%);
     max-width: 100%;
@@ -301,7 +304,8 @@ export function buildImportModalHTML(): string {
     min-width: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    border: 1px solid var(--hdp-border, rgba(0,0,0,0.08));
+    box-shadow: var(--hdp-shadow-elevated, 0 20px 60px rgba(0,0,0,0.2));
     box-sizing: border-box;
   }
   .bp-modal-title {
@@ -330,7 +334,7 @@ export function buildImportModalHTML(): string {
     padding: 10px 14px;
     border-radius: var(--hdp-radius);
     border: 1px solid var(--hdp-border);
-    background: var(--hdp-bg);
+    background: var(--hdp-surface-card, var(--hdp-bg));
     color: var(--hdp-text);
     outline: none;
     min-height: 44px;
@@ -350,7 +354,7 @@ export function buildImportModalHTML(): string {
     padding: 12px 14px;
     border-radius: var(--hdp-radius);
     border: 1px solid var(--hdp-border);
-    background: var(--hdp-bg);
+    background: var(--hdp-surface-card, var(--hdp-bg));
     color: var(--hdp-text);
     outline: none;
     min-height: 200px;

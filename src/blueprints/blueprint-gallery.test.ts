@@ -10,6 +10,10 @@ describe('blueprint gallery rendering', () => {
     expect(emptyHTML).toContain('URL 导入');
     expect(emptyHTML).toContain('.bp-gallery-actions');
     expect(emptyHTML).toContain('flex-wrap: wrap');
+    expect(emptyHTML).toContain('background: var(--hdp-control-bg, var(--hdp-card-bg));');
+    expect(emptyHTML).toContain('background: var(--hdp-control-bg-hover, var(--hdp-primary-light));');
+    expect(emptyHTML).toContain('background: var(--hdp-surface-card, var(--hdp-card-bg));');
+    expect(emptyHTML).toContain('color: var(--hdp-text-inverse, white);');
     expect(emptyHTML).toContain('@media (max-width: 720px)');
     expect(emptyHTML).toContain('flex: 1 1 120px');
     expect(emptyHTML).toContain('.bp-gallery-title {');
@@ -42,6 +46,11 @@ describe('blueprint gallery rendering', () => {
     const html = buildImportModalHTML();
 
     expect(html).toContain('padding: 16px;');
+    expect(html).toContain('background: var(--hdp-overlay-bg, rgba(0,0,0,0.5));');
+    expect(html).toContain('background: var(--hdp-modal-bg, var(--hdp-bg, #fff));');
+    expect(html).toContain('border-radius: var(--hdp-radius-lg, var(--hdp-radius, 14px));');
+    expect(html).toContain('box-shadow: var(--hdp-shadow-elevated, 0 20px 60px rgba(0,0,0,0.2));');
+    expect(html).toContain('background: var(--hdp-surface-card, var(--hdp-bg));');
     expect(html).toContain('width: min(560px, 100%)');
     expect(html).toContain('max-height: calc(100vh - 32px)');
     expect(html).toContain('overflow-x: hidden');
