@@ -576,6 +576,10 @@ describe('settings view', () => {
     expect(js).toContain('cfg.theme = preset;');
     expect(js).toContain('var cfg = window.hdpLoadDraftVisualConfig();');
     expect(js).toContain('window.hdpSaveVisualConfigAndReload(cfg);');
+    expect(js).toContain('卡片尺寸已暂存，保存后生效');
+    expect(js).toContain('区域皮肤已暂存，保存后生效');
+    expect(js).not.toContain('卡片尺寸已保存');
+    expect(js).not.toContain('区域皮肤已保存');
     expect(js).toContain('window.hdpReplaceVisualConfig({});');
     const visualHandlers = js.slice(js.indexOf('function hdpVisualQueryAll(selector)'));
     expect(visualHandlers).not.toContain("var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');");

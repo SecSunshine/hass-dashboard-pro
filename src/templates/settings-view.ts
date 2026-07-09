@@ -2081,7 +2081,7 @@ ${generateDesignTokenCSS(tokens)}
         } else {
           cfg.card_sizes[cardId] = size;
         }
-        if (typeof hdpShowToast === 'function') hdpShowToast('卡片尺寸已保存', 'success');
+        if (typeof hdpShowToast === 'function') hdpShowToast('卡片尺寸已暂存，保存后生效', 'success');
         hdpSaveVisualConfigAndReload(cfg, 600);
       });
     });
@@ -2129,7 +2129,7 @@ ${generateDesignTokenCSS(tokens)}
         } else {
           delete cfg.area_skins[areaId];
         }
-        if (typeof hdpShowToast === 'function') hdpShowToast('区域皮肤已保存', 'success');
+        if (typeof hdpShowToast === 'function') hdpShowToast('区域皮肤已暂存，保存后生效', 'success');
         hdpSaveVisualConfigAndReload(cfg, 600);
       });
     });
