@@ -349,17 +349,7 @@ function hdpResolveEntityArea(hass, entityId) {
 }
 
 function hdpBuildEnvironmentSeries(hass, sensors, history) {
-  var byEntity = {};
-  if (Array.isArray(history)) {
-    history.forEach(function(item) {
-      if (!Array.isArray(item) || !item.length) return;
-      var first = item[0];
-      var entityId = first && (first.entity_id || first.entityId);
-      if (entityId) byEntity[entityId] = item;
-    });
-  } else if (history && typeof history === 'object') {
-    byEntity = history;
-  }
+  var byEntity = hdpNormalizeHistoryByEntity(history, sensors);
 
   var now = Date.now();
   var start = now - 24 * 60 * 60 * 1000;
@@ -413,6 +403,30 @@ function hdpBuildEnvironmentSeries(hass, sensors, history) {
   }).sort(function(a, b) {
     return a.area_name.localeCompare(b.area_name);
   });
+}
+
+function hdpNormalizeHistoryByEntity(history, sensors) {
+  var byEntity = {};
+  if (Array.isArray(history)) {
+    history.forEach(function(item, index) {
+      var points = Array.isArray(item) ? item : (item && (item.states || item.history || item.points));
+      if (!Array.isArray(points) || !points.length) return;
+      var first = points[0];
+      var entityId = first && (first.entity_id || first.entityId);
+      if (!entityId && item && !Array.isArray(item)) entityId = item.entity_id || item.entityId;
+      if (!entityId && sensors[index]) entityId = sensors[index].entity_id;
+      if (entityId) byEntity[entityId] = points;
+    });
+  } else if (history && typeof history === 'object') {
+    Object.keys(history).forEach(function(entityId) {
+      var value = history[entityId];
+      if (Array.isArray(value)) byEntity[entityId] = value;
+      else if (value && Array.isArray(value.states)) byEntity[entityId] = value.states;
+      else if (value && Array.isArray(value.history)) byEntity[entityId] = value.history;
+      else if (value && Array.isArray(value.points)) byEntity[entityId] = value.points;
+    });
+  }
+  return byEntity;
 }
 
 function hdpParseHistoryTimestamp(point) {
@@ -600,21 +614,29 @@ function hdpCollectDomainEntities(hass, domain) {
     var stateObj = hass.states[entityId];
     var attrs = stateObj.attributes || {};
     var area = hdpResolveEntityArea(hass, entityId);
+    var state = String(stateObj.state == null ? 'unknown' : stateObj.state);
     rows.push({
       entity_id: entityId,
-      name: attrs.friendly_name || entityId.replace(domain + '.', '').replace(/_/g, ' '),
-      state: stateObj.state,
-      area_name: area.name,
-      active: hdpIsEntityRunning(stateObj.state, domain)
+      name: String(attrs.friendly_name || entityId.replace(domain + '.', '').replace(/_/g, ' ')),
+      state: state,
+      area_name: String(area.name || '未分配区域'),
+      active: hdpIsEntityRunning(state, domain),
+      available: hdpIsDomainEntityAvailable(state)
     });
   });
   return rows.sort(function(a, b) {
     if (a.active !== b.active) return a.active ? -1 : 1;
+    if (a.available !== b.available) return a.available ? -1 : 1;
     return a.area_name.localeCompare(b.area_name) || a.name.localeCompare(b.name);
   });
 }
 
+function hdpIsDomainEntityAvailable(state) {
+  return state !== 'unavailable' && state !== 'unknown';
+}
+
 function hdpIsEntityRunning(state, domain) {
+  if (!hdpIsDomainEntityAvailable(state)) return false;
   if (domain === 'climate') return state !== 'off' && state !== 'unavailable' && state !== 'unknown';
   if (domain === 'cover') return state === 'open' || state === 'opening';
   if (domain === 'lock') return state === 'unlocked';
@@ -625,7 +647,10 @@ function hdpIsEntityRunning(state, domain) {
 function hdpRenderDomainEntityList(entities, domain) {
   if (!entities.length) return '<div class="hdp-env-history-empty">暂无可显示设备</div>';
   return entities.map(function(entity) {
-    return '<button type="button" class="hdp-domain-modal-row ' + (entity.active ? 'hdp-domain-modal-row--active' : '') + '" data-domain-modal-entity="' + hdpEscapeText(entity.entity_id) + '">' +
+    var rowClass = 'hdp-domain-modal-row ' +
+      (entity.active ? 'hdp-domain-modal-row--active ' : '') +
+      (!entity.available ? 'hdp-domain-modal-row--unavailable' : '');
+    return '<button type="button" class="' + rowClass.trim() + '" data-domain-modal-entity="' + hdpEscapeText(entity.entity_id) + '">' +
       '<span class="hdp-domain-modal-dot"></span>' +
       '<span class="hdp-domain-modal-main"><strong>' + hdpEscapeText(entity.name) + '</strong><small>' + hdpEscapeText(entity.area_name) + '</small></span>' +
       '<span class="hdp-domain-modal-state">' + hdpEscapeText(hdpFormatDomainState(entity.state, domain)) + '</span>' +
@@ -667,6 +692,7 @@ function hdpDeviceDomainModalCSS() {
     '.hdp-domain-modal-row:hover{border-color:var(--hdp-primary,#4f6ef7);transform:translateY(-1px)}' +
     '.hdp-domain-modal-dot{width:10px;height:10px;border-radius:999px;background:var(--hdp-text-muted,#94a3b8)}' +
     '.hdp-domain-modal-row--active .hdp-domain-modal-dot{background:var(--hdp-success,#22c55e);box-shadow:0 0 0 4px var(--hdp-success-light,rgba(34,197,94,.14))}' +
+    '.hdp-domain-modal-row--unavailable{opacity:.62}.hdp-domain-modal-row--unavailable .hdp-domain-modal-dot{background:var(--hdp-danger,#ef4444)}' +
     '.hdp-domain-modal-main{min-width:0;display:grid;gap:2px}.hdp-domain-modal-main strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}.hdp-domain-modal-main small{color:var(--hdp-text-muted,#64748b);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
     '.hdp-domain-modal-state{font-size:12px;font-weight:800;color:var(--hdp-primary,#4f6ef7);background:var(--hdp-primary-light,rgba(79,110,247,.12));border-radius:999px;padding:5px 10px;white-space:nowrap}';
 }

@@ -50,6 +50,9 @@ describe('hass websocket script', () => {
     expect(js).toContain("unit === '°F'");
     expect(js).toContain('significant_changes_only: false');
     expect(js).toContain('function hdpBuildEnvironmentSeries');
+    expect(js).toContain('function hdpNormalizeHistoryByEntity(history, sensors)');
+    expect(js).toContain('if (!entityId && sensors[index]) entityId = sensors[index].entity_id;');
+    expect(js).toContain('else if (value && Array.isArray(value.points)) byEntity[entityId] = value.points;');
     expect(js).toContain('point.state != null ? point.state : point.s');
     expect(js).toContain('function hdpParseHistoryTimestamp(point)');
     expect(js).toContain("if (typeof raw === 'number') return raw * 1000;");
@@ -65,6 +68,9 @@ describe('hass websocket script', () => {
     expect(js).toContain('window.hdpShowDeviceDomain = function(domain)');
     expect(js).toContain('hdpOpenDeviceDomainModal(domain);');
     expect(js).toContain('function hdpCollectDomainEntities(hass, domain)');
+    expect(js).toContain('function hdpIsDomainEntityAvailable(state)');
+    expect(js).toContain('if (a.available !== b.available) return a.available ? -1 : 1;');
+    expect(js).toContain('hdp-domain-modal-row--unavailable');
     expect(js).toContain('function hdpOpenAutomationConfig()');
     expect(js).toContain("src=\"/config/automation/dashboard\"");
     expect(js).toContain("new CustomEvent('hass-more-info'");
