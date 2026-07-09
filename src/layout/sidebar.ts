@@ -154,7 +154,7 @@ export function getSidebarCSS(): string {
       padding: 8px;
       border: 1px solid var(--hdp-border);
       border-radius: var(--hdp-radius);
-      background: var(--hdp-bg);
+      background: var(--hdp-control-bg, var(--hdp-bg));
       color: var(--hdp-text);
       cursor: pointer;
       text-align: left;
@@ -163,7 +163,7 @@ export function getSidebarCSS(): string {
     }
     .sb-profile-btn:hover {
       border-color: var(--hdp-primary);
-      background: var(--hdp-primary-light, rgba(79,110,247,0.08));
+      background: var(--hdp-control-bg-hover, var(--hdp-primary-light, rgba(79,110,247,0.08)));
       transform: translateY(-1px);
     }
     .sb-avatar {
@@ -176,12 +176,12 @@ export function getSidebarCSS(): string {
       flex: 0 0 40px;
       overflow: hidden;
       background: var(--hdp-gradient-primary, var(--hdp-primary));
-      color: white;
+      color: var(--hdp-text-inverse, white);
       font-size: 15px;
       font-weight: 800;
       line-height: 1;
-      border: 2px solid var(--hdp-card-bg);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      border: 2px solid var(--hdp-surface-card, var(--hdp-card-bg));
+      box-shadow: var(--hdp-shadow-card, 0 2px 8px rgba(0,0,0,0.12));
     }
     .sb-avatar-img {
       width: 100%;
@@ -223,7 +223,7 @@ export function getSidebarCSS(): string {
       gap: 12px;
       padding: 10px 12px;
       border-radius: var(--hdp-radius);
-      border: none;
+      border: 1px solid transparent;
       background: transparent;
       cursor: pointer;
       transition: all 0.15s ease;
@@ -235,12 +235,13 @@ export function getSidebarCSS(): string {
       color: var(--hdp-text-secondary);
     }
     .sb-nav-btn:hover {
-      background: var(--hdp-divider);
+      background: var(--hdp-control-bg-hover, var(--hdp-divider));
       color: var(--hdp-text);
     }
     .sb-nav-btn--active {
       background: var(--hdp-primary-light, rgba(79,110,247,0.1));
       color: var(--hdp-primary);
+      border-color: color-mix(in srgb, var(--hdp-primary) 24%, var(--hdp-border));
       font-weight: 600;
     }
     .sb-nav-btn svg {
@@ -279,7 +280,7 @@ export function getSidebarCSS(): string {
       gap: 10px;
       padding: 8px 12px;
       border-radius: var(--hdp-radius);
-      border: none;
+      border: 1px solid transparent;
       background: transparent;
       cursor: pointer;
       transition: all 0.15s ease;
@@ -290,18 +291,19 @@ export function getSidebarCSS(): string {
       color: var(--hdp-text-secondary);
     }
     .sb-area-btn:hover {
-      background: var(--hdp-divider);
+      background: var(--hdp-control-bg-hover, var(--hdp-divider));
       color: var(--hdp-text);
     }
     .sb-area-btn--active {
       background: var(--hdp-primary-light, rgba(79,110,247,0.1));
       color: var(--hdp-primary);
+      border-color: color-mix(in srgb, var(--hdp-primary) 24%, var(--hdp-border));
       font-weight: 600;
     }
     .sb-area-icon {
       width: 28px; height: 28px;
       border-radius: var(--hdp-radius-sm);
-      background: var(--hdp-divider);
+      background: var(--hdp-surface-muted, var(--hdp-divider));
       display: flex;
       align-items: center;
       justify-content: center;
@@ -345,7 +347,7 @@ export function getSidebarCSS(): string {
       padding: 8px;
       border-top: 1px solid var(--hdp-border);
       flex-shrink: 0;
-      background: var(--hdp-card-bg);
+      background: var(--hdp-surface-card, var(--hdp-card-bg));
     }
     .hdp-resize-handle {
       width: 4px;
