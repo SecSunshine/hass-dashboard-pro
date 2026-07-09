@@ -17,22 +17,39 @@ type MockChip = {
 function createRuntime() {
   const store = new Map<string, string>();
   const chips: MockChip[] = [];
+  const timers: Array<{ delay: number; fn: () => void }> = [];
   let reloadCount = 0;
   const window = {} as any;
+  const saveBar = {
+    attrs: {} as Record<string, string>,
+    setAttribute: (name: string, value: string) => { saveBar.attrs[name] = value; },
+  };
+  const saveText = { textContent: '修改设置后点击保存生效' };
+  const document = {
+    querySelector: (selector: string) => {
+      if (selector === '.st-settings-actions') return saveBar;
+      if (selector === '.st-settings-actions-text') return saveText;
+      return null;
+    },
+  };
   const localStorage = {
     getItem: (key: string) => store.get(key) ?? null,
     setItem: (key: string, value: string) => { store.set(key, value); },
     removeItem: (key: string) => { store.delete(key); },
   };
   const location = { reload: () => { reloadCount += 1; } };
-  const setTimeout = () => 1;
+  const setTimeout = (fn: () => void, delay: number) => {
+    timers.push({ fn, delay });
+    return timers.length;
+  };
 
   const code = `${generateStorageJS()}\n${generateSettingsSectionsJS()}\nreturn window;`;
-  const runtime = new Function('window', 'localStorage', 'location', 'setTimeout', code)(
+  const runtime = new Function('window', 'localStorage', 'location', 'setTimeout', 'document', code)(
     window,
     localStorage,
     location,
     setTimeout,
+    document,
   );
 
   const eventForChip = () => {
@@ -58,7 +75,7 @@ function createRuntime() {
     return { target: { closest: () => chip } };
   };
 
-  return { runtime, store, eventForChip, chips, getReloadCount: () => reloadCount };
+  return { runtime, store, eventForChip, chips, saveBar, saveText, timers, getReloadCount: () => reloadCount };
 }
 
 describe('settings sections client script', () => {
@@ -132,6 +149,29 @@ Old `);
 
     const saved = JSON.parse(store.get('hdp_config') || '{}');
     expect(saved.areas.hide_unavailable).toBe(false);
+  });
+
+  it('restores the save bar state when cancelling staged settings', () => {
+    const { runtime, store, saveBar, saveText, timers, getReloadCount } = createRuntime();
+
+    runtime.hdpSaveSetting('areas.hide_unavailable', true);
+
+    expect(runtime.hdpSettingsDirty).toBe(true);
+    expect(saveBar.attrs['data-dirty']).toBe('true');
+    expect(saveText.textContent).toBe('有未保存的更改');
+    expect(store.get('hdp_config')).toBeUndefined();
+
+    runtime.hdpCancelSettings();
+
+    expect(runtime.hdpSettingsDirty).toBe(false);
+    expect(saveBar.attrs['data-dirty']).toBe('false');
+    expect(saveText.textContent).toBe('修改设置后点击保存生效');
+    expect(runtime.hdpSettingsDraft).toEqual({});
+    expect(timers.map(timer => timer.delay)).toContain(120);
+    expect(getReloadCount()).toBe(0);
+    timers[timers.length - 1]?.fn();
+    expect(getReloadCount()).toBe(1);
+    expect(store.get('hdp_config')).toBeUndefined();
   });
 
   it('removes an already hidden chip value on the second toggle', () => {

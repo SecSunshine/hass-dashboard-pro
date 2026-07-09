@@ -648,6 +648,15 @@ function hdpMarkSettingsDirty() {
   if (text) text.textContent = '有未保存的更改';
 }
 
+function hdpMarkSettingsClean() {
+  window.hdpSettingsDirty = false;
+  if (typeof document === 'undefined') return;
+  var bar = document.querySelector && document.querySelector('.st-settings-actions');
+  if (bar) bar.setAttribute('data-dirty', 'false');
+  var text = document.querySelector && document.querySelector('.st-settings-actions-text');
+  if (text) text.textContent = '修改设置后点击保存生效';
+}
+
 window.hdpPersistSettingsAndReload = function(successDelay, fallbackDelay, configOverride) {
   successDelay = successDelay || 800;
   fallbackDelay = fallbackDelay || 1200;
@@ -718,7 +727,7 @@ window.hdpCancelSettings = function() {
   window.hdpSettingsDraft = hdpCloneConfig(hdpLoadRawSettingsConfig());
   window.hdpDraftVisualConfig = undefined;
   window.hdpDraftVisualDirty = false;
-  window.hdpSettingsDirty = false;
+  hdpMarkSettingsClean();
   if (typeof hdpShowToast === 'function') hdpShowToast('已放弃未保存更改', 'info');
   setTimeout(function() { location.reload(); }, 120);
 };
