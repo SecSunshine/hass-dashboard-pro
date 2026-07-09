@@ -73,6 +73,10 @@ describe('hass websocket script', () => {
     expect(js).toContain("'--hdp-surface-card', '--hdp-surface-muted'");
     expect(js).toContain("'--hdp-modal-bg', '--hdp-overlay-bg'");
     expect(js).toContain("'--hdp-text', '--hdp-text-inverse', '--hdp-text-secondary'");
+    expect(js).toContain("'--hdp-radius', '--hdp-radius-sm', '--hdp-radius-lg', '--hdp-radius-pill'");
+    expect(js).toContain("'--hdp-shadow-card', '--hdp-shadow-elevated', '--hdp-card-gap', '--hdp-font'");
+    expect(js).toContain("'--hdp-motion-fast', '--hdp-motion-base', '--hdp-motion-easing'");
+    expect(js).toContain('font-family:var(--hdp-font,inherit)');
     expect(js).toContain('background:var(--hdp-modal-bg,var(--hdp-bg,#fff))');
     expect(js).toContain('background:var(--hdp-surface-card,var(--hdp-card-bg,#fff))');
     expect(js).toContain("window.hdpOpenDeviceDomainModal = hdpOpenDeviceDomainModal;");

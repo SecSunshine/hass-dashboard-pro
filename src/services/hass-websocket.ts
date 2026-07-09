@@ -123,8 +123,9 @@ function hdpApplyThemeVarsToOverlay(overlay) {
     '--hdp-text-muted', '--hdp-border', '--hdp-primary', '--hdp-primary-light',
     '--hdp-success', '--hdp-success-light', '--hdp-info', '--hdp-info-light',
     '--hdp-warning', '--hdp-warning-light', '--hdp-danger', '--hdp-danger-light',
-    '--hdp-radius', '--hdp-radius-sm', '--hdp-radius-pill', '--hdp-shadow-card',
-    '--hdp-shadow-elevated'
+    '--hdp-radius', '--hdp-radius-sm', '--hdp-radius-lg', '--hdp-radius-pill',
+    '--hdp-shadow-card', '--hdp-shadow-elevated', '--hdp-card-gap', '--hdp-font',
+    '--hdp-motion-fast', '--hdp-motion-base', '--hdp-motion-easing'
   ].forEach(function(name) {
     var value = styles.getPropertyValue(name);
     if (value) overlay.style.setProperty(name, value);
@@ -608,7 +609,7 @@ function hdpEscapeText(value) {
 }
 
 function hdpEnvironmentHistoryCSS() {
-  return '.hdp-env-history-modal{position:fixed;inset:0;z-index:1000000;background:var(--hdp-overlay-bg,rgba(8,12,22,.46));display:flex;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(10px)}' +
+  return '.hdp-env-history-modal{position:fixed;inset:0;z-index:1000000;background:var(--hdp-overlay-bg,rgba(8,12,22,.46));color:var(--hdp-text,#111);font-family:var(--hdp-font,inherit);display:flex;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(10px)}' +
     '.hdp-env-history-dialog{width:min(920px,96vw);max-height:min(760px,90dvh);overflow:hidden;border-radius:var(--hdp-radius-lg,18px);background:var(--hdp-modal-bg,var(--hdp-bg,#fff));color:var(--hdp-text,#111);border:1px solid var(--hdp-border,rgba(0,0,0,.08));box-shadow:var(--hdp-shadow-elevated,0 24px 80px rgba(0,0,0,.28));display:flex;flex-direction:column}' +
     '.hdp-env-history-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px 20px;border-bottom:1px solid var(--hdp-border,rgba(0,0,0,.08))}' +
     '.hdp-env-history-title{font:inherit;font-size:18px;font-weight:800;color:var(--hdp-text,#111)}.hdp-env-history-sub{margin-top:4px;font:inherit;font-size:12px;color:var(--hdp-text-muted,#64748b)}' +
