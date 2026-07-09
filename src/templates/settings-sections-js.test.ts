@@ -245,4 +245,28 @@ Old `);
     expect(saved.visual.theme_id).toBe('warm-home');
     expect(saved.visual.colors.primary).toBe('#d97706');
   });
+
+  it('protects staged changes before refreshing theme files', () => {
+    const { runtime, store, getReloadCount } = createRuntime();
+    const prompts: string[] = [];
+
+    runtime.hdpSaveSetting('dashboard.name', 'Draft Home');
+    runtime.confirm = (message: string) => {
+      prompts.push(message);
+      return false;
+    };
+
+    runtime.hdpRefreshThemes();
+
+    expect(prompts).toHaveLength(1);
+    expect(prompts[0]).toContain('未保存更改');
+    expect(getReloadCount()).toBe(0);
+    expect(runtime.hdpSettingsDraft.dashboard.name).toBe('Draft Home');
+    expect(store.get('hdp_config')).toBeUndefined();
+
+    runtime.confirm = () => true;
+    runtime.hdpRefreshThemes();
+
+    expect(getReloadCount()).toBe(1);
+  });
 });

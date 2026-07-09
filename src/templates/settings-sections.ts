@@ -1198,10 +1198,19 @@ window.hdpImportShareCode = function() {
 };
 
 window.hdpRefreshThemes = function() {
+  var hasUnsaved = Boolean(window.hdpSettingsDirty || window.hdpDraftVisualDirty);
+  if (hasUnsaved) {
+    var ask = typeof window.confirm === 'function' ? window.confirm : (typeof confirm === 'function' ? confirm : null);
+    if (!ask) {
+      if (typeof hdpShowToast === 'function') hdpShowToast('请先保存或取消未保存更改', 'warning');
+      return;
+    }
+    if (!ask('有未保存更改，刷新主题列表会放弃这些改动。继续刷新吗？')) return;
+  }
   // Clear cached theme file list so it re-scans on next load
   try { localStorage.removeItem('hdp_theme_files'); } catch(e) {}
   // Try to fetch theme file list from HA www directory
-  var hass = hdpFindHass();
+  var hass = typeof hdpFindHass === 'function' ? hdpFindHass() : null;
   if (hass && hass.callApi) {
     hass.callApi('GET', 'hassio/ingress').catch(function() {});
   }
