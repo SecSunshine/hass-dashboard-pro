@@ -81,8 +81,9 @@ export function getBottomNavCSS(): string {
       left: 0;
       right: 0;
       height: var(--hdp-bottom-nav-height, 64px);
-      background: var(--hdp-card-bg);
+      background: var(--hdp-surface-card, var(--hdp-card-bg));
       border-top: 1px solid var(--hdp-border);
+      box-shadow: var(--hdp-shadow-elevated, 0 -4px 24px rgba(0,0,0,0.1));
       z-index: 1000;
       justify-content: space-around;
       align-items: center;
@@ -95,18 +96,27 @@ export function getBottomNavCSS(): string {
       align-items: center;
       gap: 4px;
       padding: 8px 12px;
-      border: none;
+      border: 1px solid transparent;
+      border-radius: var(--hdp-radius-sm, 8px);
       background: transparent;
       cursor: pointer;
       font: inherit;
       font-size: 10px;
       font-weight: 500;
       color: var(--hdp-text-muted);
-      transition: color 0.15s;
+      min-width: 52px;
+      transition: color 0.15s, background 0.15s, border-color 0.15s;
       position: relative;
     }
-    .bn-btn:hover, .bn-btn--active {
+    .bn-btn:hover {
       color: var(--hdp-primary);
+      background: var(--hdp-control-bg-hover, var(--hdp-primary-light));
+      border-color: var(--hdp-border);
+    }
+    .bn-btn--active {
+      color: var(--hdp-primary);
+      background: var(--hdp-primary-light, var(--hdp-control-bg-hover));
+      border-color: color-mix(in srgb, var(--hdp-primary) 24%, var(--hdp-border));
     }
     .bn-btn svg {
       width: 22px; height: 22px;
@@ -116,10 +126,10 @@ export function getBottomNavCSS(): string {
       bottom: var(--hdp-bottom-nav-height, 64px);
       left: 0;
       right: 0;
-      background: var(--hdp-card-bg);
+      background: var(--hdp-modal-bg, var(--hdp-card-bg));
       border-top: 1px solid var(--hdp-border);
       border-radius: 16px 16px 0 0;
-      box-shadow: 0 -4px 24px rgba(0,0,0,0.1);
+      box-shadow: var(--hdp-shadow-elevated, 0 -4px 24px rgba(0,0,0,0.1));
       z-index: 1001;
       max-height: 50vh;
       overflow-y: auto;
@@ -143,7 +153,7 @@ export function getBottomNavCSS(): string {
       transition: background 0.1s;
     }
     .bn-sheet-item:hover {
-      background: var(--hdp-divider);
+      background: var(--hdp-control-bg-hover, var(--hdp-divider));
     }
     @media (max-width: 768px) {
       .hdp-bottom-nav { display: flex; }
