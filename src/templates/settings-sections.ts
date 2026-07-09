@@ -860,7 +860,7 @@ function hdpReplaceEntityId(value, from, to) {
 }
 
 function hdpBuildEntityMapping(sourceEntities) {
-  var hass = hdpFindHass && hdpFindHass();
+  var hass = typeof hdpFindHass === 'function' ? hdpFindHass() : null;
   var states = hass && hass.states ? hass.states : {};
   var registry = hass && hass.entities ? hass.entities : {};
   var areas = hass && hass.areas ? hass.areas : {};

@@ -78,6 +78,13 @@ function createRuntime(initialSettingsConfig?: Record<string, unknown>) {
   return { runtime, store, eventForChip, chips, saveBar, saveText, timers, getReloadCount: () => reloadCount };
 }
 
+function encodeShareCode(bundle: unknown): string {
+  return `HDP1.${btoa(unescape(encodeURIComponent(JSON.stringify(bundle))))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '')}`;
+}
+
 describe('settings sections client script', () => {
   it('loads initial settings config into the draft without saving it', () => {
     const { runtime, store } = createRuntime({
@@ -268,5 +275,42 @@ Old `);
     runtime.hdpRefreshThemes();
 
     expect(getReloadCount()).toBe(1);
+  });
+
+  it('imports share codes without requiring an HA lookup helper', () => {
+    const { runtime, store, timers, getReloadCount } = createRuntime();
+    const code = encodeShareCode({
+      schema: 'hass-dashboard-pro.share.v1',
+      version: 1,
+      hdp_config: {
+        dashboard: { name: 'Imported Home' },
+        devices: { hidden_domains: ['sensor'] },
+      },
+      visual_config: { theme: 'dark' },
+      blueprints: [],
+      source_entities: ['light.source_lamp'],
+    });
+    const previousPrompt = (globalThis as any).prompt;
+    const previousAlert = (globalThis as any).alert;
+    const alerts: string[] = [];
+
+    try {
+      (globalThis as any).prompt = () => code;
+      (globalThis as any).alert = (message: string) => { alerts.push(message); };
+
+      runtime.hdpImportShareCode();
+
+      expect(alerts).toEqual([]);
+      expect(JSON.parse(store.get('hdp_config') || '{}').dashboard.name).toBe('Imported Home');
+      expect(JSON.parse(store.get('hdp_config') || '{}').devices.hidden_domains).toEqual(['sensor']);
+      expect(JSON.parse(store.get('hdp_visual_config') || '{}')).toEqual({ theme: 'dark' });
+      expect(JSON.parse(store.get('hdp_last_import_report') || '{}').unmapped).toEqual(['light.source_lamp']);
+      expect(getReloadCount()).toBe(0);
+      timers[timers.length - 1]?.fn();
+      expect(getReloadCount()).toBe(1);
+    } finally {
+      (globalThis as any).prompt = previousPrompt;
+      (globalThis as any).alert = previousAlert;
+    }
   });
 });
