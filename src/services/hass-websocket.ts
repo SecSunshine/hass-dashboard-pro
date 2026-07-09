@@ -180,11 +180,15 @@ function hdpSetClimateTemp(entityId, delta, minTemp, maxTemp) {
   if (!hass || !hass.callService) { hdpShowToast('无法连接到 Home Assistant', 'error'); return; }
   var stateObj = hass.states[entityId];
   if (!stateObj) return;
-  var current = stateObj.attributes && stateObj.attributes.temperature;
-  if (current == null) current = 24;
-  var newTemp = Math.round((current + delta) * 2) / 2; // round to 0.5
-  if (minTemp != null && newTemp < minTemp) newTemp = minTemp;
-  if (maxTemp != null && newTemp > maxTemp) newTemp = maxTemp;
+  var current = parseFloat(stateObj.attributes && stateObj.attributes.temperature);
+  var step = parseFloat(delta);
+  var min = minTemp == null ? null : parseFloat(minTemp);
+  var max = maxTemp == null ? null : parseFloat(maxTemp);
+  if (isNaN(current)) current = 24;
+  if (isNaN(step)) step = 0;
+  var newTemp = Math.round((current + step) * 2) / 2; // round to 0.5
+  if (!isNaN(min) && newTemp < min) newTemp = min;
+  if (!isNaN(max) && newTemp > max) newTemp = max;
   try {
     hass.callService('climate', 'set_temperature', { entity_id: entityId, temperature: newTemp });
     hdpPulseCard(entityId);

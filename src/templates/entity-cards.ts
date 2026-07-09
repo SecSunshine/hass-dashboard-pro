@@ -605,6 +605,8 @@ const HVAC_MODE_LABELS: Record<string, string> = {
   auto: '自动',
   dry: '除湿',
   fan_only: '送风',
+  unavailable: '不可用',
+  unknown: '未知',
 };
 
 const FAN_MODE_LABELS: Record<string, string> = {
@@ -625,6 +627,21 @@ const COVER_STATE_LABELS: Record<string, string> = {
   unavailable: '不可用',
   unknown: '未知',
 };
+
+function parseOptionalNumber(value: unknown): number | undefined {
+  const numeric = typeof value === 'number' ? value : typeof value === 'string' ? parseFloat(value) : NaN;
+  return Number.isFinite(numeric) ? numeric : undefined;
+}
+
+function normalizeStringArray(value: unknown, fallback: string[]): string[] {
+  if (!Array.isArray(value)) return fallback;
+  const result = value.filter((item): item is string => typeof item === 'string' && item.length > 0);
+  return result.length ? result : fallback;
+}
+
+function isEntityAvailable(state: string): boolean {
+  return state !== 'unavailable' && state !== 'unknown';
+}
 
 // ─── Main Entry: Build domain-specific card or return null ───────────────────
 
@@ -657,16 +674,17 @@ export function buildDomainCard(entity: EntityInfo, stateObj: HassEntity | undef
 
 function buildAccessibleClimateCard(entity: EntityInfo, stateObj: HassEntity, skin?: string): string {
   const attrs = stateObj.attributes || {};
-  const currentTemp = attrs.current_temperature as number | undefined;
-  const targetTemp = attrs.temperature as number | undefined;
-  const hvacModes = (attrs.hvac_modes as string[]) || ['off', 'cool', 'heat', 'auto'];
-  const fanModes = (attrs.fan_modes as string[]) || [];
-  const fanMode = attrs.fan_mode as string | undefined;
+  const currentTemp = parseOptionalNumber(attrs.current_temperature);
+  const targetTemp = parseOptionalNumber(attrs.temperature);
+  const hvacModes = normalizeStringArray(attrs.hvac_modes, ['off', 'cool', 'heat', 'auto']);
+  const fanModes = normalizeStringArray(attrs.fan_modes, []);
+  const fanMode = typeof attrs.fan_mode === 'string' ? attrs.fan_mode : undefined;
   const currentState = stateObj.state;
+  const active = isEntityAvailable(currentState) && currentState !== 'off';
   const skinCls = skin ? cardSkinClass(skin) : '';
-  const step = (attrs.target_temp_step as number) || 0.5;
-  const minTemp = (attrs.min_temp as number) || 16;
-  const maxTemp = (attrs.max_temp as number) || 30;
+  const step = parseOptionalNumber(attrs.target_temp_step) ?? 0.5;
+  const minTemp = parseOptionalNumber(attrs.min_temp) ?? 16;
+  const maxTemp = parseOptionalNumber(attrs.max_temp) ?? 30;
   const entityId = escapeAttribute(entity.entity_id);
 
   const currentTempHTML = currentTemp != null
@@ -708,13 +726,13 @@ function buildAccessibleClimateCard(entity: EntityInfo, stateObj: HassEntity, sk
   return `<div class="dvc dc-control-card dc-climate ${skinCls}" data-entity="${entityId}" data-no-toggle>
     <div class="dvc-bar"></div>
     <div class="dc-control-head">
-      <div class="dvc-ico ${currentState !== 'off' ? 'dvc-ico--on' : 'dvc-ico--off'}">
-        ${getClimateIcon(currentState !== 'off')}
+      <div class="dvc-ico ${active ? 'dvc-ico--on' : 'dvc-ico--off'}">
+        ${getClimateIcon(active)}
       </div>
       <div class="dvc-info">
         <div class="dvc-name">${escapeHTML(entity.name)}</div>
         <div class="dvc-state">
-          <span class="dvc-dot ${currentState !== 'off' ? 'dvc-dot--on' : 'dvc-dot--off'}"></span>
+          <span class="dvc-dot ${active ? 'dvc-dot--on' : 'dvc-dot--off'}"></span>
           ${escapeHTML(HVAC_MODE_LABELS[currentState] || currentState)}
         </div>
       </div>

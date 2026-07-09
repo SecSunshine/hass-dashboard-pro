@@ -24,6 +24,9 @@ describe('hass websocket script', () => {
     expect(js).toContain("var domainControl = hdpClosestFromEvent(e, '[data-action][data-entity]');");
     expect(js).toContain("if (domainControl && hdpClosestFromEvent(e, '[data-no-toggle]'))");
     expect(js).toContain("hdpSetClimateMode(entityId, control.getAttribute('data-mode') || 'auto');");
+    expect(js).toContain('var current = parseFloat(stateObj.attributes && stateObj.attributes.temperature);');
+    expect(js).toContain('var step = parseFloat(delta);');
+    expect(js).toContain('if (isNaN(current)) current = 24;');
     expect(js).toContain("hdpCoverAction(entityId, action.replace('cover-', ''));");
     expect(js).toContain("}, true);");
     expect(js).toContain("if (hdpClosestFromEvent(e, '[data-no-toggle]')) return;");

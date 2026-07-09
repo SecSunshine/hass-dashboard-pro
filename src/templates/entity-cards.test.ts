@@ -77,6 +77,31 @@ describe('domain entity cards', () => {
     expect(html).not.toContain('<div class="' + 'dc-climate-temp-btn"');
   });
 
+  it('normalizes string climate attributes from Home Assistant', () => {
+    const html = buildDomainCard(climateEntity, {
+      ...climateState,
+      state: 'unavailable',
+      attributes: {
+        current_temperature: '24.2',
+        temperature: '23',
+        hvac_modes: ['off', 'cool', 'heat'],
+        fan_modes: 'auto',
+        target_temp_step: '1',
+        min_temp: '18',
+        max_temp: '28',
+      },
+    } as unknown as HassEntity);
+
+    expect(html).toContain('24.2&deg;');
+    expect(html).toContain('23.0&deg;');
+    expect(html).toContain('18&deg; - 28&deg;');
+    expect(html).toContain('data-step="-1"');
+    expect(html).toContain('data-step="1"');
+    expect(html).toContain('不可用');
+    expect(html).toContain('dvc-ico dvc-ico--off');
+    expect(html).not.toContain('dc-climate-fan-btn');
+  });
+
   it('renders cover controls as delegated service buttons', () => {
     const html = buildDomainCard(coverEntity, coverState);
 
