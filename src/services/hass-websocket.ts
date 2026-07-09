@@ -358,12 +358,12 @@ function hdpGetRuntimeDashboardFilters() {
     try { parsed = JSON.parse(raw); } catch(e) { parsed = {}; }
   }
   return {
-    hiddenAreas: hdpCleanRuntimeList(parsed.hiddenAreas),
-    hiddenDomains: hdpCleanRuntimeList(parsed.hiddenDomains),
-    hideUnavailable: parsed.hideUnavailable === true,
-    hiddenDeviceTypes: hdpCleanRuntimeList(parsed.hiddenDeviceTypes),
-    hiddenKeywords: hdpCleanRuntimeList(parsed.hiddenKeywords),
-    visibleKeywords: hdpCleanRuntimeList(parsed.visibleKeywords)
+    hiddenAreas: hdpCleanRuntimeList(parsed.hiddenAreas || parsed.hidden_areas),
+    hiddenDomains: hdpCleanRuntimeList(parsed.hiddenDomains || parsed.hidden_domains),
+    hideUnavailable: parsed.hideUnavailable === true || parsed.hide_unavailable === true,
+    hiddenDeviceTypes: hdpCleanRuntimeList(parsed.hiddenDeviceTypes || parsed.hidden_device_types),
+    hiddenKeywords: hdpCleanRuntimeList(parsed.hiddenKeywords || parsed.hidden_keywords),
+    visibleKeywords: hdpCleanRuntimeList(parsed.visibleKeywords || parsed.visible_keywords)
   };
 }
 
