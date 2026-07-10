@@ -58,7 +58,7 @@ return {
     hdpParseDomainScope: (domainKey: string, deviceClass?: string) => { key: string; domain: string; device_class: string };
     hdpCollectDomainEntities: (hass: any, domainKey: string, deviceClass?: string) => any[];
     hdpRenderDomainEntityList: (entities: any[], domain: string) => string;
-    hdpFormatDomainState: (state: string, domain: string, unit?: string) => string;
+    hdpFormatDomainState: (state: string, domain: string, unit?: string, deviceClass?: string) => string;
     hdpDomainLabel: (domain: string) => string;
   };
 }
@@ -361,8 +361,10 @@ describe('hass websocket script', () => {
     expect(js).toContain('filters.hiddenKeywords.some');
     expect(js).toContain('function hdpIsDomainEntityAvailable(state)');
     expect(js).toContain('unit: attrs.unit_of_measurement == null ?');
-    expect(js).toContain("function hdpFormatDomainState(state, domain, unit)");
-    expect(js).toContain("return state + ' ' + unit;");
+    expect(js).toContain('device_class: attrs.device_class == null ?');
+    expect(js).toContain("function hdpFormatDomainState(state, domain, unit, deviceClass)");
+    expect(js).toContain("if (deviceClass === 'temperature' || hdpIsTemperatureUnit(unit))");
+    expect(js).toContain("return celsius + ' °C';");
     expect(js).toContain("if (scope.device_class && String(attrs.device_class || '').toLowerCase() !== scope.device_class) return;");
     expect(js).toContain('if (a.available !== b.available) return a.available ? -1 : 1;');
     expect(js).toContain('hdp-domain-modal-row--unavailable');
@@ -418,7 +420,11 @@ describe('hass websocket script', () => {
       states: {
         'sensor.living_temperature': {
           state: '22.5',
-          attributes: { friendly_name: 'Living Temperature', unit_of_measurement: '°C' },
+          attributes: { friendly_name: 'Living Temperature', device_class: 'temperature', unit_of_measurement: '°C' },
+        },
+        'sensor.bedroom_temperature': {
+          state: '72',
+          attributes: { friendly_name: 'Bedroom Temperature', device_class: 'temperature', unit_of_measurement: '°F' },
         },
       },
       areas: {},
@@ -428,9 +434,15 @@ describe('hass websocket script', () => {
 
     const rows = runtime.hdpCollectDomainEntities(hass, 'sensor');
     const html = runtime.hdpRenderDomainEntityList(rows, 'sensor');
+    const living = rows.find(row => row.entity_id === 'sensor.living_temperature');
+    const bedroom = rows.find(row => row.entity_id === 'sensor.bedroom_temperature');
 
-    expect(rows[0].unit).toBe('°C');
-    expect(runtime.hdpFormatDomainState('22.5', 'sensor', '°C')).toBe('22.5 °C');
+    expect(living.unit).toBe('°C');
+    expect(bedroom.unit).toBe('°F');
+    expect(runtime.hdpFormatDomainState('22.5', 'sensor', '°C', 'temperature')).toBe('22.5 °C');
+    expect(runtime.hdpFormatDomainState('72', 'sensor', '°F', 'temperature')).toBe('22.2 °C');
     expect(html).toContain('22.5 °C');
+    expect(html).toContain('22.2 °C');
+    expect(html).not.toContain('72 °F');
   });
 });

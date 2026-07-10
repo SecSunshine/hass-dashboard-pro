@@ -843,6 +843,7 @@ function hdpCollectDomainEntities(hass, domainKey, deviceClass) {
       name: String(attrs.friendly_name || entityId.replace(scope.domain + '.', '').replace(/_/g, ' ')),
       state: state,
       unit: attrs.unit_of_measurement == null ? '' : String(attrs.unit_of_measurement),
+      device_class: attrs.device_class == null ? '' : String(attrs.device_class),
       area_name: String(area.name || '未分配区域'),
       active: hdpIsEntityRunning(state, scope.domain),
       available: hdpIsDomainEntityAvailable(state)
@@ -877,7 +878,7 @@ function hdpRenderDomainEntityList(entities, domain) {
     return '<button type="button" class="' + rowClass.trim() + '" data-domain-modal-entity="' + hdpEscapeText(entity.entity_id) + '">' +
       '<span class="hdp-domain-modal-dot"></span>' +
       '<span class="hdp-domain-modal-main"><strong>' + hdpEscapeText(entity.name) + '</strong><small>' + hdpEscapeText(entity.area_name) + '</small></span>' +
-      '<span class="hdp-domain-modal-state">' + hdpEscapeText(hdpFormatDomainState(entity.state, domain, entity.unit)) + '</span>' +
+      '<span class="hdp-domain-modal-state">' + hdpEscapeText(hdpFormatDomainState(entity.state, domain, entity.unit, entity.device_class)) + '</span>' +
     '</button>';
   }).join('');
 }
@@ -902,8 +903,12 @@ function hdpDomainLabel(domain) {
   return labels[domain] || domain;
 }
 
-function hdpFormatDomainState(state, domain, unit) {
+function hdpFormatDomainState(state, domain, unit, deviceClass) {
   if ((domain === 'sensor' || domain === 'number') && unit && hdpIsDomainEntityAvailable(state)) {
+    if (deviceClass === 'temperature' || hdpIsTemperatureUnit(unit)) {
+      var celsius = hdpNormalizeEnvironmentValue(state, { metric: 'temperature', source_unit: unit });
+      if (!isNaN(celsius)) return celsius + ' °C';
+    }
     return state + ' ' + unit;
   }
   var labels = {
