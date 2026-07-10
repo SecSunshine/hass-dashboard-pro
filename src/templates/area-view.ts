@@ -23,6 +23,7 @@ import { buildDomainCard, getDomainCardCSS } from './entity-cards';
 import { escapeAttribute, escapeHTML } from '../utils/html';
 import { cardSkinClass, sanitizeCardSkin } from '../utils/card-skin';
 import { resolveSlottedCard, sortSlottedCards, type SlottedCard } from '../utils/card-slots';
+import { formatTemperatureCelsius, isTemperatureUnit, normalizeTemperatureToCelsius } from '../utils/temperature';
 
 // ─── Area-specific Skin Resolution (Phase 6) ────────────────────────────────
 
@@ -189,6 +190,16 @@ function getDomainColorClass(domain: string): string {
   return map[domain] || 'muted';
 }
 
+function isAreaViewTemperatureSensor(hass: Hass, entity: EntityInfo): boolean {
+  const attrs = hass.states[entity.entity_id]?.attributes || {};
+  const deviceClass = attrs.device_class as string | undefined;
+  const lowerId = entity.entity_id.toLowerCase();
+  return deviceClass === 'temperature'
+    || isTemperatureUnit(entity.unit)
+    || lowerId.includes('temperature')
+    || lowerId.includes('temp');
+}
+
 // ─── Area Header ───────────────────────────────────────────────────────────
 
 function buildAreaHeader(areaName: string, entities: EntityInfo[], hass: Hass, tokens?: ResolvedTokens): LovelaceCardConfig {
@@ -199,7 +210,10 @@ function buildAreaHeader(areaName: string, entities: EntityInfo[], hass: Hass, t
   let roomTemp = '', roomHum = '';
   for (const e of entities) {
     if (e.domain !== 'sensor') continue;
-    if (e.unit === '°C' && !roomTemp) roomTemp = `${e.state}°C`;
+    if (!roomTemp && isAreaViewTemperatureSensor(hass, e)) {
+      const celsius = normalizeTemperatureToCelsius(e.state, e.unit);
+      if (!isNaN(celsius)) roomTemp = formatTemperatureCelsius(celsius);
+    }
     if (e.unit === '%' && (e.entity_id.includes('humidity') || e.entity_id.includes('humid')) && !roomHum) roomHum = `${e.state}%`;
   }
 

@@ -24,6 +24,17 @@ const hass: Hass = {
       last_changed: '',
       last_updated: '',
     },
+    'sensor.kitchen_temperature': {
+      entity_id: 'sensor.kitchen_temperature',
+      state: '72',
+      attributes: {
+        friendly_name: 'Kitchen Temperature',
+        device_class: 'temperature',
+        unit_of_measurement: '°F',
+      },
+      last_changed: '',
+      last_updated: '',
+    },
   },
   areas: {},
   devices: {},
@@ -50,6 +61,15 @@ const entities: EntityInfo[] = [
     unit: 'W',
     area_name: 'Kitchen With A Very Long Area Name',
   },
+  {
+    entity_id: 'sensor.kitchen_temperature',
+    name: 'Kitchen Temperature',
+    domain: 'sensor',
+    icon: null,
+    state: '72',
+    unit: '°F',
+    area_name: 'Kitchen With A Very Long Area Name',
+  },
 ];
 
 describe('area view', () => {
@@ -66,6 +86,8 @@ describe('area view', () => {
     expect(html).toContain('background: var(--hdp-surface-card, var(--hdp-card-bg));');
     expect(html).toContain('background: var(--hdp-surface-card, white);');
     expect(html).toContain('box-shadow: var(--hdp-shadow-card, 0 1px 3px rgba(0,0,0,0.15));');
+    expect(html).toContain('22.2°C');
+    expect(html).not.toContain('72°F');
   });
 
   it('marks only controllable default cards as toggle buttons', () => {
