@@ -239,6 +239,16 @@ describe('settings view', () => {
     expect(html).toContain('data-component="settings-save-bar" data-dirty="false"');
     expect(html).toContain('data-action="cancel-settings" onclick="hdpCancelSettings()"');
     expect(html).toContain('data-action="save-settings" onclick="hdpCommitSettings()"');
+    expect(html).toContain('.st-settings-actions {\n    position: sticky;');
+    expect(html).toContain('width: 100%;\n    max-width: 100%;\n    min-width: 0;\n    box-sizing: border-box;');
+    expect(html).toContain(`.st-settings-actions,
+  .st-settings-actions * {
+    box-sizing: border-box;`);
+    expect(html).toContain('.st-settings-actions-text {\n    flex: 1 1 auto;\n    min-width: 0;');
+    expect(html).toContain('.st-settings-actions-buttons {\n    display: flex;\n    flex-wrap: wrap;');
+    expect(html).toContain('flex: 0 1 auto;\n    min-width: 0;\n    max-width: 100%;');
+    expect(html).toContain('.st-settings-actions-buttons .st-btn {\n    justify-content: center;\n    text-align: center;');
+    expect(html).toContain('.st-settings-actions-buttons .st-btn:focus-visible');
     expect(html).toContain('data-setting="devices.hidden_keywords"');
     expect(html).toContain('data-setting="devices.visible_keywords"');
     expect(html).toContain('<textarea class="st-input st-textarea"');

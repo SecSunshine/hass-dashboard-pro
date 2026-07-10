@@ -342,8 +342,17 @@ export function getSettingsSectionsCSS(): string {
     background: var(--hdp-card-bg);
     border: 1px solid var(--hdp-border);
     box-shadow: var(--hdp-shadow-card);
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .st-settings-actions,
+  .st-settings-actions * {
+    box-sizing: border-box;
   }
   .st-settings-actions-text {
+    flex: 1 1 auto;
     min-width: 0;
     font: inherit;
     font-size: 12px;
@@ -357,6 +366,15 @@ export function getSettingsSectionsCSS(): string {
     gap: 8px;
     flex: 0 1 auto;
     min-width: 0;
+    max-width: 100%;
+  }
+  .st-settings-actions-buttons .st-btn {
+    justify-content: center;
+    text-align: center;
+  }
+  .st-settings-actions-buttons .st-btn:focus-visible {
+    outline: 2px solid var(--hdp-primary);
+    outline-offset: 2px;
   }
   .st-keyword-grid {
     display: grid;
