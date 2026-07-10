@@ -412,7 +412,7 @@ ${generateDesignTokenCSS(tokens)}
     font: inherit;
     font-size: 24px;
     font-weight: 700;
-    color: white;
+    color: var(--hdp-text-inverse, var(--primary-background-color, Canvas));
     margin-bottom: 16px;
     line-height: 1.2;
   }
@@ -439,14 +439,14 @@ ${generateDesignTokenCSS(tokens)}
   .hw-w-icon {
     width: 18px; height: 18px;
     display: flex; align-items: center;
-    color: white;
+    color: var(--hdp-text-inverse, var(--primary-background-color, Canvas));
   }
   .hw-w-icon svg { width: 18px; height: 18px; }
   .hw-w-temp {
     font: inherit;
     font-size: 15px;
     font-weight: 700;
-    color: white;
+    color: var(--hdp-text-inverse, var(--primary-background-color, Canvas));
   }
   .hw-w-cond {
     font: inherit;
@@ -561,7 +561,7 @@ ${generateDesignTokenCSS(tokens)}
     font: inherit;
     font-size: 10px;
     font-weight: 700;
-    color: white;
+    color: var(--hdp-text-inverse, var(--primary-background-color, Canvas));
     background: var(--hdp-primary);
     border-radius: 8px;
     padding: 1px 6px;

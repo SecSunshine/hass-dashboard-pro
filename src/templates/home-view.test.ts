@@ -136,6 +136,8 @@ describe('home view settings', () => {
     expect(html).toContain('cursor: pointer;');
     expect(html).toContain('.sd-badge:hover');
     expect(html).toContain('background: var(--hdp-surface-raised, var(--hdp-card-bg));');
+    expect(html).toContain('color: var(--hdp-text-inverse, var(--primary-background-color, Canvas));');
+    expect(html).not.toContain('color: white;');
     expect(html).not.toContain('<div class="sd-badge');
   });
 
