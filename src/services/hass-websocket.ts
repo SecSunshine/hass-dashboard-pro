@@ -330,7 +330,7 @@ function hdpFindEnvironmentSensors(hass, metric) {
     var lowerId = entityId.toLowerCase();
     var isMetric = metric === 'humidity'
       ? (deviceClass === 'humidity' || unit === '%' || lowerId.indexOf('humidity') >= 0 || lowerId.indexOf('humid') >= 0)
-      : (deviceClass === 'temperature' || unit === '°C' || unit === '°F' || lowerId.indexOf('temperature') >= 0 || lowerId.indexOf('temp') >= 0);
+      : (deviceClass === 'temperature' || hdpIsTemperatureUnit(unit) || lowerId.indexOf('temperature') >= 0 || lowerId.indexOf('temp') >= 0);
     if (!isMetric) return;
     if (lowerId.indexOf('outdoor') >= 0 || lowerId.indexOf('weather') >= 0 || lowerId.indexOf('external') >= 0) return;
     var numeric = parseFloat(stateObj.state);
@@ -341,7 +341,9 @@ function hdpFindEnvironmentSensors(hass, metric) {
       name: attrs.friendly_name || entityId.replace('sensor.', '').replace(/_/g, ' '),
       area_id: area.id,
       area_name: area.name,
-      unit: unit || (metric === 'humidity' ? '%' : '°C')
+      metric: metric,
+      source_unit: unit,
+      unit: metric === 'humidity' ? (unit || '%') : '°C'
     });
   });
   return result.sort(function(a, b) {
@@ -458,13 +460,13 @@ function hdpBuildEnvironmentSeries(hass, sensors, history) {
     }
     areas[sensor.area_id].sensor_ids[sensor.entity_id] = true;
     var points = byEntity[sensor.entity_id];
-    var currentValue = hdpReadCurrentSensorValue(hass, sensor.entity_id);
+    var currentValue = hdpReadCurrentSensorValue(hass, sensor);
     if (!Array.isArray(points) || !points.length) {
       if (!isNaN(currentValue)) areas[sensor.area_id].buckets[23].values.push(currentValue);
       return;
     }
     points.forEach(function(point) {
-      var value = parseFloat(point.state != null ? point.state : point.s);
+      var value = hdpNormalizeEnvironmentValue(point.state != null ? point.state : point.s, sensor);
       var changed = hdpParseHistoryTimestamp(point);
       if (isNaN(value) || isNaN(changed)) return;
       var index = Math.max(0, Math.min(23, Math.floor((changed - start) / (60 * 60 * 1000))));
@@ -502,9 +504,32 @@ function hdpBuildEnvironmentSeries(hass, sensors, history) {
   });
 }
 
-function hdpReadCurrentSensorValue(hass, entityId) {
-  var stateObj = hass.states && hass.states[entityId];
-  return stateObj ? parseFloat(stateObj.state) : NaN;
+function hdpReadCurrentSensorValue(hass, sensor) {
+  var stateObj = hass.states && hass.states[sensor.entity_id];
+  return stateObj ? hdpNormalizeEnvironmentValue(stateObj.state, sensor) : NaN;
+}
+
+function hdpNormalizeEnvironmentValue(raw, sensor) {
+  var value = parseFloat(raw);
+  if (isNaN(value)) return NaN;
+  if (!sensor || sensor.metric !== 'temperature') return value;
+  if (hdpShouldConvertFahrenheit(value, sensor.source_unit)) {
+    return Math.round(((value - 32) * 5 / 9) * 10) / 10;
+  }
+  return value;
+}
+
+function hdpShouldConvertFahrenheit(value, unit) {
+  var normalizedUnit = String(unit || '').trim().toLowerCase();
+  if (normalizedUnit === '°f' || normalizedUnit === 'f' || normalizedUnit === 'fahrenheit' || normalizedUnit === '℉') return true;
+  if ((normalizedUnit === '°c' || normalizedUnit === 'c' || normalizedUnit === 'celsius' || normalizedUnit === '') && value > 60 && value < 140) return true;
+  return false;
+}
+
+function hdpIsTemperatureUnit(unit) {
+  var normalizedUnit = String(unit || '').trim().toLowerCase();
+  return normalizedUnit === '°c' || normalizedUnit === 'c' || normalizedUnit === 'celsius' ||
+    normalizedUnit === '°f' || normalizedUnit === 'f' || normalizedUnit === 'fahrenheit' || normalizedUnit === '℃' || normalizedUnit === '℉';
 }
 
 function hdpNormalizeHistoryByEntity(history, sensors) {
@@ -657,6 +682,14 @@ function hdpBuildSparkline(values, min, max) {
   var clean = values.map(function(value, index) { return value == null ? null : { value: value, index: index }; })
     .filter(function(point) { return point; });
   if (!clean.length) return '<div class="hdp-env-sparkline hdp-env-sparkline--empty"></div>';
+  if (clean.length === 1) {
+    var singleX = pad + (clean[0].index / 23) * (width - pad * 2);
+    var singleY = height / 2;
+    return '<svg class="hdp-env-sparkline hdp-env-sparkline--single" viewBox="0 0 ' + width + ' ' + height + '" preserveAspectRatio="none">' +
+      '<path class="hdp-env-sparkline-guide" d="M' + pad + ' ' + singleY + ' L ' + (width - pad) + ' ' + singleY + '"></path>' +
+      '<circle class="hdp-env-sparkline-point" cx="' + (Math.round(singleX * 10) / 10) + '" cy="' + singleY + '" r="5"></circle>' +
+    '</svg>';
+  }
   var range = Math.max(0.1, max - min);
   var points = clean.map(function(point) {
     var x = pad + (point.index / 23) * (width - pad * 2);
@@ -692,7 +725,7 @@ function hdpEnvironmentHistoryCSS() {
     '.hdp-env-history-body{padding:16px;overflow:auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}' +
     '.hdp-env-chart{min-width:0;padding:14px;border-radius:var(--hdp-radius,14px);border:1px solid var(--hdp-border,rgba(0,0,0,.08));background:var(--hdp-surface-card,var(--hdp-card-bg,#fff));box-shadow:var(--hdp-shadow-card,none)}' +
     '.hdp-env-chart-top,.hdp-env-chart-meta{display:flex;align-items:center;justify-content:space-between;gap:10px}.hdp-env-chart-top span{font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hdp-env-chart-top strong{font-size:18px}.hdp-env-chart-source{margin-top:4px;font-size:11px;color:var(--hdp-text-muted,#64748b);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hdp-env-chart-meta{font-size:11px;color:var(--hdp-text-muted,#64748b)}' +
-    '.hdp-env-sparkline{width:100%;height:112px;margin:10px 0;display:block}.hdp-env-sparkline-fill{fill:var(--hdp-primary-light,rgba(79,110,247,.14))}.hdp-env-sparkline-line{fill:none;stroke:var(--hdp-primary,#4f6ef7);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}' +
+    '.hdp-env-sparkline{width:100%;height:112px;margin:10px 0;display:block}.hdp-env-sparkline-fill{fill:var(--hdp-primary-light,rgba(79,110,247,.14))}.hdp-env-sparkline-line{fill:none;stroke:var(--hdp-primary,#4f6ef7);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.hdp-env-sparkline-guide{fill:none;stroke:var(--hdp-border,rgba(0,0,0,.1));stroke-width:2;stroke-dasharray:5 6}.hdp-env-sparkline-point{fill:var(--hdp-primary,#4f6ef7);stroke:var(--hdp-surface-card,var(--hdp-card-bg,#fff));stroke-width:3}' +
     '.hdp-env-history-loading,.hdp-env-history-empty{grid-column:1/-1;padding:28px;text-align:center;color:var(--hdp-text-muted,#64748b);border:1px dashed var(--hdp-border,rgba(0,0,0,.08));border-radius:var(--hdp-radius,14px);background:var(--hdp-surface-muted,transparent)}' +
     '@media (max-width:520px){.hdp-env-history-modal{padding:10px;align-items:stretch}.hdp-env-history-dialog{width:100%;max-height:calc(100dvh - 20px)}.hdp-env-history-head{padding:14px 16px}.hdp-env-history-body{grid-template-columns:1fr;padding:12px}}';
 }

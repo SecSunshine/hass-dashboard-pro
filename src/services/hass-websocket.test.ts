@@ -27,6 +27,10 @@ return {
   hdpBuildEnvironmentSeries: hdpBuildEnvironmentSeries,
   hdpRenderEnvironmentCharts: hdpRenderEnvironmentCharts,
   hdpFormatEnvironmentSource: hdpFormatEnvironmentSource,
+  hdpBuildSparkline: hdpBuildSparkline,
+  hdpNormalizeEnvironmentValue: hdpNormalizeEnvironmentValue,
+  hdpShouldConvertFahrenheit: hdpShouldConvertFahrenheit,
+  hdpIsTemperatureUnit: hdpIsTemperatureUnit,
   hdpNormalizeHistoryByEntity: hdpNormalizeHistoryByEntity,
   hdpParseHistoryTimestamp: hdpParseHistoryTimestamp
 };`,
@@ -40,6 +44,10 @@ return {
     hdpBuildEnvironmentSeries: (hass: any, sensors: any[], history: any) => any[];
     hdpRenderEnvironmentCharts: (series: any[], metric: string, sensors: any[]) => string;
     hdpFormatEnvironmentSource: (area: Record<string, unknown>) => string;
+    hdpBuildSparkline: (values: Array<number | null>, min: number, max: number) => string;
+    hdpNormalizeEnvironmentValue: (raw: unknown, sensor: Record<string, unknown>) => number;
+    hdpShouldConvertFahrenheit: (value: number, unit: string) => boolean;
+    hdpIsTemperatureUnit: (unit: string) => boolean;
     hdpNormalizeHistoryByEntity: (history: any, sensors: any[]) => Record<string, any[]>;
     hdpParseHistoryTimestamp: (point: Record<string, unknown>) => number;
   };
@@ -90,11 +98,14 @@ describe('hass websocket script', () => {
     expect(js).toContain('function hdpShowEnvironmentHistory(metric)');
     expect(js).toContain("type: 'history/history_during_period'");
     expect(js).toContain('entity_ids: sensors.map');
-    expect(js).toContain("unit === '°C'");
-    expect(js).toContain("unit === '°F'");
     expect(js).toContain('significant_changes_only: false');
     expect(js).toContain('function hdpBuildEnvironmentSeries');
     expect(js).toContain('if (!hdpRuntimeEntityVisible(hass, entityId, filters)) return;');
+    expect(js).toContain('function hdpNormalizeEnvironmentValue(raw, sensor)');
+    expect(js).toContain('function hdpShouldConvertFahrenheit(value, unit)');
+    expect(js).toContain('function hdpIsTemperatureUnit(unit)');
+    expect(js).toContain("unit: metric === 'humidity' ? (unit || '%') : '°C'");
+    expect(js).toContain('hdpIsTemperatureUnit(unit)');
     expect(js).toContain('function hdpNormalizeHistoryByEntity(history, sensors)');
     expect(js).toContain('history = hdpUnwrapHistoryResult(history);');
     expect(js).toContain('function hdpUnwrapHistoryResult(value)');
@@ -104,11 +115,14 @@ describe('hass websocket script', () => {
     expect(js).toContain('function hdpParseHistoryTimestamp(point)');
     expect(js).toContain("point.last_changed || point.last_updated || point.lastChanged || point.lastUpdated");
     expect(js).toContain("if (typeof raw === 'number') return raw > 1000000000000 ? raw : raw * 1000;");
-    expect(js).toContain('function hdpReadCurrentSensorValue(hass, entityId)');
+    expect(js).toContain('function hdpReadCurrentSensorValue(hass, sensor)');
     expect(js).toContain('if (index === 23 && !isNaN(currentValue)) return;');
     expect(js).toContain('function hdpFormatEnvironmentSource(area)');
     expect(js).toContain('hdp-env-chart-source');
     expect(js).toContain('function hdpBuildSparkline');
+    expect(js).toContain('hdp-env-sparkline--single');
+    expect(js).toContain('hdp-env-sparkline-guide');
+    expect(js).toContain('hdp-env-sparkline-point');
     expect(js).toContain('window.hdpShowEnvironmentHistory = hdpShowEnvironmentHistory;');
   });
 
@@ -186,6 +200,48 @@ describe('hass websocket script', () => {
     expect(series[0].values).not.toContain(19.1);
   });
 
+  it('normalizes Fahrenheit temperature sensors to Celsius', () => {
+    const runtime = createHistoryRuntime();
+    const timestampSeconds = Math.floor((Date.now() - 2 * 60 * 60 * 1000) / 1000);
+    const hass = {
+      states: {
+        'sensor.living_temperature': { state: '72', attributes: {} },
+      },
+    };
+    const sensors = [{
+      entity_id: 'sensor.living_temperature',
+      area_id: 'living',
+      area_name: 'Living',
+      metric: 'temperature',
+      source_unit: '°F',
+      unit: '°C',
+    }];
+
+    const series = runtime.hdpBuildEnvironmentSeries(hass, sensors, {
+      result: [[{ entity_id: 'sensor.living_temperature', s: '68', lu: timestampSeconds }]],
+    });
+
+    expect(series).toHaveLength(1);
+    expect(series[0].unit).toBe('°C');
+    expect(series[0].values).toContain(20);
+    expect(series[0].values[23]).toBe(22.2);
+
+    const html = runtime.hdpRenderEnvironmentCharts(series, 'temperature', sensors);
+    expect(html).toContain('22.2°C');
+    expect(html).not.toContain('72°C');
+  });
+
+  it('corrects obvious Fahrenheit values mislabeled as Celsius', () => {
+    const runtime = createHistoryRuntime();
+    const sensor = { metric: 'temperature', source_unit: '°C' };
+
+    expect(runtime.hdpShouldConvertFahrenheit(72, '°C')).toBe(true);
+    expect(runtime.hdpNormalizeEnvironmentValue('72', sensor)).toBe(22.2);
+    expect(runtime.hdpNormalizeEnvironmentValue('22', sensor)).toBe(22);
+    expect(runtime.hdpIsTemperatureUnit('fahrenheit')).toBe(true);
+    expect(runtime.hdpIsTemperatureUnit('F')).toBe(true);
+  });
+
   it('reports environment chart source metadata for grouped sensors', () => {
     const runtime = createHistoryRuntime();
     const nowSeconds = Math.floor((Date.now() - 2 * 60 * 60 * 1000) / 1000);
@@ -223,6 +279,18 @@ describe('hass websocket script', () => {
     const area = { sensor_count: 1, sample_count: 0, current_only: true };
 
     expect(runtime.hdpFormatEnvironmentSource(area)).toBe('1 个传感器 · 仅当前值');
+  });
+
+  it('renders single-point environment charts as a point marker', () => {
+    const runtime = createHistoryRuntime();
+    const values: Array<number | null> = [...Array.from({ length: 23 }, () => null), 48];
+    const sparkline = runtime.hdpBuildSparkline(values, 48, 48);
+
+    expect(sparkline).toContain('hdp-env-sparkline--single');
+    expect(sparkline).toContain('hdp-env-sparkline-guide');
+    expect(sparkline).toContain('hdp-env-sparkline-point');
+    expect(sparkline).toContain('<circle');
+    expect(sparkline).not.toContain('hdp-env-sparkline-fill');
   });
 
   it('parses both second and millisecond history timestamps', () => {
