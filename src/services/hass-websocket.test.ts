@@ -441,7 +441,7 @@ describe('hass websocket script', () => {
     expect(js).toContain("toast.className = 'hdp-toast hdp-toast--'");
     expect(js.indexOf('toast.style.cssText = hdpToastStyle(type);')).toBeLessThan(js.indexOf('hdpApplyThemeVarsToOverlay(toast);'));
     expect(js).toContain('hdpApplyThemeVarsToOverlay(toast);');
-    expect(js).toContain("'var(--hdp-surface-raised,var(--hdp-card-bg,#1a1d26))'");
+    expect(js).toContain("'var(--hdp-surface-raised,var(--hdp-card-bg,var(--ha-card-background,var(--card-background-color))))'");
     expect(js).toContain('function hdpApplyThemeVarsToOverlay(overlay)');
     expect(js).toContain("'--hdp-surface-card', '--hdp-surface-muted'");
     expect(js).toContain("'--hdp-modal-bg', '--hdp-overlay-bg'");
@@ -451,12 +451,12 @@ describe('hass websocket script', () => {
     expect(js).toContain("'--hdp-motion-fast', '--hdp-motion-base', '--hdp-motion-easing'");
     expect(js).toContain('font-family:var(--hdp-font,inherit)');
     expect(js).toContain('.hdp-env-history-modal *{box-sizing:border-box}');
-    expect(js).toContain('background:var(--hdp-modal-bg,var(--hdp-bg,var(--ha-card-background,var(--card-background-color,#fff))))');
+    expect(js).toContain('background:var(--hdp-modal-bg,var(--hdp-bg,var(--ha-card-background,var(--card-background-color))))');
     expect(js).toContain('backdrop-filter:blur(18px) saturate(140%)');
     expect(js).toContain('-webkit-backdrop-filter:blur(18px) saturate(140%)');
     expect(js).toContain('background:var(--hdp-surface-card,var(--hdp-card-bg))');
     expect(js).toContain('.hdp-env-history-head>div{min-width:0}');
-    expect(js).toContain('.hdp-env-history-title{font:inherit;font-size:18px;font-weight:800;color:var(--hdp-text,var(--primary-text-color,#111));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}');
+    expect(js).toContain('.hdp-env-history-title{font:inherit;font-size:18px;font-weight:800;color:var(--hdp-text,var(--primary-text-color,CanvasText));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}');
     expect(js).toContain('.hdp-env-history-close:focus-visible{outline:2px solid var(--hdp-primary,#4f6ef7);outline-offset:2px}');
     expect(js).toContain('.hdp-domain-modal-row:focus-visible{outline:2px solid var(--hdp-primary,#4f6ef7);outline-offset:2px}');
     expect(js).toContain('background:var(--hdp-surface-raised,var(--hdp-card-bg));border-color:var(--hdp-primary,#4f6ef7);transform:translateY(-1px)');
@@ -497,7 +497,7 @@ describe('hass websocket script', () => {
     expect(js).toContain('@media (max-width:520px)');
     expect(js).toContain('function hdpOpenAutomationConfig()');
     expect(js).toContain("src=\"/config/automation/dashboard\"");
-    expect(js).toContain('background:var(--hdp-bg,var(--primary-background-color,#fff));color:var(--hdp-text,var(--primary-text-color,#111))');
+    expect(js).toContain('background:var(--hdp-bg,var(--primary-background-color,Canvas));color:var(--hdp-text,var(--primary-text-color,CanvasText))');
     expect(js).toContain('function hdpCloseRuntimeModal(overlay)');
     expect(js).toContain('function hdpBindRuntimeModalEscClose()');
     expect(js).toContain('document.removeEventListener(\'keydown\', hdpCloseRuntimeModalOnEsc);');
