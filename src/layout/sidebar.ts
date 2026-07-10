@@ -125,7 +125,7 @@ export function getSidebarCSS(): string {
       max-width: min(400px, 42vw);
       height: var(--hdp-available-height, 100dvh);
       max-height: var(--hdp-available-height, 100dvh);
-      background: var(--hdp-card-bg);
+      background: color-mix(in srgb, var(--hdp-surface-card, var(--hdp-card-bg)) 94%, transparent);
       border-right: 1px solid var(--hdp-border);
       display: flex;
       flex-direction: column;
@@ -154,7 +154,7 @@ export function getSidebarCSS(): string {
       padding: 8px;
       border: 1px solid var(--hdp-border);
       border-radius: var(--hdp-radius);
-      background: var(--hdp-control-bg, var(--hdp-bg));
+      background: var(--hdp-control-bg, var(--hdp-surface-muted, var(--hdp-bg)));
       color: var(--hdp-text);
       cursor: pointer;
       text-align: left;
@@ -176,7 +176,7 @@ export function getSidebarCSS(): string {
       flex: 0 0 40px;
       overflow: hidden;
       background: var(--hdp-gradient-primary, var(--hdp-primary));
-      color: var(--hdp-text-inverse, white);
+      color: var(--hdp-text-inverse, #fff);
       font-size: 15px;
       font-weight: 800;
       line-height: 1;
@@ -235,7 +235,7 @@ export function getSidebarCSS(): string {
       color: var(--hdp-text-secondary);
     }
     .sb-nav-btn:hover {
-      background: var(--hdp-control-bg-hover, var(--hdp-divider));
+      background: var(--hdp-control-bg-hover, var(--hdp-surface-muted, var(--hdp-divider)));
       color: var(--hdp-text);
     }
     .sb-nav-btn--active {
@@ -291,8 +291,14 @@ export function getSidebarCSS(): string {
       color: var(--hdp-text-secondary);
     }
     .sb-area-btn:hover {
-      background: var(--hdp-control-bg-hover, var(--hdp-divider));
+      background: var(--hdp-control-bg-hover, var(--hdp-surface-muted, var(--hdp-divider)));
       color: var(--hdp-text);
+    }
+    .sb-profile-btn:focus-visible,
+    .sb-nav-btn:focus-visible,
+    .sb-area-btn:focus-visible {
+      outline: 2px solid var(--hdp-primary);
+      outline-offset: 2px;
     }
     .sb-area-btn--active {
       background: var(--hdp-primary-light, rgba(79,110,247,0.1));

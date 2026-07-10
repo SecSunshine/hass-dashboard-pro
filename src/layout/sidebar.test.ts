@@ -26,14 +26,16 @@ describe('sidebar', () => {
   it('uses shared surface and control tokens for desktop navigation', () => {
     const css = getSidebarCSS();
 
-    expect(css).toContain('background: var(--hdp-surface-card, var(--hdp-card-bg));');
-    expect(css).toContain('background: var(--hdp-control-bg, var(--hdp-bg));');
+    expect(css).toContain('background: color-mix(in srgb, var(--hdp-surface-card, var(--hdp-card-bg)) 94%, transparent);');
+    expect(css).toContain('background: var(--hdp-control-bg, var(--hdp-surface-muted, var(--hdp-bg)));');
     expect(css).toContain('background: var(--hdp-control-bg-hover, var(--hdp-primary-light');
-    expect(css).toContain('color: var(--hdp-text-inverse, white);');
+    expect(css).toContain('color: var(--hdp-text-inverse, #fff);');
     expect(css).toContain('box-shadow: var(--hdp-shadow-card, 0 2px 8px rgba(0,0,0,0.12));');
-    expect(css).toContain('background: var(--hdp-control-bg-hover, var(--hdp-divider));');
+    expect(css).toContain('background: var(--hdp-control-bg-hover, var(--hdp-surface-muted, var(--hdp-divider)));');
     expect(css).toContain('border-color: color-mix(in srgb, var(--hdp-primary) 24%, var(--hdp-border));');
     expect(css).toContain('background: var(--hdp-surface-muted, var(--hdp-divider));');
+    expect(css).toContain('.sb-profile-btn:focus-visible');
+    expect(css).toContain('outline: 2px solid var(--hdp-primary);');
   });
 
   it('escapes user and area text while keeping fullscreen avatar action', () => {

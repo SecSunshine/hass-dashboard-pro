@@ -110,13 +110,18 @@ export function getBottomNavCSS(): string {
     }
     .bn-btn:hover {
       color: var(--hdp-primary);
-      background: var(--hdp-control-bg-hover, var(--hdp-primary-light));
+      background: var(--hdp-control-bg-hover, var(--hdp-surface-muted, var(--hdp-primary-light)));
       border-color: var(--hdp-border);
     }
     .bn-btn--active {
       color: var(--hdp-primary);
-      background: var(--hdp-primary-light, var(--hdp-control-bg-hover));
+      background: var(--hdp-primary-light, var(--hdp-control-bg-hover, var(--hdp-surface-muted)));
       border-color: color-mix(in srgb, var(--hdp-primary) 24%, var(--hdp-border));
+    }
+    .bn-btn:focus-visible,
+    .bn-sheet-item:focus-visible {
+      outline: 2px solid var(--hdp-primary);
+      outline-offset: 2px;
     }
     .bn-btn svg {
       width: 22px; height: 22px;
@@ -126,7 +131,7 @@ export function getBottomNavCSS(): string {
       bottom: var(--hdp-bottom-nav-height, 64px);
       left: 0;
       right: 0;
-      background: var(--hdp-modal-bg, var(--hdp-card-bg));
+      background: var(--hdp-modal-bg, var(--hdp-surface-card, var(--hdp-card-bg)));
       border-top: 1px solid var(--hdp-border);
       border-radius: 16px 16px 0 0;
       box-shadow: var(--hdp-shadow-elevated, 0 -4px 24px rgba(0,0,0,0.1));
@@ -153,7 +158,7 @@ export function getBottomNavCSS(): string {
       transition: background 0.1s;
     }
     .bn-sheet-item:hover {
-      background: var(--hdp-control-bg-hover, var(--hdp-divider));
+      background: var(--hdp-control-bg-hover, var(--hdp-surface-muted, var(--hdp-divider)));
     }
     @media (max-width: 768px) {
       .hdp-bottom-nav { display: flex; }
