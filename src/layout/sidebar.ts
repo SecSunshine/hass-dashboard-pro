@@ -176,12 +176,12 @@ export function getSidebarCSS(): string {
       flex: 0 0 40px;
       overflow: hidden;
       background: var(--hdp-gradient-primary, var(--hdp-primary));
-      color: var(--hdp-text-inverse, #fff);
+      color: var(--hdp-text-inverse, var(--primary-background-color, Canvas));
       font-size: 15px;
       font-weight: 800;
       line-height: 1;
       border: 2px solid var(--hdp-surface-card, var(--hdp-card-bg));
-      box-shadow: var(--hdp-shadow-card, 0 2px 8px rgba(0,0,0,0.12));
+      box-shadow: var(--hdp-shadow-card, 0 2px 8px color-mix(in srgb, var(--hdp-text, CanvasText) 12%, transparent));
     }
     .sb-avatar-img {
       width: 100%;

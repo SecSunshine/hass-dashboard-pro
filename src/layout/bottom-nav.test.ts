@@ -5,11 +5,11 @@ describe('bottom navigation', () => {
   it('uses shared surface and control tokens for mobile navigation', () => {
     const css = getBottomNavCSS();
 
-    expect(css).toContain('background: var(--hdp-surface-card, var(--hdp-card-bg));');
-    expect(css).toContain('box-shadow: var(--hdp-shadow-elevated, 0 -4px 24px rgba(0,0,0,0.1));');
+    expect(css).toContain('background: var(--hdp-surface-card, var(--hdp-card-bg, var(--ha-card-background, var(--card-background-color))));');
+    expect(css).toContain('box-shadow: var(--hdp-shadow-elevated, 0 -4px 24px color-mix(in srgb, var(--hdp-text, CanvasText) 10%, transparent));');
     expect(css).toContain('background: var(--hdp-control-bg-hover, var(--hdp-surface-muted, var(--hdp-primary-light)));');
     expect(css).toContain('background: var(--hdp-primary-light, var(--hdp-control-bg-hover, var(--hdp-surface-muted)));');
-    expect(css).toContain('background: var(--hdp-modal-bg, var(--hdp-surface-card, var(--hdp-card-bg)));');
+    expect(css).toContain('background: var(--hdp-modal-bg, var(--hdp-surface-card, var(--hdp-card-bg, var(--ha-card-background, var(--card-background-color)))));');
     expect(css).toContain('background: var(--hdp-control-bg-hover, var(--hdp-surface-muted, var(--hdp-divider)));');
     expect(css).toContain('.bn-btn:focus-visible');
     expect(css).toContain('.bn-sheet-item:focus-visible');

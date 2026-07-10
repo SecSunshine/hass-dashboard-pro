@@ -29,8 +29,8 @@ describe('sidebar', () => {
     expect(css).toContain('background: color-mix(in srgb, var(--hdp-surface-card, var(--hdp-card-bg)) 94%, transparent);');
     expect(css).toContain('background: var(--hdp-control-bg, var(--hdp-surface-muted, var(--hdp-bg)));');
     expect(css).toContain('background: var(--hdp-control-bg-hover, var(--hdp-primary-light');
-    expect(css).toContain('color: var(--hdp-text-inverse, #fff);');
-    expect(css).toContain('box-shadow: var(--hdp-shadow-card, 0 2px 8px rgba(0,0,0,0.12));');
+    expect(css).toContain('color: var(--hdp-text-inverse, var(--primary-background-color, Canvas));');
+    expect(css).toContain('box-shadow: var(--hdp-shadow-card, 0 2px 8px color-mix(in srgb, var(--hdp-text, CanvasText) 12%, transparent));');
     expect(css).toContain('background: var(--hdp-control-bg-hover, var(--hdp-surface-muted, var(--hdp-divider)));');
     expect(css).toContain('border-color: color-mix(in srgb, var(--hdp-primary) 24%, var(--hdp-border));');
     expect(css).toContain('background: var(--hdp-surface-muted, var(--hdp-divider));');

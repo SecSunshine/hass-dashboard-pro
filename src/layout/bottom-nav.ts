@@ -81,9 +81,9 @@ export function getBottomNavCSS(): string {
       left: 0;
       right: 0;
       height: var(--hdp-bottom-nav-height, 64px);
-      background: var(--hdp-surface-card, var(--hdp-card-bg));
+      background: var(--hdp-surface-card, var(--hdp-card-bg, var(--ha-card-background, var(--card-background-color))));
       border-top: 1px solid var(--hdp-border);
-      box-shadow: var(--hdp-shadow-elevated, 0 -4px 24px rgba(0,0,0,0.1));
+      box-shadow: var(--hdp-shadow-elevated, 0 -4px 24px color-mix(in srgb, var(--hdp-text, CanvasText) 10%, transparent));
       z-index: 1000;
       justify-content: space-around;
       align-items: center;
@@ -131,10 +131,10 @@ export function getBottomNavCSS(): string {
       bottom: var(--hdp-bottom-nav-height, 64px);
       left: 0;
       right: 0;
-      background: var(--hdp-modal-bg, var(--hdp-surface-card, var(--hdp-card-bg)));
+      background: var(--hdp-modal-bg, var(--hdp-surface-card, var(--hdp-card-bg, var(--ha-card-background, var(--card-background-color)))));
       border-top: 1px solid var(--hdp-border);
       border-radius: 16px 16px 0 0;
-      box-shadow: var(--hdp-shadow-elevated, 0 -4px 24px rgba(0,0,0,0.1));
+      box-shadow: var(--hdp-shadow-elevated, 0 -4px 24px color-mix(in srgb, var(--hdp-text, CanvasText) 10%, transparent));
       z-index: 1001;
       max-height: 50vh;
       overflow-y: auto;
