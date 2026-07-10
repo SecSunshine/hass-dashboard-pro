@@ -451,9 +451,12 @@ function hdpBuildEnvironmentSeries(hass, sensors, history) {
         area_id: sensor.area_id,
         area_name: sensor.area_name,
         unit: sensor.unit,
+        sensor_ids: {},
+        sample_count: 0,
         buckets: buckets.map(function(bucket) { return { time: bucket.time, values: [] }; })
       };
     }
+    areas[sensor.area_id].sensor_ids[sensor.entity_id] = true;
     var points = byEntity[sensor.entity_id];
     var currentValue = hdpReadCurrentSensorValue(hass, sensor.entity_id);
     if (!Array.isArray(points) || !points.length) {
@@ -465,6 +468,7 @@ function hdpBuildEnvironmentSeries(hass, sensors, history) {
       var changed = hdpParseHistoryTimestamp(point);
       if (isNaN(value) || isNaN(changed)) return;
       var index = Math.max(0, Math.min(23, Math.floor((changed - start) / (60 * 60 * 1000))));
+      areas[sensor.area_id].sample_count += 1;
       if (index === 23 && !isNaN(currentValue)) return;
       areas[sensor.area_id].buckets[index].values.push(value);
     });
@@ -486,7 +490,10 @@ function hdpBuildEnvironmentSeries(hass, sensors, history) {
       area_id: area.area_id,
       area_name: area.area_name,
       unit: area.unit,
-      values: values
+      values: values,
+      sensor_count: Object.keys(area.sensor_ids).length,
+      sample_count: area.sample_count,
+      current_only: area.sample_count === 0
     };
   }).filter(function(area) {
     return area.values.some(function(value) { return value != null; });
@@ -625,12 +632,22 @@ function hdpRenderEnvironmentCharts(series, metric, sensors) {
     var max = Math.max.apply(Math, values);
     var latest = values.length ? values[values.length - 1] : null;
     var unit = area.unit || (metric === 'humidity' ? '%' : '°C');
+    var source = hdpFormatEnvironmentSource(area);
     return '<section class="hdp-env-chart">' +
       '<div class="hdp-env-chart-top"><span>' + hdpEscapeText(area.area_name) + '</span><strong>' + hdpFormatEnvValue(latest, unit) + '</strong></div>' +
+      '<div class="hdp-env-chart-source">' + hdpEscapeText(source) + '</div>' +
       hdpBuildSparkline(area.values, min, max) +
       '<div class="hdp-env-chart-meta"><span>' + hdpFormatEnvValue(min, unit) + '</span><span>24h</span><span>' + hdpFormatEnvValue(max, unit) + '</span></div>' +
     '</section>';
   }).join('');
+}
+
+function hdpFormatEnvironmentSource(area) {
+  var sensorCount = area.sensor_count || 0;
+  var sampleCount = area.sample_count || 0;
+  var sensorText = sensorCount + ' 个传感器';
+  var sampleText = sampleCount > 0 ? sampleCount + ' 个历史点' : '仅当前值';
+  return sensorText + ' · ' + sampleText;
 }
 
 function hdpBuildSparkline(values, min, max) {
@@ -674,7 +691,7 @@ function hdpEnvironmentHistoryCSS() {
     '.hdp-env-history-close:hover{background:var(--hdp-control-bg-hover,var(--hdp-primary-light,rgba(79,110,247,.12)));border-color:var(--hdp-primary,#4f6ef7)}' +
     '.hdp-env-history-body{padding:16px;overflow:auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}' +
     '.hdp-env-chart{min-width:0;padding:14px;border-radius:var(--hdp-radius,14px);border:1px solid var(--hdp-border,rgba(0,0,0,.08));background:var(--hdp-surface-card,var(--hdp-card-bg,#fff));box-shadow:var(--hdp-shadow-card,none)}' +
-    '.hdp-env-chart-top,.hdp-env-chart-meta{display:flex;align-items:center;justify-content:space-between;gap:10px}.hdp-env-chart-top span{font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hdp-env-chart-top strong{font-size:18px}.hdp-env-chart-meta{font-size:11px;color:var(--hdp-text-muted,#64748b)}' +
+    '.hdp-env-chart-top,.hdp-env-chart-meta{display:flex;align-items:center;justify-content:space-between;gap:10px}.hdp-env-chart-top span{font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hdp-env-chart-top strong{font-size:18px}.hdp-env-chart-source{margin-top:4px;font-size:11px;color:var(--hdp-text-muted,#64748b);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hdp-env-chart-meta{font-size:11px;color:var(--hdp-text-muted,#64748b)}' +
     '.hdp-env-sparkline{width:100%;height:112px;margin:10px 0;display:block}.hdp-env-sparkline-fill{fill:var(--hdp-primary-light,rgba(79,110,247,.14))}.hdp-env-sparkline-line{fill:none;stroke:var(--hdp-primary,#4f6ef7);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}' +
     '.hdp-env-history-loading,.hdp-env-history-empty{grid-column:1/-1;padding:28px;text-align:center;color:var(--hdp-text-muted,#64748b);border:1px dashed var(--hdp-border,rgba(0,0,0,.08));border-radius:var(--hdp-radius,14px);background:var(--hdp-surface-muted,transparent)}' +
     '@media (max-width:520px){.hdp-env-history-modal{padding:10px;align-items:stretch}.hdp-env-history-dialog{width:100%;max-height:calc(100dvh - 20px)}.hdp-env-history-head{padding:14px 16px}.hdp-env-history-body{grid-template-columns:1fr;padding:12px}}';

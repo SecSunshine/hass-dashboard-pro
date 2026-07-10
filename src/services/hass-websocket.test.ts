@@ -25,6 +25,8 @@ function createHistoryRuntime() {
     `${generateConnectionDiscoveryJS()}
 return {
   hdpBuildEnvironmentSeries: hdpBuildEnvironmentSeries,
+  hdpRenderEnvironmentCharts: hdpRenderEnvironmentCharts,
+  hdpFormatEnvironmentSource: hdpFormatEnvironmentSource,
   hdpNormalizeHistoryByEntity: hdpNormalizeHistoryByEntity,
   hdpParseHistoryTimestamp: hdpParseHistoryTimestamp
 };`,
@@ -36,6 +38,8 @@ return {
     console,
   ) as {
     hdpBuildEnvironmentSeries: (hass: any, sensors: any[], history: any) => any[];
+    hdpRenderEnvironmentCharts: (series: any[], metric: string, sensors: any[]) => string;
+    hdpFormatEnvironmentSource: (area: Record<string, unknown>) => string;
     hdpNormalizeHistoryByEntity: (history: any, sensors: any[]) => Record<string, any[]>;
     hdpParseHistoryTimestamp: (point: Record<string, unknown>) => number;
   };
@@ -102,6 +106,8 @@ describe('hass websocket script', () => {
     expect(js).toContain("if (typeof raw === 'number') return raw > 1000000000000 ? raw : raw * 1000;");
     expect(js).toContain('function hdpReadCurrentSensorValue(hass, entityId)');
     expect(js).toContain('if (index === 23 && !isNaN(currentValue)) return;');
+    expect(js).toContain('function hdpFormatEnvironmentSource(area)');
+    expect(js).toContain('hdp-env-chart-source');
     expect(js).toContain('function hdpBuildSparkline');
     expect(js).toContain('window.hdpShowEnvironmentHistory = hdpShowEnvironmentHistory;');
   });
@@ -178,6 +184,45 @@ describe('hass websocket script', () => {
     expect(series).toHaveLength(1);
     expect(series[0].values[23]).toBe(22.8);
     expect(series[0].values).not.toContain(19.1);
+  });
+
+  it('reports environment chart source metadata for grouped sensors', () => {
+    const runtime = createHistoryRuntime();
+    const nowSeconds = Math.floor((Date.now() - 2 * 60 * 60 * 1000) / 1000);
+    const hass = {
+      states: {
+        'sensor.living_temperature_a': { state: '22.8', attributes: {} },
+        'sensor.living_temperature_b': { state: '23.2', attributes: {} },
+      },
+    };
+    const sensors = [
+      { entity_id: 'sensor.living_temperature_a', area_id: 'living', area_name: 'Living', unit: 'C' },
+      { entity_id: 'sensor.living_temperature_b', area_id: 'living', area_name: 'Living', unit: 'C' },
+    ];
+    const history = {
+      result: [
+        [{ entity_id: 'sensor.living_temperature_a', s: '21.5', lu: nowSeconds }],
+        [{ entity_id: 'sensor.living_temperature_b', s: '22.5', lu: nowSeconds }],
+      ],
+    };
+
+    const series = runtime.hdpBuildEnvironmentSeries(hass, sensors, history);
+    expect(series).toHaveLength(1);
+    expect(series[0].sensor_count).toBe(2);
+    expect(series[0].sample_count).toBe(2);
+    expect(series[0].current_only).toBe(false);
+    expect(runtime.hdpFormatEnvironmentSource(series[0])).toBe('2 个传感器 · 2 个历史点');
+
+    const html = runtime.hdpRenderEnvironmentCharts(series, 'temperature', sensors);
+    expect(html).toContain('hdp-env-chart-source');
+    expect(html).toContain('2 个传感器 · 2 个历史点');
+  });
+
+  it('labels current-only environment charts', () => {
+    const runtime = createHistoryRuntime();
+    const area = { sensor_count: 1, sample_count: 0, current_only: true };
+
+    expect(runtime.hdpFormatEnvironmentSource(area)).toBe('1 个传感器 · 仅当前值');
   });
 
   it('parses both second and millisecond history timestamps', () => {
