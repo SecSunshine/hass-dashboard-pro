@@ -76,6 +76,14 @@ return {
 }
 
 describe('hass websocket script', () => {
+  it('generates parseable runtime JavaScript with readable control errors', () => {
+    const js = generateConnectionDiscoveryJS();
+
+    expect(() => new Function('document', 'window', 'requestAnimationFrame', 'setTimeout', 'console', js)).not.toThrow();
+    expect(js).toContain("hdpShowToast('窗帘控制失败', 'error');");
+    expect(js).not.toContain('绐楀笜鎺у埗澶辫触');
+  });
+
   it('saves Lovelace config against the dashboard path instead of the active view', () => {
     const js = generateLovelaceConfigJS();
 

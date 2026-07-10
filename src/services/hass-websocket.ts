@@ -280,7 +280,7 @@ function hdpCallCoverService(hass, entityId, service, fallbackService, data, fal
       }).then(function() {
         hdpPulseCard(entityId);
       }).catch(function() {
-        hdpShowToast('绐楀笜鎺у埗澶辫触', 'error');
+        hdpShowToast('窗帘控制失败', 'error');
       });
       return;
     }
@@ -293,7 +293,7 @@ function hdpCallCoverService(hass, entityId, service, fallbackService, data, fal
         return;
       } catch(fallbackErr) {}
     }
-    hdpShowToast('绐楀笜鎺у埗澶辫触', 'error');
+    hdpShowToast('窗帘控制失败', 'error');
   }
 }
 
