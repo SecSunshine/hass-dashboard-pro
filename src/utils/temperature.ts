@@ -2,8 +2,8 @@ export type TemperatureUnit = 'celsius' | 'fahrenheit';
 
 export function normalizeTemperatureUnit(unit: unknown): TemperatureUnit | null {
   const normalized = String(unit || '').trim().toLowerCase();
-  if (['°c', '℃', 'c', 'celsius', 'degrees celsius', '掳c'].includes(normalized)) return 'celsius';
-  if (['°f', '℉', 'f', 'fahrenheit', 'degrees fahrenheit', '掳f'].includes(normalized)) return 'fahrenheit';
+  if (['\u00b0c', '\u2103', 'c', 'celsius', 'degrees celsius', 'degc'].includes(normalized)) return 'celsius';
+  if (['\u00b0f', '\u2109', 'f', 'fahrenheit', 'degrees fahrenheit', 'degf'].includes(normalized)) return 'fahrenheit';
   return null;
 }
 
@@ -37,5 +37,5 @@ export function normalizeTemperatureToCelsius(raw: unknown, unit: unknown): numb
 
 export function formatTemperatureCelsius(value: number, precision = 1): string {
   if (isNaN(value)) return '--';
-  return `${value.toFixed(precision).replace(/\.0$/, '')}°C`;
+  return `${value.toFixed(precision).replace(/\.0$/, '')}\u00b0C`;
 }
