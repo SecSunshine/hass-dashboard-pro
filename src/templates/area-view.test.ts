@@ -84,7 +84,7 @@ describe('area view', () => {
     expect(html).toContain('flex: 0 1 45%');
     expect(html).toContain('text-overflow: ellipsis');
     expect(html).toContain('background: var(--hdp-surface-card, var(--hdp-card-bg));');
-    expect(html).toContain('background: var(--hdp-surface-card, white);');
+    expect(html).not.toContain('background: var(--hdp-surface-card, white);');
     expect(html).toContain('box-shadow: var(--hdp-shadow-card, 0 1px 3px rgba(0,0,0,0.15));');
     expect(html).toContain('22.2°C');
     expect(html).not.toContain('72°F');

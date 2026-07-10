@@ -134,6 +134,8 @@ describe('home view settings', () => {
     expect(html).toContain('data-domain="light"');
     expect(html).toContain('onclick="hdpShowDeviceDomain(&quot;light&quot;)"');
     expect(html).toContain('cursor: pointer;');
+    expect(html).toContain('.sd-badge:hover');
+    expect(html).toContain('background: var(--hdp-surface-raised, var(--hdp-card-bg));');
     expect(html).not.toContain('<div class="sd-badge');
   });
 
@@ -178,6 +180,21 @@ describe('home view settings', () => {
     expect(html).toContain('background: var(--hdp-surface-card, var(--hdp-card-bg));');
     expect(html).toContain('button.env-item:hover');
     expect(html).toContain('background: var(--hdp-surface-raised, var(--hdp-card-bg));');
+  });
+
+  it('keeps favorite and summary cards on themed surfaces', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      favorite_entities: ['light.kitchen'],
+    };
+    const html = buildHomeHTML(hass, config);
+
+    expect(html).toContain('.fav-item {');
+    expect(html).toContain('.sum-item {');
+    expect(html).toContain('background: var(--hdp-surface-card, var(--hdp-card-bg));');
+    expect(html).toContain('background: var(--hdp-surface-raised, var(--hdp-card-bg));');
+    expect(html).toContain('background: var(--hdp-surface-muted, var(--hdp-card-bg));');
+    expect(html).toContain('background: var(--hdp-surface-muted, var(--hdp-divider));');
   });
 
   it('uses topology layout presets for home section ordering and sizing', () => {

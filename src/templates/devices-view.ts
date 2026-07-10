@@ -108,7 +108,7 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
     max-width: min(220px, 68vw);
     padding: 6px 14px;
     border-radius: var(--hdp-radius-pill, 20px);
-    background: var(--hdp-card-bg);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
     border: 1px solid var(--hdp-border);
     appearance: none;
     font: inherit;
@@ -122,6 +122,7 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
   .dv-chip:hover {
     transform: translateY(-2px);
     border-color: var(--hdp-primary);
+    background: var(--hdp-surface-raised, var(--hdp-card-bg));
   }
   .dv-chip-label {
     font-weight: 600;
@@ -378,7 +379,7 @@ function getDeviceEntityCardCSS(): string {
   .dvc-tg-knob {
     width: 20px; height: 20px;
     border-radius: 50%;
-    background: var(--hdp-surface-card, white);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
     box-shadow: var(--hdp-shadow-card, 0 1px 3px rgba(0,0,0,0.15));
   }
   .dvc-tg-knob--off { border: 1px solid var(--hdp-border); }`;

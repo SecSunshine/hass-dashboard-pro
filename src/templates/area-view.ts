@@ -409,7 +409,7 @@ const ENTITY_CARD_CSS = /* css */ `
   .tg-knob {
     width: 20px; height: 20px;
     border-radius: 50%;
-    background: var(--hdp-surface-card, white);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
     box-shadow: var(--hdp-shadow-card, 0 1px 3px rgba(0,0,0,0.15));
   }
   .tg-knob--off { border: 1px solid var(--hdp-border); }

@@ -529,7 +529,7 @@ ${generateDesignTokenCSS(tokens)}
     min-height: 44px;
     padding: 8px 14px;
     border-radius: var(--hdp-radius-pill);
-    background: var(--hdp-card-bg);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
     border: 1px solid var(--hdp-border);
     transition: all 0.2s ease;
     cursor: pointer;
@@ -540,6 +540,7 @@ ${generateDesignTokenCSS(tokens)}
     transform: translateY(-1px);
     box-shadow: var(--hdp-shadow-card);
     border-color: var(--hdp-primary);
+    background: var(--hdp-surface-raised, var(--hdp-card-bg));
   }
   .sd-badge:focus-visible {
     outline: 2px solid var(--hdp-primary);
@@ -996,7 +997,7 @@ ${generateDesignTokenCSS(tokens)}
     gap: 12px;
     padding: 12px 14px;
     border-radius: var(--hdp-radius);
-    background: var(--hdp-card-bg);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
     border: 1px solid var(--hdp-border);
     transition: all 0.2s ease;
     cursor: pointer;
@@ -1004,6 +1005,7 @@ ${generateDesignTokenCSS(tokens)}
   .fav-item:hover {
     transform: translateY(-1px);
     box-shadow: var(--hdp-shadow-card);
+    background: var(--hdp-surface-raised, var(--hdp-card-bg));
   }
   .fav-item--active {
     border-color: var(--hdp-primary);
@@ -1012,7 +1014,7 @@ ${generateDesignTokenCSS(tokens)}
     width: 36px; height: 36px;
     border-radius: var(--hdp-radius-sm);
     display: flex; align-items: center; justify-content: center;
-    background: var(--hdp-divider);
+    background: var(--hdp-surface-muted, var(--hdp-divider));
     color: var(--hdp-text-muted);
     flex-shrink: 0;
   }
@@ -1194,7 +1196,7 @@ ${generateDesignTokenCSS(tokens)}
     gap: 6px;
     padding: 14px 8px;
     border-radius: var(--hdp-radius);
-    background: var(--hdp-card-bg);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
     border: 1px solid var(--hdp-border);
     text-align: center;
     transition: all 0.2s ease;
@@ -1202,6 +1204,7 @@ ${generateDesignTokenCSS(tokens)}
   .sum-item:hover {
     transform: translateY(-2px);
     box-shadow: var(--hdp-shadow-card);
+    background: var(--hdp-surface-raised, var(--hdp-card-bg));
   }
   button.sum-item {
     cursor: pointer;
@@ -1238,7 +1241,7 @@ ${generateDesignTokenCSS(tokens)}
     padding: 18px;
     border-radius: var(--hdp-radius);
     border: 1px dashed var(--hdp-border);
-    background: var(--hdp-card-bg);
+    background: var(--hdp-surface-muted, var(--hdp-card-bg));
   }
   .sum-empty-title {
     font: inherit;
