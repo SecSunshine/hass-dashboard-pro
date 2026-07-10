@@ -24,6 +24,7 @@ import { collectVisibleEntities, getDashboardFilters } from '../utils/dashboard-
 import { escapeAttribute, escapeHTML } from '../utils/html';
 import { cardSkinClass, sanitizeCardSkin } from '../utils/card-skin';
 import { resolveSlottedCard, sortSlottedCards, type SlottedCard } from '../utils/card-slots';
+import { formatTemperatureCelsius, isTemperatureUnit, normalizeTemperatureToCelsius } from '../utils/temperature';
 
 // ─── Main Export ────────────────────────────────────────────────────────────
 
@@ -402,7 +403,7 @@ function buildDeviceEntityCard(entity: EntityInfo, skin?: string, hass?: Hass, c
 
   // Default card for light, switch, fan, sensor, etc.
   const active = isEntityOn(entity.state, entity.domain);
-  const stateText = escapeHTML(formatState(entity));
+  const stateText = escapeHTML(formatDeviceState(entity, hass));
   const iconSVG = getEntityIconSVG(entity.domain, active);
   const isSensor = entity.domain === 'sensor' || entity.domain === 'binary_sensor';
   const skinCls = cardSkinClass(skin);
@@ -439,6 +440,25 @@ function buildDeviceEntityCard(entity: EntityInfo, skin?: string, hass?: Hass, c
 }
 
 // ─── Domain Color Map ───────────────────────────────────────────────────────
+
+function formatDeviceState(entity: EntityInfo, hass?: Hass): string {
+  if (isDeviceTemperatureSensor(entity, hass)) {
+    const celsius = normalizeTemperatureToCelsius(entity.state, entity.unit);
+    if (!isNaN(celsius)) return formatTemperatureCelsius(celsius);
+  }
+  return formatState(entity);
+}
+
+function isDeviceTemperatureSensor(entity: EntityInfo, hass?: Hass): boolean {
+  if (entity.domain !== 'sensor' && entity.domain !== 'number') return false;
+  const attrs = hass?.states[entity.entity_id]?.attributes || {};
+  const deviceClass = attrs.device_class;
+  const lowerId = entity.entity_id.toLowerCase();
+  return deviceClass === 'temperature'
+    || isTemperatureUnit(entity.unit)
+    || lowerId.includes('temperature')
+    || lowerId.includes('temp');
+}
 
 function getDomainColor(domain: string): { bg: string; fg: string } {
   const map: Record<string, { bg: string; fg: string }> = {

@@ -22,6 +22,17 @@ const hass: Hass = {
       last_changed: '',
       last_updated: '',
     },
+    'sensor.living_room_temperature': {
+      entity_id: 'sensor.living_room_temperature',
+      state: '72',
+      attributes: {
+        friendly_name: 'Living Room Temperature',
+        device_class: 'temperature',
+        unit_of_measurement: '\u00b0C',
+      },
+      last_changed: '',
+      last_updated: '',
+    },
     'binary_sensor.kitchen_motion': {
       entity_id: 'binary_sensor.kitchen_motion',
       state: 'off',
@@ -68,6 +79,14 @@ const hass: Hass = {
     },
     'binary_sensor.kitchen_motion': {
       entity_id: 'binary_sensor.kitchen_motion',
+      device_id: null,
+      area_id: 'kitchen',
+      platform: 'demo',
+      disabled_by: null,
+      hidden_by: null,
+    },
+    'sensor.living_room_temperature': {
+      entity_id: 'sensor.living_room_temperature',
       device_id: null,
       area_id: 'kitchen',
       platform: 'demo',
@@ -168,6 +187,13 @@ describe('devices view', () => {
     expect(html).toContain('data-entity="sensor.power_meter"');
     expect(html).not.toContain('data-entity="sensor.power_meter" data-action="toggle"');
     expect(html).toContain('.dvc[role="button"]:focus-visible');
+  });
+
+  it('normalizes mislabeled Fahrenheit temperature sensors to Celsius', () => {
+    const html = buildDevicesHTML(hass, { type: 'custom:hass-dashboard-pro' });
+
+    expect(html).toContain('22.2\u00b0C');
+    expect(html).not.toContain('72 \u00b0C');
   });
 
   it('sorts running devices before inactive devices within a domain', () => {
