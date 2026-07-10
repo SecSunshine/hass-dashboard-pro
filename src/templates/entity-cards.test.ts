@@ -111,6 +111,10 @@ describe('domain entity cards', () => {
     expect(html).toContain('dc-cover-curtain');
     expect(html).toContain('开合 68%');
     expect(html).toContain('已打开');
+    expect(html).toContain('class="dc-cover-slider"');
+    expect(html).toContain('data-action="cover-position"');
+    expect(html).toContain('value="68"');
+    expect(html).toContain('aria-label="设置 Bedroom Curtain 位置"');
     expect(html).toContain('data-action="cover-open"');
     expect(html).toContain('data-action="cover-stop"');
     expect(html).toContain('data-action="cover-close"');
@@ -135,6 +139,7 @@ describe('domain entity cards', () => {
     expect(css).toContain('background: var(--hdp-control-bg-hover');
     expect(css).toContain('.dc-climate-mode');
     expect(css).toContain('.dc-cover-visual');
+    expect(css).toContain('.dc-cover-slider');
     expect(css).toContain('.dc-cover-btn--stop');
     expect(css).toContain('.dc-lock-btn');
     expect(css).toContain('border: 1px solid transparent;');

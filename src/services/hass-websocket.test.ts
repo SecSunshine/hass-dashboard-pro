@@ -85,7 +85,12 @@ describe('hass websocket script', () => {
     expect(js).toContain('var current = parseFloat(stateObj.attributes && stateObj.attributes.temperature);');
     expect(js).toContain('var step = parseFloat(delta);');
     expect(js).toContain('if (isNaN(current)) current = 24;');
+    expect(js).toContain('function hdpSetCoverPosition(entityId, position)');
+    expect(js).toContain("hass.callService('cover', 'set_cover_position', { entity_id: entityId, position: value });");
+    expect(js).toContain("if (action === 'cover-position')");
     expect(js).toContain("hdpCoverAction(entityId, action.replace('cover-', ''));");
+    expect(js).toContain("document.addEventListener('change'");
+    expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"cover-position\"][data-entity]')");
     expect(js).toContain("}, true);");
     expect(js).toContain("if (hdpClosestFromEvent(e, '[data-no-toggle]')) return;");
   });

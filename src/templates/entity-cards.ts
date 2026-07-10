@@ -327,6 +327,12 @@ export function getDomainCardCSS(): string {
     border-radius: var(--hdp-radius-pill, 20px);
     transition: width 0.3s ease;
   }
+  .dc-cover-slider {
+    width: 100%;
+    min-width: 0;
+    accent-color: var(--hdp-primary);
+    cursor: pointer;
+  }
   .dc-cover-visual {
     position: relative;
     min-height: 74px;
@@ -783,8 +789,9 @@ function buildCoverCard(entity: EntityInfo, stateObj: HassEntity, skin?: string)
   const barWidth = position != null ? position : (isActive ? 100 : 0);
   const stateLabel = COVER_STATE_LABELS[currentState] || currentState;
   const positionText = position != null ? `开合 ${position}%` : stateLabel;
+  const entityId = escapeAttribute(entity.entity_id);
 
-  return `<div class="dvc dc-control-card dc-cover ${skinCls}" data-entity="${escapeAttribute(entity.entity_id)}" data-no-toggle>
+  return `<div class="dvc dc-control-card dc-cover ${skinCls}" data-entity="${entityId}" data-no-toggle>
     <div class="dvc-bar"></div>
     <div class="dc-control-head">
       <div class="dvc-ico ${isActive ? 'dvc-ico--on' : 'dvc-ico--off'}">${getCoverIcon(isActive)}</div>
@@ -809,17 +816,19 @@ function buildCoverCard(entity: EntityInfo, stateObj: HassEntity, skin?: string)
       <div class="dc-cover-bar-wrap">
         <div class="dc-cover-bar-fill" style="width: ${barWidth}%"></div>
       </div>
+      <input type="range" class="dc-cover-slider" min="0" max="100" step="1" value="${barWidth}"
+        data-entity="${entityId}" data-action="cover-position" aria-label="设置 ${escapeAttribute(entity.name)} 位置" />
     </div>
     <div class="dc-cover-actions">
-      <button type="button" class="dc-cover-btn dc-cover-btn--primary" data-entity="${escapeAttribute(entity.entity_id)}" data-action="cover-open" aria-label="打开 ${escapeAttribute(entity.name)}">
+      <button type="button" class="dc-cover-btn dc-cover-btn--primary" data-entity="${entityId}" data-action="cover-open" aria-label="打开 ${escapeAttribute(entity.name)}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
         打开
       </button>
-      <button type="button" class="dc-cover-btn dc-cover-btn--stop" data-entity="${escapeAttribute(entity.entity_id)}" data-action="cover-stop" aria-label="停止 ${escapeAttribute(entity.name)}">
+      <button type="button" class="dc-cover-btn dc-cover-btn--stop" data-entity="${entityId}" data-action="cover-stop" aria-label="停止 ${escapeAttribute(entity.name)}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
         停止
       </button>
-      <button type="button" class="dc-cover-btn" data-entity="${escapeAttribute(entity.entity_id)}" data-action="cover-close" aria-label="关闭 ${escapeAttribute(entity.name)}">
+      <button type="button" class="dc-cover-btn" data-entity="${entityId}" data-action="cover-close" aria-label="关闭 ${escapeAttribute(entity.name)}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         关闭
       </button>

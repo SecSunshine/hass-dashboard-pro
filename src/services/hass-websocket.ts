@@ -233,6 +233,18 @@ function hdpCoverAction(entityId, action) {
   } catch(e) { hdpShowToast('窗帘控制失败', 'error'); }
 }
 
+function hdpSetCoverPosition(entityId, position) {
+  var hass = hdpFindHass();
+  if (!hass || !hass.callService) { hdpShowToast('无法连接到 Home Assistant', 'error'); return; }
+  var value = Math.round(parseFloat(position));
+  if (isNaN(value)) return;
+  value = Math.max(0, Math.min(100, value));
+  try {
+    hass.callService('cover', 'set_cover_position', { entity_id: entityId, position: value });
+    hdpPulseCard(entityId);
+  } catch(e) { hdpShowToast('窗帘位置设置失败', 'error'); }
+}
+
 // ── Lock Controls ──
 function hdpLockAction(entityId, action) {
   var hass = hdpFindHass();
@@ -953,6 +965,10 @@ function hdpHandleDomainControl(control) {
     hdpSetClimateFanMode(entityId, control.getAttribute('data-fan-mode') || 'auto');
     return true;
   }
+  if (action === 'cover-position') {
+    hdpSetCoverPosition(entityId, control.value || control.getAttribute('data-position'));
+    return true;
+  }
   if (action.indexOf('cover-') === 0) {
     hdpCoverAction(entityId, action.replace('cover-', ''));
     return true;
@@ -1007,6 +1023,11 @@ function hdpInitEntityClickHandlers() {
     var control = hdpClosestFromEvent(e, '[data-action="media-volume"][data-entity]');
     if (!control) return;
     hdpSetMediaVolume(control.getAttribute('data-entity'), Number(control.value) / 100);
+  }, true);
+  document.addEventListener('change', function(e) {
+    var control = hdpClosestFromEvent(e, '[data-action="cover-position"][data-entity]');
+    if (!control) return;
+    hdpSetCoverPosition(control.getAttribute('data-entity'), control.value);
   }, true);
 }
 `;
