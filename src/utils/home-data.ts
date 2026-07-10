@@ -8,7 +8,7 @@
 import type { Hass, EntityInfo, StrategyConfig } from '../types';
 import { isEntityOn } from './area-entities';
 import { collectVisibleEntities, countVisibleDevices, getDashboardFilters } from './dashboard-model';
-import { isTemperatureUnit, normalizeTemperatureToCelsius } from './temperature';
+import { formatTemperatureCelsius, isTemperatureUnit, normalizeTemperatureToCelsius } from './temperature';
 
 // ─── Person Tracking ───────────────────────────────────────────────────────
 
@@ -357,7 +357,12 @@ export function getWeather(hass: Hass, weatherEntity?: string): WeatherInfo {
   const s = hass.states[eid];
   if (!s || !isRegistryVisible(hass, eid)) return { temp: '--', condition: '', condition_display: '--', icon_svg: '', has_data: false };
 
-  const temp = s.attributes.temperature != null ? `${s.attributes.temperature}°` : '--';
+  const temp = s.attributes.temperature != null
+    ? formatTemperatureCelsius(normalizeTemperatureToCelsius(
+      s.attributes.temperature,
+      s.attributes.temperature_unit || s.attributes.unit_of_measurement || s.attributes.unit,
+    ))
+    : '--';
   const condition = s.state;
 
   return {

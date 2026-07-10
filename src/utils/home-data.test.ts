@@ -299,8 +299,26 @@ describe('home data', () => {
   });
 
   it('ignores registry-hidden weather entities for header weather', () => {
-    expect(getWeather(hass).temp).toBe('22°');
+    expect(getWeather(hass).temp).toBe('22°C');
     expect(getWeather(hass, 'weather.hidden').has_data).toBe(false);
+  });
+
+  it('normalizes header weather temperature to Celsius', () => {
+    const weatherHass: Hass = {
+      ...hass,
+      states: {
+        ...hass.states,
+        'weather.home': {
+          entity_id: 'weather.home',
+          state: 'sunny',
+          attributes: { temperature: 72, temperature_unit: '°F' },
+          last_changed: '',
+          last_updated: '',
+        },
+      },
+    };
+
+    expect(getWeather(weatherHass).temp).toBe('22.2°C');
   });
 
   it('ignores registry-hidden repair summary entities', () => {
