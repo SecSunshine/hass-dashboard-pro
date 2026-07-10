@@ -4,6 +4,7 @@
 
 import type { Hass, HassArea, EntityInfo } from '../types';
 import { HIDDEN_DOMAINS } from '../types';
+import { formatTemperatureCelsius, isTemperatureLikeEntity, normalizeTemperatureToCelsius } from './temperature';
 
 /**
  * Build a map of area_id → EntityInfo[]
@@ -67,6 +68,7 @@ function extractEntityInfo(entityId: string, stateObj: { state: string; attribut
   const friendlyName = (stateObj.attributes.friendly_name as string) || entityId.replace(`${domain}.`, '').replace(/_/g, ' ');
   const unit = (stateObj.attributes.unit_of_measurement as string) || null;
   const icon = (stateObj.attributes.icon as string) || null;
+  const deviceClass = (stateObj.attributes.device_class as string) || null;
 
   return {
     entity_id: entityId,
@@ -75,6 +77,7 @@ function extractEntityInfo(entityId: string, stateObj: { state: string; attribut
     icon,
     state: stateObj.state,
     unit,
+    device_class: deviceClass,
     area_name: area.name,
   };
 }
@@ -144,6 +147,10 @@ export function formatState(entity: EntityInfo): string {
       return state === 'locked' ? '已锁' : '已开锁';
     case 'sensor':
     case 'number':
+      if (isTemperatureLikeEntity(entity.entity_id, entity.device_class, unit)) {
+        const celsius = normalizeTemperatureToCelsius(state, unit);
+        if (!isNaN(celsius)) return formatTemperatureCelsius(celsius);
+      }
       return unit ? `${state} ${unit}` : state;
     default:
       return state === 'on' ? '开启' : state === 'off' ? '关闭' : state;

@@ -335,6 +335,7 @@ export interface EntityInfo {
   icon: string | null;
   state: string;
   unit: string | null;
+  device_class?: string | null;
   area_name: string;
 }
 

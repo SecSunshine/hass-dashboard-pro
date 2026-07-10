@@ -11,6 +11,15 @@ export function isTemperatureUnit(unit: unknown): boolean {
   return normalizeTemperatureUnit(unit) !== null;
 }
 
+export function isTemperatureLikeEntity(entityId: unknown, deviceClass: unknown, unit: unknown): boolean {
+  const normalizedDeviceClass = String(deviceClass || '').trim().toLowerCase();
+  const lowerId = String(entityId || '').toLowerCase();
+  return normalizedDeviceClass === 'temperature'
+    || isTemperatureUnit(unit)
+    || lowerId.includes('temperature')
+    || lowerId.includes('temp');
+}
+
 export function shouldConvertFahrenheitToCelsius(value: number, unit: unknown): boolean {
   const normalizedUnit = normalizeTemperatureUnit(unit);
   if (normalizedUnit === 'fahrenheit') return true;

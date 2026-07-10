@@ -8,7 +8,7 @@
 import type { Hass, EntityInfo, StrategyConfig } from '../types';
 import { isEntityOn } from './area-entities';
 import { collectVisibleEntities, countVisibleDevices, getDashboardFilters } from './dashboard-model';
-import { formatTemperatureCelsius, isTemperatureUnit, normalizeTemperatureToCelsius } from './temperature';
+import { formatTemperatureCelsius, isTemperatureLikeEntity, isTemperatureUnit, normalizeTemperatureToCelsius } from './temperature';
 
 // ─── Person Tracking ───────────────────────────────────────────────────────
 
@@ -250,10 +250,14 @@ export function getFavorites(hass: Hass, config: StrategyConfig): FavoriteEntity
     const domain = eid.split('.')[0];
     const name = (stateObj.attributes.friendly_name as string) || eid.replace(`${domain}.`, '').replace(/_/g, ' ');
     const unit = (stateObj.attributes.unit_of_measurement as string) || null;
+    const deviceClass = stateObj.attributes.device_class as string | undefined;
     const isActive = isEntityOn(stateObj.state, domain);
 
     let display: string;
-    if (unit) {
+    if ((domain === 'sensor' || domain === 'number') && isTemperatureLikeEntity(eid, deviceClass, unit)) {
+      const celsius = normalizeTemperatureToCelsius(stateObj.state, unit);
+      display = !isNaN(celsius) ? formatTemperatureCelsius(celsius) : (unit ? `${stateObj.state} ${unit}` : stateObj.state);
+    } else if (unit) {
       display = `${stateObj.state} ${unit}`;
     } else if (isActive) {
       display = '开启';

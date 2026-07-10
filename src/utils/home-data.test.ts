@@ -369,6 +369,29 @@ describe('home data', () => {
     expect(summary.temp_sensors).toBe(3);
   });
 
+  it('normalizes favorite temperature sensor displays to Celsius', () => {
+    const climateHass: Hass = {
+      ...hass,
+      states: {
+        ...hass.states,
+        'sensor.bedroom_temperature': {
+          entity_id: 'sensor.bedroom_temperature',
+          state: '72',
+          attributes: { friendly_name: 'Bedroom Temperature', device_class: 'temperature', unit_of_measurement: '°C' },
+          last_changed: '',
+          last_updated: '',
+        },
+      },
+    };
+
+    const favorites = getFavorites(climateHass, {
+      type: 'custom:hass-dashboard-pro',
+      favorite_entities: ['sensor.bedroom_temperature'],
+    });
+
+    expect(favorites[0].display).toBe('22.2°C');
+  });
+
   it('ignores registry-hidden alarm entities when no visibility config is supplied', () => {
     const alarmHass: Hass = {
       ...hass,

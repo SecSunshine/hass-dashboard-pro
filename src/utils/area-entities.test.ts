@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Hass } from '../types';
-import { buildAreaEntityMap } from './area-entities';
+import { buildAreaEntityMap, formatState } from './area-entities';
 
 const hass: Hass = {
   states: {
@@ -111,5 +111,18 @@ describe('area entity map', () => {
     const ids = mapIds(buildAreaEntityMap(hass, ['kitchen'], ['switch'], true, ['sensor.temperature']));
 
     expect(ids).toEqual({});
+  });
+
+  it('normalizes mislabeled Fahrenheit temperature state displays to Celsius', () => {
+    expect(formatState({
+      entity_id: 'sensor.bedroom_temperature',
+      name: 'Bedroom Temperature',
+      domain: 'sensor',
+      icon: null,
+      state: '72',
+      unit: '°C',
+      device_class: 'temperature',
+      area_name: 'Bedroom',
+    })).toBe('22.2°C');
   });
 });
