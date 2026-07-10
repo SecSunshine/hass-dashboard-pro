@@ -71,7 +71,7 @@ function sectionCard(id: string, title: string, icon: string, content: string): 
 export function getSettingsSectionsCSS(): string {
   return `
   .st-section {
-    background: var(--hdp-card-bg);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
     border-radius: var(--hdp-radius);
     border: 1px solid var(--hdp-border);
     box-shadow: var(--hdp-shadow-card);
@@ -222,6 +222,10 @@ export function getSettingsSectionsCSS(): string {
     border-color: var(--hdp-primary);
     box-shadow: 0 0 0 3px var(--hdp-primary-glow, rgba(79,110,247,0.12));
   }
+  .st-input::placeholder {
+    color: var(--hdp-text-muted);
+    opacity: 0.82;
+  }
   .st-textarea {
     display: block;
     min-height: 76px;
@@ -268,7 +272,7 @@ export function getSettingsSectionsCSS(): string {
     font-size: 12px;
     font-weight: 600;
     border: 1px solid var(--hdp-border);
-    background: var(--hdp-card-bg);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
     color: var(--hdp-text-secondary);
     cursor: pointer;
     transition: all 0.15s ease;
@@ -286,13 +290,25 @@ export function getSettingsSectionsCSS(): string {
     border-color: var(--hdp-primary);
     color: var(--hdp-primary);
   }
+  .st-chip:hover {
+    background: var(--hdp-surface-raised, var(--hdp-card-bg));
+    transform: translateY(-1px);
+  }
+  .st-chip:focus-visible,
+  .st-btn:focus-visible,
+  .st-toggle:focus-visible,
+  .st-section-hdr:focus-visible,
+  .st-layout-choice:focus-visible,
+  .st-plan-choice:focus-visible {
+    outline: 2px solid var(--hdp-primary);
+    outline-offset: 2px;
+  }
   .st-chip[disabled],
   .st-chip[data-saving="true"] {
     cursor: progress;
     opacity: 0.72;
     pointer-events: none;
   }
-  .st-chip:hover { transform: translateY(-1px); }
   .st-btn {
     display: flex;
     align-items: center;
@@ -308,13 +324,17 @@ export function getSettingsSectionsCSS(): string {
     min-width: 0;
     max-width: 100%;
     border: 1px solid var(--hdp-border);
-    background: var(--hdp-card-bg);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
     color: var(--hdp-text);
     white-space: normal;
     overflow-wrap: anywhere;
     text-align: left;
   }
-  .st-btn:hover { transform: translateY(-2px); border-color: var(--hdp-primary); }
+  .st-btn:hover {
+    transform: translateY(-2px);
+    border-color: var(--hdp-primary);
+    background: var(--hdp-surface-raised, var(--hdp-card-bg));
+  }
   .st-action-row,
   .st-link-row {
     display: flex;
@@ -339,9 +359,11 @@ export function getSettingsSectionsCSS(): string {
     padding: 12px;
     margin-bottom: 12px;
     border-radius: var(--hdp-radius, 14px);
-    background: var(--hdp-card-bg);
+    background: color-mix(in srgb, var(--hdp-card-bg) 88%, transparent);
     border: 1px solid var(--hdp-border);
     box-shadow: var(--hdp-shadow-card);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
     width: 100%;
     max-width: 100%;
     min-width: 0;
@@ -388,7 +410,7 @@ export function getSettingsSectionsCSS(): string {
     padding: 10px;
     border: 1px solid var(--hdp-border);
     border-radius: var(--hdp-radius-sm, 8px);
-    background: var(--hdp-bg);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
   }
   .st-keyword-field .st-input,
   .st-keyword-field .st-textarea {
@@ -413,7 +435,7 @@ export function getSettingsSectionsCSS(): string {
     padding: 12px;
     border-radius: var(--hdp-radius-sm, 8px);
     border: 1px solid var(--hdp-border);
-    background: var(--hdp-card-bg);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
     color: var(--hdp-text);
     text-align: left;
     cursor: pointer;
@@ -422,6 +444,7 @@ export function getSettingsSectionsCSS(): string {
   .st-layout-choice:hover {
     transform: translateY(-1px);
     border-color: var(--hdp-primary);
+    background: var(--hdp-surface-raised, var(--hdp-card-bg));
   }
   .st-layout-choice--active {
     border-color: var(--hdp-primary);
@@ -441,8 +464,11 @@ export function getSettingsSectionsCSS(): string {
   }
   .st-btn--primary {
     background: var(--hdp-primary);
-    color: white;
+    color: var(--hdp-text-inverse, #fff);
     border-color: var(--hdp-primary);
+  }
+  .st-btn--primary:hover {
+    background: var(--hdp-primary);
   }
   .st-btn--danger {
     color: var(--hdp-danger, #EF4444);
@@ -519,7 +545,7 @@ export function getSettingsSectionsCSS(): string {
     min-height: 26px;
     padding: 3px 9px;
     border-radius: var(--hdp-radius-pill, 20px);
-    background: var(--hdp-card-bg);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
     border: 1px solid var(--hdp-border);
     color: var(--hdp-text-secondary);
     font: inherit;
@@ -555,6 +581,7 @@ export function getSettingsSectionsCSS(): string {
   .st-plan-choice:hover {
     transform: translateY(-2px);
     border-color: var(--hdp-primary);
+    background: var(--hdp-surface-raised, var(--hdp-card-bg));
   }
   .st-plan-choice--active {
     border-color: var(--hdp-primary);

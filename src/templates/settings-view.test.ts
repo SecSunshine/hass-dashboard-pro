@@ -218,6 +218,14 @@ describe('settings view', () => {
     expect(html).toContain('white-space: normal;\n    overflow-wrap: anywhere;\n    text-align: left;');
     expect(html).toContain('.st-section button');
     expect(html).toContain('.st-section input,\n  .st-section select,\n  .st-section textarea');
+    expect(html).toContain('background: var(--hdp-surface-card, var(--hdp-card-bg));');
+    expect(html).toContain('.st-input::placeholder');
+    expect(html).toContain('color: var(--hdp-text-muted);\n    opacity: 0.82;');
+    expect(html).toContain('.st-chip:focus-visible,\n  .st-btn:focus-visible,\n  .st-toggle:focus-visible,\n  .st-section-hdr:focus-visible,\n  .st-layout-choice:focus-visible,\n  .st-plan-choice:focus-visible');
+    expect(html).toContain('background: var(--hdp-surface-raised, var(--hdp-card-bg));');
+    expect(html).toContain('background: color-mix(in srgb, var(--hdp-card-bg) 88%, transparent);');
+    expect(html).toContain('backdrop-filter: blur(14px) saturate(140%);');
+    expect(html).toContain('color: var(--hdp-text-inverse, #fff);');
     expect(html).toContain('.st-section a.st-btn');
     expect(html).toContain('.st-section svg {\n    flex-shrink: 0;\n    width: 18px;\n    height: 18px;');
     expect(html).toContain('.st-row--spaced');
