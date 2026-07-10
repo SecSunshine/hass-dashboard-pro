@@ -15,6 +15,7 @@
 import type { Hass, HassEntity, EntityInfo } from '../types';
 import { escapeAttribute, escapeHTML } from '../utils/html';
 import { cardSkinClass } from '../utils/card-skin';
+import { formatTemperatureCelsius, normalizeTemperatureToCelsius, shouldConvertFahrenheitToCelsius } from '../utils/temperature';
 
 // ─── CSS (shared, injected by views) ─────────────────────────────────────────
 
@@ -693,15 +694,18 @@ function buildAccessibleClimateCard(entity: EntityInfo, stateObj: HassEntity, sk
   const minTemp = parseOptionalNumber(attrs.min_temp) ?? 16;
   const maxTemp = parseOptionalNumber(attrs.max_temp) ?? 30;
   const entityId = escapeAttribute(entity.entity_id);
+  const displayUnit = resolveClimateDisplayUnit(attrs, currentTemp, targetTemp, minTemp, maxTemp);
+  const minTempDisplay = formatClimateTemperature(minTemp, displayUnit);
+  const maxTempDisplay = formatClimateTemperature(maxTemp, displayUnit);
 
   const currentTempHTML = currentTemp != null
     ? `<div class="dc-control-chip dc-climate-current">
-        <div class="dc-control-chip-value dc-climate-current-val">${currentTemp.toFixed(1)}&deg;</div>
+        <div class="dc-control-chip-value dc-climate-current-val">${escapeHTML(formatClimateTemperature(currentTemp, displayUnit))}</div>
         <div class="dc-control-chip-label dc-climate-current-label">当前</div>
       </div>`
     : '';
 
-  const targetTempVal = targetTemp != null ? `${targetTemp.toFixed(1)}&deg;` : '--';
+  const targetTempVal = targetTemp != null ? formatClimateTemperature(targetTemp, displayUnit) : '--';
   const tempUpDelta = step;
   const tempDownDelta = -step;
 
@@ -746,7 +750,7 @@ function buildAccessibleClimateCard(entity: EntityInfo, stateObj: HassEntity, sk
       ${currentTempHTML}
     </div>
     <div class="dc-control-section">
-      <div class="dc-control-section-label"><span>目标温度</span><span>${escapeHTML(String(minTemp))}&deg; - ${escapeHTML(String(maxTemp))}&deg;</span></div>
+      <div class="dc-control-section-label"><span>目标温度</span><span>${escapeHTML(minTempDisplay)} - ${escapeHTML(maxTempDisplay)}</span></div>
       <div class="dc-climate-target-row">
         <button type="button" class="dc-climate-temp-btn"
           data-entity="${entityId}"
@@ -756,7 +760,7 @@ function buildAccessibleClimateCard(entity: EntityInfo, stateObj: HassEntity, sk
           data-max-temp="${escapeAttribute(String(maxTemp))}"
           aria-label="Decrease target temperature"
           >-</button>
-        <div class="dc-climate-target-val">${targetTempVal}</div>
+        <div class="dc-climate-target-val">${escapeHTML(targetTempVal)}</div>
         <button type="button" class="dc-climate-temp-btn"
           data-entity="${entityId}"
           data-action="climate-temp"
@@ -773,6 +777,28 @@ function buildAccessibleClimateCard(entity: EntityInfo, stateObj: HassEntity, sk
     </div>
     ${fanPills}
   </div>`;
+}
+
+function resolveClimateDisplayUnit(
+  attrs: Record<string, unknown>,
+  currentTemp: number | null | undefined,
+  targetTemp: number | null | undefined,
+  minTemp: number,
+  maxTemp: number,
+): string {
+  const sourceUnit = attrs.temperature_unit || attrs.unit_of_measurement || attrs.unit;
+  if (shouldConvertFahrenheitToCelsius(currentTemp ?? NaN, sourceUnit)) return '°F';
+  if (shouldConvertFahrenheitToCelsius(targetTemp ?? NaN, sourceUnit)) return '°F';
+  if (String(sourceUnit || '').trim().toLowerCase().includes('f')) return '°F';
+  if ((currentTemp != null && currentTemp > 60 && currentTemp < 140) || (targetTemp != null && targetTemp > 60 && targetTemp < 140)) {
+    return '°F';
+  }
+  if ((minTemp > 50 && minTemp < 80) && (maxTemp > 70 && maxTemp < 110)) return '°F';
+  return String(sourceUnit || '°C');
+}
+
+function formatClimateTemperature(value: number, unit: string): string {
+  return formatTemperatureCelsius(normalizeTemperatureToCelsius(value, unit));
 }
 
 // ─── Cover Card ───────────────────────────────────────────────────────────────

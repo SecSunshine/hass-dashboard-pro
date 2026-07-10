@@ -92,14 +92,36 @@ describe('domain entity cards', () => {
       },
     } as unknown as HassEntity);
 
-    expect(html).toContain('24.2&deg;');
-    expect(html).toContain('23.0&deg;');
-    expect(html).toContain('18&deg; - 28&deg;');
+    expect(html).toContain('24.2°C');
+    expect(html).toContain('23°C');
+    expect(html).toContain('18°C - 28°C');
     expect(html).toContain('data-step="-1"');
     expect(html).toContain('data-step="1"');
     expect(html).toContain('不可用');
     expect(html).toContain('dvc-ico dvc-ico--off');
     expect(html).not.toContain('dc-climate-fan-btn');
+  });
+
+  it('normalizes climate card temperatures to Celsius for display', () => {
+    const html = buildDomainCard(climateEntity, {
+      ...climateState,
+      attributes: {
+        current_temperature: 72,
+        temperature: 70,
+        temperature_unit: '°F',
+        hvac_modes: ['off', 'cool', 'heat'],
+        target_temp_step: 1,
+        min_temp: 60,
+        max_temp: 86,
+      },
+    } as unknown as HassEntity);
+
+    expect(html).toContain('22.2°C');
+    expect(html).toContain('21.1°C');
+    expect(html).toContain('15.6°C - 30°C');
+    expect(html).toContain('data-min-temp="60"');
+    expect(html).toContain('data-max-temp="86"');
+    expect(html).not.toContain('72&deg;');
   });
 
   it('renders cover controls as delegated service buttons', () => {
