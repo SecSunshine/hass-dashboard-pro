@@ -35,6 +35,8 @@ return {
   hdpParseHistoryTimestamp: hdpParseHistoryTimestamp,
   hdpParseDomainScope: hdpParseDomainScope,
   hdpCollectDomainEntities: hdpCollectDomainEntities,
+  hdpRenderDomainEntityList: hdpRenderDomainEntityList,
+  hdpFormatDomainState: hdpFormatDomainState,
   hdpDomainLabel: hdpDomainLabel
 };`,
   )(
@@ -55,6 +57,8 @@ return {
     hdpParseHistoryTimestamp: (point: Record<string, unknown>) => number;
     hdpParseDomainScope: (domainKey: string, deviceClass?: string) => { key: string; domain: string; device_class: string };
     hdpCollectDomainEntities: (hass: any, domainKey: string, deviceClass?: string) => any[];
+    hdpRenderDomainEntityList: (entities: any[], domain: string) => string;
+    hdpFormatDomainState: (state: string, domain: string, unit?: string) => string;
     hdpDomainLabel: (domain: string) => string;
   };
 }
@@ -356,6 +360,9 @@ describe('hass websocket script', () => {
     expect(js).toContain('filters.visibleKeywords.length && !filters.visibleKeywords.some');
     expect(js).toContain('filters.hiddenKeywords.some');
     expect(js).toContain('function hdpIsDomainEntityAvailable(state)');
+    expect(js).toContain('unit: attrs.unit_of_measurement == null ?');
+    expect(js).toContain("function hdpFormatDomainState(state, domain, unit)");
+    expect(js).toContain("return state + ' ' + unit;");
     expect(js).toContain("if (scope.device_class && String(attrs.device_class || '').toLowerCase() !== scope.device_class) return;");
     expect(js).toContain('if (a.available !== b.available) return a.available ? -1 : 1;');
     expect(js).toContain('hdp-domain-modal-row--unavailable');
@@ -403,5 +410,27 @@ describe('hass websocket script', () => {
     expect(runtime.hdpDomainLabel('binary_sensor.motion')).toBe('人体感应');
     expect(rows.map(row => row.entity_id)).toEqual(['binary_sensor.living_motion', 'binary_sensor.bedroom_motion']);
     expect(rows.some(row => row.entity_id === 'binary_sensor.front_door')).toBe(false);
+  });
+
+  it('shows sensor units in status badge popup rows', () => {
+    const runtime = createHistoryRuntime();
+    const hass = {
+      states: {
+        'sensor.living_temperature': {
+          state: '22.5',
+          attributes: { friendly_name: 'Living Temperature', unit_of_measurement: '°C' },
+        },
+      },
+      areas: {},
+      devices: {},
+      entities: {},
+    };
+
+    const rows = runtime.hdpCollectDomainEntities(hass, 'sensor');
+    const html = runtime.hdpRenderDomainEntityList(rows, 'sensor');
+
+    expect(rows[0].unit).toBe('°C');
+    expect(runtime.hdpFormatDomainState('22.5', 'sensor', '°C')).toBe('22.5 °C');
+    expect(html).toContain('22.5 °C');
   });
 });

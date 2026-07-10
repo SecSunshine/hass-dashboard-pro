@@ -842,6 +842,7 @@ function hdpCollectDomainEntities(hass, domainKey, deviceClass) {
       entity_id: entityId,
       name: String(attrs.friendly_name || entityId.replace(scope.domain + '.', '').replace(/_/g, ' ')),
       state: state,
+      unit: attrs.unit_of_measurement == null ? '' : String(attrs.unit_of_measurement),
       area_name: String(area.name || '未分配区域'),
       active: hdpIsEntityRunning(state, scope.domain),
       available: hdpIsDomainEntityAvailable(state)
@@ -876,7 +877,7 @@ function hdpRenderDomainEntityList(entities, domain) {
     return '<button type="button" class="' + rowClass.trim() + '" data-domain-modal-entity="' + hdpEscapeText(entity.entity_id) + '">' +
       '<span class="hdp-domain-modal-dot"></span>' +
       '<span class="hdp-domain-modal-main"><strong>' + hdpEscapeText(entity.name) + '</strong><small>' + hdpEscapeText(entity.area_name) + '</small></span>' +
-      '<span class="hdp-domain-modal-state">' + hdpEscapeText(hdpFormatDomainState(entity.state, domain)) + '</span>' +
+      '<span class="hdp-domain-modal-state">' + hdpEscapeText(hdpFormatDomainState(entity.state, domain, entity.unit)) + '</span>' +
     '</button>';
   }).join('');
 }
@@ -901,7 +902,10 @@ function hdpDomainLabel(domain) {
   return labels[domain] || domain;
 }
 
-function hdpFormatDomainState(state, domain) {
+function hdpFormatDomainState(state, domain, unit) {
+  if ((domain === 'sensor' || domain === 'number') && unit && hdpIsDomainEntityAvailable(state)) {
+    return state + ' ' + unit;
+  }
   var labels = {
     on: '开启', off: '关闭', open: '开启', closed: '关闭', opening: '开启中',
     closing: '关闭中', locked: '已锁', unlocked: '未锁', playing: '播放中',
