@@ -179,6 +179,8 @@ describe('card slots', () => {
     expect(js).toContain("if (typeof hdpApplyThemeVarsToOverlay === 'function') hdpApplyThemeVarsToOverlay(modal);");
     expect(js).toContain('function hdpInitCardSlotDragging');
     expect(js).toContain("root.addEventListener('dragstart'");
+    expect(js).toContain("closest('[data-action=\"drag-slot\"]')");
+    expect(js).toContain("closest('.hdp-slot-edit-panel') && !dragHandle");
     expect(js).toContain("root.addEventListener('drop'");
     expect(js).toContain('function hdpPersistHomeSlotDomOrder');
     expect(js).toContain('window.hdpOpenHiddenCardSlots = function');

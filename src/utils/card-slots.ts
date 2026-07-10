@@ -516,11 +516,14 @@ function hdpInitCardSlotDragging(root) {
   var dragging = null;
   root.addEventListener('dragstart', function(e) {
     if (!root.classList.contains('hdp-root--card-edit')) return;
-    if (e.target && e.target.closest && e.target.closest('.hdp-slot-edit-panel')) {
+    var dragHandle = e.target && e.target.closest && e.target.closest('[data-action="drag-slot"]');
+    if (e.target && e.target.closest && e.target.closest('.hdp-slot-edit-panel') && !dragHandle) {
       e.preventDefault();
       return;
     }
-    var wrapper = e.target && e.target.closest && e.target.closest('.hdp-home-content > .hdp-bento');
+    var wrapper = dragHandle
+      ? dragHandle.closest('.hdp-home-content > .hdp-bento')
+      : e.target && e.target.closest && e.target.closest('.hdp-home-content > .hdp-bento');
     if (!wrapper) return;
     var card = wrapper.querySelector('[data-card-slot]');
     if (!card) return;

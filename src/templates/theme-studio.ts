@@ -1099,8 +1099,9 @@ export function generateThemeStudioJS(): string {
     var rect = canvas.getBoundingClientRect();
     var scaleX = CW_SIZE / rect.width;
     var scaleY = CW_SIZE / rect.height;
-    var clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    var touch = e.touches && e.touches.length ? e.touches[0] : null;
+    var clientX = touch ? touch.clientX : e.clientX;
+    var clientY = touch ? touch.clientY : e.clientY;
     return {
       x: (clientX - rect.left) * scaleX,
       y: (clientY - rect.top) * scaleY

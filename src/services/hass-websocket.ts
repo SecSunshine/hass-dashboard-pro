@@ -951,6 +951,13 @@ function hdpRenderDomainEntityList(entities, domain) {
 }
 
 function hdpOpenMoreInfo(entityId) {
+  var event = new CustomEvent('hass-more-info', {
+    bubbles: true,
+    composed: true,
+    detail: { entityId: entityId }
+  });
+  var target = document.querySelector('home-assistant') || document.querySelector('hui-root') || document.body;
+  if (target && target.dispatchEvent) target.dispatchEvent(event);
   window.dispatchEvent(new CustomEvent('hass-more-info', {
     bubbles: true,
     composed: true,

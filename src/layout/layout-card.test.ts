@@ -198,6 +198,9 @@ describe('layout card', () => {
     expect(card.content).toContain('onclick="hdpToggleDashboardFullscreen()"');
     expect(card.content).toContain('window.hdpToggleDashboardFullscreen = function()');
     expect(card.content).toContain('.hdp-root--fullscreen');
+    expect(card.content).toContain("hint.textContent = active ? '再次点击退出全屏' : '点击全屏仪表盘'");
+    expect(card.content).not.toContain('root.requestFullscreen');
+    expect(card.content).not.toContain('document.exitFullscreen');
     expect(card.content).not.toContain('id="hdp-avatar-overlay"');
     expect(card.content).not.toContain('hdpOpenAvatarOverlay');
     expect(card.content).toContain('Alice Admin');
@@ -252,6 +255,9 @@ describe('layout card', () => {
     expect(card.content).toContain('class="hdp-home-edit-bar"');
     expect(card.content).toContain('onclick="hdpToggleCardEditMode(true)"');
     expect(card.content).toContain('onclick="hdpOpenHiddenCardSlots()"');
+    expect(card.content).toContain('编辑首页</button>');
+    expect(card.content).toContain('保存并应用</button>');
+    expect(card.content).not.toContain('淇濆瓨骞跺簲鐢?/button>');
     expect(card.content).toContain('window.hdpToggleCardEditMode = function');
     expect(card.content).toContain('window.hdpOpenHiddenCardSlots = function');
     expect(card.content).toContain('function hdpApplyCardSlotImageThemes');

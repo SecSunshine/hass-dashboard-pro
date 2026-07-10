@@ -16,7 +16,7 @@
 export function buildNavigationScript(defaultView = 'home'): string {
   const defaultViewJSON = JSON.stringify(defaultView);
   return `
-// ─── HDP Navigation ─────────────────────────────────────────────────────
+// HDP Navigation
 
 (function() {
   var root = document.getElementById('hdp-root');
@@ -49,6 +49,7 @@ export function buildNavigationScript(defaultView = 'home'): string {
 
   // Show a view by ID
   window.hdpShowView = function(viewId) {
+    viewId = typeof viewId === 'string' && viewId ? viewId : 'home';
     // Hide all views
     var views = root.querySelectorAll('.hdp-view');
     for (var i = 0; i < views.length; i++) {
@@ -75,6 +76,7 @@ export function buildNavigationScript(defaultView = 'home'): string {
 
     // Update sidebar active states
     updateActiveStates(viewId);
+    hdpSyncViewportHeight();
   };
 
   // Update active button highlighting
@@ -131,7 +133,7 @@ export function buildNavigationScript(defaultView = 'home'): string {
     updateActiveStates(viewId);
   });
 
-  // ─── Sidebar Resize ──────────────────────────────────────────────────
+  // Sidebar Resize
   var handle = root.querySelector('.hdp-resize-handle');
   var sidebar = root.querySelector('.hdp-sidebar');
   if (handle && sidebar) {
@@ -168,10 +170,12 @@ export function buildNavigationScript(defaultView = 'home'): string {
 
     // Touch support for resize
     handle.addEventListener('touchstart', function(e) {
+      if (!e.touches || !e.touches.length) return;
       startX = e.touches[0].clientX;
       startWidth = sidebar.offsetWidth;
 
       function onTouchMove(e) {
+        if (!e.touches || !e.touches.length) return;
         var delta = e.touches[0].clientX - startX;
         var newWidth = hdpClampSidebarWidth(startWidth + delta);
         sidebar.style.width = newWidth + 'px';
@@ -190,7 +194,7 @@ export function buildNavigationScript(defaultView = 'home'): string {
     });
   }
 
-  // ─── Mobile Sheet Toggle ──────────────────────────────────────────────
+  // Mobile Sheet Toggle
   window.hdpToggleSheet = function() {
     var sheet = document.getElementById('hdp-sheet');
     if (sheet) {
@@ -203,7 +207,7 @@ export function buildNavigationScript(defaultView = 'home'): string {
     if (sheet) sheet.style.display = 'none';
   };
 
-  // ─── HA Menu Toggle ──────────────────────────────────────────────────
+  // HA Menu Toggle
   window.hdpToggleHAMenu = function() {
     var event = new CustomEvent('hass-toggle-menu', {
       bubbles: true,
@@ -225,42 +229,23 @@ export function buildNavigationScript(defaultView = 'home'): string {
   }
 
   function isDashboardFullscreen() {
-    return document.fullscreenElement === root || root.classList.contains('hdp-root--fullscreen');
+    return root.classList.contains('hdp-root--fullscreen');
   }
 
   window.hdpToggleDashboardFullscreen = function() {
     if (isDashboardFullscreen()) {
-      if (document.fullscreenElement === root && document.exitFullscreen) {
-        document.exitFullscreen().catch(function() {
-          hdpFallbackFullscreen = false;
-          updateDashboardFullscreenUI(false);
-        });
-      } else {
-        hdpFallbackFullscreen = false;
-        updateDashboardFullscreenUI(false);
-      }
+      hdpFallbackFullscreen = false;
+      updateDashboardFullscreenUI(false);
       return;
     }
 
-    if (root.requestFullscreen) {
-      root.requestFullscreen().then(function() {
-        hdpFallbackFullscreen = false;
-        updateDashboardFullscreenUI(true);
-      }).catch(function() {
-        hdpFallbackFullscreen = true;
-        updateDashboardFullscreenUI(true);
-      });
-    } else {
-      hdpFallbackFullscreen = true;
-      updateDashboardFullscreenUI(true);
-    }
+    hdpFallbackFullscreen = true;
+    updateDashboardFullscreenUI(true);
   };
 
   document.addEventListener('fullscreenchange', function() {
-    if (document.fullscreenElement === root) {
+    if (!document.fullscreenElement) {
       hdpFallbackFullscreen = false;
-      updateDashboardFullscreenUI(true);
-    } else if (!hdpFallbackFullscreen) {
       updateDashboardFullscreenUI(false);
     }
   });

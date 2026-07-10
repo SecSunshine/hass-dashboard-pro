@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Template: Home Dashboard View (v3.0)
  *
  * Full dwains-dashboard-next inspired home page:
@@ -683,8 +683,8 @@ ${generateDesignTokenCSS(tokens)}
   .pp-state--away { background: var(--hdp-divider); color: var(--hdp-text-muted); }
 </style>
 <div class="pp-hdr">
-  <span class="pp-title">瀹跺涵鎴愬憳</span>
-  <span class="pp-count">${homeCount} 浜哄湪瀹?/span>
+  <span class="pp-title">家庭成员</span>
+  <span class="pp-count">${homeCount} 人在家</span>
 </div>
 <div class="pp-grid">${people}</div>`,
   };
@@ -709,7 +709,7 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
       </div>
       <div class="env-data">
         <div class="env-val">${climate.avg_temp}</div>
-        <div class="env-lbl">瀹ゅ唴娓╁害</div>
+        <div class="env-lbl">室内温度</div>
       </div>
     </button>`);
   }
@@ -721,7 +721,7 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
       </div>
       <div class="env-data">
         <div class="env-val">${climate.avg_humidity}</div>
-        <div class="env-lbl">瀹ゅ唴婀垮害</div>
+        <div class="env-lbl">室内湿度</div>
       </div>
     </button>`);
   }
@@ -738,7 +738,7 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
       </div>
       <div class="env-data">
         <div class="env-val">${alarmDisplay}</div>
-        <div class="env-lbl">瀹夐槻鐘舵€?/div>
+        <div class="env-lbl">安防状态</div>
       </div>
     </div>`);
   }
@@ -777,7 +777,7 @@ ${generateDesignTokenCSS(tokens)}
   }
   .env-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 12px;
   }
   .env-item {
@@ -817,23 +817,33 @@ ${generateDesignTokenCSS(tokens)}
   .env-icon--hum { background: var(--hdp-info-light); color: var(--hdp-info); }
   .env-icon--sec { background: var(--hdp-success-light); color: var(--hdp-success); }
   .env-icon--auto { background: var(--hdp-primary-light); color: var(--hdp-accent); }
-  .env-data { min-width: 0; }
+  .env-data {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+  }
   .env-val {
     font: inherit;
     font-size: 18px;
     font-weight: 700;
     color: var(--hdp-text);
     line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .env-lbl {
     font: inherit;
     font-size: 11px;
     font-weight: 500;
     color: var(--hdp-text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 </style>
 <div class="env-hdr">
-  <span class="env-title">瀹跺眳鐜</span>
+  <span class="env-title">家居环境</span>
 </div>
 <div class="env-grid">${items.join('')}</div>`,
   };
@@ -940,7 +950,7 @@ ${generateDesignTokenCSS(tokens)}
   }
 </style>
 <div class="pw-hdr">
-  <span class="pw-title">鍏ㄥ眿鍔熺巼</span>
+  <span class="pw-title">全屋功率</span>
   <div class="pw-total">
     <div class="pw-total-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
@@ -1040,7 +1050,7 @@ ${generateDesignTokenCSS(tokens)}
   }
 </style>
 <div class="fav-hdr">
-  <span class="fav-title">鏀惰棌璁惧</span>
+  <span class="fav-title">收藏设备</span>
 </div>
 <div class="fav-list">${items}</div>`,
   };
@@ -1089,7 +1099,7 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: Strategy
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       </div>
       <div class="sum-val">${summaries.updates_count}</div>
-      <div class="sum-lbl">鍙敤鏇存柊</div>
+      <div class="sum-lbl">可用更新</div>
     </div>`);
   }
 
@@ -1099,7 +1109,7 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: Strategy
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       </div>
       <div class="sum-val">${summaries.repairs_count}</div>
-      <div class="sum-lbl">寰呬慨澶?/div>
+      <div class="sum-lbl">待维修</div>
     </div>`);
   }
 
@@ -1109,7 +1119,7 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: Strategy
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="12" cy="12" r="3"/></svg>
     </div>
     <div class="sum-val">${summaries.total_entities}</div>
-    <div class="sum-lbl">瀹炰綋</div>
+    <div class="sum-lbl">实体</div>
   </div>`);
   }
 
@@ -1119,7 +1129,7 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: Strategy
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
       </div>
       <div class="sum-val">${summaries.total_devices}</div>
-      <div class="sum-lbl">璁惧</div>
+      <div class="sum-lbl">设备</div>
     </div>`);
   }
 
@@ -1129,7 +1139,7 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: Strategy
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg>
       </div>
       <div class="sum-val">${summaries.total_areas}</div>
-      <div class="sum-lbl">鍖哄煙</div>
+      <div class="sum-lbl">区域</div>
     </div>`);
   }
 
@@ -1155,8 +1165,8 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: Strategy
 
   if (!items.length) {
     items.push(`<div class="sum-empty ${skinCls}">
-      <div class="sum-empty-title">鏆傛棤姒傝淇℃伅</div>
-      <div class="sum-empty-desc">鍙互鍦ㄨ缃腑閲嶆柊鏄剧ず绯荤粺姒傝椤圭洰</div>
+      <div class="sum-empty-title">暂无概览信息</div>
+      <div class="sum-empty-desc">可以在设置中重新显示系统概览项目</div>
     </div>`);
   }
 
@@ -1257,7 +1267,7 @@ ${generateDesignTokenCSS(tokens)}
   }
 </style>
 <div class="sum-hdr">
-  <span class="sum-title">绯荤粺姒傝</span>
+  <span class="sum-title">系统概览</span>
 </div>
 <div class="sum-grid">${items.join('')}</div>`,
   };
