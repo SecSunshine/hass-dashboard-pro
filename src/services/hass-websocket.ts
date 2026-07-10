@@ -904,11 +904,12 @@ function hdpDomainLabel(domain) {
 }
 
 function hdpFormatDomainState(state, domain, unit, deviceClass) {
-  if ((domain === 'sensor' || domain === 'number') && unit && hdpIsDomainEntityAvailable(state)) {
+  if ((domain === 'sensor' || domain === 'number') && hdpIsDomainEntityAvailable(state)) {
     if (deviceClass === 'temperature' || hdpIsTemperatureUnit(unit)) {
       var celsius = hdpNormalizeEnvironmentValue(state, { metric: 'temperature', source_unit: unit });
       if (!isNaN(celsius)) return celsius + ' °C';
     }
+    if (!unit) return state;
     return state + ' ' + unit;
   }
   var labels = {

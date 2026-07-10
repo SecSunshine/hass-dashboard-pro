@@ -426,6 +426,14 @@ describe('hass websocket script', () => {
           state: '72',
           attributes: { friendly_name: 'Bedroom Temperature', device_class: 'temperature', unit_of_measurement: '°F' },
         },
+        'sensor.study_temperature': {
+          state: '86',
+          attributes: { friendly_name: 'Study Temperature', device_class: 'temperature' },
+        },
+        'sensor.plain_counter': {
+          state: '12',
+          attributes: { friendly_name: 'Plain Counter' },
+        },
       },
       areas: {},
       devices: {},
@@ -441,8 +449,11 @@ describe('hass websocket script', () => {
     expect(bedroom.unit).toBe('°F');
     expect(runtime.hdpFormatDomainState('22.5', 'sensor', '°C', 'temperature')).toBe('22.5 °C');
     expect(runtime.hdpFormatDomainState('72', 'sensor', '°F', 'temperature')).toBe('22.2 °C');
+    expect(runtime.hdpFormatDomainState('86', 'sensor', '', 'temperature')).toBe('30 °C');
+    expect(runtime.hdpFormatDomainState('12', 'sensor', '')).toBe('12');
     expect(html).toContain('22.5 °C');
     expect(html).toContain('22.2 °C');
+    expect(html).toContain('30 °C');
     expect(html).not.toContain('72 °F');
   });
 });
