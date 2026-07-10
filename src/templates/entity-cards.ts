@@ -46,6 +46,18 @@ export function getDomainCardCSS(): string {
     appearance: none;
     font: inherit;
   }
+  .dc-climate-temp-btn:focus-visible,
+  .dc-climate-mode:focus-visible,
+  .dc-climate-fan-btn:focus-visible,
+  .dc-cover-btn:focus-visible,
+  .dc-cover-slider:focus-visible,
+  .dc-lock-btn:focus-visible,
+  .dc-media-btn:focus-visible,
+  .dc-media-vol-slider:focus-visible,
+  .dc-vacuum-btn:focus-visible {
+    outline: 2px solid var(--hdp-primary);
+    outline-offset: 2px;
+  }
   .dvc-bar {
     position: absolute;
     top: 0; left: 0; right: 0;
@@ -132,6 +144,7 @@ export function getDomainCardCSS(): string {
     border: 1px solid var(--hdp-border);
     background: var(--hdp-surface-muted, color-mix(in srgb, var(--hdp-card-bg) 78%, transparent));
     text-align: right;
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--hdp-surface-card) 72%, transparent);
   }
   .dc-control-chip-value {
     font: inherit;
@@ -196,9 +209,9 @@ export function getDomainCardCSS(): string {
     appearance: none;
     width: 42px;
     height: 42px;
-    border-radius: var(--hdp-radius);
+    border-radius: var(--hdp-radius-pill, 999px);
     border: 1px solid var(--hdp-border);
-    background: var(--hdp-control-bg, color-mix(in srgb, var(--hdp-card-bg) 82%, var(--hdp-primary-light, rgba(79,110,247,0.1))));
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
     color: var(--hdp-text);
     display: flex;
     align-items: center;
@@ -210,11 +223,13 @@ export function getDomainCardCSS(): string {
     flex-shrink: 0;
     transition: all 0.15s ease;
     user-select: none;
+    box-shadow: var(--hdp-shadow-card);
   }
   .dc-climate-temp-btn:hover {
     background: var(--hdp-control-bg-hover, var(--hdp-primary-light, rgba(79,110,247,0.1)));
     border-color: var(--hdp-primary);
     color: var(--hdp-primary);
+    transform: translateY(-1px);
   }
   .dc-climate-temp-btn:active {
     transform: scale(0.92);
@@ -228,6 +243,10 @@ export function getDomainCardCSS(): string {
     flex: 1;
     min-width: 0;
     overflow-wrap: anywhere;
+    padding: 4px 10px;
+    border-radius: var(--hdp-radius);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
+    border: 1px solid var(--hdp-border);
   }
   .dc-climate-modes {
     display: grid;
@@ -261,10 +280,10 @@ export function getDomainCardCSS(): string {
   .dc-climate-mode--active {
     background: var(--hdp-info, #3B82F6);
     border-color: var(--hdp-info, #3B82F6);
-    color: var(--hdp-text-inverse, white);
+    color: var(--hdp-text-inverse, #fff);
   }
   .dc-climate-mode--active:hover {
-    color: var(--hdp-text-inverse, white);
+    color: var(--hdp-text-inverse, #fff);
   }
   .dc-climate-fan {
     display: flex;
@@ -304,10 +323,10 @@ export function getDomainCardCSS(): string {
   .dc-climate-fan-btn--active {
     background: var(--hdp-primary);
     border-color: var(--hdp-primary);
-    color: var(--hdp-text-inverse, white);
+    color: var(--hdp-text-inverse, #fff);
   }
   .dc-climate-fan-btn--active:hover {
-    color: var(--hdp-text-inverse, white);
+    color: var(--hdp-text-inverse, #fff);
   }
 
   /* ── Cover Card ── */
@@ -331,8 +350,32 @@ export function getDomainCardCSS(): string {
   .dc-cover-slider {
     width: 100%;
     min-width: 0;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 8px;
+    border-radius: var(--hdp-radius-pill, 999px);
+    background: var(--hdp-control-bg, color-mix(in srgb, var(--hdp-card-bg) 84%, transparent));
     accent-color: var(--hdp-primary);
     cursor: pointer;
+    outline: none;
+  }
+  .dc-cover-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--hdp-primary);
+    border: 2px solid var(--hdp-surface-card, var(--hdp-card-bg));
+    box-shadow: var(--hdp-shadow-card, 0 1px 4px rgba(0,0,0,0.2));
+  }
+  .dc-cover-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--hdp-primary);
+    border: 2px solid var(--hdp-surface-card, var(--hdp-card-bg));
+    box-shadow: var(--hdp-shadow-card, 0 1px 4px rgba(0,0,0,0.2));
   }
   .dc-cover-visual {
     position: relative;
@@ -357,7 +400,7 @@ export function getDomainCardCSS(): string {
     inset: 0 auto 0 0;
     min-width: 14px;
     background:
-      linear-gradient(90deg, rgba(255,255,255,0.18), transparent),
+      linear-gradient(90deg, color-mix(in srgb, var(--hdp-surface-card) 26%, transparent), transparent),
       var(--hdp-gradient-primary);
     opacity: 0.88;
   }
@@ -370,6 +413,8 @@ export function getDomainCardCSS(): string {
     background: var(--hdp-surface-card, color-mix(in srgb, var(--hdp-card-bg) 82%, transparent));
     color: var(--hdp-text);
     border: 1px solid var(--hdp-border);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     font: inherit;
     font-size: 12px;
     font-weight: 850;
@@ -454,7 +499,7 @@ export function getDomainCardCSS(): string {
   }
   .dc-lock-btn--locked {
     background: var(--hdp-success, #16A34A);
-    color: var(--hdp-text-inverse, white);
+    color: var(--hdp-text-inverse, #fff);
   }
   .dc-lock-btn--locked:hover {
     filter: brightness(1.08);
@@ -462,7 +507,7 @@ export function getDomainCardCSS(): string {
   }
   .dc-lock-btn--unlocked {
     background: var(--hdp-danger, #EF4444);
-    color: var(--hdp-text-inverse, white);
+    color: var(--hdp-text-inverse, #fff);
   }
   .dc-lock-btn--unlocked:hover {
     filter: brightness(1.08);
@@ -507,7 +552,7 @@ export function getDomainCardCSS(): string {
     border-radius: 50%;
     background: var(--hdp-primary);
     cursor: pointer;
-    border: 2px solid var(--hdp-surface-card, white);
+    border: 2px solid var(--hdp-surface-card, var(--hdp-card-bg));
     box-shadow: var(--hdp-shadow-card, 0 1px 4px rgba(0,0,0,0.2));
   }
   .dc-media-vol-slider::-moz-range-thumb {
@@ -516,7 +561,7 @@ export function getDomainCardCSS(): string {
     border-radius: 50%;
     background: var(--hdp-primary);
     cursor: pointer;
-    border: 2px solid var(--hdp-surface-card, white);
+    border: 2px solid var(--hdp-surface-card, var(--hdp-card-bg));
     box-shadow: var(--hdp-shadow-card, 0 1px 4px rgba(0,0,0,0.2));
   }
   .dc-media-vol-val {
@@ -561,10 +606,10 @@ export function getDomainCardCSS(): string {
   .dc-media-btn--play {
     background: var(--hdp-primary);
     border-color: var(--hdp-primary);
-    color: var(--hdp-text-inverse, white);
+    color: var(--hdp-text-inverse, #fff);
   }
   .dc-media-btn--play:hover {
-    color: var(--hdp-text-inverse, white);
+    color: var(--hdp-text-inverse, #fff);
     filter: brightness(1.08);
   }
 
