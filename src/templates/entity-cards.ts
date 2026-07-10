@@ -280,10 +280,10 @@ export function getDomainCardCSS(): string {
   .dc-climate-mode--active {
     background: var(--hdp-info, #3B82F6);
     border-color: var(--hdp-info, #3B82F6);
-    color: var(--hdp-text-inverse, #fff);
+    color: var(--hdp-text-inverse, var(--primary-background-color, Canvas));
   }
   .dc-climate-mode--active:hover {
-    color: var(--hdp-text-inverse, #fff);
+    color: var(--hdp-text-inverse, var(--primary-background-color, Canvas));
   }
   .dc-climate-fan {
     display: flex;
@@ -323,10 +323,10 @@ export function getDomainCardCSS(): string {
   .dc-climate-fan-btn--active {
     background: var(--hdp-primary);
     border-color: var(--hdp-primary);
-    color: var(--hdp-text-inverse, #fff);
+    color: var(--hdp-text-inverse, var(--primary-background-color, Canvas));
   }
   .dc-climate-fan-btn--active:hover {
-    color: var(--hdp-text-inverse, #fff);
+    color: var(--hdp-text-inverse, var(--primary-background-color, Canvas));
   }
 
   /* ── Cover Card ── */
@@ -335,7 +335,7 @@ export function getDomainCardCSS(): string {
     background: var(--hdp-surface-card, var(--hdp-card-bg));
   }
   .dc-cover-bar-wrap {
-    background: color-mix(in srgb, var(--hdp-divider, rgba(0,0,0,0.06)) 80%, transparent);
+    background: color-mix(in srgb, var(--hdp-divider, color-mix(in srgb, var(--hdp-text, CanvasText) 6%, transparent)) 80%, transparent);
     border-radius: var(--hdp-radius-pill, 20px);
     height: 10px;
     overflow: hidden;
@@ -367,7 +367,7 @@ export function getDomainCardCSS(): string {
     border-radius: 50%;
     background: var(--hdp-primary);
     border: 2px solid var(--hdp-surface-card, var(--hdp-card-bg));
-    box-shadow: var(--hdp-shadow-card, 0 1px 4px rgba(0,0,0,0.2));
+    box-shadow: var(--hdp-shadow-card, 0 1px 4px color-mix(in srgb, var(--hdp-text, CanvasText) 20%, transparent));
   }
   .dc-cover-slider::-moz-range-thumb {
     width: 16px;
@@ -375,7 +375,7 @@ export function getDomainCardCSS(): string {
     border-radius: 50%;
     background: var(--hdp-primary);
     border: 2px solid var(--hdp-surface-card, var(--hdp-card-bg));
-    box-shadow: var(--hdp-shadow-card, 0 1px 4px rgba(0,0,0,0.2));
+    box-shadow: var(--hdp-shadow-card, 0 1px 4px color-mix(in srgb, var(--hdp-text, CanvasText) 20%, transparent));
   }
   .dc-cover-visual {
     position: relative;
@@ -499,7 +499,7 @@ export function getDomainCardCSS(): string {
   }
   .dc-lock-btn--locked {
     background: var(--hdp-success, #16A34A);
-    color: var(--hdp-text-inverse, #fff);
+    color: var(--hdp-text-inverse, var(--primary-background-color, Canvas));
   }
   .dc-lock-btn--locked:hover {
     filter: brightness(1.08);
@@ -507,7 +507,7 @@ export function getDomainCardCSS(): string {
   }
   .dc-lock-btn--unlocked {
     background: var(--hdp-danger, #EF4444);
-    color: var(--hdp-text-inverse, #fff);
+    color: var(--hdp-text-inverse, var(--primary-background-color, Canvas));
   }
   .dc-lock-btn--unlocked:hover {
     filter: brightness(1.08);
@@ -540,7 +540,7 @@ export function getDomainCardCSS(): string {
     appearance: none;
     height: 6px;
     border-radius: 3px;
-    background: var(--hdp-divider, rgba(0,0,0,0.08));
+    background: var(--hdp-divider, color-mix(in srgb, var(--hdp-text, CanvasText) 8%, transparent));
     outline: none;
     cursor: pointer;
   }
@@ -553,7 +553,7 @@ export function getDomainCardCSS(): string {
     background: var(--hdp-primary);
     cursor: pointer;
     border: 2px solid var(--hdp-surface-card, var(--hdp-card-bg));
-    box-shadow: var(--hdp-shadow-card, 0 1px 4px rgba(0,0,0,0.2));
+    box-shadow: var(--hdp-shadow-card, 0 1px 4px color-mix(in srgb, var(--hdp-text, CanvasText) 20%, transparent));
   }
   .dc-media-vol-slider::-moz-range-thumb {
     width: 14px;
@@ -562,7 +562,7 @@ export function getDomainCardCSS(): string {
     background: var(--hdp-primary);
     cursor: pointer;
     border: 2px solid var(--hdp-surface-card, var(--hdp-card-bg));
-    box-shadow: var(--hdp-shadow-card, 0 1px 4px rgba(0,0,0,0.2));
+    box-shadow: var(--hdp-shadow-card, 0 1px 4px color-mix(in srgb, var(--hdp-text, CanvasText) 20%, transparent));
   }
   .dc-media-vol-val {
     font: inherit;
@@ -606,10 +606,10 @@ export function getDomainCardCSS(): string {
   .dc-media-btn--play {
     background: var(--hdp-primary);
     border-color: var(--hdp-primary);
-    color: var(--hdp-text-inverse, #fff);
+    color: var(--hdp-text-inverse, var(--primary-background-color, Canvas));
   }
   .dc-media-btn--play:hover {
-    color: var(--hdp-text-inverse, #fff);
+    color: var(--hdp-text-inverse, var(--primary-background-color, Canvas));
     filter: brightness(1.08);
   }
 

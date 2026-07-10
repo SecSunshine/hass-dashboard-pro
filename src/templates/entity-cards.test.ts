@@ -189,9 +189,9 @@ describe('domain entity cards', () => {
     expect(css).toContain('.dc-cover-btn--stop');
     expect(css).toContain('.dc-lock-btn');
     expect(css).toContain('border: 1px solid transparent;');
-    expect(css).toContain('color: var(--hdp-text-inverse, #fff);');
+    expect(css).toContain('color: var(--hdp-text-inverse, var(--primary-background-color, Canvas));');
     expect(css).toContain('border: 2px solid var(--hdp-surface-card, var(--hdp-card-bg));');
-    expect(css).toContain('box-shadow: var(--hdp-shadow-card, 0 1px 4px rgba(0,0,0,0.2));');
+    expect(css).toContain('box-shadow: var(--hdp-shadow-card, 0 1px 4px color-mix(in srgb, var(--hdp-text, CanvasText) 20%, transparent));');
     expect(css).toContain('.dc-media-btn');
     expect(css).toContain('.dc-vacuum-btn');
     expect(css).toContain('text-align: center;');
