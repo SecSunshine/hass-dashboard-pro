@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Hass, StrategyConfig } from '../types';
-import { countActiveAutomations, getAlarmStatus, getFavorites, getHomeSummaries, getPersons, getWeather } from './home-data';
+import { countActiveAutomations, getAlarmStatus, getClimateSummary, getFavorites, getHomeSummaries, getPersons, getWeather } from './home-data';
 
 const hass: Hass = {
   states: {
@@ -307,6 +307,48 @@ describe('home data', () => {
     const summary = getHomeSummaries(hass, { type: 'custom:hass-dashboard-pro' });
 
     expect(summary.repairs_count).toBe(1);
+  });
+
+  it('normalizes homepage temperature sensors to Celsius', () => {
+    const climateHass: Hass = {
+      ...hass,
+      states: {
+        ...hass.states,
+        'sensor.living_temperature': {
+          entity_id: 'sensor.living_temperature',
+          state: '22',
+          attributes: { device_class: 'temperature', unit_of_measurement: '°C' },
+          last_changed: '',
+          last_updated: '',
+        },
+        'sensor.bedroom_temperature': {
+          entity_id: 'sensor.bedroom_temperature',
+          state: '72',
+          attributes: { device_class: 'temperature', unit_of_measurement: '°F' },
+          last_changed: '',
+          last_updated: '',
+        },
+        'sensor.study_temperature': {
+          entity_id: 'sensor.study_temperature',
+          state: '86',
+          attributes: { device_class: 'temperature', unit_of_measurement: '°C' },
+          last_changed: '',
+          last_updated: '',
+        },
+        'sensor.outdoor_temperature': {
+          entity_id: 'sensor.outdoor_temperature',
+          state: '100',
+          attributes: { device_class: 'temperature', unit_of_measurement: '°F' },
+          last_changed: '',
+          last_updated: '',
+        },
+      },
+    };
+
+    const summary = getClimateSummary(climateHass);
+
+    expect(summary.avg_temp).toBe('24.7°C');
+    expect(summary.temp_sensors).toBe(3);
   });
 
   it('ignores registry-hidden alarm entities when no visibility config is supplied', () => {

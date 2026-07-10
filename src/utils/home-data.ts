@@ -8,6 +8,7 @@
 import type { Hass, EntityInfo, StrategyConfig } from '../types';
 import { isEntityOn } from './area-entities';
 import { collectVisibleEntities, countVisibleDevices, getDashboardFilters } from './dashboard-model';
+import { isTemperatureUnit, normalizeTemperatureToCelsius } from './temperature';
 
 // ─── Person Tracking ───────────────────────────────────────────────────────
 
@@ -90,13 +91,22 @@ export function getClimateSummary(hass: Hass, config?: StrategyConfig): ClimateS
     const attrs = 'attributes' in entry ? entry.attributes : hass.states[entityId]?.attributes || {};
     const state = 'state' in entry ? entry.state : hass.states[entityId]?.state;
     const uom = attrs.unit_of_measurement as string | undefined;
+    const deviceClass = attrs.device_class as string | undefined;
     const value = parseFloat(state);
     if (isNaN(value)) continue;
 
-    if (uom === '°C' || uom === '°F') {
+    const lowerId = entityId.toLowerCase();
+    const isTemperatureSensor = deviceClass === 'temperature'
+      || isTemperatureUnit(uom)
+      || lowerId.includes('temperature')
+      || lowerId.includes('temp');
+
+    if (isTemperatureSensor) {
       // Only count indoor sensors (skip weather/outdoor)
-      if (entityId.includes('outdoor') || entityId.includes('weather') || entityId.includes('external')) continue;
-      tempSum += value;
+      if (lowerId.includes('outdoor') || lowerId.includes('weather') || lowerId.includes('external')) continue;
+      const celsius = normalizeTemperatureToCelsius(value, uom);
+      if (isNaN(celsius)) continue;
+      tempSum += celsius;
       tempCount++;
     } else if (uom === '%' && (attrs.device_class === 'humidity' || entityId.includes('humidity'))) {
       if (entityId.includes('outdoor') || entityId.includes('weather')) continue;

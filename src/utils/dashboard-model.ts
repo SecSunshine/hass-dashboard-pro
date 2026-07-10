@@ -9,6 +9,7 @@ import type { AreaSummary, EntityInfo, Hass, HassArea, HassEntity, StrategyConfi
 import { HIDDEN_DOMAINS } from '../types';
 import { getEntityDeviceType, isEntityOn, isUnavailableState } from './area-entities';
 import { getEffectiveHDPConfig } from './effective-config';
+import { formatTemperatureCelsius, isTemperatureUnit, normalizeTemperatureToCelsius } from './temperature';
 
 export const UNASSIGNED_AREA_ID = '__unassigned';
 export const UNASSIGNED_AREA_NAME = '未分配区域';
@@ -293,7 +294,10 @@ export function buildAreaSummaries(
 
       // Find temp/humidity
       if (e.domain === 'sensor') {
-        if (e.unit === '°C' && !temp) temp = `${e.state}°C`;
+        if (!temp && isAreaSummaryTemperatureSensor(hass, e)) {
+          const celsius = normalizeTemperatureToCelsius(e.state, e.unit);
+          if (!isNaN(celsius)) temp = formatTemperatureCelsius(celsius);
+        }
         if (e.unit === '%' && (e.entity_id.includes('humidity') || e.entity_id.includes('humid')) && !humidity) {
           humidity = `${e.state}%`;
         }
@@ -333,6 +337,16 @@ export function buildAreaSummaries(
   }
 
   return sortAreaSummaries(summaries, areaOrder);
+}
+
+function isAreaSummaryTemperatureSensor(hass: Hass, entity: EntityInfo): boolean {
+  const attrs = hass.states[entity.entity_id]?.attributes || {};
+  const deviceClass = attrs.device_class as string | undefined;
+  const lowerId = entity.entity_id.toLowerCase();
+  return deviceClass === 'temperature'
+    || isTemperatureUnit(entity.unit)
+    || lowerId.includes('temperature')
+    || lowerId.includes('temp');
 }
 
 function sortAreaSummaries(summaries: AreaSummary[], areaOrder: string[]): AreaSummary[] {

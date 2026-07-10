@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Hass, StrategyConfig } from '../types';
 import {
+  buildAreaSummaries,
   buildHomeProfile,
   collectVisibleEntities,
   getConfiguredAreaOrder,
@@ -118,6 +119,54 @@ describe('dashboard model', () => {
   it('resolves area through entity registry and device fallback', () => {
     expect(resolveEntityAreaId(hass, 'sensor.kitchen_power')).toBe('kitchen');
     expect(resolveEntityAreaId(hass, 'light.kitchen')).toBe('kitchen');
+  });
+
+  it('normalizes area summary temperatures to Celsius', () => {
+    const tempHass: Hass = {
+      ...hass,
+      states: {
+        ...hass.states,
+        'sensor.kitchen_temperature': {
+          entity_id: 'sensor.kitchen_temperature',
+          state: '72',
+          attributes: { device_class: 'temperature', unit_of_measurement: '°F' },
+          last_changed: '',
+          last_updated: '',
+        },
+        'sensor.closet_temperature': {
+          entity_id: 'sensor.closet_temperature',
+          state: '86',
+          attributes: { device_class: 'temperature', unit_of_measurement: '°C' },
+          last_changed: '',
+          last_updated: '',
+        },
+      },
+    };
+    const areaMap = new Map([
+      ['kitchen', [{
+        entity_id: 'sensor.kitchen_temperature',
+        name: 'Kitchen Temperature',
+        domain: 'sensor',
+        icon: null,
+        state: '72',
+        unit: '°F',
+        area_name: 'Kitchen',
+      }]],
+      ['closet', [{
+        entity_id: 'sensor.closet_temperature',
+        name: 'Closet Temperature',
+        domain: 'sensor',
+        icon: null,
+        state: '86',
+        unit: '°C',
+        area_name: 'Closet',
+      }]],
+    ]);
+
+    const summaries = buildAreaSummaries(tempHass, areaMap, []);
+
+    expect(summaries.find(area => area.area_id === 'kitchen')?.temp).toBe('22.2°C');
+    expect(summaries.find(area => area.area_id === 'closet')?.temp).toBe('30°C');
   });
 
   it('applies hidden areas and hidden domains consistently', () => {
