@@ -33,6 +33,9 @@ return {
   hdpIsTemperatureUnit: hdpIsTemperatureUnit,
   hdpNormalizeHistoryByEntity: hdpNormalizeHistoryByEntity,
   hdpParseHistoryTimestamp: hdpParseHistoryTimestamp,
+  hdpHasHistoryTransport: hdpHasHistoryTransport,
+  hdpBuildEnvironmentHistoryRequest: hdpBuildEnvironmentHistoryRequest,
+  hdpFetchEnvironmentHistory: hdpFetchEnvironmentHistory,
   hdpParseDomainScope: hdpParseDomainScope,
   hdpCollectDomainEntities: hdpCollectDomainEntities,
   hdpRenderDomainEntityList: hdpRenderDomainEntityList,
@@ -55,6 +58,9 @@ return {
     hdpIsTemperatureUnit: (unit: string) => boolean;
     hdpNormalizeHistoryByEntity: (history: any, sensors: any[]) => Record<string, any[]>;
     hdpParseHistoryTimestamp: (point: Record<string, unknown>) => number;
+    hdpHasHistoryTransport: (hass: any, connection: any) => boolean;
+    hdpBuildEnvironmentHistoryRequest: (start: Date, end: Date, sensors: any[]) => Record<string, unknown>;
+    hdpFetchEnvironmentHistory: (hass: any, connection: any, message: Record<string, unknown>) => Promise<unknown>;
     hdpParseDomainScope: (domainKey: string, deviceClass?: string) => { key: string; domain: string; device_class: string };
     hdpCollectDomainEntities: (hass: any, domainKey: string, deviceClass?: string) => any[];
     hdpRenderDomainEntityList: (entities: any[], domain: string) => string;
@@ -114,6 +120,14 @@ describe('hass websocket script', () => {
     expect(js).toContain("type: 'history/history_during_period'");
     expect(js).toContain('entity_ids: sensors.map');
     expect(js).toContain('significant_changes_only: false');
+    expect(js).toContain('function hdpHasHistoryTransport(hass, connection)');
+    expect(js).toContain("typeof hass.callWS === 'function'");
+    expect(js).toContain("typeof connection.sendMessagePromise === 'function'");
+    expect(js).toContain('function hdpBuildEnvironmentHistoryRequest(start, end, sensors)');
+    expect(js).toContain('function hdpFetchEnvironmentHistory(hass, connection, message)');
+    expect(js).toContain('if (hass && typeof hass.callWS ===');
+    expect(js).toContain('return hass.callWS(message);');
+    expect(js).toContain('return connection.sendMessagePromise(message);');
     expect(js).toContain('function hdpBuildEnvironmentSeries');
     expect(js).toContain('if (!hdpRuntimeEntityVisible(hass, entityId, filters)) return;');
     expect(js).toContain('function hdpNormalizeEnvironmentValue(raw, sensor)');
@@ -139,6 +153,57 @@ describe('hass websocket script', () => {
     expect(js).toContain('hdp-env-sparkline-guide');
     expect(js).toContain('hdp-env-sparkline-point');
     expect(js).toContain('window.hdpShowEnvironmentHistory = hdpShowEnvironmentHistory;');
+  });
+
+  it('prefers hass.callWS when loading environment history', async () => {
+    const runtime = createHistoryRuntime();
+    const start = new Date('2026-07-10T00:00:00.000Z');
+    const end = new Date('2026-07-10T01:00:00.000Z');
+    const sensors = [{ entity_id: 'sensor.living_temperature' }];
+    const message = runtime.hdpBuildEnvironmentHistoryRequest(start, end, sensors);
+    const calls: unknown[] = [];
+    const hass = {
+      callWS: (payload: unknown) => {
+        calls.push(payload);
+        return Promise.resolve({ result: 'from-callws' });
+      },
+    };
+    const connection = {
+      sendMessagePromise: () => Promise.resolve({ result: 'from-connection' }),
+    };
+
+    expect(runtime.hdpHasHistoryTransport(hass, null)).toBe(true);
+    expect(message).toMatchObject({
+      type: 'history/history_during_period',
+      start_time: '2026-07-10T00:00:00.000Z',
+      end_time: '2026-07-10T01:00:00.000Z',
+      entity_ids: ['sensor.living_temperature'],
+      minimal_response: true,
+      no_attributes: true,
+      significant_changes_only: false,
+    });
+    await expect(runtime.hdpFetchEnvironmentHistory(hass, connection, message)).resolves.toEqual({ result: 'from-callws' });
+    expect(calls).toEqual([message]);
+  });
+
+  it('falls back to connection.sendMessagePromise for environment history', async () => {
+    const runtime = createHistoryRuntime();
+    const message = runtime.hdpBuildEnvironmentHistoryRequest(
+      new Date('2026-07-10T00:00:00.000Z'),
+      new Date('2026-07-10T01:00:00.000Z'),
+      [{ entity_id: 'sensor.bedroom_humidity' }],
+    );
+    const calls: unknown[] = [];
+    const connection = {
+      sendMessagePromise: (payload: unknown) => {
+        calls.push(payload);
+        return Promise.resolve({ result: 'from-connection' });
+      },
+    };
+
+    expect(runtime.hdpHasHistoryTransport({}, connection)).toBe(true);
+    await expect(runtime.hdpFetchEnvironmentHistory({}, connection, message)).resolves.toEqual({ result: 'from-connection' });
+    expect(calls).toEqual([message]);
   });
 
   it('builds environment series from wrapped HA history responses', () => {

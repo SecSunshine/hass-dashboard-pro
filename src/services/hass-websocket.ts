@@ -295,7 +295,7 @@ function hdpShowEnvironmentHistory(metric) {
   metric = metric === 'humidity' ? 'humidity' : 'temperature';
   var hass = hdpFindHass();
   var connection = hdpFindHassConnection();
-  if (!hass || !hass.states || !connection || !connection.sendMessagePromise) {
+  if (!hass || !hass.states || !hdpHasHistoryTransport(hass, connection)) {
     hdpShowToast('无法读取 Home Assistant 历史数据', 'error');
     return;
   }
@@ -309,15 +309,7 @@ function hdpShowEnvironmentHistory(metric) {
   hdpOpenEnvironmentHistoryModal(metric, sensors, null, true);
   var end = new Date();
   var start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
-  connection.sendMessagePromise({
-    type: 'history/history_during_period',
-    start_time: start.toISOString(),
-    end_time: end.toISOString(),
-    entity_ids: sensors.map(function(sensor) { return sensor.entity_id; }),
-    minimal_response: true,
-    no_attributes: true,
-    significant_changes_only: false
-  }).then(function(history) {
+  hdpFetchEnvironmentHistory(hass, connection, hdpBuildEnvironmentHistoryRequest(start, end, sensors)).then(function(history) {
     hdpOpenEnvironmentHistoryModal(metric, sensors, hdpBuildEnvironmentSeries(hass, sensors, history), false);
   }).catch(function(err) {
     console.warn('[HDP] Failed to load environment history', err);
@@ -327,6 +319,28 @@ function hdpShowEnvironmentHistory(metric) {
 }
 
 window.hdpShowEnvironmentHistory = hdpShowEnvironmentHistory;
+
+function hdpHasHistoryTransport(hass, connection) {
+  return !!((hass && typeof hass.callWS === 'function') || (connection && typeof connection.sendMessagePromise === 'function'));
+}
+
+function hdpBuildEnvironmentHistoryRequest(start, end, sensors) {
+  return {
+    type: 'history/history_during_period',
+    start_time: start.toISOString(),
+    end_time: end.toISOString(),
+    entity_ids: sensors.map(function(sensor) { return sensor.entity_id; }),
+    minimal_response: true,
+    no_attributes: true,
+    significant_changes_only: false
+  };
+}
+
+function hdpFetchEnvironmentHistory(hass, connection, message) {
+  if (hass && typeof hass.callWS === 'function') return hass.callWS(message);
+  if (connection && typeof connection.sendMessagePromise === 'function') return connection.sendMessagePromise(message);
+  return Promise.reject(new Error('No Home Assistant history transport available'));
+}
 
 function hdpFindEnvironmentSensors(hass, metric) {
   var result = [];
