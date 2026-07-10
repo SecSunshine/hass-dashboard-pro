@@ -147,6 +147,21 @@ describe('domain entity cards', () => {
     expect(html).not.toContain('onclick="hdpCoverAction');
   });
 
+  it('uses current tilt position for tilt-only cover cards', () => {
+    const html = buildDomainCard(coverEntity, {
+      ...coverState,
+      attributes: {
+        current_tilt_position: 45,
+        supported_features: 16 | 32 | 64 | 128,
+      },
+    });
+
+    expect(html).toContain('45%');
+    expect(html).toContain('value="45"');
+    expect(html).toContain('data-action="cover-position"');
+    expect(html).not.toContain('value="100"');
+  });
+
   it('normalizes domain-card button appearance', () => {
     const css = getDomainCardCSS();
 

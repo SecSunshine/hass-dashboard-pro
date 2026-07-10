@@ -805,7 +805,7 @@ function formatClimateTemperature(value: number, unit: string): string {
 
 function buildCoverCard(entity: EntityInfo, stateObj: HassEntity, skin?: string): string {
   const attrs = stateObj.attributes || {};
-  const rawPosition = Number(attrs.current_position);
+  const rawPosition = attrs.current_position != null ? Number(attrs.current_position) : Number(attrs.current_tilt_position);
   const position = Number.isFinite(rawPosition) ? Math.max(0, Math.min(100, rawPosition)) : null;
   const currentState = stateObj.state;
   const isActive = currentState === 'open' || currentState === 'opening';

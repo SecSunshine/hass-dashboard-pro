@@ -226,11 +226,15 @@ function hdpCoverAction(entityId, action) {
   var hass = hdpFindHass();
   if (!hass || !hass.callService) { hdpShowToast('无法连接到 Home Assistant', 'error'); return; }
   var serviceMap = { open: 'open_cover', close: 'close_cover', stop: 'stop_cover' };
-  var service = serviceMap[action] || 'stop_cover';
-  try {
-    hass.callService('cover', service, { entity_id: entityId });
-    hdpPulseCard(entityId);
-  } catch(e) { hdpShowToast('窗帘控制失败', 'error'); }
+  var tiltServiceMap = { open: 'open_cover_tilt', close: 'close_cover_tilt', stop: 'stop_cover_tilt' };
+  var standardService = serviceMap[action] || 'stop_cover';
+  var tiltService = tiltServiceMap[action] || 'stop_cover_tilt';
+  var supported = hdpCoverSupportedFeatures(hass, entityId);
+  var preferTilt =
+    (action === 'open' && !hdpCoverSupports(supported, 1) && hdpCoverSupports(supported, 16)) ||
+    (action === 'close' && !hdpCoverSupports(supported, 2) && hdpCoverSupports(supported, 32)) ||
+    (action === 'stop' && !hdpCoverSupports(supported, 8) && hdpCoverSupports(supported, 64));
+  hdpCallCoverService(hass, entityId, preferTilt ? tiltService : standardService, preferTilt ? standardService : tiltService);
 }
 
 function hdpSetCoverPosition(entityId, position) {
@@ -239,10 +243,56 @@ function hdpSetCoverPosition(entityId, position) {
   var value = Math.round(parseFloat(position));
   if (isNaN(value)) return;
   value = Math.max(0, Math.min(100, value));
+  var supported = hdpCoverSupportedFeatures(hass, entityId);
+  var preferTilt = !hdpCoverSupports(supported, 4) && hdpCoverSupports(supported, 128);
+  hdpCallCoverService(
+    hass,
+    entityId,
+    preferTilt ? 'set_cover_tilt_position' : 'set_cover_position',
+    preferTilt ? 'set_cover_position' : 'set_cover_tilt_position',
+    preferTilt ? { entity_id: entityId, tilt_position: value } : { entity_id: entityId, position: value },
+    preferTilt ? { entity_id: entityId, position: value } : { entity_id: entityId, tilt_position: value }
+  );
+}
+
+// Cover feature helpers: supports standard and tilt-only blinds/curtains.
+function hdpCoverSupportedFeatures(hass, entityId) {
+  var stateObj = hass && hass.states && hass.states[entityId];
+  var raw = stateObj && stateObj.attributes && stateObj.attributes.supported_features;
+  var supported = typeof raw === 'number' ? raw : parseInt(raw, 10);
+  return isNaN(supported) ? 0 : supported;
+}
+
+function hdpCoverSupports(supported, flag) {
+  return (supported & flag) === flag;
+}
+
+function hdpCallCoverService(hass, entityId, service, fallbackService, data, fallbackData) {
+  var payload = data || { entity_id: entityId };
+  var fallbackPayload = fallbackData || { entity_id: entityId };
   try {
-    hass.callService('cover', 'set_cover_position', { entity_id: entityId, position: value });
+    var result = hass.callService('cover', service, payload);
+    if (result && typeof result.catch === 'function' && fallbackService && fallbackService !== service) {
+      result.catch(function() {
+        return hass.callService('cover', fallbackService, fallbackPayload);
+      }).then(function() {
+        hdpPulseCard(entityId);
+      }).catch(function() {
+        hdpShowToast('绐楀笜鎺у埗澶辫触', 'error');
+      });
+      return;
+    }
     hdpPulseCard(entityId);
-  } catch(e) { hdpShowToast('窗帘位置设置失败', 'error'); }
+  } catch(e) {
+    if (fallbackService && fallbackService !== service) {
+      try {
+        hass.callService('cover', fallbackService, fallbackPayload);
+        hdpPulseCard(entityId);
+        return;
+      } catch(fallbackErr) {}
+    }
+    hdpShowToast('绐楀笜鎺у埗澶辫触', 'error');
+  }
 }
 
 // ── Lock Controls ──

@@ -40,7 +40,10 @@ return {
   hdpCollectDomainEntities: hdpCollectDomainEntities,
   hdpRenderDomainEntityList: hdpRenderDomainEntityList,
   hdpFormatDomainState: hdpFormatDomainState,
-  hdpDomainLabel: hdpDomainLabel
+  hdpDomainLabel: hdpDomainLabel,
+  hdpCoverSupportedFeatures: hdpCoverSupportedFeatures,
+  hdpCoverSupports: hdpCoverSupports,
+  hdpCallCoverService: hdpCallCoverService
 };`,
   )(
     document,
@@ -66,6 +69,9 @@ return {
     hdpRenderDomainEntityList: (entities: any[], domain: string) => string;
     hdpFormatDomainState: (state: string, domain: string, unit?: string, deviceClass?: string) => string;
     hdpDomainLabel: (domain: string) => string;
+    hdpCoverSupportedFeatures: (hass: any, entityId: string) => number;
+    hdpCoverSupports: (supported: number, flag: number) => boolean;
+    hdpCallCoverService: (hass: any, entityId: string, service: string, fallbackService?: string, data?: any, fallbackData?: any) => void;
   };
 }
 
@@ -96,7 +102,14 @@ describe('hass websocket script', () => {
     expect(js).toContain('var step = parseFloat(delta);');
     expect(js).toContain('if (isNaN(current)) current = 24;');
     expect(js).toContain('function hdpSetCoverPosition(entityId, position)');
-    expect(js).toContain("hass.callService('cover', 'set_cover_position', { entity_id: entityId, position: value });");
+    expect(js).toContain("preferTilt ? 'set_cover_tilt_position' : 'set_cover_position'");
+    expect(js).toContain("open_cover_tilt");
+    expect(js).toContain("set_cover_tilt_position");
+    expect(js).toContain("function hdpCoverSupportedFeatures(hass, entityId)");
+    expect(js).toContain("function hdpCoverSupports(supported, flag)");
+    expect(js).toContain("function hdpCallCoverService(hass, entityId, service, fallbackService, data, fallbackData)");
+    expect(js).toContain("supported_features");
+    expect(js).toContain("tilt_position: value");
     expect(js).toContain("if (action === 'cover-position')");
     expect(js).toContain("hdpCoverAction(entityId, action.replace('cover-', ''));");
     expect(js).toContain("document.addEventListener('change'");
@@ -111,6 +124,44 @@ describe('hass websocket script', () => {
     expect(js).toContain("document.addEventListener('keydown'");
     expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"toggle\"][data-entity]')");
     expect(js).toContain('card.click();');
+  });
+
+  it('supports tilt-only cover feature detection and fallback service calls', () => {
+    const runtime = createHistoryRuntime();
+    const hass = {
+      states: {
+        'cover.bed_blind': {
+          attributes: { supported_features: 16 | 32 | 64 | 128 },
+        },
+      },
+      callService: () => undefined,
+    };
+
+    const supported = runtime.hdpCoverSupportedFeatures(hass, 'cover.bed_blind');
+    expect(runtime.hdpCoverSupports(supported, 1)).toBe(false);
+    expect(runtime.hdpCoverSupports(supported, 16)).toBe(true);
+    expect(runtime.hdpCoverSupports(supported, 128)).toBe(true);
+
+    const calls: any[] = [];
+    const fallbackHass = {
+      callService: (domain: string, service: string, payload: Record<string, unknown>) => {
+        calls.push({ domain, service, payload });
+        if (service === 'set_cover_position') throw new Error('unsupported');
+      },
+    };
+    runtime.hdpCallCoverService(
+      fallbackHass,
+      'cover.bed_blind',
+      'set_cover_position',
+      'set_cover_tilt_position',
+      { entity_id: 'cover.bed_blind', position: 45 },
+      { entity_id: 'cover.bed_blind', tilt_position: 45 },
+    );
+
+    expect(calls).toEqual([
+      { domain: 'cover', service: 'set_cover_position', payload: { entity_id: 'cover.bed_blind', position: 45 } },
+      { domain: 'cover', service: 'set_cover_tilt_position', payload: { entity_id: 'cover.bed_blind', tilt_position: 45 } },
+    ]);
   });
 
   it('loads 24-hour environment history through the HA websocket API', () => {
