@@ -32,7 +32,10 @@ return {
   hdpShouldConvertFahrenheit: hdpShouldConvertFahrenheit,
   hdpIsTemperatureUnit: hdpIsTemperatureUnit,
   hdpNormalizeHistoryByEntity: hdpNormalizeHistoryByEntity,
-  hdpParseHistoryTimestamp: hdpParseHistoryTimestamp
+  hdpParseHistoryTimestamp: hdpParseHistoryTimestamp,
+  hdpParseDomainScope: hdpParseDomainScope,
+  hdpCollectDomainEntities: hdpCollectDomainEntities,
+  hdpDomainLabel: hdpDomainLabel
 };`,
   )(
     document,
@@ -50,6 +53,9 @@ return {
     hdpIsTemperatureUnit: (unit: string) => boolean;
     hdpNormalizeHistoryByEntity: (history: any, sensors: any[]) => Record<string, any[]>;
     hdpParseHistoryTimestamp: (point: Record<string, unknown>) => number;
+    hdpParseDomainScope: (domainKey: string, deviceClass?: string) => { key: string; domain: string; device_class: string };
+    hdpCollectDomainEntities: (hass: any, domainKey: string, deviceClass?: string) => any[];
+    hdpDomainLabel: (domain: string) => string;
   };
 }
 
@@ -324,7 +330,8 @@ describe('hass websocket script', () => {
     expect(js).toContain("window.hdpOpenDeviceDomainModal = hdpOpenDeviceDomainModal;");
     expect(js).toContain('window.hdpShowDeviceDomain = function(domain)');
     expect(js).toContain('hdpOpenDeviceDomainModal(domain);');
-    expect(js).toContain('function hdpCollectDomainEntities(hass, domain)');
+    expect(js).toContain('function hdpParseDomainScope(domainKey, deviceClass)');
+    expect(js).toContain('function hdpCollectDomainEntities(hass, domainKey, deviceClass)');
     expect(js).toContain('var filters = hdpGetRuntimeDashboardFilters();');
     expect(js).toContain('function hdpGetRuntimeDashboardFilters()');
     expect(js).toContain("root.getAttribute('data-dashboard-filters')");
@@ -344,6 +351,7 @@ describe('hass websocket script', () => {
     expect(js).toContain('filters.visibleKeywords.length && !filters.visibleKeywords.some');
     expect(js).toContain('filters.hiddenKeywords.some');
     expect(js).toContain('function hdpIsDomainEntityAvailable(state)');
+    expect(js).toContain("if (scope.device_class && String(attrs.device_class || '').toLowerCase() !== scope.device_class) return;");
     expect(js).toContain('if (a.available !== b.available) return a.available ? -1 : 1;');
     expect(js).toContain('hdp-domain-modal-row--unavailable');
     expect(js).toContain('@media (max-width:520px)');
@@ -359,5 +367,36 @@ describe('hass websocket script', () => {
     expect(js).not.toContain("document.addEventListener('keydown', hdpCloseEnvironmentHistoryOnEsc, { once: true })");
     expect(js).toContain('hdpBindRuntimeModalEscClose();');
     expect(js).toContain("new CustomEvent('hass-more-info'");
+  });
+
+  it('keeps binary sensor status badge popups scoped to their device class', () => {
+    const runtime = createHistoryRuntime();
+    const hass = {
+      states: {
+        'binary_sensor.living_motion': {
+          state: 'on',
+          attributes: { friendly_name: 'Living Motion', device_class: 'motion' },
+        },
+        'binary_sensor.front_door': {
+          state: 'on',
+          attributes: { friendly_name: 'Front Door', device_class: 'door' },
+        },
+        'binary_sensor.bedroom_motion': {
+          state: 'off',
+          attributes: { friendly_name: 'Bedroom Motion', device_class: 'motion' },
+        },
+      },
+      areas: {},
+      devices: {},
+      entities: {},
+    };
+
+    const scope = runtime.hdpParseDomainScope('binary_sensor.motion');
+    const rows = runtime.hdpCollectDomainEntities(hass, 'binary_sensor.motion');
+
+    expect(scope).toEqual({ key: 'binary_sensor.motion', domain: 'binary_sensor', device_class: 'motion' });
+    expect(runtime.hdpDomainLabel('binary_sensor.motion')).toBe('人体感应');
+    expect(rows.map(row => row.entity_id)).toEqual(['binary_sensor.living_motion', 'binary_sensor.bedroom_motion']);
+    expect(rows.some(row => row.entity_id === 'binary_sensor.front_door')).toBe(false);
   });
 });

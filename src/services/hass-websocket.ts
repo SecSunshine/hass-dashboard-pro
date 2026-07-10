@@ -765,15 +765,15 @@ function hdpOpenDeviceDomainModal(domain) {
     hdpShowToast('无法读取 Home Assistant 设备状态', 'error');
     return;
   }
-  domain = String(domain || '').split('.')[0];
-  var entities = hdpCollectDomainEntities(hass, domain);
+  var scope = hdpParseDomainScope(domain);
+  var entities = hdpCollectDomainEntities(hass, scope.key);
   var existing = document.getElementById('hdp-device-domain-modal');
   if (existing) existing.remove();
   var overlay = document.createElement('div');
   overlay.id = 'hdp-device-domain-modal';
   overlay.className = 'hdp-env-history-modal hdp-device-domain-modal';
   hdpApplyThemeVarsToOverlay(overlay);
-  var label = hdpDomainLabel(domain);
+  var label = hdpDomainLabel(scope.key);
   overlay.innerHTML =
     '<div class="hdp-env-history-dialog hdp-device-domain-dialog" role="dialog" aria-modal="true" aria-label="' + hdpEscapeText(label) + '">' +
       '<div class="hdp-env-history-head">' +
@@ -802,22 +802,36 @@ window.hdpShowDeviceDomain = function(domain) {
   hdpOpenDeviceDomainModal(domain);
 };
 
-function hdpCollectDomainEntities(hass, domain) {
+function hdpParseDomainScope(domainKey, deviceClass) {
+  var raw = String(domainKey || '').toLowerCase();
+  var parts = raw.split('.');
+  var domain = parts[0] || '';
+  var scopedDeviceClass = deviceClass || (domain === 'binary_sensor' && parts.length > 1 ? parts.slice(1).join('.') : '');
+  return {
+    key: scopedDeviceClass ? domain + '.' + scopedDeviceClass : domain,
+    domain: domain,
+    device_class: scopedDeviceClass
+  };
+}
+
+function hdpCollectDomainEntities(hass, domainKey, deviceClass) {
+  var scope = hdpParseDomainScope(domainKey, deviceClass);
   var rows = [];
   var filters = hdpGetRuntimeDashboardFilters();
   Object.keys(hass.states || {}).forEach(function(entityId) {
-    if (entityId.split('.')[0] !== domain) return;
+    if (entityId.split('.')[0] !== scope.domain) return;
     if (!hdpRuntimeEntityVisible(hass, entityId, filters)) return;
     var stateObj = hass.states[entityId];
     var attrs = stateObj.attributes || {};
+    if (scope.device_class && String(attrs.device_class || '').toLowerCase() !== scope.device_class) return;
     var area = hdpResolveEntityArea(hass, entityId);
     var state = String(stateObj.state == null ? 'unknown' : stateObj.state);
     rows.push({
       entity_id: entityId,
-      name: String(attrs.friendly_name || entityId.replace(domain + '.', '').replace(/_/g, ' ')),
+      name: String(attrs.friendly_name || entityId.replace(scope.domain + '.', '').replace(/_/g, ' ')),
       state: state,
       area_name: String(area.name || '未分配区域'),
-      active: hdpIsEntityRunning(state, domain),
+      active: hdpIsEntityRunning(state, scope.domain),
       available: hdpIsDomainEntityAvailable(state)
     });
   });
@@ -867,7 +881,10 @@ function hdpDomainLabel(domain) {
   var labels = {
     light: '灯光', switch: '开关', climate: '空调', fan: '风扇', cover: '窗帘',
     lock: '门锁', sensor: '传感器', binary_sensor: '传感器', media_player: '媒体',
-    camera: '摄像头', vacuum: '扫地机', button: '按钮'
+    camera: '摄像头', vacuum: '扫地机', button: '按钮',
+    'binary_sensor.window': '窗户', 'binary_sensor.door': '门',
+    'binary_sensor.motion': '人体感应', 'binary_sensor.smoke': '烟雾',
+    'binary_sensor.moisture': '漏水'
   };
   return labels[domain] || domain;
 }
