@@ -380,7 +380,7 @@ function getDeviceEntityCardCSS(): string {
     width: 20px; height: 20px;
     border-radius: 50%;
     background: var(--hdp-surface-card, var(--hdp-card-bg));
-    box-shadow: var(--hdp-shadow-card, 0 1px 3px rgba(0,0,0,0.15));
+    box-shadow: var(--hdp-shadow-card, 0 1px 3px color-mix(in srgb, var(--hdp-text, CanvasText) 15%, transparent));
   }
   .dvc-tg-knob--off { border: 1px solid var(--hdp-border); }`;
 }
@@ -471,12 +471,12 @@ function getDomainColor(domain: string): { bg: string; fg: string } {
     lock:         { bg: 'var(--hdp-danger-light, rgba(254,226,226,0.5))', fg: 'var(--hdp-danger, #EF4444)' },
     media_player: { bg: 'var(--hdp-info-light, rgba(219,234,254,0.5))', fg: 'var(--hdp-info, #3B82F6)' },
     vacuum:       { bg: 'var(--hdp-success-light, rgba(236,253,245,0.5))', fg: 'var(--hdp-success, #16A34A)' },
-    camera:       { bg: 'var(--hdp-divider, rgba(0,0,0,0.06))', fg: 'var(--hdp-text-muted)' },
-    sensor:       { bg: 'var(--hdp-divider, rgba(0,0,0,0.06))', fg: 'var(--hdp-text-muted)' },
-    binary_sensor:{ bg: 'var(--hdp-divider, rgba(0,0,0,0.06))', fg: 'var(--hdp-text-muted)' },
+    camera:       { bg: 'var(--hdp-divider, color-mix(in srgb, var(--hdp-text, CanvasText) 6%, transparent))', fg: 'var(--hdp-text-muted)' },
+    sensor:       { bg: 'var(--hdp-divider, color-mix(in srgb, var(--hdp-text, CanvasText) 6%, transparent))', fg: 'var(--hdp-text-muted)' },
+    binary_sensor:{ bg: 'var(--hdp-divider, color-mix(in srgb, var(--hdp-text, CanvasText) 6%, transparent))', fg: 'var(--hdp-text-muted)' },
     button:       { bg: 'rgba(124,110,247,0.1)', fg: 'var(--hdp-accent, #7C6EF7)' },
   };
-  return map[domain] || { bg: 'var(--hdp-divider, rgba(0,0,0,0.06))', fg: 'var(--hdp-text-muted)' };
+  return map[domain] || { bg: 'var(--hdp-divider, color-mix(in srgb, var(--hdp-text, CanvasText) 6%, transparent))', fg: 'var(--hdp-text-muted)' };
 }
 
 // ─── Domain Icons (SVG) ─────────────────────────────────────────────────────

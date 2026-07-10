@@ -410,7 +410,7 @@ const ENTITY_CARD_CSS = /* css */ `
     width: 20px; height: 20px;
     border-radius: 50%;
     background: var(--hdp-surface-card, var(--hdp-card-bg));
-    box-shadow: var(--hdp-shadow-card, 0 1px 3px rgba(0,0,0,0.15));
+    box-shadow: var(--hdp-shadow-card, 0 1px 3px color-mix(in srgb, var(--hdp-text, CanvasText) 15%, transparent));
   }
   .tg-knob--off { border: 1px solid var(--hdp-border); }
   .ec-val {
