@@ -72,7 +72,7 @@ export function buildBlueprintGalleryHTML(pages: BlueprintInstance[]): string {
     transition: all 0.2s ease;
     min-height: 44px;
     border: 1px solid var(--hdp-border);
-    background: var(--hdp-control-bg, var(--hdp-card-bg));
+    background: var(--hdp-control-bg, var(--hdp-card-bg, var(--ha-card-background, var(--card-background-color))));
     color: var(--hdp-text);
     max-width: 100%;
     min-width: 0;
@@ -87,19 +87,19 @@ export function buildBlueprintGalleryHTML(pages: BlueprintInstance[]): string {
   }
   .bp-btn--primary {
     background: var(--hdp-primary);
-    color: var(--hdp-text-inverse, white);
+    color: var(--hdp-text-inverse, var(--primary-background-color, Canvas));
     border-color: var(--hdp-primary);
   }
   .bp-btn--primary:hover {
     background: var(--hdp-primary);
-    color: var(--hdp-text-inverse, white);
+    color: var(--hdp-text-inverse, var(--primary-background-color, Canvas));
     opacity: 0.9;
   }
   .bp-btn svg {
     width: 16px; height: 16px;
   }
   .bp-item {
-    background: var(--hdp-surface-card, var(--hdp-card-bg));
+    background: var(--hdp-surface-card, var(--hdp-card-bg, var(--ha-card-background, var(--card-background-color))));
     border-radius: var(--hdp-radius);
     padding: 14px;
     border: 1px solid var(--hdp-border);
@@ -160,11 +160,11 @@ export function buildBlueprintGalleryHTML(pages: BlueprintInstance[]): string {
     cursor: pointer;
     transition: all 0.2s ease;
     border: 1px solid var(--hdp-border);
-    background: var(--hdp-control-bg, transparent);
+    background: var(--hdp-control-bg, color-mix(in srgb, var(--hdp-card-bg, var(--ha-card-background, var(--card-background-color))) 80%, transparent));
     color: var(--hdp-text-secondary);
   }
   .bp-item-btn:hover {
-    background: var(--hdp-control-bg-hover, var(--hdp-divider));
+    background: var(--hdp-control-bg-hover, var(--hdp-divider, var(--divider-color)));
     color: var(--hdp-text);
   }
   .bp-item-btn--danger:hover {
@@ -286,7 +286,7 @@ export function buildImportModalHTML(): string {
     display: none;
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: var(--hdp-overlay-bg, rgba(0,0,0,0.5));
+    background: var(--hdp-overlay-bg, color-mix(in srgb, var(--hdp-text, CanvasText) 42%, transparent));
     z-index: 999;
     align-items: center;
     justify-content: center;
@@ -295,7 +295,7 @@ export function buildImportModalHTML(): string {
   }
   .bp-modal-overlay--active { display: flex; }
   .bp-modal {
-    background: var(--hdp-modal-bg, var(--hdp-bg, #fff));
+    background: var(--hdp-modal-bg, var(--hdp-bg, var(--ha-card-background, var(--card-background-color))));
     border-radius: var(--hdp-radius-lg, var(--hdp-radius, 14px));
     padding: 24px;
     width: min(560px, 100%);
@@ -304,9 +304,11 @@ export function buildImportModalHTML(): string {
     min-width: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    border: 1px solid var(--hdp-border, rgba(0,0,0,0.08));
-    box-shadow: var(--hdp-shadow-elevated, 0 20px 60px rgba(0,0,0,0.2));
+    border: 1px solid var(--hdp-border, var(--divider-color));
+    box-shadow: var(--hdp-shadow-elevated, var(--ha-card-box-shadow, 0 20px 60px color-mix(in srgb, var(--hdp-text, CanvasText) 16%, transparent)));
     box-sizing: border-box;
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
   }
   .bp-modal-title {
     font: inherit;
@@ -334,7 +336,7 @@ export function buildImportModalHTML(): string {
     padding: 10px 14px;
     border-radius: var(--hdp-radius);
     border: 1px solid var(--hdp-border);
-    background: var(--hdp-surface-card, var(--hdp-bg));
+    background: var(--hdp-surface-card, var(--hdp-card-bg, var(--ha-card-background, var(--card-background-color))));
     color: var(--hdp-text);
     outline: none;
     min-height: 44px;
@@ -354,7 +356,7 @@ export function buildImportModalHTML(): string {
     padding: 12px 14px;
     border-radius: var(--hdp-radius);
     border: 1px solid var(--hdp-border);
-    background: var(--hdp-surface-card, var(--hdp-bg));
+    background: var(--hdp-surface-card, var(--hdp-card-bg, var(--ha-card-background, var(--card-background-color))));
     color: var(--hdp-text);
     outline: none;
     min-height: 200px;
