@@ -13,10 +13,6 @@
 import type { BlueprintInstance } from '../types';
 import { escapeAttribute, escapeHTML } from '../utils/html';
 
-function jsArg(value: unknown): string {
-  return escapeAttribute(JSON.stringify(String(value ?? '')));
-}
-
 // ─── Gallery HTML Builder ───────────────────────────────────────────────────
 
 /**
@@ -222,20 +218,20 @@ export function buildBlueprintGalleryHTML(pages: BlueprintInstance[]): string {
   <div class="bp-gallery-hdr">
     <span class="bp-gallery-title">蓝图页面</span>
     <div class="bp-gallery-actions">
-      <button class="bp-btn" data-action="import-built-in-template" onclick="hdpImportBuiltInTemplate()">
+      <button class="bp-btn" data-action="import-built-in-template">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         模板库
       </button>
-      <button class="bp-btn" data-action="import-online-template" onclick="hdpImportOnlineTemplate()">在线库</button>
-      <button class="bp-btn" data-action="import-screenshot-draft" onclick="hdpImportScreenshotDraft()">截图复刻</button>
-      <button class="bp-btn" data-action="export-share-code" onclick="hdpExportShareCode()">分享</button>
-      <button class="bp-btn" data-action="import-share-code" onclick="hdpImportShareCode()">复刻</button>
-      <button class="bp-btn" data-action="show-import-report" onclick="hdpShowImportReport()">报告</button>
-      <button class="bp-btn" onclick="hdpShowImportModal('url')">
+      <button class="bp-btn" data-action="import-online-template">在线库</button>
+      <button class="bp-btn" data-action="import-screenshot-draft">截图复刻</button>
+      <button class="bp-btn" data-action="export-share-code">分享</button>
+      <button class="bp-btn" data-action="import-share-code">复刻</button>
+      <button class="bp-btn" data-action="show-import-report">报告</button>
+      <button class="bp-btn" data-action="show-import-modal" data-import-mode="url">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
         URL 导入
       </button>
-      <button class="bp-btn bp-btn--primary" onclick="hdpShowImportModal('paste')">
+      <button class="bp-btn bp-btn--primary" data-action="show-import-modal" data-import-mode="paste">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
         粘贴导入
       </button>
@@ -261,13 +257,13 @@ function buildBlueprintItemHTML(page: BlueprintInstance): string {
       </div>
     </div>
     <div class="bp-item-actions">
-      <button class="bp-item-btn" title="编辑输入" data-action="edit-blueprint" onclick="hdpShowInputEditor(${jsArg(page.id)})">
+      <button class="bp-item-btn" title="编辑输入" data-action="edit-blueprint" data-blueprint-id="${escapeAttribute(page.id)}">
         <svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       </button>
-      ${page.source ? `<button class="bp-item-btn" title="检查更新" data-action="check-blueprint-update" onclick="hdpCheckBlueprintUpdate(${jsArg(page.id)})">
+      ${page.source ? `<button class="bp-item-btn" title="检查更新" data-action="check-blueprint-update" data-blueprint-id="${escapeAttribute(page.id)}">
         <svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
       </button>` : ''}
-      <button class="bp-item-btn bp-item-btn--danger" title="删除" data-action="remove-blueprint" onclick="hdpRemoveBlueprint(${jsArg(page.id)})">
+      <button class="bp-item-btn bp-item-btn--danger" title="删除" data-action="remove-blueprint" data-blueprint-id="${escapeAttribute(page.id)}">
         <svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
       </button>
     </div>
@@ -442,8 +438,8 @@ export function buildImportModalHTML(): string {
     </div>
 
     <div class="bp-modal-actions">
-      <button class="bp-btn" onclick="hdpCloseImportModal()">取消</button>
-      <button class="bp-btn bp-btn--primary" id="bp-modal-confirm" onclick="hdpConfirmImport()">导入</button>
+      <button class="bp-btn" data-action="close-blueprint-modal">取消</button>
+      <button class="bp-btn bp-btn--primary" id="bp-modal-confirm" data-action="confirm-blueprint-import">导入</button>
     </div>
   </div>
 </div>`;
@@ -502,12 +498,6 @@ export function generateBlueprintModalJS(): string {
     return el;
   }
 
-  function hdpSetModalClick(id, handler) {
-    var el = hdpModalElement(id);
-    if (el) el.onclick = handler;
-    return el;
-  }
-
   function hdpModalValue(id) {
     var el = hdpModalElement(id);
     return el && typeof el.value === 'string' ? el.value : '';
@@ -533,12 +523,10 @@ export function generateBlueprintModalJS(): string {
       hdpSetModalText('bp-modal-title', '从 URL 导入');
       hdpSetModalDisplay('bp-import-url', '');
       hdpSetModalText('bp-modal-confirm', '导入');
-      hdpSetModalClick('bp-modal-confirm', window.hdpConfirmImport);
     } else if (mode === 'paste') {
       hdpSetModalText('bp-modal-title', '粘贴 YAML 导入');
       hdpSetModalDisplay('bp-import-paste', '');
       hdpSetModalText('bp-modal-confirm', '导入');
-      hdpSetModalClick('bp-modal-confirm', window.hdpConfirmImport);
     }
 
     modal.classList.add('bp-modal-overlay--active');
@@ -598,7 +586,6 @@ export function generateBlueprintModalJS(): string {
 
     hdpSetModalText('bp-modal-title', '编辑: ' + page.name);
     hdpSetModalText('bp-modal-confirm', '保存');
-    hdpSetModalClick('bp-modal-confirm', window.hdpConfirmImport);
 
     // Build input fields
     var meta = hdpBlueprintParseMeta(page.blueprint_yaml);
@@ -687,6 +674,46 @@ export function generateBlueprintModalJS(): string {
       location.reload();
     });
   };
+
+  function hdpClosestBlueprintAction(e) {
+    if (e && e.target && e.target.closest) {
+      var direct = e.target.closest('[data-action]');
+      if (direct) return direct;
+    }
+    var path = e && typeof e.composedPath === 'function' ? e.composedPath() : [];
+    for (var i = 0; i < path.length; i++) {
+      if (path[i] && path[i].matches && path[i].matches('[data-action]')) return path[i];
+    }
+    return null;
+  }
+
+  if (!window.hdpBlueprintActionHandlerReady) {
+    window.hdpBlueprintActionHandlerReady = true;
+    document.addEventListener('click', function(e) {
+      var control = hdpClosestBlueprintAction(e);
+      if (!control) return;
+      var action = control.getAttribute('data-action') || '';
+      var pageId = control.getAttribute('data-blueprint-id') || '';
+      var handled = true;
+      if (action === 'import-built-in-template' && typeof window.hdpImportBuiltInTemplate === 'function') window.hdpImportBuiltInTemplate();
+      else if (action === 'import-online-template' && typeof window.hdpImportOnlineTemplate === 'function') window.hdpImportOnlineTemplate();
+      else if (action === 'import-screenshot-draft' && typeof window.hdpImportScreenshotDraft === 'function') window.hdpImportScreenshotDraft();
+      else if (action === 'export-share-code' && typeof window.hdpExportShareCode === 'function') window.hdpExportShareCode();
+      else if (action === 'import-share-code' && typeof window.hdpImportShareCode === 'function') window.hdpImportShareCode();
+      else if (action === 'show-import-report' && typeof window.hdpShowImportReport === 'function') window.hdpShowImportReport();
+      else if (action === 'show-import-modal') window.hdpShowImportModal(control.getAttribute('data-import-mode') || 'paste');
+      else if (action === 'edit-blueprint' && pageId) window.hdpShowInputEditor(pageId);
+      else if (action === 'check-blueprint-update' && pageId) window.hdpCheckBlueprintUpdate(pageId);
+      else if (action === 'remove-blueprint' && pageId) window.hdpRemoveBlueprint(pageId);
+      else if (action === 'close-blueprint-modal') window.hdpCloseImportModal();
+      else if (action === 'confirm-blueprint-import') window.hdpConfirmImport();
+      else handled = false;
+      if (handled) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
+  }
 })();
 `;
 }

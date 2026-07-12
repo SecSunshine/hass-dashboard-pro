@@ -6,7 +6,9 @@ describe('blueprint gallery rendering', () => {
     const emptyHTML = buildBlueprintGalleryHTML([]);
     expect(emptyHTML).toContain('<span class="bp-gallery-title">蓝图页面</span>');
     expect(emptyHTML).toContain('<div class="bp-empty-list">暂无蓝图页面，点击上方按钮导入</div>');
-    expect(emptyHTML).toContain('data-action="import-online-template" onclick="hdpImportOnlineTemplate()">在线库</button>');
+    expect(emptyHTML).toContain('data-action="import-online-template">在线库</button>');
+    expect(emptyHTML).toContain('data-action="show-import-modal" data-import-mode="url"');
+    expect(emptyHTML).not.toContain('onclick=');
     expect(emptyHTML).toContain('URL 导入');
     expect(emptyHTML).toContain('.bp-gallery-actions');
     expect(emptyHTML).toContain('flex-wrap: wrap');
@@ -40,6 +42,8 @@ describe('blueprint gallery rendering', () => {
     expect(sourcedHTML).toContain('title="检查更新" data-action="check-blueprint-update"');
     expect(sourcedHTML).toContain('title="编辑输入" data-action="edit-blueprint"');
     expect(sourcedHTML).toContain('title="删除" data-action="remove-blueprint"');
+    expect(sourcedHTML).toContain('data-blueprint-id="weather"');
+    expect(sourcedHTML).not.toContain('onclick=');
   });
 
   it('uses overflow-safe import modal layout css', () => {
@@ -69,6 +73,7 @@ describe('blueprint gallery rendering', () => {
     const document = {
       getElementById: () => null,
       querySelectorAll: () => [],
+      addEventListener: () => undefined,
     };
     const alerts: string[] = [];
     const code = generateBlueprintModalJS() + '\nreturn window;';
@@ -123,5 +128,53 @@ describe('blueprint gallery rendering', () => {
     expect(js).toContain('var latestSave = window.hdpLastBlueprintSave || Promise.resolve();');
     expect(js).toContain('Promise.resolve(latestSave).finally(function()');
     expect(js).not.toContain('setTimeout(function() {\n      location.reload();\n    }, 500);');
+  });
+
+  it('delegates blueprint management actions from declarative controls', () => {
+    const listeners: Record<string, Array<(event: any) => void>> = {};
+    const window = {} as any;
+    const document = {
+      getElementById: () => null,
+      querySelectorAll: () => [],
+      addEventListener: (type: string, listener: (event: any) => void) => {
+        (listeners[type] ||= []).push(listener);
+      },
+    };
+    const code = generateBlueprintModalJS() + '\nreturn window;';
+    const runtime = new Function(
+      'window', 'document', 'alert', 'confirm', 'location', 'Promise',
+      'hdpBlueprintLoad', 'hdpBlueprintParseMeta', 'hdpBlueprintImportURL', 'hdpBlueprintImportYAML',
+      'hdpBlueprintAdd', 'hdpBlueprintUpdateInputs', 'hdpBlueprintRemove', 'hdpBlueprintCheckUpdate',
+      'hdpBlueprintResolveCard', 'hdpBlueprintSave', code,
+    )(
+      window, document, () => {}, () => true, { reload: () => {} }, Promise,
+      () => [], () => ({ inputs: {} }), () => {}, () => null, () => {}, () => {}, () => {},
+      () => {}, () => ({}), () => Promise.resolve([]),
+    );
+    const calls: string[] = [];
+    runtime.hdpImportBuiltInTemplate = () => calls.push('built-in');
+    runtime.hdpShowImportModal = (mode: string) => calls.push(`modal:${mode}`);
+    runtime.hdpShowInputEditor = (id: string) => calls.push(`edit:${id}`);
+    runtime.hdpCheckBlueprintUpdate = (id: string) => calls.push(`check:${id}`);
+    runtime.hdpRemoveBlueprint = (id: string) => calls.push(`remove:${id}`);
+    runtime.hdpCloseImportModal = () => calls.push('close');
+    runtime.hdpConfirmImport = () => calls.push('confirm');
+    const click = (attrs: Record<string, string>) => {
+      const control = { getAttribute: (name: string) => attrs[name] ?? null };
+      listeners.click[0]({
+        target: { closest: () => control },
+        preventDefault: () => {},
+        stopPropagation: () => {},
+      });
+    };
+    click({ 'data-action': 'import-built-in-template' });
+    click({ 'data-action': 'show-import-modal', 'data-import-mode': 'url' });
+    click({ 'data-action': 'edit-blueprint', 'data-blueprint-id': 'weather' });
+    click({ 'data-action': 'check-blueprint-update', 'data-blueprint-id': 'weather' });
+    click({ 'data-action': 'remove-blueprint', 'data-blueprint-id': 'weather' });
+    click({ 'data-action': 'close-blueprint-modal' });
+    click({ 'data-action': 'confirm-blueprint-import' });
+
+    expect(calls).toEqual(['built-in', 'modal:url', 'edit:weather', 'check:weather', 'remove:weather', 'close', 'confirm']);
   });
 });

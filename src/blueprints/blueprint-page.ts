@@ -11,10 +11,6 @@ import { cardConfigToHTML } from './blueprint-parser';
 import { escapeAttribute, escapeHTML } from '../utils/html';
 import { safeDomIdSegment } from '../utils/dom-id';
 
-function jsArg(value: unknown): string {
-  return escapeAttribute(JSON.stringify(String(value ?? '')));
-}
-
 // ─── Page Renderer ──────────────────────────────────────────────────────────
 
 /**
@@ -39,7 +35,7 @@ function buildBlueprintPageHTML(page: BlueprintInstance, canEdit: boolean): stri
   // Render the resolved card config as HTML
   const cardHTML = cardConfigToHTML(page.card, page.name);
   const editButton = canEdit
-    ? `<button class="bp-page-edit" title="编辑输入" data-action="edit-blueprint" onclick="hdpShowInputEditor(${jsArg(page.id)})">
+    ? `<button class="bp-page-edit" title="编辑输入" data-action="edit-blueprint" data-blueprint-id="${escapeAttribute(page.id)}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
     </button>`
     : '';
@@ -112,7 +108,7 @@ function buildBlueprintPageHTML(page: BlueprintInstance, canEdit: boolean): stri
  */
 function buildEmptyBlueprintHTML(page: BlueprintInstance, canEdit: boolean): string {
   const configureButton = canEdit
-    ? `<button class="bp-btn bp-btn--primary" data-action="edit-blueprint" onclick="hdpShowInputEditor(${jsArg(page.id)})">
+    ? `<button class="bp-btn bp-btn--primary" data-action="edit-blueprint" data-blueprint-id="${escapeAttribute(page.id)}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       配置输入
     </button>`

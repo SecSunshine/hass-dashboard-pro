@@ -19,7 +19,8 @@ describe('blueprint page renderer', () => {
     const [{ html }] = buildBlueprintPagesHTML([configuredPage]);
 
     expect(html).toContain('data-action="edit-blueprint"');
-    expect(html).toContain('hdpShowInputEditor');
+    expect(html).toContain('data-blueprint-id="lights"');
+    expect(html).not.toContain('onclick=');
   });
 
   it('omits edit controls in read-only mode for configured pages', () => {
