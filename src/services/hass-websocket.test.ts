@@ -175,7 +175,8 @@ describe('hass websocket script', () => {
     expect(js).toContain('function hdpClosestFromEvent(e, selector)');
     expect(js).toContain("typeof e.composedPath === 'function' ? e.composedPath() : []");
     expect(js).toContain("var domainControl = hdpClosestFromEvent(e, '[data-action][data-entity]');");
-    expect(js).toContain("if (domainControl && hdpClosestFromEvent(e, '[data-no-toggle]'))");
+    expect(js).toContain('if (domainControl && hdpHandleDomainControl(domainControl))');
+    expect(js).toContain("if (action === 'more-info')");
     expect(js).toContain("hdpSetClimateMode(entityId, control.getAttribute('data-mode') || 'auto');");
     expect(js).toContain('var current = parseFloat(stateObj.attributes && stateObj.attributes.temperature);');
     expect(js).toContain('var step = parseFloat(delta);');
@@ -196,7 +197,7 @@ describe('hass websocket script', () => {
     expect(js).toContain("}, true);");
     expect(js).toContain("if (hdpClosestFromEvent(e, '[data-no-toggle]')) return;");
     expect(js).toContain('if (window.hdpEntityClickHandlersInitialized) return;');
-    expect(js).toContain('if (hdpHandleDomainControl(domainControl)) {');
+    expect(js).toContain('if (domainControl && hdpHandleDomainControl(domainControl)) {');
     expect(js).toContain('function hdpCallEntityService(');
     expect(js).toContain('result.then(onSuccess).catch(onFailure);');
   });
@@ -252,6 +253,87 @@ describe('hass websocket script', () => {
     click({ 'data-action': 'open-automation-config' });
 
     expect(calls).toEqual(['domain:light', 'scroll:climate', 'history:humidity', 'automation']);
+  });
+
+  it('runs custom-card entity actions without requiring an internal card wrapper', () => {
+    const listeners: Record<string, Array<(event: any) => void>> = {};
+    const serviceCalls: Array<{ domain: string; service: string; data: Record<string, unknown> }> = [];
+    const infoEvents: any[] = [];
+    const homeAssistant = {
+      hass: {
+        states: {
+          'cover.bed_blind': { attributes: { supported_features: 1 } },
+        },
+        callService: (domain: string, service: string, data: Record<string, unknown>) => {
+          serviceCalls.push({ domain, service, data });
+        },
+      },
+      dispatchEvent: (event: any) => { infoEvents.push(event); },
+    };
+    const documentStub = {
+      querySelector: (selector: string) => selector === 'home-assistant' ? homeAssistant : null,
+      querySelectorAll: () => [],
+      getElementById: () => null,
+      addEventListener: (type: string, listener: (event: any) => void) => {
+        (listeners[type] ||= []).push(listener);
+      },
+      removeEventListener: () => {},
+      body: { appendChild: () => {}, dispatchEvent: (event: any) => { infoEvents.push(event); } },
+      createElement: () => ({ style: { setProperty: () => {} }, addEventListener: () => {}, remove: () => {} }),
+    };
+    const windowStub: Record<string, any> = {
+      dispatchEvent: (event: any) => { infoEvents.push(event); },
+    };
+    function CustomEventStub(this: any, type: string, options: any) {
+      this.type = type;
+      this.detail = options.detail;
+    }
+    new Function(
+      'document',
+      'window',
+      'requestAnimationFrame',
+      'setTimeout',
+      'console',
+      'CustomEvent',
+      `${generateConnectionDiscoveryJS()}\nwindow.testInitEntityClickHandlers = hdpInitEntityClickHandlers;`,
+    )(documentStub, windowStub, () => {}, () => {}, console, CustomEventStub);
+    windowStub.testInitEntityClickHandlers();
+
+    const click = (attributes: Record<string, string>) => {
+      const control = {
+        getAttribute: (name: string) => attributes[name] || null,
+        closest: (selector: string) => selector === '[data-entity]' ? control : null,
+        hasAttribute: () => false,
+      };
+      let prevented = false;
+      let stopped = false;
+      listeners.click[0]({
+        target: {
+          closest: (selector: string) => {
+            if (selector === '[data-no-toggle]') return null;
+            if (selector === '[data-action]' || selector === '[data-action][data-entity]' || selector === '[data-entity]') return control;
+            return null;
+          },
+        },
+        preventDefault: () => { prevented = true; },
+        stopPropagation: () => { stopped = true; },
+      });
+      return { prevented, stopped };
+    };
+
+    const moreInfo = click({ 'data-action': 'more-info', 'data-entity': 'sensor.kitchen_temperature' });
+    const cover = click({ 'data-action': 'cover-open', 'data-entity': 'cover.bed_blind' });
+
+    expect(moreInfo).toEqual({ prevented: true, stopped: true });
+    expect(infoEvents).toHaveLength(2);
+    expect(infoEvents.every(event => event.type === 'hass-more-info')).toBe(true);
+    expect(infoEvents.every(event => event.detail.entityId === 'sensor.kitchen_temperature')).toBe(true);
+    expect(cover).toEqual({ prevented: true, stopped: true });
+    expect(serviceCalls).toEqual([{
+      domain: 'cover',
+      service: 'open_cover',
+      data: { entity_id: 'cover.bed_blind' },
+    }]);
   });
 
   it('supports tilt-only cover feature detection and fallback service calls', () => {

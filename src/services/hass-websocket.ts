@@ -1058,6 +1058,10 @@ function hdpHandleDomainControl(control) {
   var entityId = control.getAttribute('data-entity') || (owner && owner.getAttribute('data-entity'));
   if (!entityId || !action) return false;
 
+  if (action === 'more-info') {
+    hdpOpenMoreInfo(entityId);
+    return true;
+  }
   if (action === 'climate-mode') {
     hdpSetClimateMode(entityId, control.getAttribute('data-mode') || 'auto');
     return true;
@@ -1136,12 +1140,10 @@ function hdpInitEntityClickHandlers() {
       return;
     }
     var domainControl = hdpClosestFromEvent(e, '[data-action][data-entity]');
-    if (domainControl && hdpClosestFromEvent(e, '[data-no-toggle]')) {
-      if (hdpHandleDomainControl(domainControl)) {
-        e.preventDefault();
-        e.stopPropagation();
-        return;
-      }
+    if (domainControl && hdpHandleDomainControl(domainControl)) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
     }
     // Domain-specific cards own their inner buttons and service calls.
     if (hdpClosestFromEvent(e, '[data-no-toggle]')) return;
