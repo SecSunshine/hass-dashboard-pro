@@ -217,6 +217,56 @@ describe('card slots', () => {
     expect(stopped).toBe(true);
   });
 
+  it('delegates every home edit toolbar command without inline handlers', () => {
+    const listeners: Record<string, Array<(event: any) => void>> = {};
+    const documentStub = {
+      readyState: 'loading',
+      addEventListener: (type: string, listener: (event: any) => void) => {
+        (listeners[type] ||= []).push(listener);
+      },
+    };
+    const windowStub: Record<string, any> = {};
+    new Function(
+      'window',
+      'document',
+      'localStorage',
+      'Image',
+      'prompt',
+      'confirm',
+      'location',
+      'setTimeout',
+      'clearTimeout',
+      generateCardSlotEditorJS(),
+    )(
+      windowStub,
+      documentStub,
+      { getItem: () => null, setItem: () => {} },
+      function ImageStub() {},
+      () => null,
+      () => false,
+      { reload: () => {} },
+      setTimeout,
+      clearTimeout,
+    );
+
+    const calls: string[] = [];
+    windowStub.hdpToggleCardEditMode = (force: boolean) => calls.push(`edit:${force}`);
+    windowStub.hdpOpenHiddenCardSlots = () => calls.push('hidden');
+    windowStub.hdpSaveCardEdits = () => calls.push('save');
+    windowStub.hdpCancelCardEdits = () => calls.push('cancel');
+
+    ['enter-card-edit', 'manage-hidden-cards', 'save-card-edits', 'cancel-card-edits'].forEach(action => {
+      const control = { getAttribute: (name: string) => name === 'data-action' ? action : null };
+      listeners.click[0]({
+        target: { closest: (selector: string) => selector.includes('hdp-home-edit-bar') ? control : null },
+        preventDefault: () => {},
+        stopPropagation: () => {},
+      });
+    });
+
+    expect(calls).toEqual(['edit:true', 'hidden', 'save', 'cancel']);
+  });
+
   it('sanitizes custom-card previews with the production safety boundary', () => {
     const windowStub: Record<string, any> = {};
     const documentStub = {

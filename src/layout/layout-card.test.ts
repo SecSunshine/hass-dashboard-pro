@@ -255,8 +255,14 @@ describe('layout card', () => {
     expect(card.content).toContain('hdp-root hdp-root--image-bg');
     expect(card.content).toContain('--hdp-dashboard-bg-image: url(/local/dashboard.jpg)');
     expect(card.content).toContain('class="hdp-home-edit-bar"');
-    expect(card.content).toContain('onclick="hdpToggleCardEditMode(true)"');
-    expect(card.content).toContain('onclick="hdpOpenHiddenCardSlots()"');
+    expect(card.content).toContain('data-action="enter-card-edit"');
+    expect(card.content).toContain('data-action="manage-hidden-cards"');
+    expect(card.content).toContain('data-action="save-card-edits"');
+    expect(card.content).toContain('data-action="cancel-card-edits"');
+    expect(card.content).not.toContain('onclick="hdpToggleCardEditMode(true)"');
+    expect(card.content).not.toContain('onclick="hdpOpenHiddenCardSlots()"');
+    expect(card.content).not.toContain('onclick="hdpSaveCardEdits()"');
+    expect(card.content).not.toContain('onclick="hdpCancelCardEdits()"');
     expect(card.content).toContain('编辑首页</button>');
     expect(card.content).toContain('保存并应用</button>');
     expect(card.content).not.toContain('淇濆瓨骞跺簲鐢?/button>');

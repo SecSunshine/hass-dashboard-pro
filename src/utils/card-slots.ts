@@ -492,10 +492,34 @@ function hdpClosestCardEditControl(e) {
   return null;
 }
 
+function hdpClosestHomeEditControl(e) {
+  if (e && e.target && e.target.closest) {
+    var direct = e.target.closest('.hdp-home-edit-bar [data-action]');
+    if (direct) return direct;
+  }
+  var path = e && typeof e.composedPath === 'function' ? e.composedPath() : [];
+  for (var i = 0; i < path.length; i++) {
+    if (path[i] && path[i].matches && path[i].matches('.hdp-home-edit-bar [data-action]')) return path[i];
+  }
+  return null;
+}
+
 function hdpInitCardSlotEditorActions() {
   if (window.hdpCardSlotEditorActionsReady) return;
   window.hdpCardSlotEditorActionsReady = true;
   document.addEventListener('click', function(e) {
+    var toolbarControl = hdpClosestHomeEditControl(e);
+    var toolbarAction = toolbarControl && toolbarControl.getAttribute('data-action');
+    if (toolbarAction === 'enter-card-edit' || toolbarAction === 'manage-hidden-cards' ||
+        toolbarAction === 'save-card-edits' || toolbarAction === 'cancel-card-edits') {
+      e.preventDefault();
+      e.stopPropagation();
+      if (toolbarAction === 'enter-card-edit') window.hdpToggleCardEditMode(true);
+      else if (toolbarAction === 'manage-hidden-cards') window.hdpOpenHiddenCardSlots();
+      else if (toolbarAction === 'save-card-edits') window.hdpSaveCardEdits();
+      else window.hdpCancelCardEdits();
+      return;
+    }
     var control = hdpClosestCardEditControl(e);
     if (!control) return;
     var action = control.getAttribute('data-card-edit-action');
