@@ -1388,7 +1388,7 @@ ${generateDesignTokenCSS(tokens)}
       <span class="seed-custom-label">自动明暗模式</span>
       <span class="seed-custom-desc">20:00-06:00 自动切换暗色色板</span>
     </div>
-    <div class="toggle-switch ${autoDark ? 'toggle-switch--on' : 'toggle-switch--off'}" id="auto-dark-toggle" data-action="toggle-auto-dark" data-component="auto-dark-toggle" role="switch" aria-checked="${autoDark ? 'true' : 'false'}" tabindex="0" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); this.click(); }">
+    <div class="toggle-switch ${autoDark ? 'toggle-switch--on' : 'toggle-switch--off'}" id="auto-dark-toggle" data-action="toggle-auto-dark" data-component="auto-dark-toggle" role="switch" aria-checked="${autoDark ? 'true' : 'false'}" tabindex="0">
       <div class="toggle-switch-knob"></div>
     </div>
   </div>
@@ -1680,7 +1680,7 @@ ${generateDesignTokenCSS(tokens)}
       <span class="am-toggle-label">自动氛围切换</span>
       <span class="am-toggle-desc">每 5 分钟检测时间段，自动切换氛围预设</span>
     </div>
-    <div class="toggle-switch ${autoMood ? 'toggle-switch--on' : 'toggle-switch--off'}" id="auto-mood-toggle" data-action="toggle-auto-mood" data-component="auto-mood-toggle" role="switch" aria-checked="${autoMood ? 'true' : 'false'}" tabindex="0" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); this.click(); }">
+    <div class="toggle-switch ${autoMood ? 'toggle-switch--on' : 'toggle-switch--off'}" id="auto-mood-toggle" data-action="toggle-auto-mood" data-component="auto-mood-toggle" role="switch" aria-checked="${autoMood ? 'true' : 'false'}" tabindex="0">
       <div class="toggle-switch-knob"></div>
     </div>
   </div>
@@ -2413,7 +2413,7 @@ ${generateDesignTokenCSS(tokens)}
   </div>
   <div class="toggle-row">
     <span class="toggle-label-text">卡片投影</span>
-    <div class="toggle-switch ${stored.shadows !== false ? 'toggle-switch--on' : 'toggle-switch--off'}" id="shadow-toggle" data-action="toggle-card-shadow" data-component="shadow-toggle" role="switch" aria-checked="${stored.shadows !== false ? 'true' : 'false'}" tabindex="0" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); this.click(); }">
+    <div class="toggle-switch ${stored.shadows !== false ? 'toggle-switch--on' : 'toggle-switch--off'}" id="shadow-toggle" data-action="toggle-card-shadow" data-component="shadow-toggle" role="switch" aria-checked="${stored.shadows !== false ? 'true' : 'false'}" tabindex="0">
       <div class="toggle-switch-knob"></div>
     </div>
   </div>

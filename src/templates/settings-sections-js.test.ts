@@ -151,6 +151,28 @@ describe('settings sections client script', () => {
     expect(listeners.click).toHaveLength(1);
   });
 
+  it('delegates visual switch keyboard activation', () => {
+    const { listeners } = createRuntime();
+    let clickCount = 0;
+    let preventDefaultCount = 0;
+    const control = {
+      getAttribute: (name: string) => name === 'data-action' ? 'toggle-auto-dark' : null,
+      click: () => { clickCount += 1; },
+    };
+    const keydown = (key: string) => listeners.keydown[0]({
+      key,
+      target: { closest: () => control },
+      preventDefault: () => { preventDefaultCount += 1; },
+    });
+
+    keydown('Enter');
+    keydown(' ');
+    keydown('Escape');
+
+    expect(clickCount).toBe(2);
+    expect(preventDefaultCount).toBe(2);
+  });
+
   it('stages delegated settings controls without saving or reloading', () => {
     const { runtime, listeners, store, timers } = createRuntime();
     const sectionCalls: string[] = [];

@@ -295,6 +295,7 @@ describe('settings view', () => {
     expect(html).not.toContain('style="width: 40%; height: 4px;');
     expect(html).toContain('data-action="select-layout-density" data-density="standard" aria-pressed="true"');
     expect(html).toContain('data-action="toggle-card-shadow" data-component="shadow-toggle" role="switch" aria-checked="true" tabindex="0"');
+    expect(html).not.toContain('onkeydown=');
     expect(html).toContain('data-action="select-font-family"');
     expect(html).toContain('data-action="reset-visual-config"');
     expect(html).toContain('data-action="save-settings"');
@@ -570,7 +571,9 @@ describe('settings view', () => {
     expect(html).toContain('data-action="toggle-setting" data-setting="areas.hide_unavailable" role="switch" aria-checked="false" tabindex="0"');
     expect(js).toContain("control.setAttribute('aria-checked', !isOn ? 'true' : 'false');");
     expect(js).toContain("chip.setAttribute('aria-pressed'");
-    expect(html).toContain("event.key === 'Enter' || event.key === ' '");
+    expect(js).toContain("action !== 'toggle-auto-dark'");
+    expect(js).toContain("action !== 'toggle-auto-mood'");
+    expect(js).toContain("action !== 'toggle-card-shadow'");
   });
 
   it('marks persisted theme presets as active', () => {

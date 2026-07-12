@@ -970,7 +970,11 @@ if (!window.hdpSettingsCommandHandlerReady) {
     var control = hdpClosestSettingsAction(e);
     if (!control) return;
     var action = control.getAttribute('data-action');
-    if (action !== 'toggle-section' && action !== 'toggle-setting') return;
+    if (action !== 'toggle-section'
+      && action !== 'toggle-setting'
+      && action !== 'toggle-auto-dark'
+      && action !== 'toggle-auto-mood'
+      && action !== 'toggle-card-shadow') return;
     e.preventDefault();
     control.click();
   });
