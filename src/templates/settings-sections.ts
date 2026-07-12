@@ -745,6 +745,15 @@ function hdpGetDraftPathValue(path) {
   return current;
 }
 
+function hdpNormalizeSettingsImageUrl(value) {
+  var text = String(value || '').trim();
+  if (!text) return '';
+  if (/[\\r\\n)"'\\\\]/.test(text)) return null;
+  if (/^data:/i.test(text) && !/^data:image\\//i.test(text)) return null;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(text) && !/^(https?:|data:image\\/)/i.test(text)) return null;
+  return text;
+}
+
 function hdpSyncSettingsControlsFromDraft() {
   if (typeof document === 'undefined' || !document.querySelectorAll) return;
   var controls = document.querySelectorAll('[data-setting]');
@@ -983,7 +992,18 @@ if (!window.hdpSettingsCommandHandlerReady) {
     if (!control || control.getAttribute('data-action')) return;
     var path = control.getAttribute('data-setting');
     if (!path) return;
-    var value = control.type === 'url' ? String(control.value || '').trim() : control.value;
+    var value = control.type === 'url' ? hdpNormalizeSettingsImageUrl(control.value) : control.value;
+    if (control.type === 'url' && value === null) {
+      if (control.setCustomValidity) {
+        control.setCustomValidity('请输入 HTTP(S)、/local/ 或相对图片路径');
+        if (control.reportValidity) control.reportValidity();
+        control.setCustomValidity('');
+      }
+      var previous = hdpGetDraftPathValue(path);
+      control.value = previous == null ? '' : String(previous);
+      if (typeof hdpShowToast === 'function') hdpShowToast('图片地址无效，未修改设置', 'error');
+      return;
+    }
     window.hdpSaveSetting(path, value);
   }, true);
   document.addEventListener('input', function(e) {

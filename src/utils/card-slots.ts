@@ -766,7 +766,7 @@ window.hdpEditCardSlotBackground = function(slotId) {
   var rawUrl = String(url || '').trim();
   var safeUrl = hdpSafeSlotImageUrl(rawUrl);
   if (rawUrl && !safeUrl) {
-    if (typeof hdpShowToast === 'function') hdpShowToast('背景图片地址无效，请使用 HTTPS、/local/ 或相对路径', 'error');
+    if (typeof hdpShowToast === 'function') hdpShowToast('背景图片地址无效，请使用 HTTP(S)、/local/ 或相对路径', 'error');
     return;
   }
   slot.background_image_url = safeUrl;

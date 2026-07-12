@@ -465,7 +465,7 @@ describe('card slots', () => {
     windowStub.hdpEditCardSlotBackground('home.summary');
     expect(draft.cards.slots['home.summary'].background_image_url).toBe('/local/original.jpg');
     expect(draft.cards.slots['home.summary'].theme_from_image).toBe(true);
-    expect(toastCalls).toEqual(['背景图片地址无效，请使用 HTTPS、/local/ 或相对路径']);
+    expect(toastCalls).toEqual(['背景图片地址无效，请使用 HTTP(S)、/local/ 或相对路径']);
 
     windowStub.hdpEditCardSlotBackground('home.summary');
     expect(draft.cards.slots['home.summary'].background_image_url).toBe('/local/original.jpg');

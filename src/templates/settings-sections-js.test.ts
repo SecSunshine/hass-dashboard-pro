@@ -227,6 +227,34 @@ describe('settings sections client script', () => {
     expect(timers).toHaveLength(0);
   });
 
+  it('rejects unsafe dashboard image URLs without changing the draft', () => {
+    const { runtime, listeners, store, timers } = createRuntime();
+    runtime.hdpSaveSetting('dashboard.background_image_url', '/local/original.jpg');
+    let validityMessage = '';
+    let reportCount = 0;
+    const createUrlInput = (value: string) => ({
+      value,
+      type: 'url',
+      getAttribute: (name: string) => name === 'data-setting' ? 'dashboard.background_image_url' : null,
+      setCustomValidity: (message: string) => { validityMessage = message; },
+      reportValidity: () => { reportCount += 1; },
+    });
+    const unsafe = createUrlInput('java\nscript:alert(1)');
+
+    listeners.change[0]({ target: { closest: () => unsafe } });
+
+    expect(runtime.hdpSettingsDraft.dashboard.background_image_url).toBe('/local/original.jpg');
+    expect(unsafe.value).toBe('/local/original.jpg');
+    expect(reportCount).toBe(1);
+    expect(validityMessage).toBe('');
+    expect(store.get('hdp_config')).toBeUndefined();
+    expect(timers).toHaveLength(0);
+
+    const relative = createUrlInput('images/dashboard.jpg');
+    listeners.change[0]({ target: { closest: () => relative } });
+    expect(runtime.hdpSettingsDraft.dashboard.background_image_url).toBe('images/dashboard.jpg');
+  });
+
   it('delegates design and maintenance commands from safe data attributes', () => {
     const { runtime, listeners } = createRuntime();
     const calls: Array<string | Record<string, unknown>> = [];
