@@ -41,8 +41,14 @@ function createMockSettingElement(attrs: Record<string, string>, value = '') {
   return element;
 }
 
-function createRuntime(initialSettingsConfig?: Record<string, unknown>) {
+function createRuntime(
+  initialSettingsConfig?: Record<string, unknown>,
+  initialLocalConfig?: Record<string, unknown>,
+  pendingSync = false,
+) {
   const store = new Map<string, string>();
+  if (initialLocalConfig) store.set('hdp_config', JSON.stringify(initialLocalConfig));
+  if (pendingSync) store.set('hdp_config_pending_sync', 'true');
   const chips: MockChip[] = [];
   const settingControls: Array<ReturnType<typeof createMockSettingElement>> = [];
   const layoutChoices: Array<ReturnType<typeof createMockSettingElement>> = [];
@@ -141,6 +147,36 @@ describe('settings sections client script', () => {
     expect(store.get('hdp_config')).toBeUndefined();
   });
 
+  it('keeps server settings authoritative over a normal local cache', () => {
+    const { runtime } = createRuntime(
+      { dashboard: { name: 'Server Home' }, areas: { hidden_areas: ['server-area'] } },
+      { dashboard: { name: 'Old Local Home' }, areas: { hidden_areas: ['local-area'] } },
+    );
+
+    expect(runtime.hdpSettingsDraft.dashboard.name).toBe('Server Home');
+    expect(runtime.hdpSettingsDraft.areas.hidden_areas).toEqual(['server-area']);
+  });
+
+  it('restores pending local changes without overriding server permissions', () => {
+    const { runtime } = createRuntime(
+      {
+        dashboard: { name: 'Server Home' },
+        permissions: { restrict_non_admin: true, restrict_settings: true },
+      },
+      {
+        dashboard: { name: 'Pending Local Home' },
+        permissions: { restrict_non_admin: false, restrict_settings: false },
+      },
+      true,
+    );
+
+    expect(runtime.hdpSettingsDraft.dashboard.name).toBe('Pending Local Home');
+    expect(runtime.hdpSettingsDraft.permissions).toEqual({
+      restrict_non_admin: true,
+      restrict_settings: true,
+    });
+  });
+
   it('keeps hidden area, domain, and device type chip toggles in a draft until commit', () => {
     const { runtime, store, eventForChip, chips } = createRuntime();
 
@@ -211,6 +247,7 @@ Old `);
 
     const saved = JSON.parse(store.get('hdp_config') || '{}');
     expect(saved.areas.hide_unavailable).toBe(false);
+    expect(store.get('hdp_config_pending_sync')).toBe('true');
   });
 
   it('stages home layout preset changes until commit', () => {

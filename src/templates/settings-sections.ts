@@ -679,13 +679,21 @@ window.hdpToggleSection = function(id) {
 };
 
 function hdpLoadRawSettingsConfig() {
+  var initial = hdpCloneConfig(window.hdpInitialSettingsConfig || {});
   try {
     var raw = localStorage.getItem('hdp_config');
-    if (!raw) return hdpCloneConfig(window.hdpInitialSettingsConfig || {});
+    if (!raw) return initial;
     var parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return initial;
+    var hasInitial = Object.keys(initial).length > 0;
+    var pendingSync = localStorage.getItem('hdp_config_pending_sync') === 'true';
+    if (hasInitial && !pendingSync) return initial;
+    if (!hasInitial) return parsed;
+    var merged = typeof hdpDeepMerge === 'function' ? hdpDeepMerge(initial, parsed) : parsed;
+    if (initial.permissions) merged.permissions = hdpCloneConfig(initial.permissions);
+    return merged;
   } catch(e) {
-    return hdpCloneConfig(window.hdpInitialSettingsConfig || {});
+    return initial;
   }
 }
 
@@ -809,6 +817,7 @@ window.hdpPersistSettingsAndReload = function(successDelay, fallbackDelay, confi
   var savedConfig = hdpCloneConfig(config);
   try {
     localStorage.setItem('hdp_config', JSON.stringify(savedConfig));
+    localStorage.setItem('hdp_config_pending_sync', 'true');
   } catch(e) {
     console.error('[HDP] Save failed:', e);
   }
