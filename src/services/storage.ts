@@ -164,6 +164,7 @@ function hdpDeepMerge(target, source) {
 function hdpClearConfig() {
   try {
     localStorage.removeItem('hdp_config');
+    localStorage.removeItem('hdp_config_pending_sync');
     localStorage.removeItem('hdp_visual_config');
   } catch(e) {}
 }

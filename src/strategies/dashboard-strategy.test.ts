@@ -260,6 +260,24 @@ describe('dashboard strategy hidden filters', () => {
     expect(paths).not.toContain('hdp-settings');
   });
 
+  it('fails closed when the user role is unavailable and allows a confirmed admin', async () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        permissions: { restrict_non_admin: true },
+      } as any,
+    };
+
+    const unknownUserDashboard = await HassDashboardProStrategy.generate(config, hass);
+    const adminDashboard = await HassDashboardProStrategy.generate(config, {
+      ...hass,
+      user: { name: 'Admin', is_admin: true },
+    });
+
+    expect(unknownUserDashboard.views.map(view => view.path)).not.toContain('hdp-settings');
+    expect(adminDashboard.views.map(view => view.path)).toContain('hdp-settings');
+  });
+
   it('renders the top-level devices view with the devices panel open', async () => {
     const view = await HassDashboardProViewStrategy.generate({
       type: 'custom:hass-dashboard-pro-view',

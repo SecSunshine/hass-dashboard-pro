@@ -8,5 +8,6 @@ describe('storage runtime script', () => {
     expect(js).toContain('var defaults = {"dashboard"');
     expect(js).toContain('return hdpDeepMerge(defaults, parsed);');
     expect(js).toContain('return defaults;');
+    expect(js).toContain("localStorage.removeItem('hdp_config_pending_sync');");
   });
 });

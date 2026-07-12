@@ -48,7 +48,7 @@ export function buildNavigationScript(defaultView = 'home'): string {
   }
 
   // Show a view by ID
-  window.hdpShowView = function(viewId) {
+  window.hdpShowView = function(viewId, skipHistory) {
     viewId = typeof viewId === 'string' && viewId ? viewId : 'home';
     // Hide all views
     var views = root.querySelectorAll('.hdp-view');
@@ -65,14 +65,16 @@ export function buildNavigationScript(defaultView = 'home'): string {
       if (home) home.style.display = '';
     }
 
-    // Update URL
-    var url = new URL(window.location.href);
-    if (viewId === 'home') {
-      url.searchParams.delete('hdp_area');
-    } else {
-      url.searchParams.set('hdp_area', viewId);
+    if (!skipHistory) {
+      // Keep the query parameter relative to the native top-level view.
+      var url = new URL(window.location.href);
+      if (viewId === ${defaultViewJSON}) {
+        url.searchParams.delete('hdp_area');
+      } else {
+        url.searchParams.set('hdp_area', viewId);
+      }
+      window.history.pushState(null, '', url.toString());
     }
-    window.history.pushState(null, '', url.toString());
 
     // Update sidebar active states
     updateActiveStates(viewId);
@@ -118,7 +120,7 @@ export function buildNavigationScript(defaultView = 'home'): string {
   // Handle browser back/forward
   window.addEventListener('popstate', function() {
     var params = new URLSearchParams(window.location.search);
-    var viewId = params.get('hdp_area') || 'home';
+    var viewId = params.get('hdp_area') || ${defaultViewJSON};
     // Direct show without pushState
     var views = root.querySelectorAll('.hdp-view');
     for (var i = 0; i < views.length; i++) {
@@ -261,7 +263,7 @@ export function buildNavigationScript(defaultView = 'home'): string {
   hdpSyncViewportHeight();
   window.addEventListener('resize', hdpSyncViewportHeight);
   window.addEventListener('orientationchange', hdpSyncViewportHeight);
-  hdpShowView(initialView);
+  hdpShowView(initialView, true);
 
   // Initialize entity click handlers (toggle entities by clicking cards)
   if (typeof hdpInitEntityClickHandlers === 'function') {

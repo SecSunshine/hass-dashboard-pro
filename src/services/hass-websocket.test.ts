@@ -97,6 +97,16 @@ describe('hass websocket script', () => {
     expect(js).not.toContain("return parts.length > 1 ? '/' + parts.slice(1).join('/') : path;");
   });
 
+  it('marks local fallbacks pending and propagates Lovelace save failures', () => {
+    const js = generateLovelaceConfigJS();
+
+    expect(js).toContain("localStorage.setItem('hdp_config_pending_sync', pendingSync ? 'true' : 'false');");
+    expect(js).toContain('return hdpSaveHDPConfig(hdpConfig, false);');
+    expect(js).toContain("throw new Error('No Home Assistant connection');");
+    expect(js).toContain('return hdpSaveHDPConfig(hdpConfig, true).then(function() {');
+    expect(js).toContain('throw err;');
+  });
+
   it('does not delegate-toggle clicks inside domain-specific cards', () => {
     const js = generateConnectionDiscoveryJS();
 
@@ -118,12 +128,16 @@ describe('hass websocket script', () => {
     expect(js).toContain("function hdpCallCoverService(hass, entityId, service, fallbackService, data, fallbackData)");
     expect(js).toContain("supported_features");
     expect(js).toContain("tilt_position: value");
-    expect(js).toContain("if (action === 'cover-position')");
+    expect(js).toContain("if (action === 'cover-position' || action === 'media-volume') return false;");
     expect(js).toContain("hdpCoverAction(entityId, action.replace('cover-', ''));");
     expect(js).toContain("document.addEventListener('change'");
     expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"cover-position\"][data-entity]')");
     expect(js).toContain("}, true);");
     expect(js).toContain("if (hdpClosestFromEvent(e, '[data-no-toggle]')) return;");
+    expect(js).toContain('if (window.hdpEntityClickHandlersInitialized) return;');
+    expect(js).toContain('if (hdpHandleDomainControl(domainControl)) {');
+    expect(js).toContain('function hdpCallEntityService(');
+    expect(js).toContain('result.then(onSuccess).catch(onFailure);');
   });
 
   it('adds keyboard activation for declarative toggle cards', () => {

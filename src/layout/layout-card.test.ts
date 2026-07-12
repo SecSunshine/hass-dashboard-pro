@@ -117,6 +117,8 @@ describe('layout card', () => {
     expect(card.content).toContain('onclick="hdpShowView(&quot;kitchen&#39;bad&quot;)"');
     expect(card.content).not.toContain("hdpShowView('kitchen'bad')");
     expect(card.content).toContain('function findView(viewId)');
+    expect(card.content).toContain('hdpShowView(initialView, true);');
+    expect(card.content).toContain('window.hdpShowView = function(viewId, skipHistory)');
   });
 
   it('applies the selected home layout preset to the home content grid', () => {

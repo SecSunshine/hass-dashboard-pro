@@ -134,6 +134,28 @@ function hdpApplyThemeVarsToOverlay(overlay) {
   });
 }
 
+function hdpCallEntityService(hass, domain, service, data, entityId, errorMessage, options) {
+  options = options || {};
+  function onSuccess() {
+    if (options.pulse !== false) hdpPulseCard(entityId);
+  }
+  function onFailure(err) {
+    if (options.silent) return;
+    console.error('[HDP] Service call failed:', err);
+    hdpShowToast(errorMessage, 'error');
+  }
+  try {
+    var result = hass.callService(domain, service, data);
+    if (result && typeof result.then === 'function') {
+      result.then(onSuccess).catch(onFailure);
+      return;
+    }
+    onSuccess();
+  } catch(e) {
+    onFailure(e);
+  }
+}
+
 function hdpToggleEntity(entityId) {
   var hass = hdpFindHass();
   if (!hass || !hass.callService) {
@@ -158,22 +180,16 @@ function hdpToggleEntity(entityId) {
       var modes = climateState.attributes && climateState.attributes.hvac_modes;
       var targetMode = (modes && modes.length > 1) ? modes[1] : 'auto';
       service = 'set_hvac_mode';
-      hass.callService('climate', service, { entity_id: entityId, hvac_mode: targetMode });
+      hdpCallEntityService(hass, 'climate', service, { entity_id: entityId, hvac_mode: targetMode }, entityId, '\u7a7a\u8c03\u6a21\u5f0f\u5207\u6362\u5931\u8d25');
     } else {
-      hass.callService('climate', 'set_hvac_mode', { entity_id: entityId, hvac_mode: 'off' });
+      hdpCallEntityService(hass, 'climate', 'set_hvac_mode', { entity_id: entityId, hvac_mode: 'off' }, entityId, '\u7a7a\u8c03\u6a21\u5f0f\u5207\u6362\u5931\u8d25');
     }
-    hdpPulseCard(entityId);
+    // Service feedback is applied after the asynchronous call succeeds.
     return;
   } else if (domain === 'button' || domain === 'input_button') {
     service = 'press';
   }
-  try {
-    hass.callService(domain, service, { entity_id: entityId });
-    hdpPulseCard(entityId);
-  } catch(e) {
-    console.error('[HDP] Toggle failed:', e);
-    hdpShowToast('设备控制失败: ' + (e.message || '未知错误'), 'error');
-  }
+  hdpCallEntityService(hass, domain, service, { entity_id: entityId }, entityId, '\u8bbe\u5907\u63a7\u5236\u5931\u8d25');
 }
 
 function hdpPulseCard(entityId) {
@@ -188,10 +204,7 @@ function hdpPulseCard(entityId) {
 function hdpSetClimateMode(entityId, mode) {
   var hass = hdpFindHass();
   if (!hass || !hass.callService) { hdpShowToast('无法连接到 Home Assistant', 'error'); return; }
-  try {
-    hass.callService('climate', 'set_hvac_mode', { entity_id: entityId, hvac_mode: mode });
-    hdpPulseCard(entityId);
-  } catch(e) { hdpShowToast('空调模式切换失败', 'error'); }
+  hdpCallEntityService(hass, 'climate', 'set_hvac_mode', { entity_id: entityId, hvac_mode: mode }, entityId, '\u7a7a\u8c03\u6a21\u5f0f\u5207\u6362\u5931\u8d25');
 }
 
 function hdpSetClimateTemp(entityId, delta, minTemp, maxTemp) {
@@ -208,19 +221,13 @@ function hdpSetClimateTemp(entityId, delta, minTemp, maxTemp) {
   var newTemp = Math.round((current + step) * 2) / 2; // round to 0.5
   if (!isNaN(min) && newTemp < min) newTemp = min;
   if (!isNaN(max) && newTemp > max) newTemp = max;
-  try {
-    hass.callService('climate', 'set_temperature', { entity_id: entityId, temperature: newTemp });
-    hdpPulseCard(entityId);
-  } catch(e) { hdpShowToast('温度调节失败', 'error'); }
+  hdpCallEntityService(hass, 'climate', 'set_temperature', { entity_id: entityId, temperature: newTemp }, entityId, '\u6e29\u5ea6\u8c03\u8282\u5931\u8d25');
 }
 
 function hdpSetClimateFanMode(entityId, fanMode) {
   var hass = hdpFindHass();
   if (!hass || !hass.callService) { hdpShowToast('无法连接到 Home Assistant', 'error'); return; }
-  try {
-    hass.callService('climate', 'set_fan_mode', { entity_id: entityId, fan_mode: fanMode });
-    hdpPulseCard(entityId);
-  } catch(e) { hdpShowToast('风速切换失败', 'error'); }
+  hdpCallEntityService(hass, 'climate', 'set_fan_mode', { entity_id: entityId, fan_mode: fanMode }, entityId, '\u98ce\u901f\u5207\u6362\u5931\u8d25');
 }
 
 // ── Cover Controls ──
@@ -301,10 +308,7 @@ function hdpCallCoverService(hass, entityId, service, fallbackService, data, fal
 function hdpLockAction(entityId, action) {
   var hass = hdpFindHass();
   if (!hass || !hass.callService) { hdpShowToast('无法连接到 Home Assistant', 'error'); return; }
-  try {
-    hass.callService('lock', action, { entity_id: entityId });
-    hdpPulseCard(entityId);
-  } catch(e) { hdpShowToast('门锁控制失败', 'error'); }
+  hdpCallEntityService(hass, 'lock', action, { entity_id: entityId }, entityId, '\u95e8\u9501\u63a7\u5236\u5931\u8d25');
 }
 
 // ── Media Player Controls ──
@@ -313,10 +317,7 @@ function hdpMediaAction(entityId, action) {
   if (!hass || !hass.callService) { hdpShowToast('无法连接到 Home Assistant', 'error'); return; }
   var serviceMap = { play_pause: 'media_play_pause', next: 'media_next_track', previous: 'media_previous_track' };
   var service = serviceMap[action] || 'media_play_pause';
-  try {
-    hass.callService('media_player', service, { entity_id: entityId });
-    hdpPulseCard(entityId);
-  } catch(e) { hdpShowToast('媒体控制失败', 'error'); }
+  hdpCallEntityService(hass, 'media_player', service, { entity_id: entityId }, entityId, '\u5a92\u4f53\u63a7\u5236\u5931\u8d25');
 }
 
 function hdpSetMediaVolume(entityId, volumeLevel) {
@@ -325,9 +326,7 @@ function hdpSetMediaVolume(entityId, volumeLevel) {
   var v = parseFloat(volumeLevel);
   if (isNaN(v)) return;
   v = Math.max(0, Math.min(1, v));
-  try {
-    hass.callService('media_player', 'volume_set', { entity_id: entityId, volume_level: v });
-  } catch(e) { /* silent — volume slider fires frequently */ }
+  hdpCallEntityService(hass, 'media_player', 'volume_set', { entity_id: entityId, volume_level: v }, entityId, '', { pulse: false, silent: true });
 }
 
 // ── Vacuum Controls ──
@@ -336,10 +335,7 @@ function hdpVacuumAction(entityId, action) {
   if (!hass || !hass.callService) { hdpShowToast('无法连接到 Home Assistant', 'error'); return; }
   var serviceMap = { start: 'start', pause: 'pause', dock: 'return_to_base' };
   var service = serviceMap[action] || 'start';
-  try {
-    hass.callService('vacuum', service, { entity_id: entityId });
-    hdpPulseCard(entityId);
-  } catch(e) { hdpShowToast('扫地机控制失败', 'error'); }
+  hdpCallEntityService(hass, 'vacuum', service, { entity_id: entityId }, entityId, '\u626b\u5730\u673a\u63a7\u5236\u5931\u8d25');
 }
 
 // ── Environment History ──
@@ -1049,10 +1045,7 @@ function hdpHandleDomainControl(control) {
     hdpSetClimateFanMode(entityId, control.getAttribute('data-fan-mode') || 'auto');
     return true;
   }
-  if (action === 'cover-position') {
-    hdpSetCoverPosition(entityId, control.value || control.getAttribute('data-position'));
-    return true;
-  }
+  if (action === 'cover-position' || action === 'media-volume') return false;
   if (action.indexOf('cover-') === 0) {
     hdpCoverAction(entityId, action.replace('cover-', ''));
     return true;
@@ -1073,13 +1066,18 @@ function hdpHandleDomainControl(control) {
 }
 
 function hdpInitEntityClickHandlers() {
+  if (window.hdpEntityClickHandlersInitialized) return;
+  window.hdpEntityClickHandlersInitialized = true;
+
   // Event delegation on the main content area
   document.addEventListener('click', function(e) {
     var domainControl = hdpClosestFromEvent(e, '[data-action][data-entity]');
     if (domainControl && hdpClosestFromEvent(e, '[data-no-toggle]')) {
-      e.preventDefault();
-      e.stopPropagation();
-      if (hdpHandleDomainControl(domainControl)) return;
+      if (hdpHandleDomainControl(domainControl)) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
     }
     // Domain-specific cards own their inner buttons and service calls.
     if (hdpClosestFromEvent(e, '[data-no-toggle]')) return;
@@ -1183,7 +1181,7 @@ function hdpLoadHDPConfig() {
   });
 }
 
-function hdpSaveHDPConfig(data) {
+function hdpSaveHDPConfig(data, pendingSync) {
   try {
     var existing = {};
     try {
@@ -1194,6 +1192,7 @@ function hdpSaveHDPConfig(data) {
       ? hdpDeepMerge(existing, data)
       : Object.assign({}, existing, data);
     localStorage.setItem('hdp_config', JSON.stringify(merged));
+    localStorage.setItem('hdp_config_pending_sync', pendingSync ? 'true' : 'false');
     return Promise.resolve(merged);
   } catch(e) {
     console.error('[HDP] Failed to save config:', e);
@@ -1205,7 +1204,9 @@ function hdpSaveToLovelace(hdpConfig) {
   var conn = hdpFindHassConnection();
   if (!conn) {
     console.warn('[HDP] No HA connection, config saved to localStorage only');
-    return hdpSaveHDPConfig(hdpConfig);
+    return hdpSaveHDPConfig(hdpConfig, true).then(function() {
+      throw new Error('No Home Assistant connection');
+    });
   }
   var urlPath = hdpGetCurrentUrlPath();
   return conn.sendMessagePromise(hdpLovelaceMessage('lovelace/config', urlPath, {
@@ -1217,10 +1218,12 @@ function hdpSaveToLovelace(hdpConfig) {
       config: Object.assign({}, lovelaceConfig, { strategy: strategy })
     }));
   }).then(function() {
-    return hdpSaveHDPConfig(hdpConfig);
+    return hdpSaveHDPConfig(hdpConfig, false);
   }).catch(function(err) {
     console.error('[HDP] Lovelace save failed:', err);
-    return hdpSaveHDPConfig(hdpConfig);
+    return hdpSaveHDPConfig(hdpConfig, true).then(function() {
+      throw err;
+    });
   });
 }
 `;

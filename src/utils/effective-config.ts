@@ -1,6 +1,7 @@
 import type { HDPConfig, StrategyConfig } from '../types';
 
 const HDP_CONFIG_KEY = 'hdp_config';
+const HDP_CONFIG_PENDING_KEY = 'hdp_config_pending_sync';
 
 export function getEffectiveStrategyConfig(config: StrategyConfig): StrategyConfig {
   const hdpConfig = getEffectiveHDPConfig(config);
@@ -10,8 +11,12 @@ export function getEffectiveStrategyConfig(config: StrategyConfig): StrategyConf
 export function getEffectiveHDPConfig(config: StrategyConfig): Partial<HDPConfig> | undefined {
   const localConfig = readLocalHDPConfig();
   const strategyConfig = config.hdp_config || {};
-  const merged = deepMerge(strategyConfig, localConfig || {}) as Partial<HDPConfig>;
-  return Object.keys(merged).length > 0 ? merged : config.hdp_config;
+  if (!localConfig) return Object.keys(strategyConfig).length ? strategyConfig : config.hdp_config;
+  if (!Object.keys(strategyConfig).length) return localConfig;
+  if (!isLocalHDPConfigPending()) return strategyConfig;
+  const merged = deepMerge(strategyConfig, localConfig) as Partial<HDPConfig>;
+  if (strategyConfig.permissions) merged.permissions = strategyConfig.permissions;
+  return merged;
 }
 
 export function readLocalHDPConfig(): Partial<HDPConfig> | null {
@@ -25,6 +30,15 @@ export function readLocalHDPConfig(): Partial<HDPConfig> | null {
       : null;
   } catch {
     return null;
+  }
+}
+
+function isLocalHDPConfigPending(): boolean {
+  try {
+    return typeof localStorage !== 'undefined'
+      && localStorage.getItem(HDP_CONFIG_PENDING_KEY) === 'true';
+  } catch {
+    return false;
   }
 }
 

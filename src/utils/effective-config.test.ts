@@ -18,9 +18,11 @@ describe('effective config', () => {
     });
   });
 
-  it('uses local hdp_config as an effective strategy override', () => {
+  it('uses a pending local hdp_config as an effective strategy override', () => {
     vi.stubGlobal('localStorage', {
-      getItem: (key: string) => key === 'hdp_config'
+      getItem: (key: string) => key === 'hdp_config_pending_sync'
+        ? 'true'
+        : key === 'hdp_config'
         ? JSON.stringify({
           areas: { hidden_areas: ['kitchen'] },
           devices: { hidden_domains: ['sensor'] },
@@ -38,5 +40,50 @@ describe('effective config', () => {
     const effective = getEffectiveStrategyConfig(config);
     expect(effective.hdp_config?.areas?.hidden_areas).toEqual(['kitchen']);
     expect(effective.hdp_config?.devices?.hidden_domains).toEqual(['sensor']);
+  });
+
+  it('keeps the strategy config authoritative over a normal local cache', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => key === 'hdp_config'
+        ? JSON.stringify({
+          areas: { hidden_areas: ['kitchen'] },
+          permissions: { restrict_non_admin: false, restrict_settings: false },
+        })
+        : null,
+    });
+
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        areas: { hidden_areas: ['closet'] },
+        permissions: { restrict_non_admin: true, restrict_settings: false },
+      } as any,
+    };
+
+    const effective = getEffectiveStrategyConfig(config);
+    expect(effective.hdp_config?.areas?.hidden_areas).toEqual(['closet']);
+    expect(effective.hdp_config?.permissions?.restrict_non_admin).toBe(true);
+  });
+
+  it('does not let a pending local config override server permissions', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => key === 'hdp_config_pending_sync'
+        ? 'true'
+        : key === 'hdp_config'
+        ? JSON.stringify({ permissions: { restrict_non_admin: false, restrict_settings: false } })
+        : null,
+    });
+
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        permissions: { restrict_non_admin: true, restrict_settings: true },
+      } as any,
+    };
+
+    expect(getEffectiveStrategyConfig(config).hdp_config?.permissions).toEqual({
+      restrict_non_admin: true,
+      restrict_settings: true,
+    });
   });
 });

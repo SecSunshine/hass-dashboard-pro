@@ -71,28 +71,32 @@ export const GRADIENTS = {
 export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
   const cardSkin = sanitizeCardSkin(tokens?.card_style);
   // User overrides from settings (if any)
-  const primaryOverride = tokens?.primary || '';
-  const bgOverride = tokens?.page_bg || '';
-  const cardBgOverride = tokens?.card_bg || '';
-  const textOverride = tokens?.text_primary || '';
-  const textSecOverride = tokens?.text_secondary || '';
-  const textMutedOverride = tokens?.text_muted || '';
-  const borderOverride = tokens?.border || '';
-  const accentOverride = tokens?.accent || '';
-  const primaryLightOverride = tokens?.primary_light || '';
-  const gradientOverride = tokens?.gradient_primary || '';
+  const primaryOverride = sanitizeCSSValue(tokens?.primary);
+  const bgOverride = sanitizeCSSValue(tokens?.page_bg);
+  const cardBgOverride = sanitizeCSSValue(tokens?.card_bg);
+  const textOverride = sanitizeCSSValue(tokens?.text_primary);
+  const textSecOverride = sanitizeCSSValue(tokens?.text_secondary);
+  const textMutedOverride = sanitizeCSSValue(tokens?.text_muted);
+  const borderOverride = sanitizeCSSValue(tokens?.border);
+  const accentOverride = sanitizeCSSValue(tokens?.accent);
+  const primaryLightOverride = sanitizeCSSValue(tokens?.primary_light);
+  const gradientOverride = sanitizeCSSValue(tokens?.gradient_primary);
 
   // Palette-generated semantic colors (from seed color engine)
-  const successOverride = tokens?.success || '';
-  const warningOverride = tokens?.warning || '';
-  const dangerOverride = tokens?.danger || '';
-  const infoOverride = tokens?.info || '';
-  const shadowCardOverride = tokens?.shadow_card || '';
-  const shadowElevatedOverride = tokens?.shadow_elevated || '';
+  const successOverride = sanitizeCSSValue(tokens?.success);
+  const warningOverride = sanitizeCSSValue(tokens?.warning);
+  const dangerOverride = sanitizeCSSValue(tokens?.danger);
+  const infoOverride = sanitizeCSSValue(tokens?.info);
+  const shadowCardOverride = sanitizeCSSValue(tokens?.shadow_card);
+  const shadowElevatedOverride = sanitizeCSSValue(tokens?.shadow_elevated);
 
   // Layout density preset (compact | standard | spacious)
   const density = sanitizeLayoutDensity(tokens?.layout_density);
   const densityPreset = DENSITY_PRESETS[density];
+  const radius = sanitizeCSSNumber(tokens?.border_radius, SHAPE.radius);
+  const cardPadding = sanitizeCSSNumber(tokens?.card_padding, densityPreset.padding);
+  const cardGap = sanitizeCSSNumber(tokens?.card_gap, densityPreset.gap);
+  const fontFamily = sanitizeCSSValue(tokens?.font_family || 'inherit');
 
   // Build CSS: HA theme tokens with hardcoded fallbacks
   return /* css */ `
@@ -143,14 +147,14 @@ export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
     --hdp-gradient-green: linear-gradient(135deg, var(--hdp-success) 0%, #16A34A 100%);
 
     /* ── Shape (html-pro-card spec: 10px) ── */
-    --hdp-radius: ${tokens?.border_radius != null ? tokens.border_radius : SHAPE.radius}px;
+    --hdp-radius: ${radius}px;
     --hdp-radius-sm: ${SHAPE.radius_sm}px;
     --hdp-radius-lg: ${SHAPE.radius_lg}px;
     --hdp-radius-pill: ${SHAPE.radius_pill}px;
 
     /* ── Spacing ── */
-    --hdp-card-padding: ${tokens?.card_padding != null ? tokens.card_padding : densityPreset.padding}px;
-    --hdp-card-gap: ${tokens?.card_gap != null ? tokens.card_gap : densityPreset.gap}px;
+    --hdp-card-padding: ${cardPadding}px;
+    --hdp-card-gap: ${cardGap}px;
 
     /* ── Layout Density (compact | standard | spacious) ── */
     --hdp-density: ${density};
@@ -160,7 +164,7 @@ export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
     --hdp-density-entity-padding: ${densityPreset.entityPadding}px;
 
     /* ── Typography ── */
-    --hdp-font: ${tokens?.font_family || 'inherit'};
+    --hdp-font: ${fontFamily};
 
     /* ── Motion ── */
     --hdp-transition: all 0.2s ease;
@@ -173,7 +177,7 @@ export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
     /* ── v4.0: Sidebar & Layout ── */
     --hdp-sidebar-bg: var(--ha-card-background, var(--card-background-color, #FFFFFF));
     --hdp-sidebar-width: 72px;
-    --hdp-content-padding: ${tokens?.card_padding != null ? tokens.card_padding : densityPreset.padding}px;
+    --hdp-content-padding: ${cardPadding}px;
 
     /* ── v4.0: Focus & Interaction ── */
     --hdp-primary-glow: rgba(79, 110, 247, 0.15);
@@ -305,4 +309,17 @@ export function generateDesignTokenCSS(tokens?: ResolvedTokens): string {
       inset 0 0 12px color-mix(in srgb, var(--hdp-primary) 8%, transparent);
   }
 </style>`;
+}
+
+// CSS values can originate from imported or locally persisted configuration.
+// Strip syntax delimiters before interpolating them into the style block.
+function sanitizeCSSValue(value: unknown): string {
+  if (typeof value !== 'string' && typeof value !== 'number') return '';
+  return String(value).replace(/[<>{};\u0000-\u001F\u007F]/g, '');
+}
+
+function sanitizeCSSNumber(value: unknown, fallback: number): string {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? String(value)
+    : String(fallback);
 }
