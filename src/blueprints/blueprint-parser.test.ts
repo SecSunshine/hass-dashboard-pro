@@ -98,4 +98,27 @@ describe('blueprint parser rendering', () => {
     expect(html).not.toContain('behavior');
     expect(html).not.toContain('javascript:');
   });
+
+  it('removes external resource loads from style blocks without dropping safe declarations', () => {
+    const html = cardConfigToHTML({
+      type: 'custom:html-pro-card',
+      content: `
+        <style>
+          @font-face { font-family: Tracker; src: url(https://tracker.test/font.woff2); }
+          .tile { color: red; background-image: url(https://tracker.test/pixel); padding: 8px; }
+          .mask { mask-image: image-set(url(https://tracker.test/mask.png) 1x); display: grid; }
+        </style>
+        <div class="tile mask">Safe style</div>
+      `,
+    }, 'No external CSS');
+
+    expect(html).toContain('.bp-html-card .tile');
+    expect(html).toContain('color: red');
+    expect(html).toContain('padding: 8px');
+    expect(html).toContain('display: grid');
+    expect(html).not.toContain('tracker.test');
+    expect(html).not.toContain('@font-face');
+    expect(html).not.toContain('background-image');
+    expect(html).not.toContain('mask-image');
+  });
 });

@@ -1121,8 +1121,14 @@ function hdpSanitizeSlotStyle(value) {
   }).filter(Boolean).join('; ');
 }
 
+function hdpStripSlotCSSResources(css) {
+  return String(css || '')
+    .replace(/@font-face\\s*\\{[^{}]*\\}/gi, '')
+    .replace(/(^|[;{])\\s*[^;{}]*:\\s*[^;{}]*(?:url|(?:-webkit-)?image-set)\\s*\\([^;{}]*\\)[^;{}]*;?/gi, '$1');
+}
+
 function hdpScopeSlotCSS(css) {
-  var cleaned = String(css || '')
+  var cleaned = hdpStripSlotCSSResources(css)
     .replace(/@import[^;]+;?/gi, '')
     .replace(/javascript\\s*:/gi, '')
     .replace(/expression\\s*\\(/gi, '')

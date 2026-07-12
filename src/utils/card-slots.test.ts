@@ -657,7 +657,7 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
     );
 
     const sanitized = windowStub.testSanitizeSlotHTML([
-      '<style>@import "evil.css"; :host { color: red } .safe { display: grid } .bad { width: expression(alert(1)) }</style>',
+      '<style>@import "evil.css"; @font-face { font-family: Tracker; src: url(https://tracker.test/font.woff2) } :host { color: red } .safe { display: grid; background-image: url(https://tracker.test/pixel) } .mask { mask-image: image-set(url(https://tracker.test/mask.png) 1x); padding: 4px } .bad { width: expression(alert(1)) }</style>',
       '<section class="safe" data-entity="light.kitchen" data-action="toggle" role="button" tabindex="0" aria-label="Kitchen" onclick="evil()" style="color:red;background:url(evil);padding:8px">',
       '<script>alert(1)</script>',
       '<img src="javascript:alert(1)" onerror="evil()">',
@@ -677,6 +677,11 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
     expect(sanitized).not.toContain('javascript:');
     expect(sanitized).not.toContain('@import');
     expect(sanitized).not.toContain('expression(');
+    expect(sanitized).not.toContain('tracker.test');
+    expect(sanitized).not.toContain('@font-face');
+    expect(sanitized).not.toContain('background-image');
+    expect(sanitized).not.toContain('mask-image');
+    expect(sanitized).toContain('padding: 4px');
     expect(sanitized).not.toContain('background:');
     expect(sanitized).toContain('data-entity="light.kitchen"');
     expect(sanitized).toContain('data-action="toggle"');

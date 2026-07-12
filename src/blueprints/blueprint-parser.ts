@@ -512,8 +512,14 @@ function sanitizeStyleAttribute(value: string): string {
   return escapeAttribute(safeDeclarations.join('; '));
 }
 
+function stripCSSResourceLoads(css: string): string {
+  return css
+    .replace(/@font-face\s*{[^{}]*}/gi, '')
+    .replace(/(^|[;{])\s*[^;{}]*:\s*[^;{}]*(?:url|(?:-webkit-)?image-set)\s*\([^;{}]*\)[^;{}]*;?/gi, '$1');
+}
+
 function scopeBlueprintCSS(css: string): string {
-  const cleaned = css
+  const cleaned = stripCSSResourceLoads(css)
     .replace(/@import[^;]+;?/gi, '')
     .replace(/javascript\s*:/gi, '')
     .replace(/expression\s*\(/gi, '')
