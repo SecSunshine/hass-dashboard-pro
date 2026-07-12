@@ -267,6 +267,59 @@ describe('card slots', () => {
     expect(calls).toEqual(['edit:true', 'hidden', 'save', 'cancel']);
   });
 
+  it('binds dragging once per dashboard root after Home Assistant rebuilds it', () => {
+    const documentStub = {
+      readyState: 'loading',
+      addEventListener: () => {},
+    };
+    const windowStub: Record<string, any> = {};
+    new Function(
+      'window',
+      'document',
+      'localStorage',
+      'Image',
+      'prompt',
+      'confirm',
+      'location',
+      'setTimeout',
+      'clearTimeout',
+      `${generateCardSlotEditorJS()}\nwindow.testInitCardSlotDragging = hdpInitCardSlotDragging;`,
+    )(
+      windowStub,
+      documentStub,
+      { getItem: () => null, setItem: () => {} },
+      function ImageStub() {},
+      () => null,
+      () => false,
+      { reload: () => {} },
+      setTimeout,
+      clearTimeout,
+    );
+
+    const createRoot = () => {
+      const listeners: Record<string, Array<(event: any) => void>> = {};
+      return {
+        listeners,
+        classList: { contains: () => true },
+        addEventListener: (type: string, listener: (event: any) => void) => {
+          (listeners[type] ||= []).push(listener);
+        },
+      };
+    };
+    const firstRoot = createRoot();
+    const rebuiltRoot = createRoot();
+
+    windowStub.testInitCardSlotDragging(firstRoot);
+    windowStub.testInitCardSlotDragging(firstRoot);
+    windowStub.testInitCardSlotDragging(rebuiltRoot);
+
+    ['dragstart', 'dragover', 'drop', 'dragend', 'pointerdown', 'pointermove', 'pointerup', 'pointercancel'].forEach(type => {
+      expect(firstRoot.listeners[type]).toHaveLength(1);
+      expect(rebuiltRoot.listeners[type]).toHaveLength(1);
+    });
+    expect(windowStub.hdpCardSlotDragReady).toBe(true);
+  });
+
   it('sanitizes custom-card previews with the production safety boundary', () => {
     const windowStub: Record<string, any> = {};
     const documentStub = {

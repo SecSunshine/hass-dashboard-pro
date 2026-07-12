@@ -582,7 +582,8 @@ function hdpPersistHomeSlotDomOrder(markDirty) {
 }
 
 function hdpInitCardSlotDragging(root) {
-  if (window.hdpCardSlotDragReady) return;
+  if (!root || root.__hdpCardSlotDragReady) return;
+  root.__hdpCardSlotDragReady = true;
   window.hdpCardSlotDragReady = true;
   var dragging = null;
   root.addEventListener('dragstart', function(e) {
