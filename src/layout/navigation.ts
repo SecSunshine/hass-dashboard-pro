@@ -218,6 +218,41 @@ export function buildNavigationScript(defaultView = 'home'): string {
     window.dispatchEvent(event);
   };
 
+  function closestNavigationAction(e) {
+    if (e && e.target && e.target.closest) {
+      var direct = e.target.closest('[data-action]');
+      if (direct && root.contains(direct)) return direct;
+    }
+    var path = e && typeof e.composedPath === 'function' ? e.composedPath() : [];
+    for (var i = 0; i < path.length; i++) {
+      if (path[i] === root) break;
+      if (path[i] && path[i].matches && path[i].matches('[data-action]')) return path[i];
+    }
+    return null;
+  }
+
+  root.addEventListener('click', function(e) {
+    var control = closestNavigationAction(e);
+    if (!control) return;
+    var action = control.getAttribute('data-action');
+    if (action === 'show-view') {
+      var viewId = control.getAttribute('data-view') || control.getAttribute('data-area');
+      if (!viewId) return;
+      e.preventDefault();
+      window.hdpShowView(viewId);
+      if (control.getAttribute('data-close-sheet') === 'true') window.hdpCloseSheet();
+    } else if (action === 'toggle-bottom-sheet') {
+      e.preventDefault();
+      window.hdpToggleSheet();
+    } else if (action === 'toggle-ha-menu') {
+      e.preventDefault();
+      window.hdpToggleHAMenu();
+    } else if (action === 'toggle-dashboard-fullscreen') {
+      e.preventDefault();
+      window.hdpToggleDashboardFullscreen();
+    }
+  });
+
   function updateDashboardFullscreenUI(active) {
     root.classList.toggle('hdp-root--fullscreen', active);
     root.setAttribute('data-dashboard-fullscreen', active ? 'true' : 'false');
@@ -263,7 +298,7 @@ export function buildNavigationScript(defaultView = 'home'): string {
   hdpSyncViewportHeight();
   window.addEventListener('resize', hdpSyncViewportHeight);
   window.addEventListener('orientationchange', hdpSyncViewportHeight);
-  hdpShowView(initialView, true);
+  window.hdpShowView(initialView, true);
 
   // Initialize entity click handlers (toggle entities by clicking cards)
   if (typeof hdpInitEntityClickHandlers === 'function') {

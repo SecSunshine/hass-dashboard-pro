@@ -12,7 +12,7 @@
 import type { Hass, AreaSummary, StrategyConfig } from '../types';
 import { groupAreasByFloor } from '../utils/area-entities';
 import { getAreaIcon } from '../utils/dashboard-model';
-import { escapeAttribute, escapeHTML, escapeJSONAttribute, escapeURLAttribute } from '../utils/html';
+import { escapeAttribute, escapeHTML, escapeURLAttribute } from '../utils/html';
 import { shouldShowSettings } from '../utils/permissions';
 
 export interface SidebarOptions {
@@ -51,8 +51,7 @@ export function buildSidebarHTML(opts: SidebarOptions): string {
       const icon = getAreaIcon(a.area_name);
       const tempHTML = a.temp ? `<span class="sb-temp">${escapeHTML(a.temp)}</span>` : '';
       const areaId = escapeAttribute(a.area_id);
-      const areaArg = escapeJSONAttribute(a.area_id);
-      return `<button class="sb-area-btn" data-area="${areaId}" data-action="show-view" onclick="hdpShowView(${areaArg})">
+      return `<button class="sb-area-btn" data-area="${areaId}" data-view="${areaId}" data-action="show-view">
         <span class="sb-area-icon">${getAreaIconSVG(icon)}</span>
         <span class="sb-area-info">
           <span class="sb-area-name">${escapeHTML(a.area_name)}</span>
@@ -74,8 +73,7 @@ export function buildSidebarHTML(opts: SidebarOptions): string {
       const icon = getAreaIcon(a.area_name);
       const tempHTML = a.temp ? `<span class="sb-temp">${escapeHTML(a.temp)}</span>` : '';
       const areaId = escapeAttribute(a.area_id);
-      const areaArg = escapeJSONAttribute(a.area_id);
-      return `<button class="sb-area-btn" data-area="${areaId}" data-action="show-view" onclick="hdpShowView(${areaArg})">
+      return `<button class="sb-area-btn" data-area="${areaId}" data-view="${areaId}" data-action="show-view">
         <span class="sb-area-icon">${getAreaIconSVG(icon)}</span>
         <span class="sb-area-info">
           <span class="sb-area-name">${escapeHTML(a.area_name)}</span>
@@ -86,16 +84,25 @@ export function buildSidebarHTML(opts: SidebarOptions): string {
     floorSections.push(`<div class="sb-floor-label">其他</div><div class="sb-floor-group">${areaItems}</div>`);
   }
 
+  const settingsFooter = showSettings
+    ? `<div class="sb-footer">
+      <button class="sb-nav-btn" data-view="settings" data-action="show-view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>设置</span>
+      </button>
+    </div>`
+    : '';
+
   return `<div class="sb-header">
     <div class="sb-title">${escapeHTML(title)}</div>
     ${avatar.buttonHTML}
   </div>
   <nav class="sb-nav">
-    <button class="sb-nav-btn sb-nav-btn--active" data-view="home" onclick="hdpShowView('home')">
+    <button class="sb-nav-btn sb-nav-btn--active" data-view="home" data-action="show-view">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       <span>首页</span>
     </button>
-    <button class="sb-nav-btn" data-view="devices" onclick="hdpShowView('devices')">
+    <button class="sb-nav-btn" data-view="devices" data-action="show-view">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
       <span>设备</span>
     </button>
@@ -104,12 +111,7 @@ export function buildSidebarHTML(opts: SidebarOptions): string {
   <div class="sb-areas">
     ${floorSections.join('')}
   </div>
-  <div class="sb-footer" style="${showSettings ? '' : 'display:none'}">
-    <button class="sb-nav-btn" data-view="settings" onclick="hdpShowView('settings')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      <span>设置</span>
-    </button>
-  </div>`;
+  ${settingsFooter}`;
 }
 
 export { shouldShowSettings };
@@ -380,7 +382,7 @@ function buildAvatarHTML(hass: Hass, config: StrategyConfig): { buttonHTML: stri
     : escapeHTML(initials);
 
   return {
-    buttonHTML: `<button type="button" class="sb-profile-btn" data-action="toggle-dashboard-fullscreen" onclick="hdpToggleDashboardFullscreen()" aria-label="切换仪表盘全屏" aria-pressed="false">
+    buttonHTML: `<button type="button" class="sb-profile-btn" data-action="toggle-dashboard-fullscreen" aria-label="切换仪表盘全屏" aria-pressed="false">
       <span class="sb-avatar">${avatarInner}</span>
       <span class="sb-profile-meta">
         <span class="sb-profile-name">${escapeHTML(userName)}</span>

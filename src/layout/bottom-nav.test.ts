@@ -27,6 +27,10 @@ describe('bottom navigation', () => {
     expect(html).toContain('class="hdp-bottom-nav"');
     expect(html).toContain('data-view="settings"');
     expect(html).toContain('class="bn-sheet"');
+    expect(html).toContain('data-action="toggle-bottom-sheet"');
+    expect(html).toContain('data-close-sheet="true"');
+    expect(html).toContain('data-action="toggle-ha-menu"');
+    expect(html).not.toContain('onclick=');
     expect(html).toContain('One &lt;Page&gt;');
     expect(html).not.toContain('One <Page>');
   });

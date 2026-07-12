@@ -51,6 +51,8 @@ describe('sidebar', () => {
     expect(html).toContain('Alice &lt;Admin&gt;');
     expect(html).toContain('Living &lt;Room&gt;');
     expect(html).toContain('data-action="toggle-dashboard-fullscreen"');
+    expect(html).toContain('data-area="living" data-view="living" data-action="show-view"');
+    expect(html).not.toContain('onclick=');
     expect(html).not.toContain('Home <Title>');
     expect(html).not.toContain('Alice <Admin>');
     expect(html).not.toContain('Living <Room>');

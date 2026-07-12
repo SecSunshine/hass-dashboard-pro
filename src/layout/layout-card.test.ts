@@ -114,7 +114,7 @@ describe('layout card', () => {
       blueprintPages: [],
     });
 
-    expect(card.content).toContain('onclick="hdpShowView(&quot;kitchen&#39;bad&quot;)"');
+    expect(card.content).toContain('data-area="kitchen&#39;bad" data-view="kitchen&#39;bad" data-action="show-view"');
     expect(card.content).not.toContain("hdpShowView('kitchen'bad')");
     expect(card.content).toContain('function findView(viewId)');
     expect(card.content).toContain('hdpShowView(initialView, true);');
@@ -197,7 +197,8 @@ describe('layout card', () => {
     expect(card.content).toContain('class="sb-profile-btn"');
     expect(card.content).toContain('src="/local/avatar.png"');
     expect(card.content).toContain('data-action="toggle-dashboard-fullscreen"');
-    expect(card.content).toContain('onclick="hdpToggleDashboardFullscreen()"');
+    expect(card.content).not.toContain('onclick="hdpToggleDashboardFullscreen()"');
+    expect(card.content).toContain("action === 'toggle-dashboard-fullscreen'");
     expect(card.content).toContain('window.hdpToggleDashboardFullscreen = function()');
     expect(card.content).toContain('.hdp-root--fullscreen');
     expect(card.content).toContain("hint.textContent = active ? '再次点击退出全屏' : '点击全屏仪表盘'");
