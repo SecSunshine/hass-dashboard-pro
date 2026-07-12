@@ -1065,12 +1065,40 @@ function hdpHandleDomainControl(control) {
   return false;
 }
 
+function hdpHandleDashboardAction(control) {
+  if (!control || !control.getAttribute) return false;
+  var action = control.getAttribute('data-action') || '';
+  if (action === 'show-device-domain') {
+    var domain = control.getAttribute('data-domain') || '';
+    if (!domain || typeof window.hdpShowDeviceDomain !== 'function') return false;
+    window.hdpShowDeviceDomain(domain);
+    return true;
+  }
+  if (action === 'show-environment-history') {
+    if (typeof window.hdpShowEnvironmentHistory !== 'function') return false;
+    window.hdpShowEnvironmentHistory(control.getAttribute('data-metric') || 'temperature');
+    return true;
+  }
+  if (action === 'open-automation-config') {
+    if (typeof window.hdpOpenAutomationConfig !== 'function') return false;
+    window.hdpOpenAutomationConfig();
+    return true;
+  }
+  return false;
+}
+
 function hdpInitEntityClickHandlers() {
   if (window.hdpEntityClickHandlersInitialized) return;
   window.hdpEntityClickHandlersInitialized = true;
 
   // Event delegation on the main content area
   document.addEventListener('click', function(e) {
+    var dashboardControl = hdpClosestFromEvent(e, '[data-action]');
+    if (hdpHandleDashboardAction(dashboardControl)) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
     var domainControl = hdpClosestFromEvent(e, '[data-action][data-entity]');
     if (domainControl && hdpClosestFromEvent(e, '[data-no-toggle]')) {
       if (hdpHandleDomainControl(domainControl)) {

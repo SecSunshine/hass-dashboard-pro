@@ -501,8 +501,7 @@ ${generateDesignTokenCSS(tokens)}
 function buildStatusBadges(domains: DomainStatus[], tokens?: ResolvedTokens): LovelaceCardConfig {
   const badges = domains.map(d => {
     const countText = d.active > 0 ? `<span class="sd-cnt">${d.active}</span>` : '';
-    const domainArg = escapeAttribute(JSON.stringify(d.domain));
-    return `<button type="button" class="sd-badge sd-badge--${d.color_class}" data-domain="${escapeAttribute(d.domain)}" data-action="show-device-domain" onclick="hdpShowDeviceDomain(${domainArg})">
+    return `<button type="button" class="sd-badge sd-badge--${d.color_class}" data-domain="${escapeAttribute(d.domain)}" data-action="show-device-domain">
       <span class="sd-icon">${d.icon_svg}</span>
       <span class="sd-label">${d.label}</span>
       ${countText}
@@ -703,7 +702,7 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
   const items: string[] = [];
 
   if (climate.has_data) {
-    items.push(`<button type="button" class="env-item ${skinCls}" data-action="show-environment-history" data-metric="temperature" onclick="hdpShowEnvironmentHistory('temperature')">
+    items.push(`<button type="button" class="env-item ${skinCls}" data-action="show-environment-history" data-metric="temperature">
       <div class="env-icon env-icon--temp">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
       </div>
@@ -715,7 +714,7 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
   }
 
   if (climate.has_data && climate.avg_humidity !== '--') {
-    items.push(`<button type="button" class="env-item ${skinCls}" data-action="show-environment-history" data-metric="humidity" onclick="hdpShowEnvironmentHistory('humidity')">
+    items.push(`<button type="button" class="env-item ${skinCls}" data-action="show-environment-history" data-metric="humidity">
       <div class="env-icon env-icon--hum">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8 8 4 12 4 16a8 8 0 0 0 16 0c0-4-4-8-8-14z"/></svg>
       </div>
@@ -746,7 +745,7 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
   // Active automations count
   const autoCount = countActiveAutomations(hass);
   if (autoCount > 0) {
-    items.push(`<button type="button" class="env-item ${skinCls}" data-action="open-automation-config" onclick="hdpOpenAutomationConfig()">
+    items.push(`<button type="button" class="env-item ${skinCls}" data-action="open-automation-config">
       <div class="env-icon env-icon--auto">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
       </div>
@@ -1154,7 +1153,7 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: Strategy
   }
 
   if (summaries.automations_count > 0 && isInfoCardVisible('automations')) {
-    items.push(`<button type="button" class="sum-item ${skinCls}" data-info-card="automations" data-action="open-automation-config" onclick="hdpOpenAutomationConfig()">
+    items.push(`<button type="button" class="sum-item ${skinCls}" data-info-card="automations" data-action="open-automation-config">
       <div class="sum-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg>
       </div>

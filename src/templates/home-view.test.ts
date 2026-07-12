@@ -132,7 +132,7 @@ describe('home view settings', () => {
     expect(html).toContain('<button type="button" class="sd-badge');
     expect(html).toContain('data-action="show-device-domain"');
     expect(html).toContain('data-domain="light"');
-    expect(html).toContain('onclick="hdpShowDeviceDomain(&quot;light&quot;)"');
+    expect(html).not.toContain('onclick="hdpShowDeviceDomain');
     expect(html).toContain('cursor: pointer;');
     expect(html).toContain('.sd-badge:hover');
     expect(html).toContain('background: var(--hdp-surface-raised, var(--hdp-card-bg));');
@@ -165,9 +165,9 @@ describe('home view settings', () => {
     }, config);
 
     expect(html).toContain('data-action="show-environment-history" data-metric="temperature"');
-    expect(html).toContain("onclick=\"hdpShowEnvironmentHistory('temperature')\"");
+    expect(html).not.toContain('onclick="hdpShowEnvironmentHistory');
     expect(html).toContain('data-action="show-environment-history" data-metric="humidity"');
-    expect(html).toContain("onclick=\"hdpShowEnvironmentHistory('humidity')\"");
+    expect(html).not.toContain('onclick="hdpShowEnvironmentHistory');
   });
 
   it('keeps environment info cards structurally valid and visually aligned', () => {
@@ -334,7 +334,7 @@ describe('home view settings', () => {
 
     expect(html).toContain('data-info-card="automations"');
     expect(html).toContain('data-action="open-automation-config"');
-    expect(html).toContain('onclick="hdpOpenAutomationConfig()"');
+    expect(html).not.toContain('onclick="hdpOpenAutomationConfig()"');
     expect(html).toContain('<button type="button" class="env-item');
     expect(html).toContain('<div class="env-lbl">自动化运行</div>');
   });

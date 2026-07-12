@@ -148,6 +148,49 @@ describe('hass websocket script', () => {
     expect(js).toContain('card.click();');
   });
 
+  it('delegates declarative home popup actions without inline handlers', () => {
+    const listeners: Record<string, Array<(event: any) => void>> = {};
+    const documentStub = {
+      querySelector: () => null,
+      querySelectorAll: () => [],
+      getElementById: () => null,
+      addEventListener: (type: string, listener: (event: any) => void) => {
+        (listeners[type] ||= []).push(listener);
+      },
+      removeEventListener: () => {},
+      body: { appendChild: () => {} },
+      createElement: () => ({ style: { setProperty: () => {} }, addEventListener: () => {}, remove: () => {} }),
+    };
+    const windowStub: Record<string, any> = {};
+    new Function(
+      'document',
+      'window',
+      'requestAnimationFrame',
+      'setTimeout',
+      'console',
+      `${generateConnectionDiscoveryJS()}\nwindow.testInitEntityClickHandlers = hdpInitEntityClickHandlers;`,
+    )(documentStub, windowStub, () => {}, () => {}, console);
+    windowStub.testInitEntityClickHandlers();
+
+    const calls: string[] = [];
+    windowStub.hdpShowDeviceDomain = (domain: string) => calls.push(`domain:${domain}`);
+    windowStub.hdpShowEnvironmentHistory = (metric: string) => calls.push(`history:${metric}`);
+    windowStub.hdpOpenAutomationConfig = () => calls.push('automation');
+    const click = (attributes: Record<string, string>) => {
+      const control = { getAttribute: (name: string) => attributes[name] || null };
+      listeners.click[0]({
+        target: { closest: (selector: string) => selector === '[data-action]' ? control : null },
+        preventDefault: () => {},
+        stopPropagation: () => {},
+      });
+    };
+    click({ 'data-action': 'show-device-domain', 'data-domain': 'light' });
+    click({ 'data-action': 'show-environment-history', 'data-metric': 'humidity' });
+    click({ 'data-action': 'open-automation-config' });
+
+    expect(calls).toEqual(['domain:light', 'history:humidity', 'automation']);
+  });
+
   it('supports tilt-only cover feature detection and fallback service calls', () => {
     const runtime = createHistoryRuntime();
     const hass = {
