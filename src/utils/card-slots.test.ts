@@ -272,6 +272,49 @@ describe('card slots', () => {
     expect(sanitized).toContain('src="images/status.png"');
   });
 
+  it('parses only the indented YAML content block for editor previews', () => {
+    const windowStub: Record<string, any> = {};
+    new Function(
+      'window',
+      'document',
+      'localStorage',
+      'Image',
+      'prompt',
+      'confirm',
+      'location',
+      'setTimeout',
+      'clearTimeout',
+      `${generateCardSlotEditorJS()}\nwindow.testParseSafeHtmlProYaml = hdpParseSafeHtmlProYaml;`,
+    )(
+      windowStub,
+      { readyState: 'loading', addEventListener: () => {} },
+      { getItem: () => null, setItem: () => {} },
+      function ImageStub() {},
+      () => null,
+      () => false,
+      { reload: () => {} },
+      setTimeout,
+      clearTimeout,
+    );
+
+    const parsed = windowStub.testParseSafeHtmlProYaml([
+      'type: custom:html-pro-card',
+      'content: |',
+      '  <section class="metric">',
+      '    <strong>24.6 C</strong>',
+      '  </section>',
+      'title: Room climate',
+      'do_not_parse: true',
+    ].join('\n'));
+
+    expect(parsed).toEqual({
+      ok: true,
+      content: '<section class="metric">\n  <strong>24.6 C</strong>\n</section>',
+    });
+    expect(parsed.content).not.toContain('title:');
+    expect(parsed.content).not.toContain('do_not_parse:');
+  });
+
   it('emits editor CSS and JS for draft-only editing and image theme extraction', () => {
     const css = getCardSlotCSS();
     const js = generateCardSlotEditorJS();

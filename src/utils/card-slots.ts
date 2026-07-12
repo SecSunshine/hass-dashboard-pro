@@ -851,13 +851,46 @@ function hdpPreviewSlotYaml(yaml) {
 }
 
 function hdpParseSafeHtmlProYaml(yaml) {
-  var text = String(yaml || '');
-  if (!/type:\\s*custom:html-pro-card/.test(text)) return { ok: false, error: '仅支持 type: custom:html-pro-card' };
+  var text = String(yaml || '').replace(/\\r\\n?/g, '\\n');
+  var lines = text.split('\\n');
+  var hasSupportedType = lines.some(function(line) {
+    return /^\\s*type:\\s*['"]?custom:html-pro-card['"]?\\s*(?:#.*)?$/.test(line);
+  });
+  if (!hasSupportedType) return { ok: false, error: '仅支持 type: custom:html-pro-card' };
   var unsafeLine = hdpFindUnsafeSlotLine(text);
   if (unsafeLine) return { ok: false, error: '第 ' + unsafeLine + ' 行包含禁止内容：自定义 JS、on* 事件或 javascript URL' };
-  var match = text.match(/content:\\s*[|>]\\s*\\n([\\s\\S]*)$/);
-  if (!match) return { ok: false, error: '需要 content: | 多行内容' };
-  var content = match[1].split('\\n').map(function(line) { return line.replace(/^\\s{2,}/, ''); }).join('\\n');
+  var contentLine = -1;
+  var contentIndent = -1;
+  var folded = false;
+  for (var i = 0; i < lines.length; i++) {
+    var match = lines[i].match(/^(\\s*)content:\\s*([|>])\\s*(?:#.*)?$/);
+    if (!match) continue;
+    contentLine = i;
+    contentIndent = match[1].length;
+    folded = match[2] === '>';
+    break;
+  }
+  if (contentLine < 0) return { ok: false, error: '需要 content: | 多行内容' };
+
+  var blockIndent = -1;
+  var blockLines = [];
+  for (var j = contentLine + 1; j < lines.length; j++) {
+    var line = lines[j];
+    if (!line.trim()) {
+      blockLines.push('');
+      continue;
+    }
+    var indentMatch = line.match(/^\\s*/);
+    var indent = indentMatch ? indentMatch[0].length : 0;
+    if (indent <= contentIndent) break;
+    if (blockIndent < 0) blockIndent = indent;
+    if (indent < blockIndent) break;
+    blockLines.push(line.substring(blockIndent));
+  }
+  var content = folded
+    ? blockLines.join(' ').replace(/\\s+/g, ' ').trim()
+    : blockLines.join('\\n');
+  if (!content.trim()) return { ok: false, error: '需要 content: | 多行内容' };
   return { ok: true, content: content };
 }
 
