@@ -84,4 +84,97 @@ describe('dashboard navigation script', () => {
 
     expect(calls).toEqual(['view:living', 'close-sheet', 'toggle-sheet', 'ha-menu', 'fullscreen']);
   });
+
+  it('enters dashboard fullscreen before browser fullscreen and exits both', async () => {
+    const classes = new Set<string>();
+    const documentListeners: Record<string, Array<(event: any) => void>> = {};
+    const hint = { textContent: '点击全屏仪表盘' };
+    const buttonAttrs: Record<string, string> = {};
+    const button = {
+      setAttribute: (name: string, value: string) => { buttonAttrs[name] = value; },
+      querySelector: (selector: string) => selector === '.sb-profile-hint' ? hint : null,
+    };
+    let requestCount = 0;
+    let exitCount = 0;
+    const root: any = {
+      classList: {
+        contains: (name: string) => classes.has(name),
+        toggle: (name: string, force?: boolean) => {
+          const enabled = force == null ? !classes.has(name) : force;
+          if (enabled) classes.add(name); else classes.delete(name);
+        },
+      },
+      style: { setProperty: () => {} },
+      setAttribute: () => {},
+      getBoundingClientRect: () => ({ top: 0 }),
+      contains: () => true,
+      querySelectorAll: (selector: string) => selector === '[data-action="toggle-dashboard-fullscreen"]' ? [button] : [],
+      querySelector: () => null,
+      addEventListener: () => {},
+      requestFullscreen: () => {
+        requestCount += 1;
+        return Promise.resolve();
+      },
+    };
+    const documentStub: any = {
+      fullscreenElement: null,
+      getElementById: (id: string) => id === 'hdp-root' ? root : null,
+      addEventListener: (type: string, listener: (event: any) => void) => {
+        (documentListeners[type] ||= []).push(listener);
+      },
+      exitFullscreen: () => {
+        exitCount += 1;
+        documentStub.fullscreenElement = null;
+        return Promise.resolve();
+      },
+    };
+    const windowStub: Record<string, any> = {
+      innerHeight: 900,
+      innerWidth: 1400,
+      location: { search: '', href: 'http://localhost/dashboard' },
+      history: { pushState: () => {} },
+      addEventListener: () => {},
+      dispatchEvent: () => {},
+    };
+
+    new Function(
+      'window',
+      'document',
+      'localStorage',
+      'URL',
+      'URLSearchParams',
+      'CustomEvent',
+      buildNavigationScript(),
+    )(
+      windowStub,
+      documentStub,
+      { getItem: () => null, setItem: () => {} },
+      URL,
+      URLSearchParams,
+      function CustomEventStub() {},
+    );
+
+    windowStub.hdpToggleDashboardFullscreen();
+    expect(classes.has('hdp-root--fullscreen')).toBe(true);
+    expect(requestCount).toBe(0);
+    expect(buttonAttrs['aria-pressed']).toBe('true');
+    expect(hint.textContent).toBe('再次点击浏览器全屏');
+
+    windowStub.hdpToggleDashboardFullscreen();
+    expect(requestCount).toBe(1);
+    documentStub.fullscreenElement = root;
+    documentListeners.fullscreenchange[0]({});
+    expect(hint.textContent).toBe('再次点击退出全屏');
+
+    windowStub.hdpToggleDashboardFullscreen();
+    await Promise.resolve();
+    expect(exitCount).toBe(1);
+    expect(classes.has('hdp-root--fullscreen')).toBe(false);
+    expect(buttonAttrs['aria-pressed']).toBe('false');
+    expect(hint.textContent).toBe('点击全屏仪表盘');
+
+    windowStub.hdpToggleDashboardFullscreen();
+    documentListeners.keydown[0]({ key: 'Escape' });
+    expect(classes.has('hdp-root--fullscreen')).toBe(false);
+  });
 });

@@ -260,7 +260,9 @@ export function buildNavigationScript(defaultView = 'home'): string {
     for (var i = 0; i < buttons.length; i++) {
       buttons[i].setAttribute('aria-pressed', active ? 'true' : 'false');
       var hint = buttons[i].querySelector('.sb-profile-hint');
-      if (hint) hint.textContent = active ? '再次点击退出全屏' : '点击全屏仪表盘';
+      if (hint) hint.textContent = active
+        ? (document.fullscreenElement === root ? '再次点击退出全屏' : '再次点击浏览器全屏')
+        : '点击全屏仪表盘';
     }
     hdpSyncViewportHeight();
   }
@@ -270,18 +272,42 @@ export function buildNavigationScript(defaultView = 'home'): string {
   }
 
   window.hdpToggleDashboardFullscreen = function() {
-    if (isDashboardFullscreen()) {
-      hdpFallbackFullscreen = false;
-      updateDashboardFullscreenUI(false);
+    if (!isDashboardFullscreen()) {
+      hdpFallbackFullscreen = true;
+      updateDashboardFullscreenUI(true);
       return;
     }
 
-    hdpFallbackFullscreen = true;
-    updateDashboardFullscreenUI(true);
+    if (document.fullscreenElement === root && document.exitFullscreen) {
+      try {
+        var exitResult = document.exitFullscreen();
+        if (exitResult && typeof exitResult.then === 'function') {
+          exitResult.then(function() {
+            hdpFallbackFullscreen = false;
+            updateDashboardFullscreenUI(false);
+          }).catch(function() {});
+        }
+      } catch(e) {}
+      return;
+    }
+
+    if (root.requestFullscreen) {
+      try {
+        var requestResult = root.requestFullscreen();
+        if (requestResult && typeof requestResult.catch === 'function') requestResult.catch(function() {});
+      } catch(e) {}
+      return;
+    }
+
+    hdpFallbackFullscreen = false;
+    updateDashboardFullscreenUI(false);
   };
 
   document.addEventListener('fullscreenchange', function() {
-    if (!document.fullscreenElement) {
+    if (document.fullscreenElement === root) {
+      hdpFallbackFullscreen = true;
+      updateDashboardFullscreenUI(true);
+    } else if (!document.fullscreenElement && isDashboardFullscreen()) {
       hdpFallbackFullscreen = false;
       updateDashboardFullscreenUI(false);
     }
