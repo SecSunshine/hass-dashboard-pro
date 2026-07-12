@@ -658,12 +658,13 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
 
     const sanitized = windowStub.testSanitizeSlotHTML([
       '<style>@import "evil.css"; :host { color: red } .safe { display: grid } .bad { width: expression(alert(1)) }</style>',
-      '<section class="safe" data-entity="light.kitchen" data-action="toggle" aria-label="Kitchen" onclick="evil()" style="color:red;background:url(evil);padding:8px">',
+      '<section class="safe" data-entity="light.kitchen" data-action="toggle" role="button" tabindex="0" aria-label="Kitchen" onclick="evil()" style="color:red;background:url(evil);padding:8px">',
       '<script>alert(1)</script>',
       '<img src="javascript:alert(1)" onerror="evil()">',
       '<a href="https://example.com/path">Safe</a>',
       '<img src="images/status.png" alt="Relative">',
       '<input type="range" min="0" max="100" step="5" value="45" data-action="cover-position" data-entity="cover.bed_blind" onchange="evil()">',
+      '<div tabindex="9">Bad focus order</div>',
       '</section>',
     ].join(''));
 
@@ -677,6 +678,8 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
     expect(sanitized).toContain('data-entity="light.kitchen"');
     expect(sanitized).toContain('data-action="toggle"');
     expect(sanitized).toContain('aria-label="Kitchen"');
+    expect(sanitized).toContain('tabindex="0"');
+    expect(sanitized).not.toContain('tabindex="9"');
     expect(sanitized).toContain('style="color: red; padding: 8px"');
     expect(sanitized).toContain('#hdp-slot-preview .bp-html-card .safe {');
     expect(sanitized).toContain('href="https://example.com/path"');

@@ -207,7 +207,9 @@ describe('hass websocket script', () => {
     const js = generateConnectionDiscoveryJS();
 
     expect(js).toContain("document.addEventListener('keydown'");
-    expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"toggle\"][data-entity]')");
+    expect(js).toContain("hdpClosestFromEvent(e, '[data-action]')");
+    expect(js).toContain('function hdpIsNativeInteractiveControl(control)');
+    expect(js).toContain('if (!card || !hdpEntityIdFromControl(card) || hdpIsNativeInteractiveControl(card)) return;');
     expect(js).toContain('card.click();');
   });
 
@@ -365,9 +367,46 @@ describe('hass websocket script', () => {
     };
     const coverRange = useRange('cover-position', 'cover.bed_blind', '64', 'change', true);
     const volumeRange = useRange('media-volume', 'media_player.living_room', '35', 'input', true);
+    const keyboardOwner = {
+      getAttribute: (name: string) => name === 'data-entity' ? 'sensor.kitchen_temperature' : null,
+    };
+    let keyboardClicks = 0;
+    const keyboardControl = {
+      tagName: 'DIV',
+      getAttribute: (name: string) => name === 'data-action' ? 'more-info' : null,
+      closest: (selector: string) => selector === '[data-entity]' ? keyboardOwner : null,
+      click: () => {
+        keyboardClicks += 1;
+        click({ 'data-action': 'more-info' }, 'sensor.kitchen_temperature');
+      },
+    };
+    let keyboardPrevented = false;
+    listeners.keydown[0]({
+      key: 'Enter',
+      target: {
+        closest: (selector: string) => {
+          if (selector === '[data-no-toggle]') return null;
+          if (selector === '[data-action]') return keyboardControl;
+          return null;
+        },
+      },
+      preventDefault: () => { keyboardPrevented = true; },
+    });
+    let nativeClicks = 0;
+    const nativeControl = {
+      tagName: 'BUTTON',
+      getAttribute: (name: string) => name === 'data-action' ? 'more-info' : name === 'data-entity' ? 'sensor.kitchen_temperature' : null,
+      closest: () => nativeControl,
+      click: () => { nativeClicks += 1; },
+    };
+    listeners.keydown[0]({
+      key: ' ',
+      target: { closest: (selector: string) => selector === '[data-action]' ? nativeControl : null },
+      preventDefault: () => {},
+    });
 
     expect(moreInfo).toEqual({ prevented: true, stopped: true });
-    expect(infoEvents).toHaveLength(2);
+    expect(infoEvents).toHaveLength(4);
     expect(infoEvents.every(event => event.type === 'hass-more-info')).toBe(true);
     expect(infoEvents.every(event => event.detail.entityId === 'sensor.kitchen_temperature')).toBe(true);
     expect(cover).toEqual({ prevented: true, stopped: true });
@@ -391,6 +430,11 @@ describe('hass websocket script', () => {
     }]);
     expect(coverRange).toEqual({ prevented: false, stopped: true });
     expect(volumeRange).toEqual({ prevented: false, stopped: true });
+    expect({ keyboardClicks, keyboardPrevented, nativeClicks }).toEqual({
+      keyboardClicks: 1,
+      keyboardPrevented: true,
+      nativeClicks: 0,
+    });
   });
 
   it('supports tilt-only cover feature detection and fallback service calls', () => {

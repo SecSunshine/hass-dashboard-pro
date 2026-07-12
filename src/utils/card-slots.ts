@@ -1072,7 +1072,7 @@ function hdpSanitizeSlotAttributes(rawAttrs) {
   var allowedAttrs = {
     alt:1, class:1, cx:1, cy:1, d:1, fill:1, height:1, href:1, icon:1, id:1,
     max:1, min:1, r:1, role:1, rx:1, ry:1, src:1, step:1, stroke:1, 'stroke-linecap':1,
-    'stroke-linejoin':1, 'stroke-width':1, style:1, title:1, type:1, value:1, viewbox:1,
+    'stroke-linejoin':1, 'stroke-width':1, style:1, tabindex:1, title:1, type:1, value:1, viewbox:1,
     width:1, x:1, x1:1, x2:1, y:1, y1:1, y2:1
   };
   var pattern = /([:@a-zA-Z_][:@a-zA-Z0-9_.-]*)(?:\\s*=\\s*("([^"]*)"|'([^']*)'|([^\\s"'=<>\`]+)))?/g;
@@ -1091,6 +1091,10 @@ function hdpSanitizeSlotAttributes(rawAttrs) {
 }
 
 function hdpSanitizeSlotAttributeValue(name, value) {
+  if (name === 'tabindex') {
+    var normalizedTabIndex = String(value || '').trim();
+    return normalizedTabIndex === '0' || normalizedTabIndex === '-1' ? normalizedTabIndex : null;
+  }
   if (name === 'href' || name === 'src') {
     var url = String(value || '').trim();
     var schemeProbe = url.replace(/[\\u0000-\\u0020]/g, '');

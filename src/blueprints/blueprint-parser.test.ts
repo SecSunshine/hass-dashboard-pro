@@ -46,6 +46,19 @@ describe('blueprint parser rendering', () => {
     expect(html).toContain('r="4"');
   });
 
+  it('keeps safe keyboard focus metadata without inline handlers', () => {
+    const html = cardConfigToHTML({
+      type: 'custom:html-pro-card',
+      content: '<div role="button" tabindex="0" data-action="more-info" data-entity="sensor.temperature" onkeydown="evil()">Temperature</div><div tabindex="9">Bad focus order</div>',
+    }, 'Keyboard control');
+
+    expect(html).toContain('role="button"');
+    expect(html).toContain('tabindex="0"');
+    expect(html).toContain('data-action="more-info"');
+    expect(html).not.toContain('onkeydown');
+    expect(html).not.toContain('tabindex="9"');
+  });
+
   it('keeps safe range controls for declarative entity actions', () => {
     const html = cardConfigToHTML({
       type: 'custom:html-pro-card',

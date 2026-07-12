@@ -415,6 +415,7 @@ const ALLOWED_ATTRS = new Set([
   'stroke-width',
   'step',
   'style',
+  'tabindex',
   'title',
   'type',
   'value',
@@ -477,6 +478,10 @@ function isAllowedAttribute(name: string): boolean {
 }
 
 function sanitizeAttributeValue(name: string, value: string): string | null {
+  if (name === 'tabindex') {
+    const normalized = value.trim();
+    return normalized === '0' || normalized === '-1' ? normalized : null;
+  }
   if (name === 'href' || name === 'src') {
     const safe = escapeURLAttribute(value);
     return safe || null;

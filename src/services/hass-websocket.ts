@@ -1059,6 +1059,12 @@ function hdpEntityIdFromControl(control) {
   return owner && owner.getAttribute ? (owner.getAttribute('data-entity') || '') : '';
 }
 
+function hdpIsNativeInteractiveControl(control) {
+  var tag = String(control && control.tagName || '').toLowerCase();
+  if (tag === 'a') return !!(control.getAttribute && control.getAttribute('href'));
+  return tag === 'button' || tag === 'input' || tag === 'select' || tag === 'textarea' || tag === 'summary';
+}
+
 function hdpHandleDomainControl(control) {
   if (!control || !control.getAttribute) return false;
   var action = control.getAttribute('data-action') || '';
@@ -1176,8 +1182,8 @@ function hdpInitEntityClickHandlers() {
   document.addEventListener('keydown', function(e) {
     if (e.key !== 'Enter' && e.key !== ' ') return;
     if (hdpClosestFromEvent(e, '[data-no-toggle]')) return;
-    var card = hdpClosestFromEvent(e, '[data-action="toggle"][data-entity]');
-    if (!card) return;
+    var card = hdpClosestFromEvent(e, '[data-action]');
+    if (!card || !hdpEntityIdFromControl(card) || hdpIsNativeInteractiveControl(card)) return;
     e.preventDefault();
     card.click();
   });
