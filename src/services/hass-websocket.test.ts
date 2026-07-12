@@ -192,7 +192,11 @@ describe('hass websocket script', () => {
     expect(js).toContain("supported_features");
     expect(js).toContain("tilt_position: value");
     expect(js).toContain("if (action === 'cover-position' || action === 'media-volume') return false;");
-    expect(js).toContain("hdpCoverAction(entityId, action.replace('cover-', ''));");
+    expect(js).toContain('hdpCoverAction(entityId, domainAction);');
+    expect(js).toContain("hdpDomainActionAllowed('cover', domainAction)");
+    expect(js).toContain("hdpDomainActionAllowed('lock', domainAction)");
+    expect(js).toContain("hdpDomainActionAllowed('media', domainAction)");
+    expect(js).toContain("hdpDomainActionAllowed('vacuum', domainAction)");
     expect(js).toContain("document.addEventListener('change'");
     expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"cover-position\"]')");
     expect(js).toContain("}, true);");
@@ -333,6 +337,15 @@ describe('hass websocket script', () => {
     const moreInfo = click({ 'data-action': 'more-info', 'data-entity': 'sensor.kitchen_temperature' });
     const cover = click({ 'data-action': 'cover-open', 'data-entity': 'cover.bed_blind' });
     const nestedCover = click({ 'data-action': 'cover-close' }, 'cover.bed_blind');
+    const lock = click({ 'data-action': 'lock-lock', 'data-entity': 'lock.front_door' });
+    const media = click({ 'data-action': 'media-next', 'data-entity': 'media_player.living_room' });
+    const vacuum = click({ 'data-action': 'vacuum-dock', 'data-entity': 'vacuum.downstairs' });
+    const unsupportedActions = [
+      click({ 'data-action': 'cover-delete', 'data-entity': 'cover.bed_blind' }),
+      click({ 'data-action': 'lock-open', 'data-entity': 'lock.front_door' }),
+      click({ 'data-action': 'media-shuffle', 'data-entity': 'media_player.living_room' }),
+      click({ 'data-action': 'vacuum-clean', 'data-entity': 'vacuum.downstairs' }),
+    ];
     const useRange = (action: string, entityId: string, value: string, eventType: 'change' | 'input', nested = false) => {
       const actionSelector = `[data-action="${action}"]`;
       const combinedSelector = `${actionSelector}[data-entity]`;
@@ -411,6 +424,8 @@ describe('hass websocket script', () => {
     expect(infoEvents.every(event => event.detail.entityId === 'sensor.kitchen_temperature')).toBe(true);
     expect(cover).toEqual({ prevented: true, stopped: true });
     expect(nestedCover).toEqual({ prevented: true, stopped: true });
+    expect([lock, media, vacuum]).toEqual(Array.from({ length: 3 }, () => ({ prevented: true, stopped: true })));
+    expect(unsupportedActions).toEqual(Array.from({ length: 4 }, () => ({ prevented: true, stopped: true })));
     expect(serviceCalls).toEqual([{
       domain: 'cover',
       service: 'open_cover',
@@ -419,6 +434,18 @@ describe('hass websocket script', () => {
       domain: 'cover',
       service: 'close_cover',
       data: { entity_id: 'cover.bed_blind' },
+    }, {
+      domain: 'lock',
+      service: 'lock',
+      data: { entity_id: 'lock.front_door' },
+    }, {
+      domain: 'media_player',
+      service: 'media_next_track',
+      data: { entity_id: 'media_player.living_room' },
+    }, {
+      domain: 'vacuum',
+      service: 'return_to_base',
+      data: { entity_id: 'vacuum.downstairs' },
     }, {
       domain: 'cover',
       service: 'set_cover_position',

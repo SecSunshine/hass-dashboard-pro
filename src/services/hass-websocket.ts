@@ -1065,6 +1065,16 @@ function hdpIsNativeInteractiveControl(control) {
   return tag === 'button' || tag === 'input' || tag === 'select' || tag === 'textarea' || tag === 'summary';
 }
 
+function hdpDomainActionAllowed(namespace, action) {
+  var allowed = {
+    cover: { open: true, stop: true, close: true },
+    lock: { lock: true, unlock: true },
+    media: { previous: true, 'play-pause': true, next: true },
+    vacuum: { start: true, pause: true, dock: true }
+  };
+  return !!(allowed[namespace] && allowed[namespace][action] === true);
+}
+
 function hdpHandleDomainControl(control) {
   if (!control || !control.getAttribute) return false;
   var action = control.getAttribute('data-action') || '';
@@ -1093,20 +1103,29 @@ function hdpHandleDomainControl(control) {
     return true;
   }
   if (action === 'cover-position' || action === 'media-volume') return false;
+  var domainAction = '';
   if (action.indexOf('cover-') === 0) {
-    hdpCoverAction(entityId, action.replace('cover-', ''));
+    domainAction = action.substring('cover-'.length);
+    if (!hdpDomainActionAllowed('cover', domainAction)) return true;
+    hdpCoverAction(entityId, domainAction);
     return true;
   }
   if (action.indexOf('lock-') === 0) {
-    hdpLockAction(entityId, action.replace('lock-', ''));
+    domainAction = action.substring('lock-'.length);
+    if (!hdpDomainActionAllowed('lock', domainAction)) return true;
+    hdpLockAction(entityId, domainAction);
     return true;
   }
   if (action.indexOf('media-') === 0 && action !== 'media-volume') {
-    hdpMediaAction(entityId, action.replace('media-', '').replace('play-pause', 'play_pause'));
+    domainAction = action.substring('media-'.length);
+    if (!hdpDomainActionAllowed('media', domainAction)) return true;
+    hdpMediaAction(entityId, domainAction.replace('play-pause', 'play_pause'));
     return true;
   }
   if (action.indexOf('vacuum-') === 0) {
-    hdpVacuumAction(entityId, action.replace('vacuum-', ''));
+    domainAction = action.substring('vacuum-'.length);
+    if (!hdpDomainActionAllowed('vacuum', domainAction)) return true;
+    hdpVacuumAction(entityId, domainAction);
     return true;
   }
   return false;
