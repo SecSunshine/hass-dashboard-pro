@@ -58,6 +58,11 @@ describe('share code', () => {
       version: 1,
       exported_at: '2026-07-02T00:00:00.000Z',
       hdp_config: {
+        dashboard: {
+          name: 'Imported Home',
+          avatar_url: 'javascript:alert(1)',
+          background_image_url: 'images/dashboard.jpg',
+        },
         visual: {
           card_style: 'bad-style',
           layout_density: 'giant',
@@ -90,6 +95,7 @@ describe('share code', () => {
               yaml: 'type: custom:html-pro-card\ncontent: |\n  <div data-action="toggle">Safe</div>',
             },
             bad: { size: 'huge', order: 'first', enabled: 'no', background_image_url: 1 },
+            'unsafe-image': { background_image_url: 'java\nscript:alert(1)', theme_from_image: true },
           },
         },
         blueprints: {
@@ -134,6 +140,10 @@ describe('share code', () => {
     expect(imported.hdp_config?.devices?.hidden_keywords).toEqual(['test', 'demo', 'old']);
     expect(imported.hdp_config?.devices?.visible_keywords).toEqual(['light', 'kitchen']);
     expect(imported.hdp_config?.people?.hidden_persons).toEqual(['person.alice', 'person.bob']);
+    expect(imported.hdp_config?.dashboard).toEqual({
+      name: 'Imported Home',
+      background_image_url: 'images/dashboard.jpg',
+    });
     expect(imported.hdp_config?.cards?.slots?.['home.summary']).toEqual({
       enabled: false,
       order: 3,
@@ -143,6 +153,7 @@ describe('share code', () => {
       yaml: 'type: custom:html-pro-card\ncontent: |\n  <div data-action="toggle">Safe</div>',
     });
     expect(imported.hdp_config?.cards?.slots?.bad).toEqual({});
+    expect(imported.hdp_config?.cards?.slots?.['unsafe-image']).toEqual({});
     expect(imported.hdp_config).not.toHaveProperty('hidden_areas');
     expect(imported.hdp_config).not.toHaveProperty('hidden_domains');
     expect(imported.hdp_config).not.toHaveProperty('hidden_device_types');

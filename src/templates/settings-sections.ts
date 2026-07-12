@@ -746,6 +746,7 @@ function hdpGetDraftPathValue(path) {
 }
 
 function hdpNormalizeSettingsImageUrl(value) {
+  if (typeof value !== 'string') return null;
   var text = String(value || '').trim();
   if (!text) return '';
   if (/[\\r\\n)"'\\\\]/.test(text)) return null;
@@ -1338,8 +1339,9 @@ function hdpNormalizeCardSlots(value) {
     if (slot.enabled === false) normalized.enabled = false;
     if (typeof slot.order === 'number' && isFinite(slot.order)) normalized.order = slot.order;
     if (allowedSizes.indexOf(slot.size) >= 0) normalized.size = slot.size;
-    if (typeof slot.background_image_url === 'string') normalized.background_image_url = slot.background_image_url;
-    if (slot.theme_from_image === true) normalized.theme_from_image = true;
+    var backgroundUrl = hdpNormalizeSettingsImageUrl(slot.background_image_url);
+    if (backgroundUrl) normalized.background_image_url = backgroundUrl;
+    if (backgroundUrl && slot.theme_from_image === true) normalized.theme_from_image = true;
     if (typeof slot.yaml === 'string') normalized.yaml = slot.yaml;
     result[slotId] = normalized;
   });
@@ -1398,6 +1400,19 @@ function hdpNormalizeHDPConfig(config) {
     normalized.people = { hidden_persons: legacyHiddenPersons };
   }
   delete normalized.hidden_persons;
+  if (normalized.dashboard && typeof normalized.dashboard === 'object' && !Array.isArray(normalized.dashboard)) {
+    normalized.dashboard = Object.assign({}, normalized.dashboard);
+    if ('avatar_url' in normalized.dashboard) {
+      var avatarUrl = hdpNormalizeSettingsImageUrl(normalized.dashboard.avatar_url);
+      if (avatarUrl) normalized.dashboard.avatar_url = avatarUrl;
+      else delete normalized.dashboard.avatar_url;
+    }
+    if ('background_image_url' in normalized.dashboard) {
+      var dashboardBackgroundUrl = hdpNormalizeSettingsImageUrl(normalized.dashboard.background_image_url);
+      if (dashboardBackgroundUrl) normalized.dashboard.background_image_url = dashboardBackgroundUrl;
+      else delete normalized.dashboard.background_image_url;
+    }
+  }
   if (normalized.home && typeof normalized.home === 'object' && !Array.isArray(normalized.home)) {
     normalized.home = Object.assign({}, normalized.home, {
       section_order: hdpNormalizeStringArray(normalized.home.section_order),

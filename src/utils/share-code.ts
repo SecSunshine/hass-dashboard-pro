@@ -9,6 +9,7 @@ import type { Hass } from '../types';
 import { CARD_SKINS, sanitizeCardSkin } from './card-skin';
 import { sanitizeBentoSize, sanitizeLayoutDensity } from './bento-layout';
 import { MOOD_PRESETS } from '../themes/palette-generator';
+import { sanitizeImageURL } from './html';
 
 export const SHARE_CODE_PREFIX = 'HDP1.';
 export const SHARE_SCHEMA = 'hass-dashboard-pro.share.v1';
@@ -157,6 +158,21 @@ function normalizeHDPConfig(config: unknown): Partial<HDPConfig> | undefined {
     };
   }
 
+  if (isRecord(normalized.dashboard)) {
+    const dashboard = { ...normalized.dashboard };
+    if ('avatar_url' in dashboard) {
+      const avatarUrl = sanitizeImageURL(dashboard.avatar_url);
+      if (avatarUrl) dashboard.avatar_url = avatarUrl;
+      else delete dashboard.avatar_url;
+    }
+    if ('background_image_url' in dashboard) {
+      const backgroundUrl = sanitizeImageURL(dashboard.background_image_url);
+      if (backgroundUrl) dashboard.background_image_url = backgroundUrl;
+      else delete dashboard.background_image_url;
+    }
+    normalized.dashboard = dashboard;
+  }
+
   if (isRecord(normalized.blueprints)) {
     const replacements = isRecord(normalized.blueprints.replacements)
       ? normalized.blueprints.replacements
@@ -221,8 +237,9 @@ function normalizeCardSlots(value: unknown): Record<string, unknown> {
     if (slotValue.enabled === false) slot.enabled = false;
     if (typeof slotValue.order === 'number' && Number.isFinite(slotValue.order)) slot.order = slotValue.order;
     if (typeof slotValue.size === 'string' && sanitizeBentoSize(slotValue.size, 'md') === slotValue.size) slot.size = slotValue.size;
-    if (typeof slotValue.background_image_url === 'string') slot.background_image_url = slotValue.background_image_url;
-    if (slotValue.theme_from_image === true) slot.theme_from_image = true;
+    const backgroundUrl = sanitizeImageURL(slotValue.background_image_url);
+    if (backgroundUrl) slot.background_image_url = backgroundUrl;
+    if (backgroundUrl && slotValue.theme_from_image === true) slot.theme_from_image = true;
     if (typeof slotValue.yaml === 'string') slot.yaml = slotValue.yaml;
     result[slotId] = slot;
   }

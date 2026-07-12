@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { escapeAttribute, escapeHTML, escapeJSONAttribute, escapeScriptJSON, escapeURLAttribute } from './html';
+import { escapeAttribute, escapeHTML, escapeJSONAttribute, escapeScriptJSON, escapeURLAttribute, sanitizeImageURL } from './html';
 
 describe('html escaping helpers', () => {
   it('escapes text content', () => {
@@ -26,5 +26,9 @@ describe('html escaping helpers', () => {
     expect(escapeURLAttribute('javascript:alert(1)')).toBe('');
     expect(escapeURLAttribute('data:text/html,<svg>')).toBe('');
     expect(escapeURLAttribute('data:image/png;base64,abc')).toBe('data:image/png;base64,abc');
+    expect(sanitizeImageURL('DATA:IMAGE/PNG;base64,abc')).toBe('DATA:IMAGE/PNG;base64,abc');
+    expect(sanitizeImageURL('images/dashboard.jpg')).toBe('images/dashboard.jpg');
+    expect(sanitizeImageURL('java\nscript:alert(1)')).toBe('');
+    expect(sanitizeImageURL(1)).toBe('');
   });
 });

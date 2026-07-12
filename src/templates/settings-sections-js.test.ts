@@ -572,7 +572,11 @@ Old `);
       schema: 'hass-dashboard-pro.share.v1',
       version: 1,
       hdp_config: {
-        dashboard: { name: 'Imported Home' },
+        dashboard: {
+          name: 'Imported Home',
+          avatar_url: 'javascript:alert(1)',
+          background_image_url: 'images/dashboard.jpg',
+        },
         devices: { hidden_domains: ['sensor'] },
         cards: {
           slots: {
@@ -582,6 +586,10 @@ Old `);
               background_image_url: '/local/summary.jpg',
               theme_from_image: true,
               yaml: 'type: custom:html-pro-card\ncontent: |\n  <div>Imported</div>',
+            },
+            'home.unsafe': {
+              background_image_url: 'java\nscript:alert(1)',
+              theme_from_image: true,
             },
           },
         },
@@ -601,7 +609,12 @@ Old `);
       runtime.hdpImportShareCode();
 
       expect(alerts).toEqual([]);
-      expect(JSON.parse(store.get('hdp_config') || '{}').dashboard.name).toBe('Imported Home');
+      expect(JSON.parse(store.get('hdp_config') || '{}').dashboard).toEqual({
+        name: 'Imported Home',
+        icon: 'mdi:home',
+        avatar_url: '',
+        background_image_url: 'images/dashboard.jpg',
+      });
       expect(JSON.parse(store.get('hdp_config') || '{}').devices.hidden_domains).toEqual(['sensor']);
       expect(JSON.parse(store.get('hdp_config') || '{}').cards.slots['home.summary']).toMatchObject({
         size: 'wide',
@@ -609,6 +622,7 @@ Old `);
         background_image_url: '/local/summary.jpg',
         theme_from_image: true,
       });
+      expect(JSON.parse(store.get('hdp_config') || '{}').cards.slots['home.unsafe']).toEqual({});
       expect(JSON.parse(store.get('hdp_visual_config') || '{}')).toEqual({ theme: 'dark' });
       expect(JSON.parse(store.get('hdp_last_import_report') || '{}').unmapped).toEqual(['light.source_lamp']);
       expect(getReloadCount()).toBe(0);
