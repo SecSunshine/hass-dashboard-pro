@@ -287,7 +287,7 @@ export function cardConfigToHTML(card: LovelaceCardConfig, pageName: string): st
     const scopeToken = createBlueprintScopeToken(pageName, card.content);
     const scopeSelector = `.bp-html-card[data-blueprint-scope="${scopeToken}"]`;
     return `<div class="bp-html-card" data-blueprint-card="${escapeAttribute(pageName)}" data-blueprint-scope="${scopeToken}">
-      ${sanitizeHtmlProContent(card.content, scopeSelector)}
+      ${sanitizeHtmlProContent(card.content, scopeSelector, scopeToken)}
     </div>`;
   }
 
@@ -442,11 +442,11 @@ const ALLOWED_ATTRS = new Set([
   'y2',
 ]);
 
-function sanitizeHtmlProContent(content: string, scopeSelector: string): string {
+function sanitizeHtmlProContent(content: string, scopeSelector: string, animationPrefix: string): string {
   return content
     .replace(/<\s*(script|iframe|object|embed|form)\b[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
     .replace(/<\s*style\b[^>]*>([\s\S]*?)<\s*\/\s*style\s*>/gi, (_, css) => {
-      return `<style>${scopeBlueprintCSS(String(css), scopeSelector)}</style>`;
+      return `<style>${scopeBlueprintCSS(String(css), scopeSelector, animationPrefix)}</style>`;
     })
     .replace(/<[^>]+>/g, tag => sanitizeTag(tag));
 }
@@ -530,14 +530,80 @@ function stripCSSResourceLoads(css: string): string {
     .replace(/(^|[;{])\s*[^;{}]*:\s*[^;{}]*(?:url|(?:-webkit-)?image-set)\s*\([^;{}]*\)[^;{}]*;?/gi, '$1');
 }
 
-function scopeBlueprintCSS(css: string, scopeSelector: string): string {
+function namespaceCSSAnimations(css: string, prefix: string): string {
+  const names: Record<string, string> = {};
+  const renamed = css.replace(/@(-webkit-)?keyframes\s+([_a-zA-Z][_a-zA-Z0-9-]*)/g, (_, vendor, name) => {
+    const scopedName = `${prefix}-${name}`;
+    names[name] = scopedName;
+    return `@${vendor || ''}keyframes ${scopedName}`;
+  });
+  if (!Object.keys(names).length) return renamed;
+  return renamed.replace(/(^|[;{])(\s*(?:-webkit-)?animation(?:-name)?\s*:\s*)([^;{}]+)/gi, (_, boundary, property, value) => {
+    const scopedValue = String(value).replace(
+      /(^|[^_a-zA-Z0-9-])([_a-zA-Z][_a-zA-Z0-9-]*)(?=$|[^_a-zA-Z0-9-])/g,
+      (_, tokenBoundary, token) => `${tokenBoundary}${names[token] || token}`,
+    );
+    return `${boundary}${property}${scopedValue}`;
+  });
+}
+
+function extractCSSKeyframes(css: string): { css: string; blocks: string[] } {
+  const blocks: string[] = [];
+  const pattern = /@(?:-webkit-)?keyframes\s+[_a-zA-Z][_a-zA-Z0-9-]*\s*\{/gi;
+  let output = '';
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(css)) !== null) {
+    const openBrace = pattern.lastIndex - 1;
+    let depth = 1;
+    let quote = '';
+    let end = -1;
+    for (let index = openBrace + 1; index < css.length; index++) {
+      const char = css[index];
+      const next = css[index + 1];
+      if (quote) {
+        if (char === '\\') index += 1;
+        else if (char === quote) quote = '';
+        continue;
+      }
+      if (char === '"' || char === "'") {
+        quote = char;
+        continue;
+      }
+      if (char === '/' && next === '*') {
+        const commentEnd = css.indexOf('*/', index + 2);
+        index = commentEnd === -1 ? css.length : commentEnd + 1;
+        continue;
+      }
+      if (char === '{') depth += 1;
+      if (char === '}') depth -= 1;
+      if (depth === 0) {
+        end = index;
+        break;
+      }
+    }
+    if (end === -1) break;
+    output += css.slice(cursor, match.index);
+    blocks.push(css.slice(match.index, end + 1));
+    cursor = end + 1;
+    pattern.lastIndex = cursor;
+  }
+  return { css: output + css.slice(cursor), blocks };
+}
+
+function restoreCSSKeyframes(css: string, blocks: string[]): string {
+  return blocks.length ? `${css} ${blocks.join(' ')}` : css;
+}
+
+function scopeBlueprintCSS(css: string, scopeSelector: string, animationPrefix: string): string {
   const cleaned = stripCSSResourceLoads(css)
     .replace(/@import[^;]+;?/gi, '')
     .replace(/javascript\s*:/gi, '')
     .replace(/expression\s*\(/gi, '')
     .replace(/<\/?style/gi, '');
 
-  return cleaned.replace(/(^|[{}])\s*([^@{}\s][^{}]*)\{/g, (_, prefix, selectors) => {
+  const extracted = extractCSSKeyframes(namespaceCSSAnimations(cleaned, animationPrefix));
+  const scoped = extracted.css.replace(/(^|[{}])\s*([^@{}\s][^{}]*)\{/g, (_, prefix, selectors) => {
     const scopedSelectors = String(selectors)
       .split(',')
       .map(selector => selector.trim())
@@ -550,6 +616,7 @@ function scopeBlueprintCSS(css: string, scopeSelector: string): string {
       .join(', ');
     return `${prefix} ${scopedSelectors} {`;
   });
+  return restoreCSSKeyframes(scoped, extracted.blocks);
 }
 
 /**

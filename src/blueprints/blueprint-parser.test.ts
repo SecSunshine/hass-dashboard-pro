@@ -11,7 +11,7 @@ describe('blueprint parser rendering', () => {
   it('isolates custom CSS with a stable scope per card definition', () => {
     const card = {
       type: 'custom:html-pro-card',
-      content: '<style>.shared-tile { color: red; }</style><div class="shared-tile">Tile</div>',
+      content: '<style>@keyframes pulse { from { opacity: .5; } 50% { opacity: 1; } to { opacity: .5; } } .shared-tile { --pulse: 1s; color: red; animation: pulse var(--pulse) ease infinite; animation-name: pulse; }</style><div class="shared-tile">Tile</div>',
     };
     const first = cardConfigToHTML(card, 'home.summary');
     const repeated = cardConfigToHTML(card, 'home.summary');
@@ -24,6 +24,13 @@ describe('blueprint parser rendering', () => {
     expect(firstScope).not.toBe(secondScope);
     expect(repeated).toContain(`data-blueprint-scope="${firstScope}"`);
     expect(first).toContain(`.bp-html-card[data-blueprint-scope="${firstScope}"] .shared-tile`);
+    expect(first).toContain(`@keyframes ${firstScope}-pulse`);
+    expect(first).toContain(`animation: ${firstScope}-pulse var(--pulse) ease infinite`);
+    expect(first).not.toContain(`var(--${firstScope}-pulse)`);
+    expect(first).toContain(`animation-name: ${firstScope}-pulse`);
+    expect(first).not.toContain(`${getScopeSelector(first)} from`);
+    expect(second).toContain(`@keyframes ${secondScope}-pulse`);
+    expect(second).not.toContain(`@keyframes ${firstScope}-pulse`);
     expect(first).not.toContain(`data-blueprint-scope="${secondScope}"`);
   });
 

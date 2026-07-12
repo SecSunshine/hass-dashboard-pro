@@ -1127,6 +1127,70 @@ function hdpStripSlotCSSResources(css) {
     .replace(/(^|[;{])\\s*[^;{}]*:\\s*[^;{}]*(?:url|(?:-webkit-)?image-set)\\s*\\([^;{}]*\\)[^;{}]*;?/gi, '$1');
 }
 
+function hdpNamespaceSlotCSSAnimations(css, prefix) {
+  var names = {};
+  var renamed = String(css || '').replace(/@(-webkit-)?keyframes\\s+([_a-zA-Z][_a-zA-Z0-9-]*)/g, function(_, vendor, name) {
+    var scopedName = prefix + '-' + name;
+    names[name] = scopedName;
+    return '@' + (vendor || '') + 'keyframes ' + scopedName;
+  });
+  if (!Object.keys(names).length) return renamed;
+  return renamed.replace(/(^|[;{])(\\s*(?:-webkit-)?animation(?:-name)?\\s*:\\s*)([^;{}]+)/gi, function(_, boundary, property, value) {
+    var scopedValue = String(value).replace(/(^|[^_a-zA-Z0-9-])([_a-zA-Z][_a-zA-Z0-9-]*)(?=$|[^_a-zA-Z0-9-])/g, function(_, tokenBoundary, token) {
+      return tokenBoundary + (names[token] || token);
+    });
+    return boundary + property + scopedValue;
+  });
+}
+
+function hdpExtractSlotCSSKeyframes(css) {
+  var blocks = [];
+  var pattern = /@(?:-webkit-)?keyframes\\s+[_a-zA-Z][_a-zA-Z0-9-]*\\s*\\{/gi;
+  var output = '';
+  var cursor = 0;
+  var match;
+  while ((match = pattern.exec(css)) !== null) {
+    var openBrace = pattern.lastIndex - 1;
+    var depth = 1;
+    var quote = '';
+    var end = -1;
+    for (var index = openBrace + 1; index < css.length; index++) {
+      var char = css[index];
+      var next = css[index + 1];
+      if (quote) {
+        if (char === '\\\\') index += 1;
+        else if (char === quote) quote = '';
+        continue;
+      }
+      if (char === '"' || char === "'") {
+        quote = char;
+        continue;
+      }
+      if (char === '/' && next === '*') {
+        var commentEnd = css.indexOf('*/', index + 2);
+        index = commentEnd === -1 ? css.length : commentEnd + 1;
+        continue;
+      }
+      if (char === '{') depth += 1;
+      if (char === '}') depth -= 1;
+      if (depth === 0) {
+        end = index;
+        break;
+      }
+    }
+    if (end === -1) break;
+    output += css.slice(cursor, match.index);
+    blocks.push(css.slice(match.index, end + 1));
+    cursor = end + 1;
+    pattern.lastIndex = cursor;
+  }
+  return { css: output + css.slice(cursor), blocks: blocks };
+}
+
+function hdpRestoreSlotCSSKeyframes(css, blocks) {
+  return blocks.length ? css + ' ' + blocks.join(' ') : css;
+}
+
 function hdpScopeSlotCSS(css) {
   var cleaned = hdpStripSlotCSSResources(css)
     .replace(/@import[^;]+;?/gi, '')
@@ -1134,7 +1198,8 @@ function hdpScopeSlotCSS(css) {
     .replace(/expression\\s*\\(/gi, '')
     .replace(/behavior\\s*:/gi, '')
     .replace(/<\\/?style/gi, '');
-  return cleaned.replace(/(^|[{}])\\s*([^@{}\\s][^{}]*)\\{/g, function(_, prefix, selectors) {
+  var extracted = hdpExtractSlotCSSKeyframes(hdpNamespaceSlotCSSAnimations(cleaned, 'hdp-preview'));
+  var scopedCSS = extracted.css.replace(/(^|[{}])\\s*([^@{}\\s][^{}]*)\\{/g, function(_, prefix, selectors) {
     var scoped = String(selectors).split(',').map(function(selector) {
       selector = selector.trim();
       if (!selector) return '';
@@ -1145,6 +1210,7 @@ function hdpScopeSlotCSS(css) {
     }).filter(Boolean).join(', ');
     return prefix + ' ' + scoped + ' {';
   });
+  return hdpRestoreSlotCSSKeyframes(scopedCSS, extracted.blocks);
 }
 
 function hdpEscapeSlotText(value) {
