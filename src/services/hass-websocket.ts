@@ -339,6 +339,8 @@ function hdpVacuumAction(entityId, action) {
 }
 
 // ── Environment History ──
+var hdpEnvironmentHistoryRequestId = 0;
+
 function hdpShowEnvironmentHistory(metric) {
   metric = metric === 'humidity' ? 'humidity' : 'temperature';
   var hass = hdpFindHass();
@@ -354,15 +356,18 @@ function hdpShowEnvironmentHistory(metric) {
     return;
   }
 
-  hdpOpenEnvironmentHistoryModal(metric, sensors, null, true);
+  var requestId = ++hdpEnvironmentHistoryRequestId;
+  hdpOpenEnvironmentHistoryModal(metric, sensors, null, true, requestId);
   var end = new Date();
   var start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
   hdpFetchEnvironmentHistory(hass, connection, hdpBuildEnvironmentHistoryRequest(start, end, sensors)).then(function(history) {
-    hdpOpenEnvironmentHistoryModal(metric, sensors, hdpBuildEnvironmentSeries(hass, sensors, history), false);
+    if (!hdpIsEnvironmentHistoryRequestCurrent(requestId)) return;
+    hdpOpenEnvironmentHistoryModal(metric, sensors, hdpBuildEnvironmentSeries(hass, sensors, history), false, requestId);
   }).catch(function(err) {
+    if (!hdpIsEnvironmentHistoryRequestCurrent(requestId)) return;
     console.warn('[HDP] Failed to load environment history', err);
     hdpShowToast('历史曲线加载失败', 'error');
-    hdpOpenEnvironmentHistoryModal(metric, sensors, hdpBuildEnvironmentSeries(hass, sensors, null), false);
+    hdpOpenEnvironmentHistoryModal(metric, sensors, hdpBuildEnvironmentSeries(hass, sensors, null), false, requestId);
   });
 }
 
@@ -670,12 +675,14 @@ function hdpParseHistoryTimestamp(point) {
   return Date.parse(raw);
 }
 
-function hdpOpenEnvironmentHistoryModal(metric, sensors, series, loading) {
+function hdpOpenEnvironmentHistoryModal(metric, sensors, series, loading, requestId) {
+  hdpCloseOtherRuntimeModals('hdp-env-history-modal');
   var existing = document.getElementById('hdp-env-history-modal');
   if (existing) existing.remove();
   var overlay = document.createElement('div');
   overlay.id = 'hdp-env-history-modal';
   overlay.className = 'hdp-env-history-modal';
+  overlay.setAttribute('data-history-request', String(requestId || hdpEnvironmentHistoryRequestId));
   hdpApplyThemeVarsToOverlay(overlay);
   var title = metric === 'humidity' ? '各区域湿度 24 小时曲线' : '各区域温度 24 小时曲线';
   var body = loading
@@ -698,7 +705,28 @@ function hdpOpenEnvironmentHistoryModal(metric, sensors, series, loading) {
   document.body.appendChild(overlay);
 }
 
+function hdpRuntimeModalIds() {
+  return ['hdp-env-history-modal', 'hdp-automation-config-modal', 'hdp-device-domain-modal'];
+}
+
+function hdpCloseOtherRuntimeModals(keepId) {
+  hdpRuntimeModalIds().forEach(function(id) {
+    if (id === keepId) return;
+    var modal = document.getElementById(id);
+    if (!modal) return;
+    if (id === 'hdp-env-history-modal') hdpEnvironmentHistoryRequestId++;
+    modal.remove();
+  });
+  document.removeEventListener('keydown', hdpCloseRuntimeModalOnEsc);
+}
+
+function hdpIsEnvironmentHistoryRequestCurrent(requestId) {
+  var modal = document.getElementById('hdp-env-history-modal');
+  return !!(modal && Number(modal.getAttribute('data-history-request')) === Number(requestId));
+}
+
 function hdpCloseRuntimeModal(overlay) {
+  if (overlay && overlay.id === 'hdp-env-history-modal') hdpEnvironmentHistoryRequestId++;
   if (overlay) overlay.remove();
   document.removeEventListener('keydown', hdpCloseRuntimeModalOnEsc);
 }
@@ -710,7 +738,7 @@ function hdpBindRuntimeModalEscClose() {
 
 function hdpCloseRuntimeModalOnEsc(e) {
   if (e.key !== 'Escape') return;
-  var ids = ['hdp-env-history-modal', 'hdp-automation-config-modal', 'hdp-device-domain-modal'];
+  var ids = hdpRuntimeModalIds();
   for (var i = 0; i < ids.length; i++) {
     var modal = document.getElementById(ids[i]);
     if (modal) {
@@ -806,6 +834,7 @@ function hdpEnvironmentHistoryCSS() {
 }
 
 function hdpOpenAutomationConfig() {
+  hdpCloseOtherRuntimeModals('hdp-automation-config-modal');
   var existing = document.getElementById('hdp-automation-config-modal');
   if (existing) existing.remove();
   var overlay = document.createElement('div');
@@ -842,6 +871,7 @@ function hdpOpenDeviceDomainModal(domain) {
   }
   var scope = hdpParseDomainScope(domain);
   var entities = hdpCollectDomainEntities(hass, scope.key);
+  hdpCloseOtherRuntimeModals('hdp-device-domain-modal');
   var existing = document.getElementById('hdp-device-domain-modal');
   if (existing) existing.remove();
   var overlay = document.createElement('div');

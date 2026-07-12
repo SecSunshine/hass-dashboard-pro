@@ -75,6 +75,67 @@ return {
   };
 }
 
+function createRuntimeModalRuntime() {
+  const elements = new Map<string, any>();
+  const listeners: Record<string, Array<(event: any) => void>> = {};
+  const createElement = () => {
+    const attrs: Record<string, string> = {};
+    const node: any = {
+      id: '',
+      className: '',
+      innerHTML: '',
+      style: { setProperty: () => {} },
+      setAttribute: (name: string, value: string) => { attrs[name] = value; },
+      getAttribute: (name: string) => attrs[name] ?? null,
+      addEventListener: () => {},
+      remove: () => { if (node.id) elements.delete(node.id); },
+    };
+    return node;
+  };
+  const document = {
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    getElementById: (id: string) => elements.get(id) || null,
+    addEventListener: (type: string, listener: (event: any) => void) => {
+      (listeners[type] ||= []).push(listener);
+    },
+    removeEventListener: (type: string, listener: (event: any) => void) => {
+      listeners[type] = (listeners[type] || []).filter(item => item !== listener);
+    },
+    body: {
+      appendChild: (node: any) => { if (node.id) elements.set(node.id, node); },
+    },
+    createElement,
+  };
+  const window = {};
+  const runtime = new Function(
+    'document',
+    'window',
+    'requestAnimationFrame',
+    'setTimeout',
+    'console',
+    `${generateConnectionDiscoveryJS()}
+return {
+  openEnvironment: hdpOpenEnvironmentHistoryModal,
+  openAutomation: hdpOpenAutomationConfig,
+  closeModal: hdpCloseRuntimeModal,
+  isEnvironmentRequestCurrent: hdpIsEnvironmentHistoryRequestCurrent
+};`,
+  )(
+    document,
+    window,
+    () => {},
+    () => {},
+    console,
+  ) as {
+    openEnvironment: (metric: string, sensors: any[], series: any, loading: boolean, requestId: number) => void;
+    openAutomation: () => void;
+    closeModal: (node: any) => void;
+    isEnvironmentRequestCurrent: (requestId: number) => boolean;
+  };
+  return { runtime, elements, listeners };
+}
+
 describe('hass websocket script', () => {
   it('generates parseable runtime JavaScript with readable control errors', () => {
     const js = generateConnectionDiscoveryJS();
@@ -571,10 +632,36 @@ describe('hass websocket script', () => {
     expect(js).toContain('document.addEventListener(\'keydown\', hdpCloseRuntimeModalOnEsc);');
     expect(js).toContain('function hdpCloseRuntimeModalOnEsc(e)');
     expect(js).toContain("if (e.key !== 'Escape') return;");
-    expect(js).toContain("'hdp-env-history-modal', 'hdp-automation-config-modal', 'hdp-device-domain-modal'");
+    expect(js).toContain('function hdpRuntimeModalIds()');
+    expect(js).toContain("return ['hdp-env-history-modal', 'hdp-automation-config-modal', 'hdp-device-domain-modal'];");
+    expect(js).toContain("hdpCloseOtherRuntimeModals('hdp-automation-config-modal');");
+    expect(js).toContain("hdpCloseOtherRuntimeModals('hdp-device-domain-modal');");
+    expect(js).toContain('if (!hdpIsEnvironmentHistoryRequestCurrent(requestId)) return;');
     expect(js).not.toContain("document.addEventListener('keydown', hdpCloseEnvironmentHistoryOnEsc, { once: true })");
     expect(js).toContain('hdpBindRuntimeModalEscClose();');
     expect(js).toContain("new CustomEvent('hass-more-info'");
+  });
+
+  it('keeps runtime modals mutually exclusive and invalidates closed history requests', () => {
+    const { runtime, elements, listeners } = createRuntimeModalRuntime();
+
+    runtime.openEnvironment('temperature', [], null, true, 41);
+    expect(elements.has('hdp-env-history-modal')).toBe(true);
+    expect(runtime.isEnvironmentRequestCurrent(41)).toBe(true);
+
+    runtime.openAutomation();
+    expect(elements.has('hdp-env-history-modal')).toBe(false);
+    expect(elements.has('hdp-automation-config-modal')).toBe(true);
+    expect(runtime.isEnvironmentRequestCurrent(41)).toBe(false);
+
+    runtime.openEnvironment('humidity', [], [], false, 42);
+    expect(elements.has('hdp-automation-config-modal')).toBe(false);
+    expect(elements.has('hdp-env-history-modal')).toBe(true);
+    expect(runtime.isEnvironmentRequestCurrent(42)).toBe(true);
+
+    listeners.keydown[0]({ key: 'Escape' });
+    expect(elements.has('hdp-env-history-modal')).toBe(false);
+    expect(runtime.isEnvironmentRequestCurrent(42)).toBe(false);
   });
 
   it('keeps binary sensor status badge popups scoped to their device class', () => {
