@@ -170,7 +170,7 @@ describe('area view', () => {
               yaml: [
                 'type: custom:html-pro-card',
                 'content: |',
-                '  <button class="custom-sensor" data-entity="sensor.power_meter" data-action="more-info">Sensor Slot</button>',
+                '  <button class="custom-sensor" data-entity="$entity$" data-action="more-info">$name$ · $state$ · $area$</button>',
               ].join('\n'),
             },
           },
@@ -179,9 +179,13 @@ describe('area view', () => {
     };
 
     const html = buildAreaHTML('Kitchen With A Very Long Area Name', entities, hass, undefined, undefined, config);
-    expect(html).toContain('Sensor Slot');
+    expect(html).toContain('data-entity="sensor.power_meter"');
+    expect(html).toContain('data-entity="sensor.kitchen_temperature"');
+    expect(html).toContain('Power Meter With An Extremely Long Friendly Name');
+    expect(html).toContain('Kitchen Temperature');
+    expect(html).toContain('22.2°C');
     expect(html).toContain('data-card-slot="entity.domain.sensor"');
     expect(html).toContain('data-card-custom="true"');
-    expect(html).not.toContain('Power Meter With An Extremely Long Friendly Name');
+    expect(html).not.toContain('class="ec-name">Power Meter With An Extremely Long Friendly Name');
   });
 });

@@ -17,12 +17,21 @@ interface CustomSlotRenderResult {
   error?: string;
 }
 
+export interface CardSlotContext {
+  entity?: string;
+  name?: string;
+  state?: string;
+  area?: string;
+  domain?: string;
+}
+
 export function resolveSlottedCard(
   config: StrategyConfig,
   slotId: string,
   defaultHTML: string,
   defaultSize: BentoSize,
   defaultOrder = 0,
+  context?: CardSlotContext,
 ): SlottedCard {
   const slot = getCardSlot(config, slotId);
   const hidden = slot?.enabled === false;
@@ -30,7 +39,7 @@ export function resolveSlottedCard(
   const order = typeof slot?.order === 'number' && Number.isFinite(slot.order) ? slot.order : defaultOrder;
   if (hidden) return { slotId, html: '', size, order, hidden: true, custom: false };
 
-  const custom = renderCustomSlotHTML(slotId, slot);
+  const custom = renderCustomSlotHTML(slotId, slot, context);
   const content = custom.html || defaultHTML;
   const error = custom.error ? buildSlotErrorHTML(slotId, custom.error) : '';
   return {
@@ -379,7 +388,7 @@ export function getCardSlotCSS(): string {
   `;
 }
 
-function renderCustomSlotHTML(slotId: string, slot?: CardSlotConfig): CustomSlotRenderResult {
+function renderCustomSlotHTML(slotId: string, slot?: CardSlotConfig, context?: CardSlotContext): CustomSlotRenderResult {
   const yaml = slot?.yaml?.trim();
   if (!yaml) return { html: '' };
   try {
@@ -390,11 +399,31 @@ function renderCustomSlotHTML(slotId: string, slot?: CardSlotConfig): CustomSlot
     if (typeof card.content !== 'string' || !card.content.trim()) {
       return { html: '', error: '需要 content: | 多行内容' };
     }
-    return { html: cardConfigToHTML(card, slotId) };
+    return {
+      html: cardConfigToHTML({
+        ...card,
+        content: applyCardSlotContext(card.content, context),
+      }, slotId),
+    };
   } catch (err) {
     const message = err instanceof Error && err.message ? `YAML 解析失败：${err.message}` : 'YAML 解析失败';
     return { html: '', error: message };
   }
+}
+
+function applyCardSlotContext(content: string, context?: CardSlotContext): string {
+  if (!context) return content;
+  const replacements: Record<string, string> = {
+    entity: escapeHTML(context.entity || ''),
+    name: escapeHTML(context.name || ''),
+    state: escapeHTML(context.state || ''),
+    area: escapeHTML(context.area || ''),
+    domain: escapeHTML(context.domain || ''),
+  };
+  return Object.entries(replacements).reduce(
+    (result, [key, value]) => result.split(`$${key}$`).join(value),
+    content,
+  );
 }
 
 function wrapSlotHTML(slotId: string, html: string, slot: CardSlotConfig | undefined, custom: boolean): string {

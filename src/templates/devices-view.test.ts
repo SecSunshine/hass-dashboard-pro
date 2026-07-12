@@ -242,7 +242,7 @@ describe('devices view', () => {
               yaml: [
                 'type: custom:html-pro-card',
                 'content: |',
-                '  <button class="custom-device-sensor" data-entity="sensor.power_meter" data-action="more-info">Device Sensor Slot</button>',
+                '  <button class="custom-device-sensor" data-entity="$entity$" data-action="more-info">$name$ · $state$ · $area$</button>',
               ].join('\n'),
             },
           },
@@ -251,9 +251,10 @@ describe('devices view', () => {
     };
 
     const html = buildDevicesHTML(hass, config);
-    expect(html).toContain('Device Sensor Slot');
+    expect(html).toContain('data-entity="sensor.power_meter"');
+    expect(html).toContain('Power Meter With An Extremely Long Friendly Name');
     expect(html).toContain('data-card-slot="entity.domain.sensor"');
     expect(html).toContain('data-card-custom="true"');
-    expect(html).not.toContain('Power Meter With An Extremely Long Friendly Name');
+    expect(html).not.toContain('class="dvc-name">Power Meter With An Extremely Long Friendly Name');
   });
 });

@@ -433,6 +433,13 @@ const ENTITY_CARD_CSS = /* css */ `
 
 function buildEntityCard(entity: EntityInfo, skin?: string, hass?: Hass, config?: StrategyConfig): string {
   let generated = '';
+  const slotContext = {
+    entity: entity.entity_id,
+    name: entity.name,
+    state: formatState(entity),
+    area: entity.area_name,
+    domain: entity.domain,
+  };
   // Try domain-specific card first (climate, cover, lock, media_player, vacuum)
   if (hass) {
     const stateObj = hass.states[entity.entity_id];
@@ -443,7 +450,7 @@ function buildEntityCard(entity: EntityInfo, skin?: string, hass?: Hass, config?
   }
 
   if (generated) {
-    return resolveSlottedCard(config || { type: 'custom:hass-dashboard-pro' }, `entity.domain.${entity.domain}`, generated, 'md', 0).html;
+    return resolveSlottedCard(config || { type: 'custom:hass-dashboard-pro' }, `entity.domain.${entity.domain}`, generated, 'md', 0, slotContext).html;
   }
 
   // Default card for light, switch, fan, sensor, etc.
@@ -480,7 +487,7 @@ function buildEntityCard(entity: EntityInfo, skin?: string, hass?: Hass, config?
       ${rightHTML}
     </div>
   </div>`;
-  return resolveSlottedCard(config || { type: 'custom:hass-dashboard-pro' }, `entity.domain.${entity.domain}`, generated, 'md', 0).html;
+  return resolveSlottedCard(config || { type: 'custom:hass-dashboard-pro' }, `entity.domain.${entity.domain}`, generated, 'md', 0, slotContext).html;
 }
 
 // ─── Domain Section (with entity card CSS) ─────────────────────────────────

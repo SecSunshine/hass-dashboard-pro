@@ -65,6 +65,49 @@ describe('card slots', () => {
     expect(card.html).not.toContain('<div>Default</div>');
   });
 
+  it('binds entity slot placeholders to escaped render context', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        cards: {
+          slots: {
+            'entity.domain.sensor': {
+              yaml: [
+                'type: custom:html-pro-card',
+                'content: |',
+                '  <button data-entity="$entity$" data-action="more-info" aria-label="$name$">',
+                '    $name$ · $state$ · $area$ · $domain$',
+                '  </button>',
+              ].join('\n'),
+            },
+          },
+        },
+      } as any,
+    };
+
+    const card = resolveSlottedCard(
+      config,
+      'entity.domain.sensor',
+      '<div>Default</div>',
+      'md',
+      0,
+      {
+        entity: 'sensor.kitchen_temperature',
+        name: '<img src=x onerror=alert(1)>',
+        state: '22.2°C',
+        area: 'Kitchen & Dining',
+        domain: 'sensor',
+      },
+    );
+
+    expect(card.html).toContain('data-entity="sensor.kitchen_temperature"');
+    expect(card.html).toContain('data-action="more-info"');
+    expect(card.html).toContain('&lt;img src=x onerror=alert(1)&gt;');
+    expect(card.html).toContain('22.2°C');
+    expect(card.html).toContain('Kitchen &amp; Dining');
+    expect(card.html).not.toContain('<img src=x');
+  });
+
   it('sanitizes unsafe custom YAML content before rendering', () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',
