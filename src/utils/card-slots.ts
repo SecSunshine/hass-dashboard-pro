@@ -763,7 +763,13 @@ window.hdpEditCardSlotBackground = function(slotId) {
   var current = slot.background_image_url || '';
   var url = prompt('输入卡片背景图片 URL（留空清除）', current);
   if (url === null) return;
-  slot.background_image_url = String(url || '').trim();
+  var rawUrl = String(url || '').trim();
+  var safeUrl = hdpSafeSlotImageUrl(rawUrl);
+  if (rawUrl && !safeUrl) {
+    if (typeof hdpShowToast === 'function') hdpShowToast('背景图片地址无效，请使用 HTTPS、/local/ 或相对路径', 'error');
+    return;
+  }
+  slot.background_image_url = safeUrl;
   slot.theme_from_image = Boolean(slot.background_image_url) && confirm('是否根据图片自动调整该卡片强调色？');
   hdpMarkCardDraftDirty();
   var card = document.querySelector('[data-card-slot="' + slotId + '"]');
@@ -1082,8 +1088,10 @@ function hdpEscapeSlotText(value) {
 function hdpSafeSlotImageUrl(value) {
   var text = String(value || '').trim();
   if (!text) return '';
-  if (!/^(https?:|\\/|data:image\\/|blob:)/i.test(text)) return '';
-  return text.replace(/[\\r\\n)"'\\\\]/g, '');
+  var normalized = text.replace(/[\\r\\n)"'\\\\]/g, '');
+  if (/^data:/i.test(normalized) && !/^data:image\\//i.test(normalized)) return '';
+  if (/^[a-z][a-z0-9+.-]*:/i.test(normalized) && !/^(https?:|data:image\\/)/i.test(normalized)) return '';
+  return normalized;
 }
 
 function hdpApplyCardSlotImageThemes(scope) {

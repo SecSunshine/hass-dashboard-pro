@@ -411,6 +411,71 @@ describe('card slots', () => {
     expect(timers.size).toBe(0);
   });
 
+  it('rejects unsafe background drafts and accepts relative image paths', () => {
+    const draft = {
+      cards: {
+        slots: {
+          'home.summary': { background_image_url: '/local/original.jpg', theme_from_image: true },
+        },
+      },
+    };
+    const toastCalls: string[] = [];
+    const promptValues = ['javascript:alert(1)', 'java\nscript:alert(1)', 'images/summary.jpg'];
+    const card = {
+      classList: { add: () => {}, toggle: () => {}, remove: () => {} },
+      style: { setProperty: () => {}, removeProperty: () => {} },
+      matches: () => false,
+      querySelectorAll: () => [],
+    };
+    const documentStub = {
+      readyState: 'loading',
+      addEventListener: () => {},
+      getElementById: () => null,
+      querySelector: (selector: string) => selector.includes('data-card-slot') ? card : null,
+      querySelectorAll: () => [],
+    };
+    const windowStub: Record<string, any> = {
+      hdpGetSettingsDraft: () => draft,
+    };
+    new Function(
+      'window',
+      'document',
+      'localStorage',
+      'Image',
+      'prompt',
+      'confirm',
+      'location',
+      'setTimeout',
+      'clearTimeout',
+      'hdpShowToast',
+      generateCardSlotEditorJS(),
+    )(
+      windowStub,
+      documentStub,
+      { getItem: () => null, setItem: () => {} },
+      function ImageStub() {},
+      () => promptValues.shift() ?? null,
+      () => false,
+      { reload: () => {} },
+      setTimeout,
+      clearTimeout,
+      (message: string) => toastCalls.push(message),
+    );
+
+    windowStub.hdpEditCardSlotBackground('home.summary');
+    expect(draft.cards.slots['home.summary'].background_image_url).toBe('/local/original.jpg');
+    expect(draft.cards.slots['home.summary'].theme_from_image).toBe(true);
+    expect(toastCalls).toEqual(['背景图片地址无效，请使用 HTTPS、/local/ 或相对路径']);
+
+    windowStub.hdpEditCardSlotBackground('home.summary');
+    expect(draft.cards.slots['home.summary'].background_image_url).toBe('/local/original.jpg');
+    expect(toastCalls).toHaveLength(2);
+
+    windowStub.hdpEditCardSlotBackground('home.summary');
+    expect(draft.cards.slots['home.summary'].background_image_url).toBe('images/summary.jpg');
+    expect(draft.cards.slots['home.summary'].theme_from_image).toBe(false);
+  });
+
   it('sanitizes custom-card previews with the production safety boundary', () => {
     const windowStub: Record<string, any> = {};
     const documentStub = {
