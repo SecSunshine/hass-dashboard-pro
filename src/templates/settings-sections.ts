@@ -38,10 +38,6 @@ import {
   UNASSIGNED_AREA_NAME,
 } from '../utils/dashboard-model';
 
-function jsArg(value: unknown): string {
-  return escapeAttribute(JSON.stringify(String(value ?? '')));
-}
-
 function jsValue(value: unknown): string {
   return escapeAttribute(JSON.stringify(value ?? null));
 }
@@ -55,7 +51,7 @@ function isVisibleRegistryEntity(hass: Hass | undefined, entityId: string): bool
 
 function sectionCard(id: string, title: string, icon: string, content: string): string {
   return `<div class="st-section" id="st-${id}" data-component="settings-${id}">
-    <div class="st-section-hdr" data-action="toggle-section" data-section="st-${id}" role="button" aria-expanded="false" tabindex="0" onclick="hdpToggleSection('st-${id}')" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); this.click(); }">
+    <div class="st-section-hdr" data-action="toggle-section" data-section="st-${id}" role="button" aria-expanded="false" tabindex="0">
       <div class="st-section-icon">${icon}</div>
       <span class="st-section-title">${title}</span>
       <svg class="st-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
@@ -902,14 +898,14 @@ window.hdpCancelSettings = function() {
   if (typeof hdpShowToast === 'function') hdpShowToast('已放弃未保存更改', 'info');
 };
 
-function hdpClosestSettingsCommand(e) {
+function hdpClosestSettingsAction(e) {
   if (e && e.target && e.target.closest) {
-    var direct = e.target.closest('[data-action="save-settings"], [data-action="cancel-settings"]');
+    var direct = e.target.closest('[data-action]');
     if (direct) return direct;
   }
   var path = e && typeof e.composedPath === 'function' ? e.composedPath() : [];
   for (var i = 0; i < path.length; i++) {
-    if (path[i] && path[i].matches && path[i].matches('[data-action="save-settings"], [data-action="cancel-settings"]')) return path[i];
+    if (path[i] && path[i].matches && path[i].matches('[data-action]')) return path[i];
   }
   return null;
 }
@@ -917,13 +913,65 @@ function hdpClosestSettingsCommand(e) {
 if (!window.hdpSettingsCommandHandlerReady) {
   window.hdpSettingsCommandHandlerReady = true;
   document.addEventListener('click', function(e) {
-    var control = hdpClosestSettingsCommand(e);
+    var control = hdpClosestSettingsAction(e);
     if (!control) return;
     var action = control.getAttribute('data-action');
+    if (action === 'save-settings' || action === 'cancel-settings') {
+      e.preventDefault();
+      e.stopPropagation();
+      if (action === 'save-settings') window.hdpCommitSettings();
+      else window.hdpCancelSettings();
+      return;
+    }
+    if (action === 'toggle-section') {
+      e.preventDefault();
+      window.hdpToggleSection(control.getAttribute('data-section') || '');
+      return;
+    }
+    if (action === 'toggle-setting') {
+      e.preventDefault();
+      var path = control.getAttribute('data-setting') || '';
+      var isOn = control.classList.contains('st-toggle--on');
+      window.hdpSaveSetting(path, !isOn);
+      control.classList.toggle('st-toggle--on', !isOn);
+      control.classList.toggle('st-toggle--off', isOn);
+      control.setAttribute('aria-checked', !isOn ? 'true' : 'false');
+      return;
+    }
+    if (action === 'select-home-layout') {
+      e.preventDefault();
+      window.hdpSelectHomeLayout(control.getAttribute('data-layout-preset') || 'grid', { currentTarget: control });
+      return;
+    }
+    if (control.classList && control.classList.contains('st-chip')) {
+      var settingPath = control.getAttribute('data-setting');
+      var value = control.getAttribute('data-value');
+      if (!settingPath || value == null) return;
+      e.preventDefault();
+      window.hdpToggleArrayItem(settingPath, value, e);
+    }
+  }, true);
+  document.addEventListener('keydown', function(e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    var control = hdpClosestSettingsAction(e);
+    if (!control) return;
+    var action = control.getAttribute('data-action');
+    if (action !== 'toggle-section' && action !== 'toggle-setting') return;
     e.preventDefault();
-    e.stopPropagation();
-    if (action === 'save-settings') window.hdpCommitSettings();
-    else window.hdpCancelSettings();
+    control.click();
+  });
+  document.addEventListener('change', function(e) {
+    var control = e && e.target && e.target.closest ? e.target.closest('[data-setting]') : null;
+    if (!control || control.getAttribute('data-action')) return;
+    var path = control.getAttribute('data-setting');
+    if (!path) return;
+    var value = control.type === 'url' ? String(control.value || '').trim() : control.value;
+    window.hdpSaveSetting(path, value);
+  }, true);
+  document.addEventListener('input', function(e) {
+    var control = e && e.target && e.target.closest ? e.target.closest('[data-value-type="keyword-list"][data-setting]') : null;
+    if (!control) return;
+    window.hdpSaveKeywordList(control.getAttribute('data-setting'), control.value);
   }, true);
 }
 
@@ -1520,14 +1568,14 @@ function iconReset(): string {
 
 function toggleHTML(settingPath: string, value: boolean): string {
   const cls = value ? 'st-toggle st-toggle--on' : 'st-toggle st-toggle--off';
-  return `<div class="${cls}" data-action="toggle-setting" data-setting="${escapeAttribute(settingPath)}" role="switch" aria-checked="${value ? 'true' : 'false'}" tabindex="0" onclick="var isOn = this.classList.contains('st-toggle--on'); hdpSaveSetting('${settingPath}', !isOn); this.classList.toggle('st-toggle--on', !isOn); this.classList.toggle('st-toggle--off', isOn); this.setAttribute('aria-checked', !isOn ? 'true' : 'false');" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); this.click(); }">
+  return `<div class="${cls}" data-action="toggle-setting" data-setting="${escapeAttribute(settingPath)}" role="switch" aria-checked="${value ? 'true' : 'false'}" tabindex="0">
     <div class="st-toggle-knob"></div>
   </div>`;
 }
 
 function chipHTML(action: string, path: string, value: string, label: string, active: boolean): string {
   const activeClass = active ? ' st-chip--active' : '';
-  return `<button type="button" class="st-chip${activeClass}" data-action="${escapeAttribute(action)}" data-setting="${escapeAttribute(path)}" data-value="${escapeAttribute(value)}" aria-pressed="${active ? 'true' : 'false'}" title="${escapeAttribute(label)}" onclick="hdpToggleArrayItem('${escapeAttribute(path)}', ${jsArg(value)}, event)">${escapeHTML(label)}</button>`;
+  return `<button type="button" class="st-chip${activeClass}" data-action="${escapeAttribute(action)}" data-setting="${escapeAttribute(path)}" data-value="${escapeAttribute(value)}" aria-pressed="${active ? 'true' : 'false'}" title="${escapeAttribute(label)}">${escapeHTML(label)}</button>`;
 }
 
 // ─── 1. Dashboard ──────────────────────────────────────────────────────────
@@ -1542,21 +1590,21 @@ export function buildDashboardSection(config: StrategyConfig): string {
         <div class="st-row-label">名称</div>
         <div class="st-row-desc">仪表盘显示名称</div>
       </div>
-      <input class="st-input" data-setting="dashboard.name" value="${escapeAttribute(name)}" onchange="hdpSaveSetting('dashboard.name', this.value)" />
+      <input class="st-input" data-setting="dashboard.name" value="${escapeAttribute(name)}" />
     </div>
     <div class="st-row">
       <div>
         <div class="st-row-label">用户头像</div>
         <div class="st-row-desc">支持 /local/...、https://... 或 data:image/...；留空使用用户名首字母</div>
       </div>
-      <input class="st-input st-input--wide" data-setting="dashboard.avatar_url" type="url" value="${escapeAttribute(avatarUrl)}" placeholder="/local/hass-dashboard-pro/avatar.png" onchange="hdpSaveSetting('dashboard.avatar_url', this.value.trim())" />
+      <input class="st-input st-input--wide" data-setting="dashboard.avatar_url" type="url" value="${escapeAttribute(avatarUrl)}" placeholder="/local/hass-dashboard-pro/avatar.png" />
     </div>
     <div class="st-row">
       <div>
         <div class="st-row-label">背景图片</div>
         <div class="st-row-desc">支持 /local/...、https://... 或 data:image/...；用于整个仪表盘背景</div>
       </div>
-      <input class="st-input st-input--wide" data-setting="dashboard.background_image_url" type="url" value="${escapeAttribute(backgroundUrl)}" placeholder="/local/hass-dashboard-pro/background.jpg" onchange="hdpSaveSetting('dashboard.background_image_url', this.value.trim())" />
+      <input class="st-input st-input--wide" data-setting="dashboard.background_image_url" type="url" value="${escapeAttribute(backgroundUrl)}" placeholder="/local/hass-dashboard-pro/background.jpg" />
     </div>
   `);
 }
@@ -1638,7 +1686,7 @@ export function buildHomeSection(config: StrategyConfig): string {
   const layoutChoices = (Object.keys(layoutLabels) as HomeLayoutPreset[]).map(preset => {
     const active = preset === layoutPreset;
     const meta = layoutLabels[preset];
-    return `<button type="button" class="st-layout-choice ${active ? 'st-layout-choice--active' : ''}" data-layout-preset="${escapeAttribute(preset)}" aria-pressed="${active ? 'true' : 'false'}" onclick="hdpSelectHomeLayout('${escapeAttribute(preset)}', event)">
+    return `<button type="button" class="st-layout-choice ${active ? 'st-layout-choice--active' : ''}" data-action="select-home-layout" data-layout-preset="${escapeAttribute(preset)}" aria-pressed="${active ? 'true' : 'false'}">
       <span class="st-layout-choice-name">${escapeHTML(meta.label)}</span>
       <span class="st-layout-choice-desc">${escapeHTML(meta.desc)}</span>
     </button>`;
@@ -1701,14 +1749,14 @@ export function buildHeaderSection(config: StrategyConfig): string {
         <div class="st-row-label">天气实体</div>
         <div class="st-row-desc">weather.* 实体 ID（留空自动检测）</div>
       </div>
-      <input class="st-input" data-setting="header.weather_entity" value="${escapeAttribute(weatherEntity)}" placeholder="自动检测" onchange="hdpSaveSetting('header.weather_entity', this.value)" />
+      <input class="st-input" data-setting="header.weather_entity" value="${escapeAttribute(weatherEntity)}" placeholder="自动检测" />
     </div>
     <div class="st-row">
       <div>
         <div class="st-row-label">报警实体</div>
         <div class="st-row-desc">alarm_control_panel.* 实体 ID</div>
       </div>
-      <input class="st-input" data-setting="header.alarm_entity" value="${escapeAttribute(alarmEntity)}" placeholder="自动检测" onchange="hdpSaveSetting('header.alarm_entity', this.value)" />
+      <input class="st-input" data-setting="header.alarm_entity" value="${escapeAttribute(alarmEntity)}" placeholder="自动检测" />
     </div>
   `);
 }
@@ -1856,12 +1904,12 @@ export function buildDevicesSection(config: StrategyConfig, hass?: Hass): string
       <label class="st-keyword-field">
         <div class="st-row-label">隐藏关键词</div>
         <div class="st-row-desc">匹配到这些关键词的设备会从仪表盘隐藏。</div>
-        <textarea class="st-input st-textarea" placeholder="例如：测试, 临时, old" data-setting="devices.hidden_keywords" oninput="hdpSaveKeywordList('devices.hidden_keywords', this.value)">${escapeHTML(hiddenKeywordValue)}</textarea>
+        <textarea class="st-input st-textarea" placeholder="例如：测试, 临时, old" data-setting="devices.hidden_keywords" data-value-type="keyword-list">${escapeHTML(hiddenKeywordValue)}</textarea>
       </label>
       <label class="st-keyword-field">
         <div class="st-row-label">仅显示关键词</div>
         <div class="st-row-desc">填写后只显示匹配这些关键词的设备；留空则显示所有未隐藏设备。</div>
-        <textarea class="st-input st-textarea" placeholder="例如：客厅, 灯, living" data-setting="devices.visible_keywords" oninput="hdpSaveKeywordList('devices.visible_keywords', this.value)">${escapeHTML(visibleKeywordValue)}</textarea>
+        <textarea class="st-input st-textarea" placeholder="例如：客厅, 灯, living" data-setting="devices.visible_keywords" data-value-type="keyword-list">${escapeHTML(visibleKeywordValue)}</textarea>
       </label>
     </div>
   `);

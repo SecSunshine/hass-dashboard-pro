@@ -151,6 +151,60 @@ describe('settings sections client script', () => {
     expect(listeners.click).toHaveLength(1);
   });
 
+  it('stages delegated settings controls without saving or reloading', () => {
+    const { runtime, listeners, store, timers } = createRuntime();
+    const sectionCalls: string[] = [];
+    runtime.hdpToggleSection = (id: string) => sectionCalls.push(id);
+    const createControl = (attrs: Record<string, string>, classNames: string[] = [], value = '', type = '') => {
+      const classes = new Set(classNames);
+      const control: any = {
+        value,
+        type,
+        getAttribute: (name: string) => attrs[name] ?? null,
+        setAttribute: (name: string, attrValue: string) => { attrs[name] = attrValue; },
+        classList: {
+          contains: (name: string) => classes.has(name),
+          toggle: (name: string, force?: boolean) => {
+            const enabled = force == null ? !classes.has(name) : force;
+            if (enabled) classes.add(name); else classes.delete(name);
+          },
+        },
+        closest: () => null,
+      };
+      return control;
+    };
+    const click = (control: any) => listeners.click[0]({
+      target: { closest: () => control },
+      preventDefault: () => {},
+      stopPropagation: () => {},
+    });
+
+    click(createControl({ 'data-action': 'toggle-section', 'data-section': 'st-devices' }));
+    click(createControl({ 'data-action': 'toggle-setting', 'data-setting': 'areas.hide_unavailable' }, ['st-toggle', 'st-toggle--off']));
+    click(createControl({
+      'data-action': 'toggle-hidden-area',
+      'data-setting': 'areas.hidden_areas',
+      'data-value': 'kitchen',
+    }, ['st-chip']));
+    click(createControl({ 'data-action': 'select-home-layout', 'data-layout-preset': 'l_shape' }, ['st-layout-choice']));
+
+    const urlInput = createControl({ 'data-setting': 'dashboard.avatar_url' }, [], '  /local/avatar.png  ', 'url');
+    listeners.change[0]({ target: { closest: () => urlInput } });
+    const keywordInput = createControl({
+      'data-setting': 'devices.hidden_keywords',
+      'data-value-type': 'keyword-list',
+    }, [], 'Test, 客厅, test');
+    listeners.input[0]({ target: { closest: () => keywordInput } });
+
+    expect(sectionCalls).toEqual(['st-devices']);
+    expect(runtime.hdpSettingsDraft.areas).toEqual({ hide_unavailable: true, hidden_areas: ['kitchen'] });
+    expect(runtime.hdpSettingsDraft.home.layout_preset).toBe('l_shape');
+    expect(runtime.hdpSettingsDraft.dashboard.avatar_url).toBe('/local/avatar.png');
+    expect(runtime.hdpSettingsDraft.devices.hidden_keywords).toEqual(['test', '客厅']);
+    expect(store.get('hdp_config')).toBeUndefined();
+    expect(timers).toHaveLength(0);
+  });
+
   it('loads initial settings config into the draft without saving it', () => {
     const { runtime, store } = createRuntime({
       dashboard: { name: 'Seeded Home' },

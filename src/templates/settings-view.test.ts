@@ -240,10 +240,9 @@ describe('settings view', () => {
     expect(html).toContain('<button type="button" class="st-plan-choice');
     expect(html).toContain('overflow-wrap: anywhere');
     expect(html).toContain('width: min(240px, 45vw)');
-    expect(html).toContain("hdpToggleArrayItem('areas.hidden_areas'");
-    expect(html).toContain("hdpToggleArrayItem('devices.hidden_device_types'");
-    expect(html).toContain(', event)');
-    expect(html).toContain('title="Kitchen" onclick="hdpToggleArrayItem');
+    expect(html).toContain('data-setting="areas.hidden_areas" data-value="kitchen"');
+    expect(html).toContain('data-setting="devices.hidden_device_types" data-value="binary_sensor.motion"');
+    expect(html).not.toContain('onclick="hdpToggleArrayItem');
     expect(html).toContain('data-component="settings-save-bar" data-dirty="false"');
     expect(html).toContain('data-action="cancel-settings"');
     expect(html).toContain('data-action="save-settings"');
@@ -296,7 +295,7 @@ describe('settings view', () => {
     expect(html).toContain('修改会先暂存，点击保存后生效');
     expect(js).toContain("if (action === 'save-settings') window.hdpCommitSettings();");
     expect(js).toContain('window.hdpSettingsCommandHandlerReady');
-    expect(js).toContain("this.setAttribute('aria-checked', isOn ? 'false' : 'true');");
+    expect(js).toContain("control.setAttribute('aria-checked', !isOn ? 'true' : 'false');");
     expect(js).toContain("this.setAttribute('aria-checked', shadowOn ? 'true' : 'false');");
     expect(js).toContain("b.setAttribute('aria-pressed'");
     expect(html).not.toMatch(/[^<]\/(div|span|button|option|a|textarea|label|select|input)>/);
@@ -329,10 +328,10 @@ describe('settings view', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const html = buildSettingsHTML(config, undefined, hass);
 
-    expect(html).toContain("hdpToggleArrayItem('devices.hidden_domains', &quot;number&quot;, event)");
+    expect(html).toContain('data-setting="devices.hidden_domains" data-value="number"');
     expect(html).toContain('数字');
-    expect(html).not.toContain("hdpToggleArrayItem('devices.hidden_domains', &quot;select&quot;, event)");
-    expect(html).not.toContain("hdpToggleArrayItem('devices.hidden_domains', &quot;automation&quot;, event)");
+    expect(html).not.toContain('data-setting="devices.hidden_domains" data-value="select"');
+    expect(html).not.toContain('data-setting="devices.hidden_domains" data-value="automation"');
   });
 
   it('marks legacy hidden area, domain, and person settings as active', () => {
@@ -345,11 +344,8 @@ describe('settings view', () => {
     const html = buildSettingsHTML(config, undefined, hass);
 
     expect(html).toContain('data-action="toggle-hidden-area" data-setting="areas.hidden_areas" data-value="kitchen" aria-pressed="true" title="Kitchen"');
-    expect(html).toContain("hdpToggleArrayItem('areas.hidden_areas', &quot;kitchen&quot;, event)");
     expect(html).toContain('data-action="toggle-hidden-domain" data-setting="devices.hidden_domains" data-value="number" aria-pressed="true" title="数字"');
-    expect(html).toContain("hdpToggleArrayItem('devices.hidden_domains', &quot;number&quot;, event)");
     expect(html).toContain('data-action="toggle-hidden-person" data-setting="people.hidden_persons" data-value="person.alice" aria-pressed="true" title="Alice"');
-    expect(html).toContain("hdpToggleArrayItem('people.hidden_persons', &quot;person.alice&quot;, event)");
   });
 
   it('offers home summary info card visibility controls', () => {
@@ -366,21 +362,20 @@ describe('settings view', () => {
     expect(html).toContain('L 型布局');
     expect(html).toContain('镜像 L 型');
     expect(html).toContain('U 型布局');
-    expect(html).toContain("hdpSelectHomeLayout('l_shape', event)");
+    expect(html).toContain('data-action="select-home-layout" data-layout-preset="l_shape"');
     expect(html).toContain('系统概览项目');
-    expect(html).toContain("hdpToggleArrayItem('home.hidden_info_cards', &quot;entities&quot;, event)");
     expect(html).toContain('data-action="toggle-home-info-card" data-setting="home.hidden_info_cards" data-value="entities" aria-pressed="true"');
-    expect(html).toContain("hdpToggleArrayItem('home.hidden_info_cards', &quot;areas&quot;, event)");
-    expect(html).toContain("hdpToggleArrayItem('home.hidden_info_cards', &quot;active&quot;, event)");
-    expect(html).toContain("hdpToggleArrayItem('home.hidden_info_cards', &quot;automations&quot;, event)");
+    expect(html).toContain('data-setting="home.hidden_info_cards" data-value="areas"');
+    expect(html).toContain('data-setting="home.hidden_info_cards" data-value="active"');
+    expect(html).toContain('data-setting="home.hidden_info_cards" data-value="automations"');
   });
 
   it('offers common device subtype controls without relying on currently visible entities', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const html = buildSettingsHTML(config, undefined, hass);
 
-    expect(html).toContain("hdpToggleArrayItem('devices.hidden_device_types', &quot;binary_sensor.motion&quot;, event)");
-    expect(html).toContain("hdpToggleArrayItem('devices.hidden_device_types', &quot;sensor.temperature&quot;, event)");
+    expect(html).toContain('data-setting="devices.hidden_device_types" data-value="binary_sensor.motion"');
+    expect(html).toContain('data-setting="devices.hidden_device_types" data-value="sensor.temperature"');
     expect(html).toContain('温度传感器');
   });
 
@@ -393,9 +388,8 @@ describe('settings view', () => {
     };
     const html = buildSettingsHTML(config, undefined, hass);
 
-    expect(html).toContain("hdpToggleArrayItem('devices.hidden_domains', &quot;sensor&quot;, event)");
     expect(html).toContain('data-action="toggle-hidden-domain" data-setting="devices.hidden_domains" data-value="sensor" aria-pressed="true"');
-    expect(html).toContain("hdpToggleArrayItem('devices.hidden_device_types', &quot;sensor.temperature&quot;, event)");
+    expect(html).toContain('data-setting="devices.hidden_device_types" data-value="sensor.temperature"');
   });
 
   it('keeps hidden device type chips visible even when no matching entity is visible', () => {
@@ -408,7 +402,7 @@ describe('settings view', () => {
     const html = buildSettingsHTML(config, undefined, hass);
 
     expect(html).toContain('data-action="toggle-hidden-device-type" data-setting="devices.hidden_device_types" data-value="sensor.temperature" aria-pressed="true"');
-    expect(html).toContain("hdpToggleArrayItem('devices.hidden_device_types', &quot;sensor.temperature&quot;, event)");
+    expect(html).not.toContain('onclick="hdpToggleArrayItem');
   });
 
   it('uses the same device type keys for settings chips and dashboard filtering', () => {
@@ -429,8 +423,8 @@ describe('settings view', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const html = buildSettingsHTML(config, undefined, hass);
 
-    expect(html).toContain("hdpToggleArrayItem('people.hidden_persons', &quot;person.alice&quot;, event)");
-    expect(html).not.toContain("hdpToggleArrayItem('people.hidden_persons', &quot;person.hidden&quot;, event)");
+    expect(html).toContain('data-setting="people.hidden_persons" data-value="person.alice"');
+    expect(html).not.toContain('data-setting="people.hidden_persons" data-value="person.hidden"');
     expect(html).not.toContain('Hidden Person');
   });
 
@@ -444,10 +438,8 @@ describe('settings view', () => {
     const html = buildSettingsHTML(config, undefined, hass);
 
     expect(html).toContain('data-action="toggle-hidden-person" data-setting="people.hidden_persons" data-value="person.hidden" aria-pressed="true"');
-    expect(html).toContain("hdpToggleArrayItem('people.hidden_persons', &quot;person.hidden&quot;, event)");
     expect(html).toContain('Hidden Person');
     expect(html).toContain('data-action="toggle-hidden-person" data-setting="people.hidden_persons" data-value="person.missing" aria-pressed="true"');
-    expect(html).toContain("hdpToggleArrayItem('people.hidden_persons', &quot;person.missing&quot;, event)");
   });
 
   it('escapes dashboard setting input values', () => {
@@ -466,8 +458,9 @@ describe('settings view', () => {
     expect(html).toContain('value="&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;"');
     expect(html).toContain('value="&quot;&gt;&lt;img src=x onerror=alert(1)&gt;"');
     expect(html).toContain('value="/local/bg.jpg"');
-    expect(html).toContain("hdpSaveSetting('dashboard.avatar_url', this.value.trim())");
-    expect(html).toContain("hdpSaveSetting('dashboard.background_image_url', this.value.trim())");
+    expect(html).toContain('data-setting="dashboard.avatar_url" type="url"');
+    expect(html).toContain('data-setting="dashboard.background_image_url" type="url"');
+    expect(html).not.toContain('onchange="hdpSaveSetting');
     expect(html).not.toContain('value=""><script>');
     expect(html).not.toContain('value=""><img');
   });
@@ -561,14 +554,15 @@ describe('settings view', () => {
     expect(js.indexOf('hdpClearConfig();', js.indexOf('window.hdpImportShareCode = function'))).toBeLessThan(
       js.indexOf('hdpSaveConfig(config);', js.indexOf('window.hdpImportShareCode = function')),
     );
-    expect(html).toContain("var isOn = this.classList.contains('st-toggle--on'); hdpSaveSetting('areas.hide_unavailable', !isOn);");
+    expect(js).toContain("var isOn = control.classList.contains('st-toggle--on');");
+    expect(js).toContain('window.hdpSaveSetting(path, !isOn);');
     expect(html).toContain('data-setting="dashboard.name"');
     expect(html).toContain('data-setting="dashboard.avatar_url"');
     expect(html).toContain('data-setting="dashboard.background_image_url"');
     expect(html).toContain('data-setting="header.weather_entity"');
     expect(html).toContain('data-setting="header.alarm_entity"');
     expect(html).toContain('data-action="toggle-setting" data-setting="areas.hide_unavailable" role="switch" aria-checked="false" tabindex="0"');
-    expect(html).toContain("this.setAttribute('aria-checked', !isOn ? 'true' : 'false');");
+    expect(js).toContain("control.setAttribute('aria-checked', !isOn ? 'true' : 'false');");
     expect(js).toContain("chip.setAttribute('aria-pressed'");
     expect(html).toContain("event.key === 'Enter' || event.key === ' '");
   });
@@ -601,7 +595,7 @@ describe('settings view', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const html = buildSettingsHTML(config, undefined, hass);
 
-    expect(html).toContain("hdpToggleArrayItem('areas.hidden_areas', &quot;__unassigned&quot;, event)");
+    expect(html).toContain('data-setting="areas.hidden_areas" data-value="__unassigned"');
     expect(html).toContain('未分配区域');
   });
 
@@ -615,7 +609,7 @@ describe('settings view', () => {
     const html = buildSettingsHTML(config, undefined, hass);
 
     expect(html).toContain('data-action="toggle-hidden-area" data-setting="areas.hidden_areas" data-value="garage" aria-pressed="true"');
-    expect(html).toContain("hdpToggleArrayItem('areas.hidden_areas', &quot;garage&quot;, event)");
+    expect(html).toContain('data-setting="areas.hidden_areas" data-value="garage"');
   });
 
   it('orders area visibility controls from configured area order', () => {

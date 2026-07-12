@@ -93,7 +93,7 @@ export function buildSettingsHTML(config: StrategyConfig, tokens?: ResolvedToken
 
   // Wrap visual settings in a collapsible section
   const visualSection = `<div class="st-section st-section--open" id="st-visual" data-component="settings-visual">
-    <div class="st-section-hdr" data-action="toggle-section" data-section="st-visual" role="button" aria-expanded="true" tabindex="0" onclick="hdpToggleSection('st-visual')" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); this.click(); }">
+    <div class="st-section-hdr" data-action="toggle-section" data-section="st-visual" role="button" aria-expanded="true" tabindex="0">
       <div class="st-section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div>
       <span class="st-section-title">视觉设置</span>
       <svg class="st-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
