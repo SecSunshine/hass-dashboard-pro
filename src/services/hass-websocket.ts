@@ -1051,11 +1051,18 @@ function hdpClosestFromEvent(e, selector) {
   return null;
 }
 
+function hdpEntityIdFromControl(control) {
+  if (!control || !control.getAttribute) return '';
+  var direct = control.getAttribute('data-entity') || '';
+  if (direct) return direct;
+  var owner = control.closest ? control.closest('[data-entity]') : null;
+  return owner && owner.getAttribute ? (owner.getAttribute('data-entity') || '') : '';
+}
+
 function hdpHandleDomainControl(control) {
   if (!control || !control.getAttribute) return false;
   var action = control.getAttribute('data-action') || '';
-  var owner = control.closest('[data-entity]');
-  var entityId = control.getAttribute('data-entity') || (owner && owner.getAttribute('data-entity'));
+  var entityId = hdpEntityIdFromControl(control);
   if (!entityId || !action) return false;
 
   if (action === 'more-info') {
@@ -1139,7 +1146,7 @@ function hdpInitEntityClickHandlers() {
       e.stopPropagation();
       return;
     }
-    var domainControl = hdpClosestFromEvent(e, '[data-action][data-entity]');
+    var domainControl = dashboardControl;
     if (domainControl && hdpHandleDomainControl(domainControl)) {
       e.preventDefault();
       e.stopPropagation();
@@ -1175,14 +1182,16 @@ function hdpInitEntityClickHandlers() {
     card.click();
   });
   document.addEventListener('input', function(e) {
-    var control = hdpClosestFromEvent(e, '[data-action="media-volume"][data-entity]');
-    if (!control) return;
-    hdpSetMediaVolume(control.getAttribute('data-entity'), Number(control.value) / 100);
+    var control = hdpClosestFromEvent(e, '[data-action="media-volume"]');
+    var entityId = hdpEntityIdFromControl(control);
+    if (!control || !entityId) return;
+    hdpSetMediaVolume(entityId, Number(control.value) / 100);
   }, true);
   document.addEventListener('change', function(e) {
-    var control = hdpClosestFromEvent(e, '[data-action="cover-position"][data-entity]');
-    if (!control) return;
-    hdpSetCoverPosition(control.getAttribute('data-entity'), control.value);
+    var control = hdpClosestFromEvent(e, '[data-action="cover-position"]');
+    var entityId = hdpEntityIdFromControl(control);
+    if (!control || !entityId) return;
+    hdpSetCoverPosition(entityId, control.value);
   }, true);
 }
 `;

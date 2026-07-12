@@ -172,9 +172,10 @@ describe('hass websocket script', () => {
     const js = generateConnectionDiscoveryJS();
 
     expect(js).toContain('function hdpHandleDomainControl(control)');
+    expect(js).toContain('function hdpEntityIdFromControl(control)');
     expect(js).toContain('function hdpClosestFromEvent(e, selector)');
     expect(js).toContain("typeof e.composedPath === 'function' ? e.composedPath() : []");
-    expect(js).toContain("var domainControl = hdpClosestFromEvent(e, '[data-action][data-entity]');");
+    expect(js).toContain('var domainControl = dashboardControl;');
     expect(js).toContain('if (domainControl && hdpHandleDomainControl(domainControl))');
     expect(js).toContain("if (action === 'more-info')");
     expect(js).toContain("hdpSetClimateMode(entityId, control.getAttribute('data-mode') || 'auto');");
@@ -193,7 +194,7 @@ describe('hass websocket script', () => {
     expect(js).toContain("if (action === 'cover-position' || action === 'media-volume') return false;");
     expect(js).toContain("hdpCoverAction(entityId, action.replace('cover-', ''));");
     expect(js).toContain("document.addEventListener('change'");
-    expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"cover-position\"][data-entity]')");
+    expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"cover-position\"]')");
     expect(js).toContain("}, true);");
     expect(js).toContain("if (hdpClosestFromEvent(e, '[data-no-toggle]')) return;");
     expect(js).toContain('if (window.hdpEntityClickHandlersInitialized) return;');
@@ -299,10 +300,14 @@ describe('hass websocket script', () => {
     )(documentStub, windowStub, () => {}, () => {}, console, CustomEventStub);
     windowStub.testInitEntityClickHandlers();
 
-    const click = (attributes: Record<string, string>) => {
+    const click = (attributes: Record<string, string>, ownerEntityId = '') => {
+      const owner = ownerEntityId ? {
+        getAttribute: (name: string) => name === 'data-entity' ? ownerEntityId : null,
+        hasAttribute: () => false,
+      } : null;
       const control = {
         getAttribute: (name: string) => attributes[name] || null,
-        closest: (selector: string) => selector === '[data-entity]' ? control : null,
+        closest: (selector: string) => selector === '[data-entity]' ? (owner || control) : null,
         hasAttribute: () => false,
       };
       let prevented = false;
@@ -311,7 +316,9 @@ describe('hass websocket script', () => {
         target: {
           closest: (selector: string) => {
             if (selector === '[data-no-toggle]') return null;
-            if (selector === '[data-action]' || selector === '[data-action][data-entity]' || selector === '[data-entity]') return control;
+            if (selector === '[data-action]') return control;
+            if (selector === '[data-action][data-entity]') return attributes['data-entity'] ? control : null;
+            if (selector === '[data-entity]') return owner || control;
             return null;
           },
         },
@@ -323,20 +330,27 @@ describe('hass websocket script', () => {
 
     const moreInfo = click({ 'data-action': 'more-info', 'data-entity': 'sensor.kitchen_temperature' });
     const cover = click({ 'data-action': 'cover-open', 'data-entity': 'cover.bed_blind' });
-    const useRange = (action: string, entityId: string, value: string, eventType: 'change' | 'input') => {
-      const rangeSelector = `[data-action="${action}"][data-entity]`;
+    const nestedCover = click({ 'data-action': 'cover-close' }, 'cover.bed_blind');
+    const useRange = (action: string, entityId: string, value: string, eventType: 'change' | 'input', nested = false) => {
+      const actionSelector = `[data-action="${action}"]`;
+      const combinedSelector = `${actionSelector}[data-entity]`;
+      const owner = nested ? {
+        getAttribute: (name: string) => name === 'data-entity' ? entityId : null,
+      } : null;
       const rangeControl = {
         value,
         getAttribute: (name: string) => ({
           'data-action': action,
-          'data-entity': entityId,
+          'data-entity': nested ? '' : entityId,
         })[name] || null,
         closest: (selector: string) => (
           selector === '[data-action]' ||
-          selector === '[data-action][data-entity]' ||
-          selector === '[data-entity]' ||
-          selector === rangeSelector
-        ) ? rangeControl : null,
+          selector === actionSelector
+        ) ? rangeControl : selector === '[data-entity]'
+          ? (owner || rangeControl)
+          : selector === combinedSelector && !nested
+            ? rangeControl
+            : null,
         hasAttribute: () => false,
       };
       let prevented = false;
@@ -349,17 +363,22 @@ describe('hass websocket script', () => {
       listeners[eventType][0]({ target: rangeControl });
       return { prevented, stopped };
     };
-    const coverRange = useRange('cover-position', 'cover.bed_blind', '64', 'change');
-    const volumeRange = useRange('media-volume', 'media_player.living_room', '35', 'input');
+    const coverRange = useRange('cover-position', 'cover.bed_blind', '64', 'change', true);
+    const volumeRange = useRange('media-volume', 'media_player.living_room', '35', 'input', true);
 
     expect(moreInfo).toEqual({ prevented: true, stopped: true });
     expect(infoEvents).toHaveLength(2);
     expect(infoEvents.every(event => event.type === 'hass-more-info')).toBe(true);
     expect(infoEvents.every(event => event.detail.entityId === 'sensor.kitchen_temperature')).toBe(true);
     expect(cover).toEqual({ prevented: true, stopped: true });
+    expect(nestedCover).toEqual({ prevented: true, stopped: true });
     expect(serviceCalls).toEqual([{
       domain: 'cover',
       service: 'open_cover',
+      data: { entity_id: 'cover.bed_blind' },
+    }, {
+      domain: 'cover',
+      service: 'close_cover',
       data: { entity_id: 'cover.bed_blind' },
     }, {
       domain: 'cover',
