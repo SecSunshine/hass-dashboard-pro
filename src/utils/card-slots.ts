@@ -843,7 +843,7 @@ function hdpPreviewSlotYaml(yaml) {
     err.setAttribute('data-state', 'ok');
   }
   if (preview) {
-    preview.innerHTML = hdpSanitizeSlotHTML(parsed.content);
+    preview.innerHTML = '<div class="bp-html-card">' + hdpSanitizeSlotHTML(parsed.content) + '</div>';
     preview.setAttribute('data-state', 'ok');
   }
   if (save) save.disabled = false;
@@ -912,8 +912,99 @@ function hdpGetSlotTemplate(template, slotId) {
 function hdpSanitizeSlotHTML(html) {
   return String(html || '')
     .replace(/<\\s*(script|iframe|object|embed|form)\\b[\\s\\S]*?<\\s*\\/\\s*\\1\\s*>/gi, '')
-    .replace(/\\son[a-z]+\\s*=\\s*("[^"]*"|'[^']*'|[^\\s>]+)/gi, '')
-    .replace(/javascript\\s*:/gi, '');
+    .replace(/<\\s*style\\b[^>]*>([\\s\\S]*?)<\\s*\\/\\s*style\\s*>/gi, function(_, css) {
+      return '<style>' + hdpScopeSlotCSS(String(css)) + '</style>';
+    })
+    .replace(/<[^>]+>/g, function(tag) { return hdpSanitizeSlotTag(tag); });
+}
+
+function hdpSanitizeSlotTag(tag) {
+  var match = String(tag || '').match(/^<\\s*(\\/)?\\s*([a-zA-Z][a-zA-Z0-9-]*)\\b([^>]*)>$/);
+  if (!match) return hdpEscapeSlotText(tag);
+  var closing = !!match[1];
+  var rawName = match[2];
+  var name = rawName.toLowerCase();
+  var allowedTags = {
+    a:1, article:1, aside:1, b:1, br:1, button:1, canvas:1, circle:1, code:1,
+    dd:1, details:1, div:1, dl:1, dt:1, em:1, footer:1, h1:1, h2:1, h3:1,
+    h4:1, h5:1, h6:1, 'ha-icon':1, 'ha-state-icon':1, header:1, hr:1, i:1,
+    img:1, li:1, line:1, main:1, nav:1, ol:1, p:1, path:1, polygon:1,
+    polyline:1, rect:1, section:1, small:1, span:1, 'state-badge':1, strong:1,
+    style:1, sub:1, summary:1, sup:1, svg:1, ul:1
+  };
+  if (!allowedTags[name]) return hdpEscapeSlotText(tag);
+  if (closing) return '</' + name + '>';
+  if (name === 'style') return '<style>';
+  var attrs = hdpSanitizeSlotAttributes(match[3] || '');
+  return '<' + name + (attrs ? ' ' + attrs : '') + '>';
+}
+
+function hdpSanitizeSlotAttributes(rawAttrs) {
+  var attrs = [];
+  var allowedAttrs = {
+    alt:1, class:1, cx:1, cy:1, d:1, fill:1, height:1, href:1, icon:1, id:1,
+    r:1, role:1, rx:1, ry:1, src:1, stroke:1, 'stroke-linecap':1,
+    'stroke-linejoin':1, 'stroke-width':1, style:1, title:1, type:1, viewbox:1,
+    width:1, x:1, x1:1, x2:1, y:1, y1:1, y2:1
+  };
+  var pattern = /([:@a-zA-Z_][:@a-zA-Z0-9_.-]*)(?:\\s*=\\s*("([^"]*)"|'([^']*)'|([^\\s"'=<>\`]+)))?/g;
+  var match;
+  while ((match = pattern.exec(String(rawAttrs || ''))) !== null) {
+    var rawName = match[1];
+    var name = rawName.toLowerCase();
+    if (name.indexOf('on') === 0) continue;
+    if (!allowedAttrs[name] && name.indexOf('data-') !== 0 && name.indexOf('aria-') !== 0) continue;
+    var value = match[3] != null ? match[3] : match[4] != null ? match[4] : match[5] || '';
+    var safeValue = hdpSanitizeSlotAttributeValue(name, value);
+    if (safeValue == null) continue;
+    attrs.push(rawName + '="' + safeValue + '"');
+  }
+  return attrs.join(' ');
+}
+
+function hdpSanitizeSlotAttributeValue(name, value) {
+  if (name === 'href' || name === 'src') {
+    var url = String(value || '').trim();
+    var schemeProbe = url.replace(/[\\u0000-\\u0020]/g, '');
+    var scheme = schemeProbe.match(/^([a-z][a-z0-9+.-]*):/i);
+    if (scheme && !/^https?$/i.test(scheme[1]) && !/^data$/i.test(scheme[1])) return null;
+    if (scheme && /^data$/i.test(scheme[1]) && !/^data:image\\//i.test(schemeProbe)) return null;
+    return hdpEscapeSlotText(url);
+  }
+  if (name === 'style') return hdpSanitizeSlotStyle(value);
+  return hdpEscapeSlotText(value);
+}
+
+function hdpSanitizeSlotStyle(value) {
+  return String(value || '').split(';').map(function(declaration) {
+    var separator = declaration.indexOf(':');
+    if (separator === -1) return '';
+    var property = declaration.slice(0, separator).trim();
+    var rawValue = declaration.slice(separator + 1).trim();
+    if (!/^(?:--)?[a-zA-Z][a-zA-Z0-9-]*$/.test(property)) return '';
+    if (/javascript\\s*:|expression\\s*\\(|behavior\\s*:|@import|url\\s*\\(/i.test(rawValue)) return '';
+    return rawValue ? property + ': ' + hdpEscapeSlotText(rawValue) : '';
+  }).filter(Boolean).join('; ');
+}
+
+function hdpScopeSlotCSS(css) {
+  var cleaned = String(css || '')
+    .replace(/@import[^;]+;?/gi, '')
+    .replace(/javascript\\s*:/gi, '')
+    .replace(/expression\\s*\\(/gi, '')
+    .replace(/behavior\\s*:/gi, '')
+    .replace(/<\\/?style/gi, '');
+  return cleaned.replace(/(^|})\\s*([^@{}][^{}]*)\\{/g, function(_, prefix, selectors) {
+    var scoped = String(selectors).split(',').map(function(selector) {
+      selector = selector.trim();
+      if (!selector) return '';
+      if (selector.indexOf('#hdp-slot-preview ') === 0) return selector;
+      if (selector.indexOf('.bp-html-card') === 0) return '#hdp-slot-preview ' + selector;
+      if (selector === ':host') return '#hdp-slot-preview .bp-html-card';
+      return '#hdp-slot-preview .bp-html-card ' + selector;
+    }).filter(Boolean).join(', ');
+    return prefix + ' ' + scoped + ' {';
+  });
 }
 
 function hdpEscapeSlotText(value) {

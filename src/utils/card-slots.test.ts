@@ -217,6 +217,61 @@ describe('card slots', () => {
     expect(stopped).toBe(true);
   });
 
+  it('sanitizes custom-card previews with the production safety boundary', () => {
+    const windowStub: Record<string, any> = {};
+    const documentStub = {
+      readyState: 'loading',
+      addEventListener: () => {},
+    };
+    new Function(
+      'window',
+      'document',
+      'localStorage',
+      'Image',
+      'prompt',
+      'confirm',
+      'location',
+      'setTimeout',
+      'clearTimeout',
+      `${generateCardSlotEditorJS()}\nwindow.testSanitizeSlotHTML = hdpSanitizeSlotHTML;`,
+    )(
+      windowStub,
+      documentStub,
+      { getItem: () => null, setItem: () => {} },
+      function ImageStub() {},
+      () => null,
+      () => false,
+      { reload: () => {} },
+      setTimeout,
+      clearTimeout,
+    );
+
+    const sanitized = windowStub.testSanitizeSlotHTML([
+      '<style>@import "evil.css"; :host { color: red } .safe { display: grid } .bad { width: expression(alert(1)) }</style>',
+      '<section class="safe" data-entity="light.kitchen" data-action="toggle" aria-label="Kitchen" onclick="evil()" style="color:red;background:url(evil);padding:8px">',
+      '<script>alert(1)</script>',
+      '<img src="javascript:alert(1)" onerror="evil()">',
+      '<a href="https://example.com/path">Safe</a>',
+      '<img src="images/status.png" alt="Relative">',
+      '</section>',
+    ].join(''));
+
+    expect(sanitized).not.toContain('<script');
+    expect(sanitized).not.toContain('onclick');
+    expect(sanitized).not.toContain('onerror');
+    expect(sanitized).not.toContain('javascript:');
+    expect(sanitized).not.toContain('@import');
+    expect(sanitized).not.toContain('expression(');
+    expect(sanitized).not.toContain('background:');
+    expect(sanitized).toContain('data-entity="light.kitchen"');
+    expect(sanitized).toContain('data-action="toggle"');
+    expect(sanitized).toContain('aria-label="Kitchen"');
+    expect(sanitized).toContain('style="color: red; padding: 8px"');
+    expect(sanitized).toContain('#hdp-slot-preview .bp-html-card .safe {');
+    expect(sanitized).toContain('href="https://example.com/path"');
+    expect(sanitized).toContain('src="images/status.png"');
+  });
+
   it('emits editor CSS and JS for draft-only editing and image theme extraction', () => {
     const css = getCardSlotCSS();
     const js = generateCardSlotEditorJS();
