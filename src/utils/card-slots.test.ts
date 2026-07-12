@@ -438,6 +438,7 @@ describe('card slots', () => {
     const card = {
       classList: { add: () => {}, toggle: () => {}, remove: () => {} },
       style: { setProperty: () => {}, removeProperty: () => {} },
+      removeAttribute: () => {},
       matches: () => false,
       querySelectorAll: () => [],
     };
@@ -488,6 +489,99 @@ describe('card slots', () => {
     windowStub.hdpEditCardSlotBackground('home.summary');
     expect(draft.cards.slots['home.summary'].background_image_url).toBe('images/summary.jpg');
     expect(draft.cards.slots['home.summary'].theme_from_image).toBe(false);
+  });
+
+  it('ignores stale image theme callbacks and clears sampled colors', () => {
+    const classes = new Set(['hdp-card-slot--theme-image']);
+    const attrs = new Map<string, string>();
+    const styles = new Map<string, string>();
+    const images: any[] = [];
+    let drawnSource = '';
+    let drawCount = 0;
+    function ImageStub(this: any) {
+      images.push(this);
+    }
+    const context = {
+      drawImage: (image: any) => {
+        drawnSource = image.src;
+        drawCount += 1;
+      },
+      getImageData: () => ({
+        data: drawnSource.includes('second')
+          ? new Uint8ClampedArray([100, 150, 200, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+          : new Uint8ClampedArray([200, 80, 40, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+      }),
+    };
+    const card = {
+      matches: (selector: string) => selector === '.hdp-card-slot--theme-image' && classes.has('hdp-card-slot--theme-image'),
+      querySelectorAll: () => [],
+      classList: {
+        add: (name: string) => classes.add(name),
+        remove: (name: string) => classes.delete(name),
+      },
+      getAttribute: (name: string) => attrs.get(name) ?? null,
+      setAttribute: (name: string, value: string) => attrs.set(name, value),
+      removeAttribute: (name: string) => attrs.delete(name),
+      style: {
+        getPropertyValue: (name: string) => styles.get(name) || '',
+        setProperty: (name: string, value: string) => styles.set(name, value),
+        removeProperty: (name: string) => styles.delete(name),
+      },
+    };
+    const documentStub = {
+      readyState: 'loading',
+      addEventListener: () => {},
+      createElement: (tag: string) => tag === 'canvas'
+        ? { width: 0, height: 0, getContext: () => context }
+        : null,
+      querySelectorAll: () => [],
+    };
+    const windowStub: Record<string, any> = {};
+    new Function(
+      'window',
+      'document',
+      'localStorage',
+      'Image',
+      'prompt',
+      'confirm',
+      'location',
+      'setTimeout',
+      'clearTimeout',
+      `${generateCardSlotEditorJS()}
+window.testApplyCardSlotImageThemes = hdpApplyCardSlotImageThemes;
+window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
+    )(
+      windowStub,
+      documentStub,
+      { getItem: () => null, setItem: () => {} },
+      ImageStub,
+      () => null,
+      () => false,
+      { reload: () => {} },
+      setTimeout,
+      clearTimeout,
+    );
+
+    styles.set('--hdp-slot-bg-image', 'url(images/first.jpg)');
+    windowStub.testApplyCardSlotImageThemes(card);
+    styles.set('--hdp-slot-bg-image', 'url(images/second.jpg)');
+    windowStub.testApplyCardSlotImageThemes(card);
+    expect(images).toHaveLength(2);
+
+    images[0].onload();
+    expect(drawCount).toBe(0);
+    expect(styles.has('--hdp-primary')).toBe(false);
+
+    images[1].onload();
+    expect(drawCount).toBe(1);
+    expect(styles.get('--hdp-primary')).toBe('rgb(100 150 200)');
+    expect(classes.has('hdp-card-slot--theme-ready')).toBe(true);
+
+    windowStub.testClearCardSlotImageTheme(card);
+    expect(attrs.has('data-theme-sampled')).toBe(false);
+    expect(styles.has('--hdp-primary')).toBe(false);
+    expect(styles.has('--hdp-slot-primary')).toBe(false);
+    expect(classes.has('hdp-card-slot--theme-ready')).toBe(false);
   });
 
   it('sanitizes custom-card previews with the production safety boundary', () => {

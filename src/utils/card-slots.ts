@@ -810,16 +810,13 @@ window.hdpEditCardSlotBackground = function(slotId) {
     card.classList.add('hdp-card-slot--image');
     card.classList.toggle('hdp-card-slot--theme-image', slot.theme_from_image === true);
     card.style.setProperty('--hdp-slot-bg-image', 'url(' + hdpSafeSlotImageUrl(slot.background_image_url) + ')');
-    hdpApplyCardSlotImageThemes(card);
+    hdpClearCardSlotImageTheme(card);
+    if (slot.theme_from_image === true) hdpApplyCardSlotImageThemes(card);
   } else {
     card.classList.remove('hdp-card-slot--image');
     card.classList.remove('hdp-card-slot--theme-image');
-    card.classList.remove('hdp-card-slot--theme-ready');
     card.style.removeProperty('--hdp-slot-bg-image');
-    card.style.removeProperty('--hdp-slot-primary');
-    card.style.removeProperty('--hdp-slot-primary-light');
-    card.style.removeProperty('--hdp-primary');
-    card.style.removeProperty('--hdp-primary-light');
+    hdpClearCardSlotImageTheme(card);
   }
 };
 
@@ -1124,6 +1121,16 @@ function hdpSafeSlotImageUrl(value) {
   return normalized;
 }
 
+function hdpClearCardSlotImageTheme(card) {
+  if (!card) return;
+  card.classList.remove('hdp-card-slot--theme-ready');
+  card.removeAttribute('data-theme-sampled');
+  card.style.removeProperty('--hdp-slot-primary');
+  card.style.removeProperty('--hdp-slot-primary-light');
+  card.style.removeProperty('--hdp-primary');
+  card.style.removeProperty('--hdp-primary-light');
+}
+
 function hdpApplyCardSlotImageThemes(scope) {
   var root = scope && scope.matches && scope.matches('.hdp-card-slot--theme-image') ? scope : document;
   var cards = root.matches && root.matches('.hdp-card-slot--theme-image')
@@ -1138,6 +1145,7 @@ function hdpApplyCardSlotImageThemes(scope) {
     var img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = function() {
+      if (card.getAttribute('data-theme-sampled') !== url) return;
       try {
         var canvas = document.createElement('canvas');
         var size = 48;
@@ -1169,10 +1177,12 @@ function hdpApplyCardSlotImageThemes(scope) {
         card.style.setProperty('--hdp-primary-light', primaryLight);
         card.classList.add('hdp-card-slot--theme-ready');
       } catch(e) {
-        card.removeAttribute('data-theme-sampled');
+        if (card.getAttribute('data-theme-sampled') === url) card.removeAttribute('data-theme-sampled');
       }
     };
-    img.onerror = function() { card.removeAttribute('data-theme-sampled'); };
+    img.onerror = function() {
+      if (card.getAttribute('data-theme-sampled') === url) card.removeAttribute('data-theme-sampled');
+    };
     img.src = url;
   });
 }
