@@ -238,6 +238,8 @@ describe('settings view', () => {
     expect(html).toContain('.st-about-val {\n    font-weight: 600;\n    color: var(--hdp-text);\n    text-align: right;\n    min-width: 0;\n    overflow-wrap: anywhere;');
     expect(html).toContain('.st-plan-choice {\n    appearance: none;');
     expect(html).toContain('<button type="button" class="st-plan-choice');
+    expect(html).toContain('data-design-plan="{&quot;pack_id&quot;:');
+    expect(html).not.toContain('onclick="hdpApplyDesignPlan');
     expect(html).toContain('overflow-wrap: anywhere');
     expect(html).toContain('width: min(240px, 45vw)');
     expect(html).toContain('data-setting="areas.hidden_areas" data-value="kitchen"');
@@ -274,6 +276,10 @@ describe('settings view', () => {
     expect(html).toContain('type="button" class="st-btn" data-action="export-config"');
     expect(html).toContain('type="button" class="st-btn" data-action="import-config"');
     expect(html).toContain('type="button" class="st-btn st-btn--danger" data-action="reset-config"');
+    expect(html).not.toContain('onclick="hdpRefreshThemes()"');
+    expect(html).not.toContain('onclick="hdpExportConfig()"');
+    expect(html).not.toContain('onclick="hdpImportConfig()"');
+    expect(html).not.toContain('onclick="hdpResetConfig()"');
     expect(html).not.toContain('style="margin-top: 12px;"');
     expect(html).not.toContain('style="margin-top: 12px; display: flex; gap: 8px;"');
     expect(html).toContain('data-action="open-theme-studio"');

@@ -38,10 +38,6 @@ import {
   UNASSIGNED_AREA_NAME,
 } from '../utils/dashboard-model';
 
-function jsValue(value: unknown): string {
-  return escapeAttribute(JSON.stringify(value ?? null));
-}
-
 function isVisibleRegistryEntity(hass: Hass | undefined, entityId: string): boolean {
   const registryEntry = hass?.entities?.[entityId];
   return !registryEntry?.disabled_by && !registryEntry?.hidden_by;
@@ -943,6 +939,24 @@ if (!window.hdpSettingsCommandHandlerReady) {
       window.hdpSelectHomeLayout(control.getAttribute('data-layout-preset') || 'grid', { currentTarget: control });
       return;
     }
+    if (action === 'apply-design-plan' || action === 'apply-recommended-design') {
+      e.preventDefault();
+      try {
+        var plan = JSON.parse(control.getAttribute('data-design-plan') || 'null');
+        if (plan && typeof window.hdpApplyDesignPlan === 'function') window.hdpApplyDesignPlan(plan);
+      } catch(err) {
+        if (typeof hdpShowToast === 'function') hdpShowToast('设计方案数据无效', 'error');
+      }
+      return;
+    }
+    if (action === 'refresh-themes' || action === 'export-config' || action === 'import-config' || action === 'reset-config') {
+      e.preventDefault();
+      if (action === 'refresh-themes' && typeof window.hdpRefreshThemes === 'function') window.hdpRefreshThemes();
+      else if (action === 'export-config' && typeof window.hdpExportConfig === 'function') window.hdpExportConfig();
+      else if (action === 'import-config' && typeof window.hdpImportConfig === 'function') window.hdpImportConfig();
+      else if (action === 'reset-config' && typeof window.hdpResetConfig === 'function') window.hdpResetConfig();
+      return;
+    }
     if (control.classList && control.classList.contains('st-chip')) {
       var settingPath = control.getAttribute('data-setting');
       var value = control.getAttribute('data-value');
@@ -1623,7 +1637,7 @@ export function buildQuickGenerateSection(hass: Hass, config: StrategyConfig): s
     return `<button type="button" class="st-plan-choice ${plan.pack_id === recommended.pack_id ? 'st-plan-choice--active' : ''}"
       data-action="apply-design-plan"
       data-plan="${escapeAttribute(plan.pack_id)}"
-      onclick="hdpApplyDesignPlan(${jsValue(plan)})">
+      data-design-plan="${escapeAttribute(JSON.stringify(plan))}">
       <div class="st-plan-swatch" style="background: ${escapeAttribute(swatch)};"></div>
       <div class="st-plan-choice-name">${escapeHTML(plan.pack_label)}</div>
       <div class="st-plan-choice-desc">${escapeHTML(plan.density)} · ${plan.profile.entity_count} entities</div>
@@ -1640,7 +1654,7 @@ export function buildQuickGenerateSection(hass: Hass, config: StrategyConfig): s
           ${focus}
         </div>
       </div>
-      <button type="button" class="st-btn st-btn--primary" data-action="apply-recommended-design" onclick="hdpApplyDesignPlan(${jsValue(recommended)})">
+      <button type="button" class="st-btn st-btn--primary" data-action="apply-recommended-design" data-design-plan="${escapeAttribute(JSON.stringify(recommended))}">
         应用推荐方案
       </button>
     </div>
@@ -1973,7 +1987,7 @@ export function buildThemeFilesSection(): string {
       <span class="st-about-val">JSON</span>
     </div>
     <div class="st-action-row">
-      <button type="button" class="st-btn" data-action="refresh-themes" onclick="hdpRefreshThemes()">
+      <button type="button" class="st-btn" data-action="refresh-themes">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         刷新主题列表
       </button>
@@ -2044,21 +2058,21 @@ export function buildResetSection(): string {
         <div class="st-row-label">导出配置</div>
         <div class="st-row-desc">将所有设置导出为 JSON 文件</div>
       </div>
-      <button type="button" class="st-btn" data-action="export-config" onclick="hdpExportConfig()">导出</button>
+      <button type="button" class="st-btn" data-action="export-config">导出</button>
     </div>
     <div class="st-row">
       <div>
         <div class="st-row-label">导入配置</div>
         <div class="st-row-desc">从 JSON 文件恢复设置</div>
       </div>
-      <button type="button" class="st-btn" data-action="import-config" onclick="hdpImportConfig()">导入</button>
+      <button type="button" class="st-btn" data-action="import-config">导入</button>
     </div>
     <div class="st-row">
       <div>
         <div class="st-row-label">重置所有设置</div>
         <div class="st-row-desc">恢复到默认配置，此操作不可撤销</div>
       </div>
-      <button type="button" class="st-btn st-btn--danger" data-action="reset-config" onclick="hdpResetConfig()">重置</button>
+      <button type="button" class="st-btn st-btn--danger" data-action="reset-config">重置</button>
     </div>
   `);
 }

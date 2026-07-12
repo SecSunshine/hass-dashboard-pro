@@ -205,6 +205,32 @@ describe('settings sections client script', () => {
     expect(timers).toHaveLength(0);
   });
 
+  it('delegates design and maintenance commands from safe data attributes', () => {
+    const { runtime, listeners } = createRuntime();
+    const calls: Array<string | Record<string, unknown>> = [];
+    runtime.hdpApplyDesignPlan = (plan: Record<string, unknown>) => calls.push(plan);
+    runtime.hdpRefreshThemes = () => calls.push('refresh');
+    runtime.hdpExportConfig = () => calls.push('export');
+    runtime.hdpImportConfig = () => calls.push('import');
+    runtime.hdpResetConfig = () => calls.push('reset');
+    const click = (attrs: Record<string, string>) => {
+      const control = { getAttribute: (name: string) => attrs[name] ?? null, classList: { contains: () => false } };
+      listeners.click[0]({
+        target: { closest: () => control },
+        preventDefault: () => {},
+        stopPropagation: () => {},
+      });
+    };
+
+    click({ 'data-action': 'apply-design-plan', 'data-design-plan': JSON.stringify({ pack_id: 'warm-home' }) });
+    click({ 'data-action': 'refresh-themes' });
+    click({ 'data-action': 'export-config' });
+    click({ 'data-action': 'import-config' });
+    click({ 'data-action': 'reset-config' });
+
+    expect(calls).toEqual([{ pack_id: 'warm-home' }, 'refresh', 'export', 'import', 'reset']);
+  });
+
   it('loads initial settings config into the draft without saving it', () => {
     const { runtime, store } = createRuntime({
       dashboard: { name: 'Seeded Home' },
