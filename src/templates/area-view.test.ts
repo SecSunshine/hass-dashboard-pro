@@ -125,6 +125,41 @@ describe('area view', () => {
     expect(html).toContain('Power Meter With An Extremely Long Friendly Name');
   });
 
+  it('keeps area domain slot overrides active for single-domain areas', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        cards: {
+          slots: {
+            'area.domain.light': {
+              yaml: [
+                'type: custom:html-pro-card',
+                'content: |',
+                '  <div class="single-domain-light">Single Domain Light Slot</div>',
+              ].join('\n'),
+            },
+          },
+        },
+      } as any,
+    };
+
+    const html = buildAreaHTML(
+      'Light Only Room',
+      [entities[0]],
+      hass,
+      { card_sizes: { area_domain_light: 'sm' } } as any,
+      undefined,
+      config,
+    );
+
+    expect(html).toContain('Single Domain Light Slot');
+    expect(html).toContain('data-card-slot="area.domain.light"');
+    expect(html).toContain('data-card-custom="true"');
+    expect(html).not.toContain('Kitchen Counter');
+    expect(html).not.toContain('data-card-slot="area.grid"');
+    expect(html).toContain('hdp-bento--sm');
+  });
+
   it('lets entity domain slots replace area entity cards', () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',

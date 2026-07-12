@@ -107,11 +107,13 @@ export function buildAreaHTML(areaName: string, entities: EntityInfo[], hass: Ha
   ));
 
   if (groups.length <= 1) {
+    const slotId = groups.length === 1 ? `area.domain.${groups[0].domain}` : 'area.grid';
+    const sizeKey = groups.length === 1 ? `area_domain_${groups[0].domain}` : 'area_grid';
     sections.push(resolveSlottedCard(
       slotConfig,
-      'area.grid',
+      slotId,
       extractAreaHTML(buildEntityGrid(entities, tokens, areaSkin, hass, slotConfig)),
-      resolveCardSize('area_grid', 'wide', cs),
+      resolveCardSize(sizeKey, 'wide', cs),
       1,
     ));
   } else {
