@@ -322,10 +322,12 @@ describe('card slots', () => {
 
   it('cancels pending YAML previews when the owning editor closes', () => {
     const textareaListeners: Record<string, () => void> = {};
+    const documentListeners: Record<string, Array<(event: any) => void>> = {};
+    let focusCount = 0;
     const textarea = {
       value: '',
       addEventListener: (type: string, listener: () => void) => { textareaListeners[type] = listener; },
-      focus: () => {},
+      focus: () => { focusCount += 1; },
     };
     const createOutput = () => ({
       textContent: '',
@@ -369,7 +371,12 @@ describe('card slots', () => {
     };
     const documentStub = {
       readyState: 'loading',
-      addEventListener: () => {},
+      addEventListener: (type: string, listener: (event: any) => void) => {
+        (documentListeners[type] ||= []).push(listener);
+      },
+      removeEventListener: (type: string, listener: (event: any) => void) => {
+        documentListeners[type] = (documentListeners[type] || []).filter(item => item !== listener);
+      },
       getElementById: () => null,
       querySelector: () => { throw new Error('preview escaped its modal scope'); },
       body: { appendChild: () => {} },
@@ -400,15 +407,22 @@ describe('card slots', () => {
     );
 
     windowStub.testOpenSlotEditor('home.summary', 'invalid yaml');
+    expect(focusCount).toBe(1);
     textareaListeners.input();
     expect(timers.size).toBe(1);
     expect(modalClick).toBeTypeOf('function');
 
-    modalClick?.({ target: modal });
+    let prevented = false;
+    documentListeners.keydown[0]({
+      key: 'Escape',
+      preventDefault: () => { prevented = true; },
+    });
 
+    expect(prevented).toBe(true);
     expect(removed).toBe(true);
     expect(clearedTimers).toEqual([1]);
     expect(timers.size).toBe(0);
+    expect(documentListeners.keydown).toHaveLength(0);
   });
 
   it('rejects unsafe background drafts and accepts relative image paths', () => {

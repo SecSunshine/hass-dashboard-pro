@@ -722,9 +722,40 @@ window.hdpResetCardSlot = function(slotId) {
   if (typeof hdpShowToast === 'function') hdpShowToast('已恢复默认，保存后生效', 'info');
 };
 
+function hdpDismissCardSlotModal(modal) {
+  if (!modal) return;
+  if (typeof modal.__hdpCloseCardSlotModal === 'function') modal.__hdpCloseCardSlotModal();
+  else modal.remove();
+}
+
+function hdpDismissExistingCardSlotModals() {
+  ['hdp-hidden-slots-modal', 'hdp-slot-editor-modal'].forEach(function(id) {
+    hdpDismissCardSlotModal(document.getElementById(id));
+  });
+}
+
+function hdpBindCardSlotModal(modal, focusTarget, cleanup) {
+  var closed = false;
+  var close = function() {
+    if (closed) return;
+    closed = true;
+    if (typeof cleanup === 'function') cleanup();
+    if (document.removeEventListener) document.removeEventListener('keydown', onKeydown);
+    modal.remove();
+  };
+  var onKeydown = function(e) {
+    if (e.key !== 'Escape') return;
+    if (e.preventDefault) e.preventDefault();
+    close();
+  };
+  modal.__hdpCloseCardSlotModal = close;
+  document.addEventListener('keydown', onKeydown);
+  if (focusTarget && focusTarget.focus) focusTarget.focus();
+  return close;
+}
+
 window.hdpOpenHiddenCardSlots = function() {
-  var old = document.getElementById('hdp-hidden-slots-modal');
-  if (old) old.remove();
+  hdpDismissExistingCardSlotModals();
   var draft = hdpGetCardEditDraft();
   var slots = (draft.cards && draft.cards.slots) || {};
   var hidden = HDP_HOME_CARD_SLOTS.filter(function(item) {
@@ -745,10 +776,11 @@ window.hdpOpenHiddenCardSlots = function() {
       '<div class="hdp-hidden-slot-list">' + rows + '</div>' +
     '</div>';
   document.body.appendChild(modal);
+  var close = hdpBindCardSlotModal(modal, modal.querySelector('[data-action="close"]'));
   modal.addEventListener('click', function(e) {
     var target = e.target;
     if (target === modal || (target && target.getAttribute && target.getAttribute('data-action') === 'close')) {
-      modal.remove();
+      close();
       return;
     }
     var slotId = target && target.getAttribute && target.getAttribute('data-slot');
@@ -797,8 +829,7 @@ window.hdpEditCardSlotYAML = function(slotId) {
 };
 
 function hdpOpenSlotEditor(slotId, yaml) {
-  var old = document.getElementById('hdp-slot-editor-modal');
-  if (old) old.remove();
+  hdpDismissExistingCardSlotModals();
   var modal = document.createElement('div');
   modal.id = 'hdp-slot-editor-modal';
   modal.className = 'hdp-slot-editor-modal';
@@ -819,11 +850,10 @@ function hdpOpenSlotEditor(slotId, yaml) {
   var textarea = modal.querySelector('#hdp-slot-yaml');
   textarea.value = yaml || hdpGetSlotTemplate('entity-control', slotId);
   var previewTimer = null;
-  var close = function() {
+  var close = hdpBindCardSlotModal(modal, textarea, function() {
     clearTimeout(previewTimer);
     previewTimer = null;
-    modal.remove();
-  };
+  });
   var schedulePreview = function() {
     clearTimeout(previewTimer);
     previewTimer = setTimeout(function() {
