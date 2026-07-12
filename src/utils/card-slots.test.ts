@@ -12,6 +12,10 @@ describe('card slots', () => {
     expect(card.custom).toBe(false);
     expect(card.hidden).toBe(false);
     expect(card.html).toContain('data-card-slot="home.summary"');
+    expect(card.html).toContain('data-card-edit-action="yaml"');
+    expect(card.html).toContain('data-slot-id="home.summary"');
+    expect(card.html).not.toContain('onclick=');
+    expect(card.html).not.toContain('onchange=');
     expect(card.html).toContain('<div>Default</div>');
   });
 
@@ -107,7 +111,8 @@ describe('card slots', () => {
     expect(card.custom).toBe(false);
     expect(card.html).toContain('自定义卡片解析失败：仅支持 type: custom:html-pro-card');
     expect(card.html).toContain('data-card-slot-error="home.summary"');
-    expect(card.html).toContain('hdpResetCardSlot(&quot;home.summary&quot;)');
+    expect(card.html).toContain('data-card-edit-action="reset"');
+    expect(card.html).toContain('data-slot-id="home.summary"');
     expect(card.html).toContain('<div>Default</div>');
   });
 
@@ -160,6 +165,58 @@ describe('card slots', () => {
     expect(cards.map(card => card.slotId)).toEqual(['home.a', 'home.b', 'home.c']);
   });
 
+  it('delegates a single-card YAML action to the matching slot', () => {
+    const listeners: Record<string, Array<(event: any) => void>> = {};
+    const documentStub = {
+      readyState: 'loading',
+      addEventListener: (type: string, listener: (event: any) => void) => {
+        (listeners[type] ||= []).push(listener);
+      },
+    };
+    const windowStub: Record<string, any> = {};
+    new Function(
+      'window',
+      'document',
+      'localStorage',
+      'Image',
+      'prompt',
+      'confirm',
+      'location',
+      'setTimeout',
+      'clearTimeout',
+      generateCardSlotEditorJS(),
+    )(
+      windowStub,
+      documentStub,
+      { getItem: () => null, setItem: () => {} },
+      function ImageStub() {},
+      () => null,
+      () => false,
+      { reload: () => {} },
+      setTimeout,
+      clearTimeout,
+    );
+
+    let openedSlot = '';
+    windowStub.hdpEditCardSlotYAML = (slotId: string) => { openedSlot = slotId; };
+    const control = {
+      getAttribute: (name: string) => name === 'data-card-edit-action'
+        ? 'yaml'
+        : name === 'data-slot-id' ? 'home.environment' : null,
+    };
+    let prevented = false;
+    let stopped = false;
+    listeners.click[0]({
+      target: { closest: () => control },
+      preventDefault: () => { prevented = true; },
+      stopPropagation: () => { stopped = true; },
+    });
+
+    expect(openedSlot).toBe('home.environment');
+    expect(prevented).toBe(true);
+    expect(stopped).toBe(true);
+  });
+
   it('emits editor CSS and JS for draft-only editing and image theme extraction', () => {
     const css = getCardSlotCSS();
     const js = generateCardSlotEditorJS();
@@ -175,13 +232,23 @@ describe('card slots', () => {
     expect(css).toContain('background: var(--hdp-modal-bg, var(--hdp-bg))');
     expect(css).toContain('background: var(--hdp-control-bg, var(--hdp-card-bg))');
     expect(css).toContain('background: var(--hdp-control-bg-hover, var(--hdp-primary-light))');
+    expect(css).toContain('[data-card-edit-action="drag"]');
+    expect(css).toContain('touch-action: none;');
     expect(js).toContain('window.hdpToggleCardEditMode = function');
     expect(js).toContain("if (typeof hdpApplyThemeVarsToOverlay === 'function') hdpApplyThemeVarsToOverlay(modal);");
+    expect(js).toContain('function hdpInitCardSlotEditorActions');
+    expect(js).toContain("document.addEventListener('click'");
+    expect(js).toContain("else if (action === 'yaml') window.hdpEditCardSlotYAML(slotId);");
+    expect(js).toContain('hdpInitCardSlotEditorActions();');
     expect(js).toContain('function hdpInitCardSlotDragging');
     expect(js).toContain("root.addEventListener('dragstart'");
-    expect(js).toContain("closest('[data-action=\"drag-slot\"]')");
+    expect(js).toContain("closest('[data-card-edit-action=\"drag\"]')");
     expect(js).toContain("closest('.hdp-slot-edit-panel') && !dragHandle");
     expect(js).toContain("root.addEventListener('drop'");
+    expect(js).toContain("root.addEventListener('pointerdown'");
+    expect(js).toContain("root.addEventListener('pointermove'");
+    expect(js).toContain('document.elementFromPoint(e.clientX, e.clientY)');
+    expect(js).toContain("root.addEventListener('pointercancel', finishPointerDrag)");
     expect(js).toContain('function hdpPersistHomeSlotDomOrder');
     expect(js).toContain('window.hdpOpenHiddenCardSlots = function');
     expect(js).toContain('window.hdpSaveCardEdits = function');
@@ -195,5 +262,17 @@ describe('card slots', () => {
     expect(js).toContain("if (save) save.disabled = true;");
     expect(js).toContain("if (typeof window.hdpCommitSettings === 'function')");
     expect(js).toContain("if (typeof window.hdpCancelSettings === 'function')");
+    expect(() => new Function(
+      'window',
+      'document',
+      'localStorage',
+      'Image',
+      'prompt',
+      'confirm',
+      'location',
+      'setTimeout',
+      'clearTimeout',
+      js,
+    )).not.toThrow();
   });
 });
