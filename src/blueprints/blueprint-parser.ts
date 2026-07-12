@@ -267,6 +267,16 @@ function deepCloneAndReplace(obj: unknown, inputs: Record<string, string | numbe
   return obj;
 }
 
+function createBlueprintScopeToken(pageName: string, content: string): string {
+  const source = `${pageName}\u0000${content}`;
+  let hash = 2166136261;
+  for (let index = 0; index < source.length; index++) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `bp-${(hash >>> 0).toString(36)}`;
+}
+
 /**
  * Convert a resolved card config to HTML for rendering.
  * If the card is an html-pro-card, return its content directly.
@@ -274,8 +284,10 @@ function deepCloneAndReplace(obj: unknown, inputs: Record<string, string | numbe
  */
 export function cardConfigToHTML(card: LovelaceCardConfig, pageName: string): string {
   if (card.type === 'custom:html-pro-card' && typeof card.content === 'string') {
-    return `<div class="bp-html-card" data-blueprint-card="${escapeAttribute(pageName)}">
-      ${sanitizeHtmlProContent(card.content)}
+    const scopeToken = createBlueprintScopeToken(pageName, card.content);
+    const scopeSelector = `.bp-html-card[data-blueprint-scope="${scopeToken}"]`;
+    return `<div class="bp-html-card" data-blueprint-card="${escapeAttribute(pageName)}" data-blueprint-scope="${scopeToken}">
+      ${sanitizeHtmlProContent(card.content, scopeSelector)}
     </div>`;
   }
 
@@ -430,11 +442,11 @@ const ALLOWED_ATTRS = new Set([
   'y2',
 ]);
 
-function sanitizeHtmlProContent(content: string): string {
+function sanitizeHtmlProContent(content: string, scopeSelector: string): string {
   return content
     .replace(/<\s*(script|iframe|object|embed|form)\b[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
     .replace(/<\s*style\b[^>]*>([\s\S]*?)<\s*\/\s*style\s*>/gi, (_, css) => {
-      return `<style>${scopeBlueprintCSS(String(css))}</style>`;
+      return `<style>${scopeBlueprintCSS(String(css), scopeSelector)}</style>`;
     })
     .replace(/<[^>]+>/g, tag => sanitizeTag(tag));
 }
@@ -518,7 +530,7 @@ function stripCSSResourceLoads(css: string): string {
     .replace(/(^|[;{])\s*[^;{}]*:\s*[^;{}]*(?:url|(?:-webkit-)?image-set)\s*\([^;{}]*\)[^;{}]*;?/gi, '$1');
 }
 
-function scopeBlueprintCSS(css: string): string {
+function scopeBlueprintCSS(css: string, scopeSelector: string): string {
   const cleaned = stripCSSResourceLoads(css)
     .replace(/@import[^;]+;?/gi, '')
     .replace(/javascript\s*:/gi, '')
@@ -531,9 +543,9 @@ function scopeBlueprintCSS(css: string): string {
       .map(selector => selector.trim())
       .filter(Boolean)
       .map(selector => {
-        if (selector.startsWith('.bp-html-card')) return selector;
-        if (/^:host\b/.test(selector)) return selector.replace(/^:host\b/, '.bp-html-card');
-        return `.bp-html-card ${selector}`;
+        if (selector.startsWith('.bp-html-card')) return selector.replace(/^\.bp-html-card\b/, scopeSelector);
+        if (/^:host\b/.test(selector)) return selector.replace(/^:host\b/, scopeSelector);
+        return `${scopeSelector} ${selector}`;
       })
       .join(', ');
     return `${prefix} ${scopedSelectors} {`;

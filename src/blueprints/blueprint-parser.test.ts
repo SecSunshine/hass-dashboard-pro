@@ -1,7 +1,32 @@
 import { describe, expect, it } from 'vitest';
 import { cardConfigToHTML } from './blueprint-parser';
 
+function getScopeSelector(html: string): string {
+  const token = html.match(/data-blueprint-scope="([a-z0-9-]+)"/)?.[1];
+  if (!token) throw new Error('Missing blueprint scope token');
+  return `.bp-html-card[data-blueprint-scope="${token}"]`;
+}
+
 describe('blueprint parser rendering', () => {
+  it('isolates custom CSS with a stable scope per card definition', () => {
+    const card = {
+      type: 'custom:html-pro-card',
+      content: '<style>.shared-tile { color: red; }</style><div class="shared-tile">Tile</div>',
+    };
+    const first = cardConfigToHTML(card, 'home.summary');
+    const repeated = cardConfigToHTML(card, 'home.summary');
+    const second = cardConfigToHTML(card, 'home.environment');
+    const firstScope = first.match(/data-blueprint-scope="([a-z0-9-]+)"/)?.[1];
+    const secondScope = second.match(/data-blueprint-scope="([a-z0-9-]+)"/)?.[1];
+
+    expect(firstScope).toBeTruthy();
+    expect(secondScope).toBeTruthy();
+    expect(firstScope).not.toBe(secondScope);
+    expect(repeated).toContain(`data-blueprint-scope="${firstScope}"`);
+    expect(first).toContain(`.bp-html-card[data-blueprint-scope="${firstScope}"] .shared-tile`);
+    expect(first).not.toContain(`data-blueprint-scope="${secondScope}"`);
+  });
+
   it('sanitizes html-pro content before embedding it into the dashboard', () => {
     const html = cardConfigToHTML({
       type: 'custom:html-pro-card',
@@ -18,7 +43,7 @@ describe('blueprint parser rendering', () => {
 
     expect(html).toContain('class="bp-html-card"');
     expect(html).toContain('data-blueprint-card="Shared &lt;Page&gt;"');
-    expect(html).toContain('.bp-html-card .tile { color: red; }');
+    expect(html).toContain(`${getScopeSelector(html)} .tile { color: red; }`);
     expect(html).toContain('data-entity="light.kitchen"');
     expect(html).not.toContain('<script>');
     expect(html).not.toContain('onclick=');
@@ -112,7 +137,7 @@ describe('blueprint parser rendering', () => {
       `,
     }, 'No external CSS');
 
-    expect(html).toContain('.bp-html-card .tile');
+    expect(html).toContain(`${getScopeSelector(html)} .tile`);
     expect(html).toContain('color: red');
     expect(html).toContain('padding: 8px');
     expect(html).toContain('display: grid');
@@ -139,9 +164,10 @@ describe('blueprint parser rendering', () => {
     }, 'Responsive CSS');
 
     expect(html).toContain('@media (max-width: 600px)');
-    expect(html).toContain('.bp-html-card .responsive-tile');
-    expect(html).toContain('.bp-html-card.compact');
-    expect(html).toContain('.bp-html-card .responsive-row');
+    const scope = getScopeSelector(html);
+    expect(html).toContain(`${scope} .responsive-tile`);
+    expect(html).toContain(`${scope}.compact`);
+    expect(html).toContain(`${scope} .responsive-row`);
     expect(html).not.toMatch(/\{\s*\.responsive-(?:tile|row)\b/);
     expect(html).not.toContain('.bp-html-card :host');
   });
