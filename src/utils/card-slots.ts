@@ -1134,13 +1134,13 @@ function hdpScopeSlotCSS(css) {
     .replace(/expression\\s*\\(/gi, '')
     .replace(/behavior\\s*:/gi, '')
     .replace(/<\\/?style/gi, '');
-  return cleaned.replace(/(^|})\\s*([^@{}][^{}]*)\\{/g, function(_, prefix, selectors) {
+  return cleaned.replace(/(^|[{}])\\s*([^@{}\\s][^{}]*)\\{/g, function(_, prefix, selectors) {
     var scoped = String(selectors).split(',').map(function(selector) {
       selector = selector.trim();
       if (!selector) return '';
       if (selector.indexOf('#hdp-slot-preview ') === 0) return selector;
       if (selector.indexOf('.bp-html-card') === 0) return '#hdp-slot-preview ' + selector;
-      if (selector === ':host') return '#hdp-slot-preview .bp-html-card';
+      if (/^:host\\b/.test(selector)) return '#hdp-slot-preview ' + selector.replace(/^:host\\b/, '.bp-html-card');
       return '#hdp-slot-preview .bp-html-card ' + selector;
     }).filter(Boolean).join(', ');
     return prefix + ' ' + scoped + ' {';

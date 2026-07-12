@@ -121,4 +121,28 @@ describe('blueprint parser rendering', () => {
     expect(html).not.toContain('background-image');
     expect(html).not.toContain('mask-image');
   });
+
+  it('scopes selectors nested inside responsive at-rules', () => {
+    const html = cardConfigToHTML({
+      type: 'custom:html-pro-card',
+      content: `
+        <style>
+          @media (max-width: 600px) {
+            .responsive-tile, :host.compact { display: grid; }
+          }
+          @supports (display: flex) {
+            .responsive-row { display: flex; }
+          }
+        </style>
+        <div class="responsive-tile responsive-row">Responsive</div>
+      `,
+    }, 'Responsive CSS');
+
+    expect(html).toContain('@media (max-width: 600px)');
+    expect(html).toContain('.bp-html-card .responsive-tile');
+    expect(html).toContain('.bp-html-card.compact');
+    expect(html).toContain('.bp-html-card .responsive-row');
+    expect(html).not.toMatch(/\{\s*\.responsive-(?:tile|row)\b/);
+    expect(html).not.toContain('.bp-html-card :host');
+  });
 });

@@ -525,14 +525,14 @@ function scopeBlueprintCSS(css: string): string {
     .replace(/expression\s*\(/gi, '')
     .replace(/<\/?style/gi, '');
 
-  return cleaned.replace(/(^|})\s*([^@{}][^{}]*)\{/g, (_, prefix, selectors) => {
+  return cleaned.replace(/(^|[{}])\s*([^@{}\s][^{}]*)\{/g, (_, prefix, selectors) => {
     const scopedSelectors = String(selectors)
       .split(',')
       .map(selector => selector.trim())
       .filter(Boolean)
       .map(selector => {
         if (selector.startsWith('.bp-html-card')) return selector;
-        if (selector === ':host') return '.bp-html-card';
+        if (/^:host\b/.test(selector)) return selector.replace(/^:host\b/, '.bp-html-card');
         return `.bp-html-card ${selector}`;
       })
       .join(', ');
