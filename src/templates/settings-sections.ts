@@ -902,6 +902,31 @@ window.hdpCancelSettings = function() {
   if (typeof hdpShowToast === 'function') hdpShowToast('已放弃未保存更改', 'info');
 };
 
+function hdpClosestSettingsCommand(e) {
+  if (e && e.target && e.target.closest) {
+    var direct = e.target.closest('[data-action="save-settings"], [data-action="cancel-settings"]');
+    if (direct) return direct;
+  }
+  var path = e && typeof e.composedPath === 'function' ? e.composedPath() : [];
+  for (var i = 0; i < path.length; i++) {
+    if (path[i] && path[i].matches && path[i].matches('[data-action="save-settings"], [data-action="cancel-settings"]')) return path[i];
+  }
+  return null;
+}
+
+if (!window.hdpSettingsCommandHandlerReady) {
+  window.hdpSettingsCommandHandlerReady = true;
+  document.addEventListener('click', function(e) {
+    var control = hdpClosestSettingsCommand(e);
+    if (!control) return;
+    var action = control.getAttribute('data-action');
+    e.preventDefault();
+    e.stopPropagation();
+    if (action === 'save-settings') window.hdpCommitSettings();
+    else window.hdpCancelSettings();
+  }, true);
+}
+
 window.hdpResetConfig = function() {
   if (!confirm('确定重置所有设置？此操作不可撤销。')) return;
   hdpClearConfig();

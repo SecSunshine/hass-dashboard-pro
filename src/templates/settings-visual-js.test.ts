@@ -15,6 +15,7 @@ function createRuntime(config: StrategyConfig = { type: 'custom:hass-dashboard-p
   const document = {
     documentElement: { style: { setProperty: () => undefined } },
     getElementById: () => null,
+    addEventListener: () => undefined,
     querySelectorAll: () => [],
   };
   const location = { reloaded: false, reload: () => { location.reloaded = true; } };

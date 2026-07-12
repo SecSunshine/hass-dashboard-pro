@@ -681,8 +681,8 @@ ${visualStyles}
   <div class="st-settings-actions" data-component="settings-save-bar" data-dirty="false">
     <div class="st-settings-actions-text">修改设置后点击保存生效</div>
     <div class="st-settings-actions-buttons">
-      <button type="button" class="st-btn" data-action="cancel-settings" onclick="hdpCancelSettings()">取消</button>
-      <button type="button" class="st-btn st-btn--primary" data-action="save-settings" onclick="hdpCommitSettings()">保存并应用</button>
+      <button type="button" class="st-btn" data-action="cancel-settings">取消</button>
+      <button type="button" class="st-btn st-btn--primary" data-action="save-settings">保存并应用</button>
     </div>
   </div>
   ${buildDashboardSection(config)}
@@ -2671,14 +2671,6 @@ ${generateDesignTokenCSS(tokens)}
       resetBtn.addEventListener('click', function() {
         if (confirm('确定恢复默认视觉设置吗？')) {
           hdpClearVisualConfigAndReload();
-        }
-      });
-    }
-    var doneBtn = document.getElementById('done-btn');
-    if (doneBtn) {
-      doneBtn.addEventListener('click', function() {
-        if (typeof window.hdpCommitSettings === 'function') {
-          window.hdpCommitSettings();
         }
       });
     }

@@ -53,6 +53,7 @@ function createRuntime(
   const settingControls: Array<ReturnType<typeof createMockSettingElement>> = [];
   const layoutChoices: Array<ReturnType<typeof createMockSettingElement>> = [];
   const timers: Array<{ delay: number; fn: () => void }> = [];
+  const listeners: Record<string, Array<(event: any) => void>> = {};
   let reloadCount = 0;
   const window = initialSettingsConfig ? { hdpInitialSettingsConfig: initialSettingsConfig } as any : {} as any;
   const saveBar = {
@@ -61,6 +62,9 @@ function createRuntime(
   };
   const saveText = { textContent: '修改设置后点击保存生效' };
   const document = {
+    addEventListener: (type: string, listener: (event: any) => void) => {
+      (listeners[type] ||= []).push(listener);
+    },
     querySelector: (selector: string) => {
       if (selector === '.st-settings-actions') return saveBar;
       if (selector === '.st-settings-actions-text') return saveText;
@@ -115,7 +119,7 @@ function createRuntime(
     return { target: { closest: () => chip } };
   };
 
-  return { runtime, store, eventForChip, chips, settingControls, layoutChoices, saveBar, saveText, timers, getReloadCount: () => reloadCount };
+  return { runtime, store, eventForChip, chips, settingControls, layoutChoices, saveBar, saveText, timers, listeners, getReloadCount: () => reloadCount };
 }
 
 function encodeShareCode(bundle: unknown): string {
@@ -126,6 +130,27 @@ function encodeShareCode(bundle: unknown): string {
 }
 
 describe('settings sections client script', () => {
+  it('delegates save and cancel commands exactly once', () => {
+    const { runtime, listeners } = createRuntime();
+    const calls: string[] = [];
+    runtime.hdpCommitSettings = () => calls.push('save');
+    runtime.hdpCancelSettings = () => calls.push('cancel');
+    const click = (action: string) => {
+      const control = { getAttribute: (name: string) => name === 'data-action' ? action : null };
+      listeners.click[0]({
+        target: { closest: () => control },
+        preventDefault: () => {},
+        stopPropagation: () => {},
+      });
+    };
+
+    click('save-settings');
+    click('cancel-settings');
+
+    expect(calls).toEqual(['save', 'cancel']);
+    expect(listeners.click).toHaveLength(1);
+  });
+
   it('loads initial settings config into the draft without saving it', () => {
     const { runtime, store } = createRuntime({
       dashboard: { name: 'Seeded Home' },

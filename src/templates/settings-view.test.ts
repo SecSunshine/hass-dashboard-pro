@@ -245,8 +245,10 @@ describe('settings view', () => {
     expect(html).toContain(', event)');
     expect(html).toContain('title="Kitchen" onclick="hdpToggleArrayItem');
     expect(html).toContain('data-component="settings-save-bar" data-dirty="false"');
-    expect(html).toContain('data-action="cancel-settings" onclick="hdpCancelSettings()"');
-    expect(html).toContain('data-action="save-settings" onclick="hdpCommitSettings()"');
+    expect(html).toContain('data-action="cancel-settings"');
+    expect(html).toContain('data-action="save-settings"');
+    expect(html).not.toContain('onclick="hdpCancelSettings()"');
+    expect(html).not.toContain('onclick="hdpCommitSettings()"');
     expect(html).toContain('.st-settings-actions {\n    position: sticky;');
     expect(html).toContain('width: 100%;\n    max-width: 100%;\n    min-width: 0;\n    box-sizing: border-box;');
     expect(html).toContain(`.st-settings-actions,
@@ -292,7 +294,8 @@ describe('settings view', () => {
     expect(html).toContain('data-action="reset-visual-config"');
     expect(html).toContain('data-action="save-settings"');
     expect(html).toContain('修改会先暂存，点击保存后生效');
-    expect(js).toContain("if (typeof window.hdpCommitSettings === 'function')");
+    expect(js).toContain("if (action === 'save-settings') window.hdpCommitSettings();");
+    expect(js).toContain('window.hdpSettingsCommandHandlerReady');
     expect(js).toContain("this.setAttribute('aria-checked', isOn ? 'false' : 'true');");
     expect(js).toContain("this.setAttribute('aria-checked', shadowOn ? 'true' : 'false');");
     expect(js).toContain("b.setAttribute('aria-pressed'");
