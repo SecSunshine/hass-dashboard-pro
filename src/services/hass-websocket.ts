@@ -1074,6 +1074,12 @@ function hdpHandleDashboardAction(control) {
     window.hdpShowDeviceDomain(domain);
     return true;
   }
+  if (action === 'scroll-domain') {
+    var targetDomain = control.getAttribute('data-domain') || '';
+    if (!targetDomain || typeof window.hdpScrollToDomain !== 'function') return false;
+    window.hdpScrollToDomain(targetDomain);
+    return true;
+  }
   if (action === 'show-environment-history') {
     if (typeof window.hdpShowEnvironmentHistory !== 'function') return false;
     window.hdpShowEnvironmentHistory(control.getAttribute('data-metric') || 'temperature');

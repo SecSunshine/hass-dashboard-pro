@@ -148,7 +148,7 @@ describe('hass websocket script', () => {
     expect(js).toContain('card.click();');
   });
 
-  it('delegates declarative home popup actions without inline handlers', () => {
+  it('delegates declarative dashboard actions without inline handlers', () => {
     const listeners: Record<string, Array<(event: any) => void>> = {};
     const documentStub = {
       querySelector: () => null,
@@ -174,6 +174,7 @@ describe('hass websocket script', () => {
 
     const calls: string[] = [];
     windowStub.hdpShowDeviceDomain = (domain: string) => calls.push(`domain:${domain}`);
+    windowStub.hdpScrollToDomain = (domain: string) => calls.push(`scroll:${domain}`);
     windowStub.hdpShowEnvironmentHistory = (metric: string) => calls.push(`history:${metric}`);
     windowStub.hdpOpenAutomationConfig = () => calls.push('automation');
     const click = (attributes: Record<string, string>) => {
@@ -185,10 +186,11 @@ describe('hass websocket script', () => {
       });
     };
     click({ 'data-action': 'show-device-domain', 'data-domain': 'light' });
+    click({ 'data-action': 'scroll-domain', 'data-domain': 'climate' });
     click({ 'data-action': 'show-environment-history', 'data-metric': 'humidity' });
     click({ 'data-action': 'open-automation-config' });
 
-    expect(calls).toEqual(['domain:light', 'history:humidity', 'automation']);
+    expect(calls).toEqual(['domain:light', 'scroll:climate', 'history:humidity', 'automation']);
   });
 
   it('supports tilt-only cover feature detection and fallback service calls', () => {

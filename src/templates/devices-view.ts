@@ -58,7 +58,7 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
     const label = DOMAIN_GROUPS[domain]?.label || domain;
     const activeCount = entities.filter(e => isEntityOn(e.state, e.domain)).length;
     const safeDomain = escapeAttribute(domain);
-    return `<button type="button" class="dv-chip" data-domain="${safeDomain}" data-action="scroll-domain" onclick="hdpScrollToDomain('${safeDomain}')">
+    return `<button type="button" class="dv-chip" data-domain="${safeDomain}" data-action="scroll-domain">
       <span class="dv-chip-label">${escapeHTML(label)}</span>
       <span class="dv-chip-count">${activeCount}/${entities.length}</span>
     </button>`;

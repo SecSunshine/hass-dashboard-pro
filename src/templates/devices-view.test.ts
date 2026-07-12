@@ -132,6 +132,7 @@ describe('devices view', () => {
     text-overflow: ellipsis;`);
     expect(html).toContain('flex: 0 0 auto;');
     expect(html).toContain('data-action="scroll-domain"');
+    expect(html).not.toContain('onclick="hdpScrollToDomain');
     expect(html).toContain('appearance: none;');
     expect(html).toContain('background: var(--hdp-surface-card, var(--hdp-card-bg));');
     expect(html).toContain('background: var(--hdp-surface-raised, var(--hdp-card-bg));');
