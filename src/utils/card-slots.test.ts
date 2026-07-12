@@ -320,6 +320,97 @@ describe('card slots', () => {
     expect(windowStub.hdpCardSlotDragReady).toBe(true);
   });
 
+  it('cancels pending YAML previews when the owning editor closes', () => {
+    const textareaListeners: Record<string, () => void> = {};
+    const textarea = {
+      value: '',
+      addEventListener: (type: string, listener: () => void) => { textareaListeners[type] = listener; },
+      focus: () => {},
+    };
+    const createOutput = () => ({
+      textContent: '',
+      innerHTML: '',
+      disabled: false,
+      setAttribute: () => {},
+    });
+    const error = createOutput();
+    const preview = createOutput();
+    const save = createOutput();
+    let modalClick: ((event: any) => void) | undefined;
+    let removed = false;
+    const modal: any = {
+      id: '',
+      className: '',
+      innerHTML: '',
+      querySelector: (selector: string) => {
+        if (selector === '#hdp-slot-yaml') return textarea;
+        if (selector === '#hdp-slot-editor-error') return error;
+        if (selector === '#hdp-slot-preview') return preview;
+        if (selector === '[data-action="save"]') return save;
+        return null;
+      },
+      addEventListener: (type: string, listener: (event: any) => void) => {
+        if (type === 'click') modalClick = listener;
+      },
+      remove: () => { removed = true; },
+    };
+    const clearedTimers: number[] = [];
+    const timers = new Map<number, () => void>();
+    let nextTimer = 0;
+    const setTimeoutStub = (callback: () => void) => {
+      nextTimer += 1;
+      timers.set(nextTimer, callback);
+      return nextTimer;
+    };
+    const clearTimeoutStub = (timer: number | null) => {
+      if (timer == null) return;
+      clearedTimers.push(timer);
+      timers.delete(timer);
+    };
+    const documentStub = {
+      readyState: 'loading',
+      addEventListener: () => {},
+      getElementById: () => null,
+      querySelector: () => { throw new Error('preview escaped its modal scope'); },
+      body: { appendChild: () => {} },
+      createElement: () => modal,
+    };
+    const windowStub: Record<string, any> = {};
+    new Function(
+      'window',
+      'document',
+      'localStorage',
+      'Image',
+      'prompt',
+      'confirm',
+      'location',
+      'setTimeout',
+      'clearTimeout',
+      `${generateCardSlotEditorJS()}\nwindow.testOpenSlotEditor = hdpOpenSlotEditor;`,
+    )(
+      windowStub,
+      documentStub,
+      { getItem: () => null, setItem: () => {} },
+      function ImageStub() {},
+      () => null,
+      () => false,
+      { reload: () => {} },
+      setTimeoutStub,
+      clearTimeoutStub,
+    );
+
+    windowStub.testOpenSlotEditor('home.summary', 'invalid yaml');
+    textareaListeners.input();
+    expect(timers.size).toBe(1);
+    expect(modalClick).toBeTypeOf('function');
+
+    modalClick?.({ target: modal });
+
+    expect(removed).toBe(true);
+    expect(clearedTimers).toEqual([1]);
+    expect(timers.size).toBe(0);
+  });
+
   it('sanitizes custom-card previews with the production safety boundary', () => {
     const windowStub: Record<string, any> = {};
     const documentStub = {

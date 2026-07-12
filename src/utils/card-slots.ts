@@ -812,11 +812,18 @@ function hdpOpenSlotEditor(slotId, yaml) {
   document.body.appendChild(modal);
   var textarea = modal.querySelector('#hdp-slot-yaml');
   textarea.value = yaml || hdpGetSlotTemplate('entity-control', slotId);
-  var close = function() { modal.remove(); };
   var previewTimer = null;
+  var close = function() {
+    clearTimeout(previewTimer);
+    previewTimer = null;
+    modal.remove();
+  };
   var schedulePreview = function() {
     clearTimeout(previewTimer);
-    previewTimer = setTimeout(function() { hdpPreviewSlotYaml(textarea.value); }, 180);
+    previewTimer = setTimeout(function() {
+      previewTimer = null;
+      hdpPreviewSlotYaml(textarea.value, modal);
+    }, 180);
   };
   textarea.addEventListener('input', schedulePreview);
   modal.addEventListener('click', function(e) {
@@ -826,30 +833,31 @@ function hdpOpenSlotEditor(slotId, yaml) {
     if (target === modal || action === 'close') close();
     if (template) {
       textarea.value = hdpGetSlotTemplate(template, slotId);
-      hdpPreviewSlotYaml(textarea.value);
+      hdpPreviewSlotYaml(textarea.value, modal);
       textarea.focus();
     }
-    if (action === 'preview') hdpPreviewSlotYaml(textarea.value);
+    if (action === 'preview') hdpPreviewSlotYaml(textarea.value, modal);
     if (action === 'clear') {
       hdpEnsureCardSlot(slotId).yaml = '';
       hdpMarkCardDraftDirty();
       close();
     }
     if (action === 'save') {
-      if (!hdpPreviewSlotYaml(textarea.value)) return;
+      if (!hdpPreviewSlotYaml(textarea.value, modal)) return;
       hdpEnsureCardSlot(slotId).yaml = textarea.value;
       hdpMarkCardDraftDirty();
       if (typeof hdpShowToast === 'function') hdpShowToast('自定义卡片已暂存，保存后生效', 'success');
       close();
     }
   });
-  hdpPreviewSlotYaml(textarea.value);
+  hdpPreviewSlotYaml(textarea.value, modal);
 }
 
-function hdpPreviewSlotYaml(yaml) {
-  var err = document.getElementById('hdp-slot-editor-error');
-  var preview = document.getElementById('hdp-slot-preview');
-  var save = document.querySelector('#hdp-slot-editor-modal [data-action="save"]');
+function hdpPreviewSlotYaml(yaml, scope) {
+  var root = scope && scope.querySelector ? scope : document;
+  var err = root.querySelector('#hdp-slot-editor-error');
+  var preview = root.querySelector('#hdp-slot-preview');
+  var save = root.querySelector('[data-action="save"]');
   var parsed = hdpParseSafeHtmlProYaml(yaml);
   if (!parsed.ok) {
     if (err) {
