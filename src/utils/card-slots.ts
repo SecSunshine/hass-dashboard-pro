@@ -1056,7 +1056,7 @@ function hdpSanitizeSlotTag(tag) {
     a:1, article:1, aside:1, b:1, br:1, button:1, canvas:1, circle:1, code:1,
     dd:1, details:1, div:1, dl:1, dt:1, em:1, footer:1, h1:1, h2:1, h3:1,
     h4:1, h5:1, h6:1, 'ha-icon':1, 'ha-state-icon':1, header:1, hr:1, i:1,
-    img:1, li:1, line:1, main:1, nav:1, ol:1, p:1, path:1, polygon:1,
+    img:1, input:1, li:1, line:1, main:1, nav:1, ol:1, p:1, path:1, polygon:1,
     polyline:1, rect:1, section:1, small:1, span:1, 'state-badge':1, strong:1,
     style:1, sub:1, summary:1, sup:1, svg:1, ul:1
   };
@@ -1071,8 +1071,8 @@ function hdpSanitizeSlotAttributes(rawAttrs) {
   var attrs = [];
   var allowedAttrs = {
     alt:1, class:1, cx:1, cy:1, d:1, fill:1, height:1, href:1, icon:1, id:1,
-    r:1, role:1, rx:1, ry:1, src:1, stroke:1, 'stroke-linecap':1,
-    'stroke-linejoin':1, 'stroke-width':1, style:1, title:1, type:1, viewbox:1,
+    max:1, min:1, r:1, role:1, rx:1, ry:1, src:1, step:1, stroke:1, 'stroke-linecap':1,
+    'stroke-linejoin':1, 'stroke-width':1, style:1, title:1, type:1, value:1, viewbox:1,
     width:1, x:1, x1:1, x2:1, y:1, y1:1, y2:1
   };
   var pattern = /([:@a-zA-Z_][:@a-zA-Z0-9_.-]*)(?:\\s*=\\s*("([^"]*)"|'([^']*)'|([^\\s"'=<>\`]+)))?/g;

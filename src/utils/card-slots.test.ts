@@ -663,6 +663,7 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
       '<img src="javascript:alert(1)" onerror="evil()">',
       '<a href="https://example.com/path">Safe</a>',
       '<img src="images/status.png" alt="Relative">',
+      '<input type="range" min="0" max="100" step="5" value="45" data-action="cover-position" data-entity="cover.bed_blind" onchange="evil()">',
       '</section>',
     ].join(''));
 
@@ -680,6 +681,7 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
     expect(sanitized).toContain('#hdp-slot-preview .bp-html-card .safe {');
     expect(sanitized).toContain('href="https://example.com/path"');
     expect(sanitized).toContain('src="images/status.png"');
+    expect(sanitized).toContain('<input type="range" min="0" max="100" step="5" value="45" data-action="cover-position" data-entity="cover.bed_blind">');
   });
 
   it('parses only the indented YAML content block for editor previews', () => {

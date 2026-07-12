@@ -323,6 +323,34 @@ describe('hass websocket script', () => {
 
     const moreInfo = click({ 'data-action': 'more-info', 'data-entity': 'sensor.kitchen_temperature' });
     const cover = click({ 'data-action': 'cover-open', 'data-entity': 'cover.bed_blind' });
+    const useRange = (action: string, entityId: string, value: string, eventType: 'change' | 'input') => {
+      const rangeSelector = `[data-action="${action}"][data-entity]`;
+      const rangeControl = {
+        value,
+        getAttribute: (name: string) => ({
+          'data-action': action,
+          'data-entity': entityId,
+        })[name] || null,
+        closest: (selector: string) => (
+          selector === '[data-action]' ||
+          selector === '[data-action][data-entity]' ||
+          selector === '[data-entity]' ||
+          selector === rangeSelector
+        ) ? rangeControl : null,
+        hasAttribute: () => false,
+      };
+      let prevented = false;
+      let stopped = false;
+      listeners.click[0]({
+        target: rangeControl,
+        preventDefault: () => { prevented = true; },
+        stopPropagation: () => { stopped = true; },
+      });
+      listeners[eventType][0]({ target: rangeControl });
+      return { prevented, stopped };
+    };
+    const coverRange = useRange('cover-position', 'cover.bed_blind', '64', 'change');
+    const volumeRange = useRange('media-volume', 'media_player.living_room', '35', 'input');
 
     expect(moreInfo).toEqual({ prevented: true, stopped: true });
     expect(infoEvents).toHaveLength(2);
@@ -333,7 +361,17 @@ describe('hass websocket script', () => {
       domain: 'cover',
       service: 'open_cover',
       data: { entity_id: 'cover.bed_blind' },
+    }, {
+      domain: 'cover',
+      service: 'set_cover_position',
+      data: { entity_id: 'cover.bed_blind', position: 64 },
+    }, {
+      domain: 'media_player',
+      service: 'volume_set',
+      data: { entity_id: 'media_player.living_room', volume_level: 0.35 },
     }]);
+    expect(coverRange).toEqual({ prevented: false, stopped: true });
+    expect(volumeRange).toEqual({ prevented: false, stopped: true });
   });
 
   it('supports tilt-only cover feature detection and fallback service calls', () => {

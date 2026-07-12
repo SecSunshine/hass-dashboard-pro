@@ -1145,6 +1145,13 @@ function hdpInitEntityClickHandlers() {
       e.stopPropagation();
       return;
     }
+    if (domainControl) {
+      var deferredAction = domainControl.getAttribute('data-action') || '';
+      if (deferredAction === 'cover-position' || deferredAction === 'media-volume') {
+        e.stopPropagation();
+        return;
+      }
+    }
     // Domain-specific cards own their inner buttons and service calls.
     if (hdpClosestFromEvent(e, '[data-no-toggle]')) return;
     // Check if click is on an entity card or its toggle

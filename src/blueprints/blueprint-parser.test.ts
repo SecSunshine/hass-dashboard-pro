@@ -46,6 +46,30 @@ describe('blueprint parser rendering', () => {
     expect(html).toContain('r="4"');
   });
 
+  it('keeps safe range controls for declarative entity actions', () => {
+    const html = cardConfigToHTML({
+      type: 'custom:html-pro-card',
+      content: `
+        <input
+          type="range"
+          min="0"
+          max="100"
+          step="5"
+          value="45"
+          data-action="cover-position"
+          data-entity="cover.bed_blind"
+          aria-label="Curtain position"
+          onchange="alert(1)"
+        />
+      `,
+    }, 'Curtain');
+
+    expect(html).toContain('<input type="range" min="0" max="100" step="5" value="45"');
+    expect(html).toContain('data-action="cover-position"');
+    expect(html).toContain('data-entity="cover.bed_blind"');
+    expect(html).not.toContain('onchange');
+  });
+
   it('preserves safe inline style declarations and drops unsafe ones', () => {
     const html = cardConfigToHTML({
       type: 'custom:html-pro-card',
