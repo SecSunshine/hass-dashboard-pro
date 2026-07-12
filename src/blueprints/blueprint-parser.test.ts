@@ -9,6 +9,8 @@ describe('blueprint parser rendering', () => {
         <style>.tile { color: red; } @import url("https://example.com/a.css");</style>
         <div class="tile" onclick="alert(1)" data-entity="light.kitchen">
           <img src="javascript:alert(1)" onerror="alert(1)" />
+          <img src="data:image/png;base64,abc" />
+          <a href="data:image/svg+xml,%3Csvg%3E">Unsafe data link</a>
           <script>alert(1)</script>
         </div>
       `,
@@ -22,6 +24,8 @@ describe('blueprint parser rendering', () => {
     expect(html).not.toContain('onclick=');
     expect(html).not.toContain('onerror=');
     expect(html).not.toContain('javascript:');
+    expect(html).toContain('src="data:image/png;base64,abc"');
+    expect(html).not.toContain('href="data:image/');
     expect(html).not.toContain('@import');
   });
 

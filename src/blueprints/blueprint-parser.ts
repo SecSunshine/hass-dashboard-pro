@@ -27,7 +27,7 @@
  */
 
 import type { BlueprintDefinition, BlueprintMeta, BlueprintInput, BlueprintInputType, LovelaceCardConfig } from '../types';
-import { escapeAttribute, escapeHTML, escapeInlineStyleValue, escapeJSONAttribute, escapeURLAttribute } from '../utils/html';
+import { escapeAttribute, escapeHTML, escapeInlineStyleValue, escapeJSONAttribute, escapeLinkURLAttribute, escapeURLAttribute } from '../utils/html';
 
 // ─── YAML Parser (Simple Subset) ────────────────────────────────────────────
 
@@ -483,7 +483,7 @@ function sanitizeAttributeValue(name: string, value: string): string | null {
     return normalized === '0' || normalized === '-1' ? normalized : null;
   }
   if (name === 'href' || name === 'src') {
-    const safe = escapeURLAttribute(value);
+    const safe = name === 'href' ? escapeLinkURLAttribute(value) : escapeURLAttribute(value);
     return safe || null;
   }
   if (name === 'style') return sanitizeStyleAttribute(value);

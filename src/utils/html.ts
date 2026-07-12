@@ -55,6 +55,24 @@ export function escapeURLAttribute(value: unknown): string {
   return escapeAttribute(sanitizeImageURL(value));
 }
 
+export function sanitizeLinkURL(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  const raw = value.trim();
+  if (!raw || /[\u0000-\u001f\u007f\\]/.test(raw)) return '';
+
+  try {
+    const origin = typeof window === 'undefined' ? 'http://localhost' : window.location.origin;
+    const url = new URL(raw, origin);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? raw : '';
+  } catch {
+    return '';
+  }
+}
+
+export function escapeLinkURLAttribute(value: unknown): string {
+  return escapeAttribute(sanitizeLinkURL(value));
+}
+
 export function escapeInlineStyleValue(value: unknown): string {
   return String(value ?? '').replace(/[<>"'`;{}]/g, '');
 }

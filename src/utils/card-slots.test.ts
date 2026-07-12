@@ -662,7 +662,10 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
       '<script>alert(1)</script>',
       '<img src="javascript:alert(1)" onerror="evil()">',
       '<a href="https://example.com/path">Safe</a>',
+      '<a href="data:image/svg+xml,%3Csvg%3E">Unsafe data link</a>',
+      '<a href="https://example.com/\npath">Control link</a>',
       '<img src="images/status.png" alt="Relative">',
+      '<img src="data:image/png;base64,abc" alt="Data image">',
       '<input type="range" min="0" max="100" step="5" value="45" data-action="cover-position" data-entity="cover.bed_blind" onchange="evil()">',
       '<div tabindex="9">Bad focus order</div>',
       '</section>',
@@ -683,7 +686,10 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
     expect(sanitized).toContain('style="color: red; padding: 8px"');
     expect(sanitized).toContain('#hdp-slot-preview .bp-html-card .safe {');
     expect(sanitized).toContain('href="https://example.com/path"');
+    expect(sanitized).not.toContain('href="data:image/');
+    expect(sanitized).toContain('<a>Control link</a>');
     expect(sanitized).toContain('src="images/status.png"');
+    expect(sanitized).toContain('src="data:image/png;base64,abc"');
     expect(sanitized).toContain('<input type="range" min="0" max="100" step="5" value="45" data-action="cover-position" data-entity="cover.bed_blind">');
   });
 

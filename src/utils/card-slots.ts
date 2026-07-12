@@ -1097,8 +1097,10 @@ function hdpSanitizeSlotAttributeValue(name, value) {
   }
   if (name === 'href' || name === 'src') {
     var url = String(value || '').trim();
+    if (/[\\u0000-\\u001f\\u007f\\\\]/.test(url)) return null;
     var schemeProbe = url.replace(/[\\u0000-\\u0020]/g, '');
     var scheme = schemeProbe.match(/^([a-z][a-z0-9+.-]*):/i);
+    if (name === 'href' && scheme && !/^https?$/i.test(scheme[1])) return null;
     if (scheme && !/^https?$/i.test(scheme[1]) && !/^data$/i.test(scheme[1])) return null;
     if (scheme && /^data$/i.test(scheme[1]) && !/^data:image\\//i.test(schemeProbe)) return null;
     return hdpEscapeSlotText(url);
