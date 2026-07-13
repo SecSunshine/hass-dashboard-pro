@@ -292,6 +292,22 @@ describe('home data', () => {
     expect(summary.updates_count).toBe(0);
   });
 
+  it('keeps disabled automations in the system overview total', () => {
+    const disabledAutomationHass: Hass = {
+      ...hass,
+      states: {
+        ...hass.states,
+        'automation.visible': {
+          ...hass.states['automation.visible'],
+          state: 'off',
+        },
+      },
+    };
+
+    expect(countActiveAutomations(disabledAutomationHass)).toBe(0);
+    expect(getHomeSummaries(disabledAutomationHass, { type: 'custom:hass-dashboard-pro' }).automations_count).toBe(1);
+  });
+
   it('ignores registry-hidden people in the home people card data', () => {
     const persons = getPersons(hass);
 

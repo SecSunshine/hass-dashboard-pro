@@ -306,6 +306,12 @@ export function countActiveAutomations(hass: Hass): number {
   return count;
 }
 
+function countVisibleAutomations(hass: Hass): number {
+  return Object.keys(hass.states).filter(entityId => (
+    entityId.startsWith('automation.') && isRegistryVisible(hass, entityId)
+  )).length;
+}
+
 /**
  * Collect summary statistics for the home page footer.
  */
@@ -329,7 +335,7 @@ export function getHomeSummaries(hass: Hass, config?: StrategyConfig): HomeSumma
   return {
     repairs_count: repairsCount,
     updates_count: updatesCount,
-    automations_count: countActiveAutomations(hass),
+    automations_count: countVisibleAutomations(hass),
     total_entities: visibleEntities ? visibleEntities.length : Object.keys(hass.states).length,
     total_devices: visibleEntities ? countVisibleDevices(hass, visibleEntities) : Object.keys(hass.devices || {}).length,
     total_areas: visibleEntities

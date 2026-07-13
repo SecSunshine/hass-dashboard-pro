@@ -339,6 +339,27 @@ describe('home view settings', () => {
     expect(html).toContain('<div class="env-lbl">自动化运行</div>');
   });
 
+  it('keeps the automation configuration entry when every automation is disabled', () => {
+    const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
+    const html = buildHomeHTML({
+      ...hass,
+      states: {
+        ...hass.states,
+        'automation.morning': {
+          entity_id: 'automation.morning',
+          state: 'off',
+          attributes: { friendly_name: 'Morning' },
+          last_changed: '',
+          last_updated: '',
+        },
+      },
+    }, config);
+
+    expect(html).toContain('data-info-card="automations"');
+    expect(html).toContain('data-action="open-automation-config"');
+    expect(html).not.toContain('<div class="env-lbl">自动化运行</div>');
+  });
+
   it('lets card slots replace, hide, resize and reorder home cards', () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',
