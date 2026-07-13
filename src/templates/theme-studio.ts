@@ -897,6 +897,7 @@ export function generateThemeStudioJS(): string {
     mode: 'auto',  // 'light' | 'dark' | 'auto'
     hsv: { h: 228, s: 91, v: 97 }  // HSV for the color wheel
   };
+  var studioPaletteSnapshot = null;
 
   // Load current config from localStorage
   function loadState() {
@@ -1505,6 +1506,8 @@ export function generateThemeStudioJS(): string {
 
   // ── Open / Close ──
   function openStudio() {
+    var currentPalette = document.getElementById('hdp-palette-override');
+    studioPaletteSnapshot = currentPalette ? currentPalette.textContent : null;
     loadState();
     // Sync UI controls
     var rs = document.getElementById('ts-radius-slider');
@@ -1526,10 +1529,18 @@ export function generateThemeStudioJS(): string {
   }
 
   function closeStudio() {
+    if (!overlay.classList.contains('hdp-studio-overlay--open') && studioPaletteSnapshot === null) return;
     overlay.classList.remove('hdp-studio-overlay--open');
-    // Remove palette override (will be re-applied on reload if saved)
+    // Replace the live preview with the palette captured before opening.
     var existing = document.getElementById('hdp-palette-override');
     if (existing) existing.remove();
+    if (studioPaletteSnapshot !== null) {
+      var restoredPalette = document.createElement('style');
+      restoredPalette.id = 'hdp-palette-override';
+      restoredPalette.textContent = studioPaletteSnapshot;
+      document.head.appendChild(restoredPalette);
+    }
+    studioPaletteSnapshot = null;
     // Reset inline CSS variable overrides
     document.documentElement.style.removeProperty('--hdp-radius');
     document.documentElement.style.removeProperty('--hdp-card-gap');

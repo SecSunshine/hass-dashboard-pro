@@ -62,6 +62,26 @@ describe('theme studio', () => {
     });
   });
 
+  it('restores the palette that existed before opening the studio', () => {
+    const js = generateThemeStudioJS();
+    const openBlock = js.slice(
+      js.indexOf('function openStudio()'),
+      js.indexOf('function closeStudio()'),
+    );
+    const closeBlock = js.slice(
+      js.indexOf('function closeStudio()'),
+      js.indexOf('  // Expose globally'),
+    );
+
+    expect(js).toContain('var studioPaletteSnapshot = null;');
+    expect(openBlock).toContain("document.getElementById('hdp-palette-override')");
+    expect(openBlock).toContain('studioPaletteSnapshot = currentPalette ? currentPalette.textContent : null;');
+    expect(closeBlock).toContain("if (!overlay.classList.contains('hdp-studio-overlay--open') && studioPaletteSnapshot === null) return;");
+    expect(closeBlock).toContain("restoredPalette.id = 'hdp-palette-override';");
+    expect(closeBlock).toContain('restoredPalette.textContent = studioPaletteSnapshot;');
+    expect(closeBlock).toContain('document.head.appendChild(restoredPalette);');
+  });
+
   it('uses responsive shrink-safe studio layout css', () => {
     const html = buildThemeStudioHTML();
 
