@@ -1534,6 +1534,11 @@ export function generateThemeStudioJS(): string {
     document.documentElement.style.removeProperty('--hdp-radius');
     document.documentElement.style.removeProperty('--hdp-card-gap');
     document.documentElement.style.removeProperty('--hdp-card-padding');
+    document.documentElement.style.removeProperty('--hdp-density');
+    document.documentElement.style.removeProperty('--hdp-density-gap');
+    document.documentElement.style.removeProperty('--hdp-density-padding');
+    document.documentElement.style.removeProperty('--hdp-density-row-height');
+    document.documentElement.style.removeProperty('--hdp-density-entity-padding');
   }
 
   // Expose globally

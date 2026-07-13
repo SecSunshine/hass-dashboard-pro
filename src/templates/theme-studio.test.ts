@@ -41,6 +41,27 @@ describe('theme studio', () => {
     expect(js).toContain("'soft-data'");
   });
 
+  it('clears every real-time layout override when the studio closes', () => {
+    const js = generateThemeStudioJS();
+    const closeBlock = js.slice(
+      js.indexOf('function closeStudio()'),
+      js.indexOf('  // Expose globally'),
+    );
+
+    [
+      '--hdp-radius',
+      '--hdp-card-gap',
+      '--hdp-card-padding',
+      '--hdp-density',
+      '--hdp-density-gap',
+      '--hdp-density-padding',
+      '--hdp-density-row-height',
+      '--hdp-density-entity-padding',
+    ].forEach(property => {
+      expect(closeBlock).toContain(`removeProperty('${property}')`);
+    });
+  });
+
   it('uses responsive shrink-safe studio layout css', () => {
     const html = buildThemeStudioHTML();
 
