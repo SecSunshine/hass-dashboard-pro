@@ -412,8 +412,6 @@ function hdpFindEnvironmentSensors(hass, metric) {
       : (deviceClass === 'temperature' || hdpIsTemperatureUnit(unit) || lowerId.indexOf('temperature') >= 0 || lowerId.indexOf('temp') >= 0);
     if (!isMetric) return;
     if (lowerId.indexOf('outdoor') >= 0 || lowerId.indexOf('weather') >= 0 || lowerId.indexOf('external') >= 0) return;
-    var numeric = parseFloat(stateObj.state);
-    if (isNaN(numeric)) return;
     var area = hdpResolveEntityArea(hass, entityId);
     result.push({
       entity_id: entityId,

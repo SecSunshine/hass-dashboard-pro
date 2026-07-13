@@ -36,6 +36,7 @@ return {
   hdpHasHistoryTransport: hdpHasHistoryTransport,
   hdpBuildEnvironmentHistoryRequest: hdpBuildEnvironmentHistoryRequest,
   hdpFetchEnvironmentHistory: hdpFetchEnvironmentHistory,
+  hdpFindEnvironmentSensors: hdpFindEnvironmentSensors,
   hdpParseDomainScope: hdpParseDomainScope,
   hdpCollectDomainEntities: hdpCollectDomainEntities,
   hdpRenderDomainEntityList: hdpRenderDomainEntityList,
@@ -64,6 +65,7 @@ return {
     hdpHasHistoryTransport: (hass: any, connection: any) => boolean;
     hdpBuildEnvironmentHistoryRequest: (start: Date, end: Date, sensors: any[]) => Record<string, unknown>;
     hdpFetchEnvironmentHistory: (hass: any, connection: any, message: Record<string, unknown>) => Promise<unknown>;
+    hdpFindEnvironmentSensors: (hass: any, metric: string) => any[];
     hdpParseDomainScope: (domainKey: string, deviceClass?: string) => { key: string; domain: string; device_class: string };
     hdpCollectDomainEntities: (hass: any, domainKey: string, deviceClass?: string) => any[];
     hdpRenderDomainEntityList: (entities: any[], domain: string) => string;
@@ -618,6 +620,36 @@ describe('hass websocket script', () => {
     expect(runtime.hdpHasHistoryTransport({}, connection)).toBe(true);
     await expect(runtime.hdpFetchEnvironmentHistory({}, connection, message)).resolves.toEqual({ result: 'from-connection' });
     expect(calls).toEqual([message]);
+  });
+
+  it('keeps temporarily unavailable environment sensors eligible for history', () => {
+    const runtime = createHistoryRuntime();
+    const hass = {
+      states: {
+        'sensor.living_temperature': {
+          state: 'unavailable',
+          attributes: { friendly_name: 'Living Temperature', device_class: 'temperature', unit_of_measurement: '°C' },
+        },
+        'sensor.bedroom_humidity': {
+          state: 'unknown',
+          attributes: { friendly_name: 'Bedroom Humidity', device_class: 'humidity', unit_of_measurement: '%' },
+        },
+        'sensor.energy_total': {
+          state: 'unavailable',
+          attributes: { friendly_name: 'Energy Total', device_class: 'energy', unit_of_measurement: 'kWh' },
+        },
+      },
+      areas: {},
+      devices: {},
+      entities: {},
+    };
+
+    expect(runtime.hdpFindEnvironmentSensors(hass, 'temperature').map(sensor => sensor.entity_id)).toEqual([
+      'sensor.living_temperature',
+    ]);
+    expect(runtime.hdpFindEnvironmentSensors(hass, 'humidity').map(sensor => sensor.entity_id)).toEqual([
+      'sensor.bedroom_humidity',
+    ]);
   });
 
   it('builds environment series from wrapped HA history responses', () => {
