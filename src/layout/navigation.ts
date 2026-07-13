@@ -22,6 +22,7 @@ export function buildNavigationScript(defaultView = 'home'): string {
   var root = document.getElementById('hdp-root');
   if (!root) return;
   var hdpFallbackFullscreen = false;
+  var hdpBrowserFullscreenFailed = false;
 
   function hdpSyncViewportHeight() {
     var rect = root.getBoundingClientRect ? root.getBoundingClientRect() : { top: 0 };
@@ -261,7 +262,7 @@ export function buildNavigationScript(defaultView = 'home'): string {
       buttons[i].setAttribute('aria-pressed', active ? 'true' : 'false');
       var hint = buttons[i].querySelector('.sb-profile-hint');
       if (hint) hint.textContent = active
-        ? (document.fullscreenElement === root ? '再次点击退出全屏' : '再次点击浏览器全屏')
+        ? (document.fullscreenElement === root || hdpBrowserFullscreenFailed ? '再次点击退出全屏' : '再次点击浏览器全屏')
         : '点击全屏仪表盘';
     }
     hdpSyncViewportHeight();
@@ -274,6 +275,7 @@ export function buildNavigationScript(defaultView = 'home'): string {
   window.hdpToggleDashboardFullscreen = function() {
     if (!isDashboardFullscreen()) {
       hdpFallbackFullscreen = true;
+      hdpBrowserFullscreenFailed = false;
       updateDashboardFullscreenUI(true);
       return;
     }
@@ -284,6 +286,7 @@ export function buildNavigationScript(defaultView = 'home'): string {
         if (exitResult && typeof exitResult.then === 'function') {
           exitResult.then(function() {
             hdpFallbackFullscreen = false;
+            hdpBrowserFullscreenFailed = false;
             updateDashboardFullscreenUI(false);
           }).catch(function() {});
         }
@@ -291,24 +294,42 @@ export function buildNavigationScript(defaultView = 'home'): string {
       return;
     }
 
+    if (hdpBrowserFullscreenFailed) {
+      hdpFallbackFullscreen = false;
+      hdpBrowserFullscreenFailed = false;
+      updateDashboardFullscreenUI(false);
+      return;
+    }
+
     if (root.requestFullscreen) {
       try {
         var requestResult = root.requestFullscreen();
-        if (requestResult && typeof requestResult.catch === 'function') requestResult.catch(function() {});
-      } catch(e) {}
+        if (requestResult && typeof requestResult.catch === 'function') requestResult.catch(function() {
+          if (isDashboardFullscreen() && document.fullscreenElement !== root) {
+            hdpBrowserFullscreenFailed = true;
+            updateDashboardFullscreenUI(true);
+          }
+        });
+      } catch(e) {
+        hdpBrowserFullscreenFailed = true;
+        updateDashboardFullscreenUI(true);
+      }
       return;
     }
 
     hdpFallbackFullscreen = false;
+    hdpBrowserFullscreenFailed = false;
     updateDashboardFullscreenUI(false);
   };
 
   document.addEventListener('fullscreenchange', function() {
     if (document.fullscreenElement === root) {
       hdpFallbackFullscreen = true;
+      hdpBrowserFullscreenFailed = false;
       updateDashboardFullscreenUI(true);
     } else if (!document.fullscreenElement && isDashboardFullscreen()) {
       hdpFallbackFullscreen = false;
+      hdpBrowserFullscreenFailed = false;
       updateDashboardFullscreenUI(false);
     }
   });
@@ -316,6 +337,7 @@ export function buildNavigationScript(defaultView = 'home'): string {
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && hdpFallbackFullscreen) {
       hdpFallbackFullscreen = false;
+      hdpBrowserFullscreenFailed = false;
       updateDashboardFullscreenUI(false);
     }
   });

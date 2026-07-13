@@ -96,6 +96,7 @@ describe('dashboard navigation script', () => {
     };
     let requestCount = 0;
     let exitCount = 0;
+    let rejectFullscreenRequest = false;
     const root: any = {
       classList: {
         contains: (name: string) => classes.has(name),
@@ -113,7 +114,7 @@ describe('dashboard navigation script', () => {
       addEventListener: () => {},
       requestFullscreen: () => {
         requestCount += 1;
-        return Promise.resolve();
+        return rejectFullscreenRequest ? Promise.reject(new Error('fullscreen denied')) : Promise.resolve();
       },
     };
     const documentStub: any = {
@@ -176,5 +177,19 @@ describe('dashboard navigation script', () => {
     windowStub.hdpToggleDashboardFullscreen();
     documentListeners.keydown[0]({ key: 'Escape' });
     expect(classes.has('hdp-root--fullscreen')).toBe(false);
+
+    rejectFullscreenRequest = true;
+    windowStub.hdpToggleDashboardFullscreen();
+    windowStub.hdpToggleDashboardFullscreen();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(requestCount).toBe(2);
+    expect(classes.has('hdp-root--fullscreen')).toBe(true);
+    expect(hint.textContent).toBe('再次点击退出全屏');
+
+    windowStub.hdpToggleDashboardFullscreen();
+    expect(requestCount).toBe(2);
+    expect(classes.has('hdp-root--fullscreen')).toBe(false);
+    expect(buttonAttrs['aria-pressed']).toBe('false');
   });
 });

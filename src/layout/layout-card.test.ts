@@ -201,7 +201,8 @@ describe('layout card', () => {
     expect(card.content).toContain("action === 'toggle-dashboard-fullscreen'");
     expect(card.content).toContain('window.hdpToggleDashboardFullscreen = function()');
     expect(card.content).toContain('.hdp-root--fullscreen');
-    expect(card.content).toContain("document.fullscreenElement === root ? '再次点击退出全屏' : '再次点击浏览器全屏'");
+    expect(card.content).toContain("document.fullscreenElement === root || hdpBrowserFullscreenFailed ? '再次点击退出全屏' : '再次点击浏览器全屏'");
+    expect(card.content).toContain('hdpBrowserFullscreenFailed = true');
     expect(card.content).toContain('root.requestFullscreen');
     expect(card.content).toContain('document.exitFullscreen');
     expect(card.content).not.toContain('id="hdp-avatar-overlay"');
