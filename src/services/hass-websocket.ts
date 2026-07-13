@@ -1010,12 +1010,11 @@ function hdpOpenMoreInfo(entityId) {
     detail: { entityId: entityId }
   });
   var target = document.querySelector('home-assistant') || document.querySelector('hui-root') || document.body;
-  if (target && target.dispatchEvent) target.dispatchEvent(event);
-  window.dispatchEvent(new CustomEvent('hass-more-info', {
-    bubbles: true,
-    composed: true,
-    detail: { entityId: entityId }
-  }));
+  if (target && target.dispatchEvent) {
+    target.dispatchEvent(event);
+    return;
+  }
+  if (window.dispatchEvent) window.dispatchEvent(event);
 }
 
 function hdpDomainLabel(domain) {

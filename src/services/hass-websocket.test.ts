@@ -444,7 +444,7 @@ describe('hass websocket script', () => {
     });
 
     expect(moreInfo).toEqual({ prevented: true, stopped: true });
-    expect(infoEvents).toHaveLength(4);
+    expect(infoEvents).toHaveLength(2);
     expect(infoEvents.every(event => event.type === 'hass-more-info')).toBe(true);
     expect(infoEvents.every(event => event.detail.entityId === 'sensor.kitchen_temperature')).toBe(true);
     expect(cover).toEqual({ prevented: true, stopped: true });
@@ -931,6 +931,7 @@ describe('hass websocket script', () => {
     expect(js).not.toContain("document.addEventListener('keydown', hdpCloseEnvironmentHistoryOnEsc, { once: true })");
     expect(js).toContain('hdpBindRuntimeModalEscClose();');
     expect(js).toContain("new CustomEvent('hass-more-info'");
+    expect(js).toContain('if (window.dispatchEvent) window.dispatchEvent(event);');
   });
 
   it('keeps runtime modals mutually exclusive and invalidates closed history requests', () => {
@@ -970,7 +971,7 @@ describe('hass websocket script', () => {
     });
 
     expect(elements.has('hdp-device-domain-modal')).toBe(false);
-    expect(infoModalStates).toEqual([false, false]);
+    expect(infoModalStates).toEqual([false]);
   });
 
   it('keeps binary sensor status badge popups scoped to their device class', () => {
