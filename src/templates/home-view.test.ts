@@ -141,6 +141,30 @@ describe('home view settings', () => {
     expect(html).not.toContain('<div class="sd-badge');
   });
 
+  it('allows one status badge to be customized independently', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        cards: {
+          slots: {
+            'home.status_badges.light': {
+              yaml: [
+                'type: custom:html-pro-card',
+                'content: |',
+                '  <div class="custom-light-badge" data-action="show-device-domain" data-domain="light">灯光自定义</div>',
+              ].join('\n'),
+            },
+          },
+        },
+      } as any,
+    };
+    const html = buildHomeHTML(hass, config);
+
+    expect(html).toContain('data-card-slot="home.status_badges.light" data-card-custom="true"');
+    expect(html).toContain('灯光自定义');
+    expect(html).toContain('data-card-slot="home.status_badges"');
+  });
+
   it('renders environment metrics as 24-hour history buttons', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const html = buildHomeHTML({

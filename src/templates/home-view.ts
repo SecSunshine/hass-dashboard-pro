@@ -122,7 +122,7 @@ export function buildHomeView(hass: Hass, config: StrategyConfig, tokens?: Resol
     switch (section) {
       case 'status_badges': {
         const domains = getStatusDomains(hass, config);
-        if (domains.length > 0) cards.push(buildStatusBadges(domains, tokens));
+        if (domains.length > 0) cards.push(buildStatusBadges(domains, tokens, config));
         break;
       }
       case 'people': {
@@ -181,7 +181,7 @@ export function buildHomeHTML(hass: Hass, config: StrategyConfig, tokens?: Resol
           sections.push(resolveSlottedCard(
             config,
             'home.status_badges',
-            extractCardHTML(buildStatusBadges(domains, tokens)),
+            extractCardHTML(buildStatusBadges(domains, tokens, config)),
             resolveCardSize('home_status_badges', layout.sizes.home_status_badges, cs),
             defaultOrder,
           ));
@@ -498,14 +498,17 @@ ${generateDesignTokenCSS(tokens)}
 
 // 鈹€鈹€鈹€ 2. Status Domain Badges 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
-function buildStatusBadges(domains: DomainStatus[], tokens?: ResolvedTokens): LovelaceCardConfig {
-  const badges = domains.map(d => {
+function buildStatusBadges(domains: DomainStatus[], tokens?: ResolvedTokens, config?: StrategyConfig): LovelaceCardConfig {
+  const badges = domains.map((d, index) => {
     const countText = d.active > 0 ? `<span class="sd-cnt">${d.active}</span>` : '';
-    return `<button type="button" class="sd-badge sd-badge--${d.color_class}" data-domain="${escapeAttribute(d.domain)}" data-action="show-device-domain">
+    const badgeHTML = `<button type="button" class="sd-badge sd-badge--${d.color_class}" data-domain="${escapeAttribute(d.domain)}" data-action="show-device-domain">
       <span class="sd-icon">${d.icon_svg}</span>
       <span class="sd-label">${d.label}</span>
       ${countText}
     </button>`;
+    return config
+      ? resolveSlottedCard(config, `home.status_badges.${d.domain}`, badgeHTML, 'sm', index).html
+      : badgeHTML;
   }).join('');
 
   return {
@@ -520,6 +523,19 @@ ${generateDesignTokenCSS(tokens)}
     gap: 8px;
     flex-wrap: wrap;
     padding: 2px 0;
+  }
+  .sd-wrap > .hdp-card-slot {
+    min-width: 0;
+    flex: 0 1 auto;
+    height: auto;
+  }
+  .sd-wrap > .hdp-card-slot[data-card-slot-size="md"] {
+    flex: 1 1 calc(50% - 8px);
+  }
+  .sd-wrap > .hdp-card-slot[data-card-slot-size="lg"],
+  .sd-wrap > .hdp-card-slot[data-card-slot-size="tall"],
+  .sd-wrap > .hdp-card-slot[data-card-slot-size="wide"] {
+    flex: 1 1 100%;
   }
   .sd-badge {
     display: inline-flex;
