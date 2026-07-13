@@ -312,6 +312,43 @@ describe('card slots', () => {
     expect(calls).toEqual(['edit:true', 'hidden', 'save', 'cancel']);
   });
 
+  it('reloads the dashboard after canceling card edit drafts', () => {
+    const documentStub = {
+      readyState: 'loading',
+      addEventListener: () => {},
+    };
+    const calls: string[] = [];
+    const windowStub: Record<string, any> = {
+      hdpCancelSettings: () => calls.push('cancel-settings'),
+    };
+    new Function(
+      'window',
+      'document',
+      'localStorage',
+      'Image',
+      'prompt',
+      'confirm',
+      'location',
+      'setTimeout',
+      'clearTimeout',
+      generateCardSlotEditorJS(),
+    )(
+      windowStub,
+      documentStub,
+      { getItem: () => null, setItem: () => {} },
+      function ImageStub() {},
+      () => null,
+      () => false,
+      { reload: () => calls.push('reload') },
+      setTimeout,
+      clearTimeout,
+    );
+
+    windowStub.hdpCancelCardEdits();
+
+    expect(calls).toEqual(['cancel-settings', 'reload']);
+  });
+
   it('binds dragging once per dashboard root after Home Assistant rebuilds it', () => {
     const documentStub = {
       readyState: 'loading',

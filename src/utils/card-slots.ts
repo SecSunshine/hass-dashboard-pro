@@ -1361,9 +1361,9 @@ window.hdpSaveCardEdits = function() {
 window.hdpCancelCardEdits = function() {
   if (typeof window.hdpCancelSettings === 'function') {
     window.hdpCancelSettings();
-    return;
+  } else {
+    window.hdpCardEditDraft = undefined;
   }
-  window.hdpCardEditDraft = undefined;
   location.reload();
 };
 
