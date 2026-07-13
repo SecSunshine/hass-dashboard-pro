@@ -86,6 +86,31 @@ describe('home view settings', () => {
     expect(html).not.toContain('data-info-card="entities"');
   });
 
+  it('allows one summary statistic to be customized independently', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        cards: {
+          slots: {
+            'home.summary.entities': {
+              yaml: [
+                'type: custom:html-pro-card',
+                'content: |',
+                '  <div class="custom-entity-summary" data-view="home">实体自定义</div>',
+              ].join('\n'),
+            },
+          },
+        },
+      } as any,
+    };
+    const html = buildHomeHTML(hass, config);
+
+    expect(html).toContain('data-card-slot="home.summary.entities" data-card-custom="true"');
+    expect(html).toContain('实体自定义');
+    expect(html).toContain('data-card-slot="home.summary.devices"');
+    expect(html).toContain('data-info-card="devices"');
+  });
+
   it('honors configured home section order and appends omitted defaults', () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',

@@ -1128,85 +1128,87 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: Strategy
   const skinCls = cardSkinClass(tokens?.card_style);
   const hiddenInfoCards = new Set(getHiddenInfoCards(config));
   const isInfoCardVisible = (key: string): boolean => !hiddenInfoCards.has(key);
-
-  const items: string[] = [];
+  const summaryConfig: StrategyConfig = config || { type: 'custom:hass-dashboard-pro' };
+  const items: SlottedCard[] = [];
+  const addSummaryItem = (key: string, html: string, order: number): void => {
+    items.push(resolveSlottedCard(summaryConfig, `home.summary.${key}`, html, 'sm', order));
+  };
 
   if (summaries.updates_count > 0 && isInfoCardVisible('updates')) {
-    items.push(`<div class="sum-item sum-item--info ${skinCls}" data-info-card="updates">
+    addSummaryItem('updates', `<div class="sum-item sum-item--info ${skinCls}" data-info-card="updates">
       <div class="sum-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       </div>
       <div class="sum-val">${summaries.updates_count}</div>
       <div class="sum-lbl">可用更新</div>
-    </div>`);
+    </div>`, 0);
   }
 
   if (summaries.repairs_count > 0 && isInfoCardVisible('repairs')) {
-    items.push(`<div class="sum-item sum-item--warn ${skinCls}" data-info-card="repairs">
+    addSummaryItem('repairs', `<div class="sum-item sum-item--warn ${skinCls}" data-info-card="repairs">
       <div class="sum-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       </div>
       <div class="sum-val">${summaries.repairs_count}</div>
       <div class="sum-lbl">待维修</div>
-    </div>`);
+    </div>`, 1);
   }
 
   if (isInfoCardVisible('entities')) {
-    items.push(`<div class="sum-item ${skinCls}" data-info-card="entities">
+    addSummaryItem('entities', `<div class="sum-item ${skinCls}" data-info-card="entities">
     <div class="sum-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="12" cy="12" r="3"/></svg>
     </div>
     <div class="sum-val">${summaries.total_entities}</div>
     <div class="sum-lbl">实体</div>
-  </div>`);
+  </div>`, 2);
   }
 
   if (isInfoCardVisible('devices')) {
-    items.push(`<div class="sum-item ${skinCls}" data-info-card="devices">
+    addSummaryItem('devices', `<div class="sum-item ${skinCls}" data-info-card="devices">
       <div class="sum-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
       </div>
       <div class="sum-val">${summaries.total_devices}</div>
       <div class="sum-lbl">设备</div>
-    </div>`);
+    </div>`, 3);
   }
 
   if (isInfoCardVisible('areas')) {
-    items.push(`<div class="sum-item ${skinCls}" data-info-card="areas">
+    addSummaryItem('areas', `<div class="sum-item ${skinCls}" data-info-card="areas">
       <div class="sum-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg>
       </div>
       <div class="sum-val">${summaries.total_areas}</div>
       <div class="sum-lbl">区域</div>
-    </div>`);
+    </div>`, 4);
   }
 
   if (isInfoCardVisible('active')) {
-    items.push(`<div class="sum-item ${skinCls}" data-info-card="active">
+    addSummaryItem('active', `<div class="sum-item ${skinCls}" data-info-card="active">
       <div class="sum-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h8l-1 8 11-13h-8l1-7z"/></svg>
       </div>
       <div class="sum-val">${summaries.active_entities}</div>
       <div class="sum-lbl">运行中</div>
-    </div>`);
+    </div>`, 5);
   }
 
   if (summaries.automations_count > 0 && isInfoCardVisible('automations')) {
-    items.push(`<button type="button" class="sum-item ${skinCls}" data-info-card="automations" data-action="open-automation-config">
+    addSummaryItem('automations', `<button type="button" class="sum-item ${skinCls}" data-info-card="automations" data-action="open-automation-config">
       <div class="sum-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg>
       </div>
       <div class="sum-val">${summaries.automations_count}</div>
       <div class="sum-lbl">自动化</div>
-    </button>`);
+    </button>`, 6);
   }
 
-  if (!items.length) {
-    items.push(`<div class="sum-empty ${skinCls}">
+  const renderedItems = sortSlottedCards(items);
+  const emptyHTML = !renderedItems.length ? `<div class="sum-empty ${skinCls}">
       <div class="sum-empty-title">暂无概览信息</div>
       <div class="sum-empty-desc">可以在设置中重新显示系统概览项目</div>
-    </div>`);
-  }
+    </div>` : '';
 
   return {
     type: 'custom:html-pro-card',
@@ -1231,6 +1233,15 @@ ${generateDesignTokenCSS(tokens)}
     grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
     gap: 10px;
   }
+  .sum-grid > .hdp-card-slot {
+    min-width: 0;
+    height: 100%;
+  }
+  .sum-grid > .hdp-card-slot[data-card-slot-size="sm"] { grid-column: span 1; }
+  .sum-grid > .hdp-card-slot[data-card-slot-size="md"],
+  .sum-grid > .hdp-card-slot[data-card-slot-size="lg"],
+  .sum-grid > .hdp-card-slot[data-card-slot-size="tall"] { grid-column: span 2; }
+  .sum-grid > .hdp-card-slot[data-card-slot-size="wide"] { grid-column: 1 / -1; }
   .sum-item {
     appearance: none;
     width: 100%;
@@ -1307,6 +1318,6 @@ ${generateDesignTokenCSS(tokens)}
 <div class="sum-hdr">
   <span class="sum-title">系统概览</span>
 </div>
-<div class="sum-grid">${items.join('')}</div>`,
+<div class="sum-grid">${renderedItems.map(item => item.html).join('')}${emptyHTML}</div>`,
   };
 }

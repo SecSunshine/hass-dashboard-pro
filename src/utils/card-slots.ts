@@ -505,7 +505,14 @@ var HDP_HOME_CARD_SLOTS = [
   { id: 'home.environment.automations', label: '自动化运行' },
   { id: 'home.power_usage', label: '全屋功率' },
   { id: 'home.favorites', label: '收藏设备' },
-  { id: 'home.summary', label: '系统概览' }
+  { id: 'home.summary', label: '系统概览' },
+  { id: 'home.summary.updates', label: '可用更新' },
+  { id: 'home.summary.repairs', label: '待维修' },
+  { id: 'home.summary.entities', label: '实体统计' },
+  { id: 'home.summary.devices', label: '设备统计' },
+  { id: 'home.summary.areas', label: '区域统计' },
+  { id: 'home.summary.active', label: '运行中统计' },
+  { id: 'home.summary.automations', label: '自动化统计' }
 ];
 
 function hdpGetCardEditDraft() {
