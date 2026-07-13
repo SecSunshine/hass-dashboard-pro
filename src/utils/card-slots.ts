@@ -44,7 +44,7 @@ export function resolveSlottedCard(
   const error = custom.error ? buildSlotErrorHTML(slotId, custom.error) : '';
   return {
     slotId,
-    html: wrapSlotHTML(slotId, `${error}${content}`, slot, Boolean(custom.html)),
+    html: wrapSlotHTML(slotId, `${error}${content}`, slot, Boolean(custom.html), size),
     size,
     order,
     hidden: false,
@@ -426,7 +426,13 @@ function applyCardSlotContext(content: string, context?: CardSlotContext): strin
   );
 }
 
-function wrapSlotHTML(slotId: string, html: string, slot: CardSlotConfig | undefined, custom: boolean): string {
+function wrapSlotHTML(
+  slotId: string,
+  html: string,
+  slot: CardSlotConfig | undefined,
+  custom: boolean,
+  size: BentoSize,
+): string {
   const bg = escapeURLAttribute(slot?.background_image_url || '');
   const style = bg
     ? ` style="--hdp-slot-bg-image: url(${escapeInlineStyleValue(bg)});"`
@@ -437,8 +443,8 @@ function wrapSlotHTML(slotId: string, html: string, slot: CardSlotConfig | undef
     bg && slot?.theme_from_image ? 'hdp-card-slot--theme-image' : '',
     custom ? 'hdp-card-slot--custom' : 'hdp-card-slot--default',
   ].filter(Boolean).join(' ');
-  return `<div class="${classes}" data-card-slot="${escapeAttribute(slotId)}" data-card-custom="${custom ? 'true' : 'false'}"${style}>
-    ${buildSlotEditPanel(slotId, slot)}
+  return `<div class="${classes}" data-card-slot="${escapeAttribute(slotId)}" data-card-custom="${custom ? 'true' : 'false'}" data-card-slot-size="${size}"${style}>
+    ${buildSlotEditPanel(slotId, slot, size)}
     <div class="hdp-slot-hidden-note">已隐藏，保存后生效。点击恢复默认可撤销。</div>
     ${html}
   </div>`;
@@ -452,9 +458,9 @@ function buildSlotErrorHTML(slotId: string, reason: string): string {
   </div>`;
 }
 
-function buildSlotEditPanel(slotId: string, slot?: CardSlotConfig): string {
+function buildSlotEditPanel(slotId: string, slot?: CardSlotConfig, defaultSize: BentoSize = 'md'): string {
   const slotAttr = escapeAttribute(slotId);
-  const size = sanitizeBentoSize(slot?.size, 'md');
+  const size = sanitizeBentoSize(slot?.size, defaultSize);
   const sizeOptions = ['sm', 'md', 'lg', 'wide', 'tall']
     .map(value => `<option value="${value}"${value === size ? ' selected' : ''}>${value}</option>`)
     .join('');
@@ -479,6 +485,10 @@ var HDP_HOME_CARD_SLOTS = [
   { id: 'home.status_badges', label: '状态徽章' },
   { id: 'home.people', label: '家庭成员' },
   { id: 'home.environment', label: '家居环境' },
+  { id: 'home.environment.temperature', label: '室内温度' },
+  { id: 'home.environment.humidity', label: '室内湿度' },
+  { id: 'home.environment.security', label: '安防状态' },
+  { id: 'home.environment.automations', label: '自动化运行' },
   { id: 'home.power_usage', label: '全屋功率' },
   { id: 'home.favorites', label: '收藏设备' },
   { id: 'home.summary', label: '系统概览' }
@@ -591,16 +601,67 @@ function hdpGetHomeSlotWrappers() {
   });
 }
 
-function hdpSetHomeCardDraggable(enabled) {
-  hdpGetHomeSlotWrappers().forEach(function(wrapper) {
-    if (enabled) wrapper.setAttribute('draggable', 'true');
-    else wrapper.removeAttribute('draggable');
-  });
+function hdpGetSlotElement(slotId) {
+  var cards = document.querySelectorAll('[data-card-slot]');
+  for (var i = 0; i < cards.length; i++) {
+    if (cards[i].getAttribute('data-card-slot') === String(slotId)) return cards[i];
+  }
+  return null;
 }
 
-function hdpPersistHomeSlotDomOrder(markDirty) {
-  hdpGetHomeSlotWrappers().forEach(function(wrapper, index) {
-    var card = wrapper.querySelector('[data-card-slot]');
+function hdpGetSlotWrapperFromElement(element) {
+  var directCard = element && element.getAttribute && element.getAttribute('data-card-slot')
+    ? element
+    : null;
+  if (directCard) {
+    var directParent = directCard.parentNode;
+    return directParent && directParent.classList && directParent.classList.contains('hdp-bento')
+      ? directParent
+      : directCard;
+  }
+  var card = element && element.closest ? element.closest('[data-card-slot]') : null;
+  if (!card && element && element.classList && element.classList.contains('hdp-bento')) {
+    var directChild = element.querySelector('[data-card-slot]');
+    if (directChild && directChild.parentNode === element) return element;
+  }
+  if (!card) return null;
+  var parent = card.parentNode;
+  return parent && parent.classList && parent.classList.contains('hdp-bento') ? parent : card;
+}
+
+function hdpGetSlotWrapper(slotId) {
+  return hdpGetSlotWrapperFromElement(hdpGetSlotElement(slotId));
+}
+
+function hdpIsSlotWrapper(child) {
+  if (!child || !child.parentNode) return false;
+  if (child.getAttribute && child.getAttribute('data-card-slot')) return true;
+  if (!child.classList || !child.classList.contains('hdp-bento')) return false;
+  var card = child.querySelector('[data-card-slot]');
+  return !!(card && card.parentNode === child);
+}
+
+function hdpGetSlotGroupWrappers(slotIdOrWrapper) {
+  var wrapper = typeof slotIdOrWrapper === 'string'
+    ? hdpGetSlotWrapper(slotIdOrWrapper)
+    : slotIdOrWrapper;
+  if (!wrapper || !wrapper.parentNode) return [];
+  return Array.prototype.slice.call(wrapper.parentNode.children).filter(hdpIsSlotWrapper);
+}
+
+function hdpFindSlotWrapperFromTarget(target) {
+  return hdpGetSlotWrapperFromElement(target);
+}
+
+function hdpPersistSlotGroupOrder(wrappers, markDirty) {
+  var parent = wrappers[0] && wrappers[0].parentNode;
+  var currentWrappers = parent
+    ? Array.prototype.slice.call(parent.children).filter(hdpIsSlotWrapper)
+    : wrappers;
+  currentWrappers.forEach(function(wrapper, index) {
+    var card = wrapper.getAttribute && wrapper.getAttribute('data-card-slot')
+      ? wrapper
+      : wrapper.querySelector('[data-card-slot]');
     var slotId = card && card.getAttribute('data-card-slot');
     if (!slotId) return;
     var slot = hdpEnsureCardSlot(slotId);
@@ -610,11 +671,43 @@ function hdpPersistHomeSlotDomOrder(markDirty) {
   if (markDirty !== false) hdpMarkCardDraftDirty();
 }
 
+function hdpSetHomeCardDraggable(enabled) {
+  var cards = document.querySelectorAll('.hdp-home-content [data-card-slot]');
+  var wrappers = [];
+  for (var i = 0; i < cards.length; i++) {
+    var wrapper = hdpGetSlotWrapperFromElement(cards[i]);
+    if (wrapper && wrappers.indexOf(wrapper) < 0) wrappers.push(wrapper);
+  }
+  wrappers.forEach(function(wrapper) {
+    if (enabled) wrapper.setAttribute('draggable', 'true');
+    else wrapper.removeAttribute('draggable');
+  });
+}
+
+function hdpPersistHomeSlotDomOrder(markDirty) {
+  hdpPersistSlotGroupOrder(hdpGetHomeSlotWrappers(), markDirty);
+}
+
 function hdpInitCardSlotDragging(root) {
   if (!root || root.__hdpCardSlotDragReady) return;
   root.__hdpCardSlotDragReady = true;
   window.hdpCardSlotDragReady = true;
   var dragging = null;
+  var draggingGroup = [];
+  var clearDragHighlights = function() {
+    hdpGetHomeSlotWrappers().forEach(function(wrapper) {
+      wrapper.classList.remove('hdp-bento--dragging');
+      wrapper.classList.remove('hdp-bento--drag-over');
+    });
+    var cards = document.querySelectorAll('.hdp-home-content [data-card-slot]');
+    for (var i = 0; i < cards.length; i++) {
+      var wrapper = hdpGetSlotWrapperFromElement(cards[i]);
+      if (wrapper) {
+        wrapper.classList.remove('hdp-bento--dragging');
+        wrapper.classList.remove('hdp-bento--drag-over');
+      }
+    }
+  };
   root.addEventListener('dragstart', function(e) {
     if (!root.classList.contains('hdp-root--card-edit')) return;
     var dragHandle = e.target && e.target.closest && e.target.closest('[data-card-edit-action="drag"]');
@@ -622,13 +715,12 @@ function hdpInitCardSlotDragging(root) {
       e.preventDefault();
       return;
     }
-    var wrapper = dragHandle
-      ? dragHandle.closest('.hdp-home-content > .hdp-bento')
-      : e.target && e.target.closest && e.target.closest('.hdp-home-content > .hdp-bento');
+    var wrapper = hdpFindSlotWrapperFromTarget(dragHandle || e.target);
     if (!wrapper) return;
-    var card = wrapper.querySelector('[data-card-slot]');
+    var card = wrapper.getAttribute('data-card-slot') ? wrapper : wrapper.querySelector('[data-card-slot]');
     if (!card) return;
     dragging = wrapper;
+    draggingGroup = hdpGetSlotGroupWrappers(wrapper);
     wrapper.classList.add('hdp-bento--dragging');
     if (e.dataTransfer) {
       e.dataTransfer.effectAllowed = 'move';
@@ -637,29 +729,27 @@ function hdpInitCardSlotDragging(root) {
   });
   root.addEventListener('dragover', function(e) {
     if (!dragging) return;
-    var target = e.target && e.target.closest && e.target.closest('.hdp-home-content > .hdp-bento');
-    if (!target || target === dragging) return;
+    var target = hdpFindSlotWrapperFromTarget(e.target);
+    if (!target || target === dragging || target.parentNode !== dragging.parentNode) return;
     e.preventDefault();
-    hdpGetHomeSlotWrappers().forEach(function(wrapper) { wrapper.classList.remove('hdp-bento--drag-over'); });
+    draggingGroup.forEach(function(wrapper) { wrapper.classList.remove('hdp-bento--drag-over'); });
     target.classList.add('hdp-bento--drag-over');
   });
   root.addEventListener('drop', function(e) {
     if (!dragging) return;
-    var target = e.target && e.target.closest && e.target.closest('.hdp-home-content > .hdp-bento');
-    hdpGetHomeSlotWrappers().forEach(function(wrapper) { wrapper.classList.remove('hdp-bento--drag-over'); });
-    if (!target || target === dragging || !target.parentNode) return;
+    var target = hdpFindSlotWrapperFromTarget(e.target);
+    draggingGroup.forEach(function(wrapper) { wrapper.classList.remove('hdp-bento--drag-over'); });
+    if (!target || target === dragging || target.parentNode !== dragging.parentNode) return;
     e.preventDefault();
     var rect = target.getBoundingClientRect();
     var after = e.clientY > rect.top + rect.height / 2 || (Math.abs(e.clientY - (rect.top + rect.height / 2)) < 12 && e.clientX > rect.left + rect.width / 2);
     target.parentNode.insertBefore(dragging, after ? target.nextSibling : target);
-    hdpPersistHomeSlotDomOrder(true);
+    hdpPersistSlotGroupOrder(draggingGroup, true);
   });
   root.addEventListener('dragend', function() {
-    hdpGetHomeSlotWrappers().forEach(function(wrapper) {
-      wrapper.classList.remove('hdp-bento--dragging');
-      wrapper.classList.remove('hdp-bento--drag-over');
-    });
+    clearDragHighlights();
     dragging = null;
+    draggingGroup = [];
   });
 
   var pointerDragging = null;
@@ -669,9 +759,10 @@ function hdpInitCardSlotDragging(root) {
     if (!root.classList.contains('hdp-root--card-edit')) return;
     var handle = hdpClosestCardEditControl(e);
     if (!handle || handle.getAttribute('data-card-edit-action') !== 'drag') return;
-    var wrapper = handle.closest && handle.closest('.hdp-home-content > .hdp-bento');
+    var wrapper = hdpFindSlotWrapperFromTarget(handle);
     if (!wrapper) return;
     pointerDragging = wrapper;
+    draggingGroup = hdpGetSlotGroupWrappers(wrapper);
     pointerHandle = handle;
     pointerMoved = false;
     wrapper.classList.add('hdp-bento--dragging');
@@ -681,8 +772,8 @@ function hdpInitCardSlotDragging(root) {
   root.addEventListener('pointermove', function(e) {
     if (!pointerDragging || !document.elementFromPoint) return;
     var hovered = document.elementFromPoint(e.clientX, e.clientY);
-    var target = hovered && hovered.closest && hovered.closest('.hdp-home-content > .hdp-bento');
-    if (!target || target === pointerDragging || !target.parentNode) return;
+    var target = hdpFindSlotWrapperFromTarget(hovered);
+    if (!target || target === pointerDragging || target.parentNode !== pointerDragging.parentNode) return;
     var rect = target.getBoundingClientRect();
     var after = e.clientY > rect.top + rect.height / 2 ||
       (Math.abs(e.clientY - (rect.top + rect.height / 2)) < 12 && e.clientX > rect.left + rect.width / 2);
@@ -696,10 +787,11 @@ function hdpInitCardSlotDragging(root) {
       try { pointerHandle.releasePointerCapture(e.pointerId); } catch(err) {}
     }
     pointerDragging.classList.remove('hdp-bento--dragging');
-    if (pointerMoved) hdpPersistHomeSlotDomOrder(true);
+    if (pointerMoved) hdpPersistSlotGroupOrder(draggingGroup, true);
     pointerDragging = null;
     pointerHandle = null;
     pointerMoved = false;
+    draggingGroup = [];
   }
   root.addEventListener('pointerup', finishPointerDrag);
   root.addEventListener('pointercancel', finishPointerDrag);
@@ -711,18 +803,20 @@ window.hdpSetCardSlotSize = function(slotId, size) {
   var slot = hdpEnsureCardSlot(slotId);
   slot.size = safeSize;
   hdpMarkCardDraftDirty();
-  var card = document.querySelector('[data-card-slot="' + slotId + '"]');
-  var wrapper = card && card.closest('.hdp-bento');
+  var wrapper = hdpGetSlotWrapper(slotId);
   if (wrapper) {
-    allowed.forEach(function(value) { wrapper.classList.remove('hdp-bento--' + value); });
-    wrapper.classList.add('hdp-bento--' + safeSize);
+    wrapper.setAttribute('data-card-slot-size', safeSize);
+    if (wrapper.classList && wrapper.classList.contains('hdp-bento')) {
+      allowed.forEach(function(value) { wrapper.classList.remove('hdp-bento--' + value); });
+      wrapper.classList.add('hdp-bento--' + safeSize);
+    }
   }
 };
 
 window.hdpMoveCardSlot = function(slotId, delta) {
-  var wrappers = hdpGetHomeSlotWrappers();
+  var wrappers = hdpGetSlotGroupWrappers(slotId);
   var index = wrappers.findIndex(function(wrapper) {
-    var card = wrapper.querySelector('[data-card-slot]');
+    var card = wrapper.getAttribute('data-card-slot') ? wrapper : wrapper.querySelector('[data-card-slot]');
     return card && card.getAttribute('data-card-slot') === slotId;
   });
   var target = index + Number(delta || 0);
@@ -731,7 +825,7 @@ window.hdpMoveCardSlot = function(slotId, delta) {
   var targetWrapper = wrappers[target];
   if (!current.parentNode) return;
   current.parentNode.insertBefore(current, delta > 0 ? targetWrapper.nextSibling : targetWrapper);
-  hdpPersistHomeSlotDomOrder(true);
+  hdpPersistSlotGroupOrder(wrappers, true);
 };
 
 window.hdpHideCardSlot = function(slotId) {

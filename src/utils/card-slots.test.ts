@@ -12,6 +12,7 @@ describe('card slots', () => {
     expect(card.custom).toBe(false);
     expect(card.hidden).toBe(false);
     expect(card.html).toContain('data-card-slot="home.summary"');
+    expect(card.html).toContain('data-card-slot-size="md"');
     expect(card.html).toContain('data-card-edit-action="yaml"');
     expect(card.html).toContain('data-slot-id="home.summary"');
     expect(card.html).not.toContain('onclick=');
@@ -36,6 +37,14 @@ describe('card slots', () => {
     expect(card.html).toBe('');
     expect(card.size).toBe('wide');
     expect(card.order).toBe(9);
+  });
+
+  it('exposes the resolved size to nested card slot layouts', () => {
+    const card = resolveSlottedCard({ type: 'custom:hass-dashboard-pro' }, 'home.environment.temperature', '<div>Temperature</div>', 'sm');
+
+    expect(card.html).toContain('data-card-slot="home.environment.temperature"');
+    expect(card.html).toContain('data-card-slot-size="sm"');
+    expect(card.html).toContain('<option value="sm" selected>sm</option>');
   });
 
   it('renders safe custom html-pro-card YAML and preserves declarative bindings', () => {
@@ -400,6 +409,71 @@ describe('card slots', () => {
       expect(rebuiltRoot.listeners[type]).toHaveLength(1);
     });
     expect(windowStub.hdpCardSlotDragReady).toBe(true);
+  });
+
+  it('moves and resizes a nested environment slot without touching its parent section', () => {
+    const slots = ['temperature', 'humidity', 'security'].map(name => ({
+      attrs: { 'data-card-slot': `home.environment.${name}`, 'data-card-slot-size': 'sm' } as Record<string, string>,
+      style: { order: undefined as number | undefined },
+      parentNode: null as any,
+      classList: { contains: (value: string) => value === 'hdp-card-slot' },
+      getAttribute(name: string) { return this.attrs[name] || null; },
+      setAttribute(name: string, value: string) { this.attrs[name] = value; },
+      querySelector: () => null,
+    }));
+    const envGrid: any = {
+      children: slots,
+      insertBefore(current: any, reference: any) {
+        const currentIndex = this.children.indexOf(current);
+        if (currentIndex >= 0) this.children.splice(currentIndex, 1);
+        const referenceIndex = reference ? this.children.indexOf(reference) : -1;
+        if (referenceIndex < 0) this.children.push(current);
+        else this.children.splice(referenceIndex, 0, current);
+      },
+    };
+    slots.forEach(slot => { slot.parentNode = envGrid; });
+
+    const documentStub: any = {
+      readyState: 'loading',
+      addEventListener: () => {},
+      querySelectorAll: (selector: string) => selector === '[data-card-slot]' ? slots : [],
+      getElementById: () => null,
+    };
+    const windowStub: Record<string, any> = {};
+    new Function(
+      'window',
+      'document',
+      'localStorage',
+      'Image',
+      'prompt',
+      'confirm',
+      'location',
+      'setTimeout',
+      'clearTimeout',
+      generateCardSlotEditorJS(),
+    )(
+      windowStub,
+      documentStub,
+      { getItem: () => null, setItem: () => {} },
+      function ImageStub() {},
+      () => null,
+      () => false,
+      { reload: () => {} },
+      setTimeout,
+      clearTimeout,
+    );
+
+    windowStub.hdpMoveCardSlot('home.environment.humidity', 1);
+    windowStub.hdpSetCardSlotSize('home.environment.humidity', 'wide');
+
+    expect(slots.map(slot => slot.getAttribute('data-card-slot'))).toEqual([
+      'home.environment.temperature',
+      'home.environment.security',
+      'home.environment.humidity',
+    ]);
+    expect(slots[2].getAttribute('data-card-slot-size')).toBe('wide');
+    expect(slots[0].getAttribute('data-card-slot-size')).toBe('sm');
+    expect(windowStub.hdpCardEditDraft.cards.slots['home.environment.humidity'].order).toBe(2);
   });
 
   it('cancels pending YAML previews when the owning editor closes', () => {

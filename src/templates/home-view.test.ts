@@ -168,6 +168,52 @@ describe('home view settings', () => {
     expect(html).not.toContain('onclick="hdpShowEnvironmentHistory');
     expect(html).toContain('data-action="show-environment-history" data-metric="humidity"');
     expect(html).not.toContain('onclick="hdpShowEnvironmentHistory');
+    expect(html).toContain('data-card-slot="home.environment.temperature"');
+    expect(html).toContain('data-card-slot="home.environment.humidity"');
+  });
+
+  it('replaces one environment metric without replacing its sibling cards', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        cards: {
+          slots: {
+            'home.environment.temperature': {
+              yaml: [
+                'type: custom:html-pro-card',
+                'content: |',
+                '  <div class="custom-temperature" data-view="home">温度自定义</div>',
+              ].join('\n'),
+            },
+          },
+        },
+      } as any,
+    };
+    const html = buildHomeHTML({
+      ...hass,
+      states: {
+        ...hass.states,
+        'sensor.living_temperature': {
+          entity_id: 'sensor.living_temperature',
+          state: '23.5',
+          attributes: { device_class: 'temperature', unit_of_measurement: '°C' },
+          last_changed: '',
+          last_updated: '',
+        },
+        'sensor.living_humidity': {
+          entity_id: 'sensor.living_humidity',
+          state: '58',
+          attributes: { device_class: 'humidity', unit_of_measurement: '%' },
+          last_changed: '',
+          last_updated: '',
+        },
+      },
+    }, config);
+
+    expect(html).toContain('温度自定义');
+    expect(html).toContain('data-card-slot="home.environment.temperature" data-card-custom="true"');
+    expect(html).toContain('data-card-slot="home.environment.humidity"');
+    expect(html).toContain('data-metric="humidity"');
   });
 
   it('keeps environment info cards structurally valid and visually aligned', () => {
@@ -179,6 +225,7 @@ describe('home view settings', () => {
     expect(securityIconIndex).toBeGreaterThan(-1);
     expect(securityChunk).toContain('</div>');
     expect(securityChunk).not.toContain('</button>');
+    expect(html).toContain('data-card-slot="home.environment.security"');
     expect(html).toContain('background: var(--hdp-surface-card, var(--hdp-card-bg));');
     expect(html).toContain('button.env-item:hover');
     expect(html).toContain('background: var(--hdp-surface-raised, var(--hdp-card-bg));');
@@ -337,6 +384,7 @@ describe('home view settings', () => {
     expect(html).not.toContain('onclick="hdpOpenAutomationConfig()"');
     expect(html).toContain('<button type="button" class="env-item');
     expect(html).toContain('<div class="env-lbl">自动化运行</div>');
+    expect(html).toContain('data-card-slot="home.environment.automations"');
   });
 
   it('keeps the automation configuration entry when every automation is disabled', () => {

@@ -698,11 +698,11 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
   const alarmDisplay = alarm ? escapeHTML(alarm.display) : '';
   const skinCls = cardSkinClass(tokens?.card_style);
 
-  // Build stat items
-  const items: string[] = [];
+  // Each metric is its own slot so users can customize one card without replacing the whole section.
+  const items: SlottedCard[] = [];
 
   if (climate.has_data) {
-    items.push(`<button type="button" class="env-item ${skinCls}" data-action="show-environment-history" data-metric="temperature">
+    items.push(resolveSlottedCard(config, 'home.environment.temperature', `<button type="button" class="env-item ${skinCls}" data-action="show-environment-history" data-metric="temperature">
       <div class="env-icon env-icon--temp">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
       </div>
@@ -710,11 +710,11 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
         <div class="env-val">${climate.avg_temp}</div>
         <div class="env-lbl">室内温度</div>
       </div>
-    </button>`);
+    </button>`, 'sm', 0));
   }
 
   if (climate.has_data && climate.avg_humidity !== '--') {
-    items.push(`<button type="button" class="env-item ${skinCls}" data-action="show-environment-history" data-metric="humidity">
+    items.push(resolveSlottedCard(config, 'home.environment.humidity', `<button type="button" class="env-item ${skinCls}" data-action="show-environment-history" data-metric="humidity">
       <div class="env-icon env-icon--hum">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8 8 4 12 4 16a8 8 0 0 0 16 0c0-4-4-8-8-14z"/></svg>
       </div>
@@ -722,7 +722,7 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
         <div class="env-val">${climate.avg_humidity}</div>
         <div class="env-lbl">室内湿度</div>
       </div>
-    </button>`);
+    </button>`, 'sm', 1));
   }
 
   // Security summary
@@ -731,7 +731,7 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
       ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`
       : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
 
-    items.push(`<div class="env-item ${skinCls}">
+    items.push(resolveSlottedCard(config, 'home.environment.security', `<div class="env-item ${skinCls}">
       <div class="env-icon env-icon--sec">
         ${secIcon}
       </div>
@@ -739,13 +739,13 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
         <div class="env-val">${alarmDisplay}</div>
         <div class="env-lbl">安防状态</div>
       </div>
-    </div>`);
+    </div>`, 'sm', 2));
   }
 
   // Active automations count
   const autoCount = countActiveAutomations(hass);
   if (autoCount > 0) {
-    items.push(`<button type="button" class="env-item ${skinCls}" data-action="open-automation-config">
+    items.push(resolveSlottedCard(config, 'home.environment.automations', `<button type="button" class="env-item ${skinCls}" data-action="open-automation-config">
       <div class="env-icon env-icon--auto">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
       </div>
@@ -753,8 +753,10 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
         <div class="env-val">${autoCount}</div>
         <div class="env-lbl">自动化运行</div>
       </div>
-    </button>`);
+    </button>`, 'sm', 3));
   }
+
+  const renderedItems = sortSlottedCards(items).map(item => item.html).join('');
 
   return {
     type: 'custom:html-pro-card',
@@ -779,6 +781,15 @@ ${generateDesignTokenCSS(tokens)}
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 12px;
   }
+  .env-grid > .hdp-card-slot {
+    min-width: 0;
+    height: 100%;
+  }
+  .env-grid > .hdp-card-slot[data-card-slot-size="sm"] { grid-column: span 1; }
+  .env-grid > .hdp-card-slot[data-card-slot-size="md"],
+  .env-grid > .hdp-card-slot[data-card-slot-size="lg"],
+  .env-grid > .hdp-card-slot[data-card-slot-size="tall"] { grid-column: span 2; }
+  .env-grid > .hdp-card-slot[data-card-slot-size="wide"] { grid-column: 1 / -1; }
   .env-item {
     appearance: none;
     font: inherit;
@@ -840,11 +851,23 @@ ${generateDesignTokenCSS(tokens)}
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  @media (max-width: 720px) {
+    .env-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .env-grid > .hdp-card-slot[data-card-slot-size="wide"] { grid-column: 1 / -1; }
+  }
+  @media (max-width: 420px) {
+    .env-grid { grid-template-columns: minmax(0, 1fr); }
+    .env-grid > .hdp-card-slot[data-card-slot-size="sm"],
+    .env-grid > .hdp-card-slot[data-card-slot-size="md"],
+    .env-grid > .hdp-card-slot[data-card-slot-size="lg"],
+    .env-grid > .hdp-card-slot[data-card-slot-size="tall"],
+    .env-grid > .hdp-card-slot[data-card-slot-size="wide"] { grid-column: 1 / -1; }
+  }
 </style>
 <div class="env-hdr">
   <span class="env-title">家居环境</span>
 </div>
-<div class="env-grid">${items.join('')}</div>`,
+<div class="env-grid">${renderedItems}</div>`,
   };
 }
 
