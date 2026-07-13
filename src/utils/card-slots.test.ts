@@ -763,6 +763,22 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
     });
     expect(parsed.content).not.toContain('title:');
     expect(parsed.content).not.toContain('do_not_parse:');
+
+    const spoofedType = windowStub.testParseSafeHtmlProYaml([
+      'type: entities',
+      'content: |',
+      '  type: custom:html-pro-card',
+      '  <div>Not an html-pro card</div>',
+    ].join('\n'));
+    const wrappedCard = windowStub.testParseSafeHtmlProYaml([
+      'card:',
+      '  type: custom:html-pro-card',
+      '  content: |',
+      '    <div>Wrapped card</div>',
+    ].join('\n'));
+
+    expect(spoofedType).toEqual({ ok: false, error: '仅支持 type: custom:html-pro-card' });
+    expect(wrappedCard).toEqual({ ok: true, content: '<div>Wrapped card</div>' });
   });
 
   it('emits editor CSS and JS for draft-only editing and image theme extraction', () => {

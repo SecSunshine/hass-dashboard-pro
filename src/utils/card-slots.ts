@@ -948,18 +948,61 @@ function hdpPreviewSlotYaml(yaml, scope) {
 function hdpParseSafeHtmlProYaml(yaml) {
   var text = String(yaml || '').replace(/\\r\\n?/g, '\\n');
   var lines = text.split('\\n');
-  var hasSupportedType = lines.some(function(line) {
-    return /^\\s*type:\\s*['"]?custom:html-pro-card['"]?\\s*(?:#.*)?$/.test(line);
-  });
+  var significant = [];
+  for (var lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+    var trimmedLine = lines[lineIndex].trim();
+    if (!trimmedLine || trimmedLine.charAt(0) === '#') continue;
+    var leading = lines[lineIndex].match(/^\\s*/);
+    significant.push({ index: lineIndex, indent: leading ? leading[0].length : 0 });
+  }
+  if (!significant.length) return { ok: false, error: '仅支持 type: custom:html-pro-card' };
+
+  var rootIndent = significant.reduce(function(minimum, entry) {
+    return Math.min(minimum, entry.indent);
+  }, significant[0].indent);
+  var fieldStart = 0;
+  var fieldEnd = lines.length;
+  var fieldIndent = rootIndent;
+  var cardEntry = null;
+  for (var entryIndex = 0; entryIndex < significant.length; entryIndex++) {
+    var entry = significant[entryIndex];
+    if (entry.indent === rootIndent && /^card:\\s*(?:#.*)?$/.test(lines[entry.index].trim())) {
+      cardEntry = entry;
+      break;
+    }
+  }
+  if (cardEntry) {
+    fieldStart = cardEntry.index + 1;
+    fieldIndent = Infinity;
+    for (var childIndex = 0; childIndex < significant.length; childIndex++) {
+      var child = significant[childIndex];
+      if (child.index < fieldStart) continue;
+      if (child.indent <= cardEntry.indent) {
+        fieldEnd = child.index;
+        break;
+      }
+      fieldIndent = Math.min(fieldIndent, child.indent);
+    }
+  }
+  if (!isFinite(fieldIndent)) return { ok: false, error: '仅支持 type: custom:html-pro-card' };
+
+  var hasSupportedType = false;
+  for (var typeIndex = fieldStart; typeIndex < fieldEnd; typeIndex++) {
+    var typeIndentMatch = lines[typeIndex].match(/^\\s*/);
+    var typeIndent = typeIndentMatch ? typeIndentMatch[0].length : 0;
+    if (typeIndent !== fieldIndent || !/^type:/.test(lines[typeIndex].trim())) continue;
+    hasSupportedType = /^type:\\s*['"]?custom:html-pro-card['"]?\\s*(?:#.*)?$/.test(lines[typeIndex].trim());
+    break;
+  }
   if (!hasSupportedType) return { ok: false, error: '仅支持 type: custom:html-pro-card' };
   var unsafeLine = hdpFindUnsafeSlotLine(text);
   if (unsafeLine) return { ok: false, error: '第 ' + unsafeLine + ' 行包含禁止内容：自定义 JS、on* 事件或 javascript URL' };
   var contentLine = -1;
   var contentIndent = -1;
   var folded = false;
-  for (var i = 0; i < lines.length; i++) {
+  for (var i = fieldStart; i < fieldEnd; i++) {
     var match = lines[i].match(/^(\\s*)content:\\s*([|>])\\s*(?:#.*)?$/);
-    if (!match) continue;
+    if (!match || match[1].length !== fieldIndent) continue;
     contentLine = i;
     contentIndent = match[1].length;
     folded = match[2] === '>';
