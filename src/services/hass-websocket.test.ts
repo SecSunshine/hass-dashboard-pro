@@ -78,22 +78,43 @@ return {
 function createRuntimeModalRuntime() {
   const elements = new Map<string, any>();
   const listeners: Record<string, Array<(event: any) => void>> = {};
+  const infoModalStates: boolean[] = [];
+  const hass = {
+    states: {
+      'light.living_room': {
+        state: 'on',
+        attributes: { friendly_name: 'Living Room Light' },
+      },
+    },
+    areas: {},
+    devices: {},
+    entities: {},
+    callService: () => {},
+  };
+  const homeAssistant = {
+    hass,
+    dispatchEvent: () => { infoModalStates.push(elements.has('hdp-device-domain-modal')); },
+  };
   const createElement = () => {
     const attrs: Record<string, string> = {};
+    const nodeListeners: Record<string, Array<(event: any) => void>> = {};
     const node: any = {
       id: '',
       className: '',
       innerHTML: '',
+      listeners: nodeListeners,
       style: { setProperty: () => {} },
       setAttribute: (name: string, value: string) => { attrs[name] = value; },
       getAttribute: (name: string) => attrs[name] ?? null,
-      addEventListener: () => {},
+      addEventListener: (type: string, listener: (event: any) => void) => {
+        (nodeListeners[type] ||= []).push(listener);
+      },
       remove: () => { if (node.id) elements.delete(node.id); },
     };
     return node;
   };
   const document = {
-    querySelector: () => null,
+    querySelector: (selector: string) => selector === 'home-assistant' ? homeAssistant : null,
     querySelectorAll: () => [],
     getElementById: (id: string) => elements.get(id) || null,
     addEventListener: (type: string, listener: (event: any) => void) => {
@@ -107,7 +128,9 @@ function createRuntimeModalRuntime() {
     },
     createElement,
   };
-  const window = {};
+  const window = {
+    dispatchEvent: () => { infoModalStates.push(elements.has('hdp-device-domain-modal')); },
+  };
   const runtime = new Function(
     'document',
     'window',
@@ -118,6 +141,7 @@ function createRuntimeModalRuntime() {
 return {
   openEnvironment: hdpOpenEnvironmentHistoryModal,
   openAutomation: hdpOpenAutomationConfig,
+  openDevice: hdpOpenDeviceDomainModal,
   closeModal: hdpCloseRuntimeModal,
   isEnvironmentRequestCurrent: hdpIsEnvironmentHistoryRequestCurrent
 };`,
@@ -130,10 +154,11 @@ return {
   ) as {
     openEnvironment: (metric: string, sensors: any[], series: any, loading: boolean, requestId: number) => void;
     openAutomation: () => void;
+    openDevice: (domain: string) => void;
     closeModal: (node: any) => void;
     isEnvironmentRequestCurrent: (requestId: number) => boolean;
   };
-  return { runtime, elements, listeners };
+  return { runtime, elements, listeners, infoModalStates };
 }
 
 describe('hass websocket script', () => {
@@ -928,6 +953,24 @@ describe('hass websocket script', () => {
     listeners.keydown[0]({ key: 'Escape' });
     expect(elements.has('hdp-env-history-modal')).toBe(false);
     expect(runtime.isEnvironmentRequestCurrent(42)).toBe(false);
+  });
+
+  it('closes the status popup before opening an entity detail dialog', () => {
+    const { runtime, elements, infoModalStates } = createRuntimeModalRuntime();
+
+    runtime.openDevice('light');
+    const overlay = elements.get('hdp-device-domain-modal');
+    const row = {
+      getAttribute: (name: string) => name === 'data-domain-modal-entity' ? 'light.living_room' : null,
+    };
+    overlay.listeners.click[0]({
+      target: {
+        closest: (selector: string) => selector === '[data-domain-modal-entity]' ? row : null,
+      },
+    });
+
+    expect(elements.has('hdp-device-domain-modal')).toBe(false);
+    expect(infoModalStates).toEqual([false, false]);
   });
 
   it('keeps binary sensor status badge popups scoped to their device class', () => {

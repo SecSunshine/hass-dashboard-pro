@@ -920,7 +920,10 @@ function hdpOpenDeviceDomainModal(domain) {
     }
     var row = e.target.closest('[data-domain-modal-entity]');
     if (!row) return;
-    hdpOpenMoreInfo(row.getAttribute('data-domain-modal-entity'));
+    var entityId = row.getAttribute('data-domain-modal-entity');
+    if (!entityId) return;
+    hdpCloseRuntimeModal(overlay);
+    hdpOpenMoreInfo(entityId);
   });
   hdpBindRuntimeModalEscClose();
   document.body.appendChild(overlay);
