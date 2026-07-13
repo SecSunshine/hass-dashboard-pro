@@ -597,7 +597,7 @@ describe('hass websocket script', () => {
 
   it('builds environment series from wrapped HA history responses', () => {
     const runtime = createHistoryRuntime();
-    const timestampSeconds = Math.floor((Date.now() - 60 * 60 * 1000) / 1000);
+    const timestampSeconds = Math.floor((Date.now() - 90 * 60 * 1000) / 1000);
     const hass = {
       states: {
         'sensor.living_temperature': { state: '22.8', attributes: {} },
@@ -621,6 +621,38 @@ describe('hass websocket script', () => {
     expect(series).toHaveLength(1);
     expect(series[0].area_name).toBe('Living');
     expect(series[0].values.some((value: number | null) => value === 21.5)).toBe(true);
+  });
+
+  it('ignores history points outside the rolling 24-hour window', () => {
+    const runtime = createHistoryRuntime();
+    const now = Date.now();
+    const hass = {
+      states: {
+        'sensor.living_temperature': { state: '22.8', attributes: {} },
+      },
+    };
+    const sensors = [{
+      entity_id: 'sensor.living_temperature',
+      area_id: 'living',
+      area_name: 'Living',
+      unit: 'C',
+    }];
+    const history = {
+      result: [[
+        { entity_id: 'sensor.living_temperature', s: '10', lu: now - 25 * 60 * 60 * 1000 },
+        { entity_id: 'sensor.living_temperature', s: '21.5', lu: now - 2 * 60 * 60 * 1000 },
+        { entity_id: 'sensor.living_temperature', s: '99', lu: now + 60 * 60 * 1000 },
+      ]],
+    };
+
+    const series = runtime.hdpBuildEnvironmentSeries(hass, sensors, history);
+
+    expect(series).toHaveLength(1);
+    expect(series[0].sample_count).toBe(1);
+    expect(series[0].values).toContain(21.5);
+    expect(series[0].values).not.toContain(10);
+    expect(series[0].values).not.toContain(99);
+    expect(series[0].values[23]).toBe(22.8);
   });
 
   it('falls back to current sensor state when history points are unusable', () => {

@@ -548,7 +548,8 @@ function hdpBuildEnvironmentSeries(hass, sensors, history) {
       var value = hdpNormalizeEnvironmentValue(point.state != null ? point.state : point.s, sensor);
       var changed = hdpParseHistoryTimestamp(point);
       if (isNaN(value) || isNaN(changed)) return;
-      var index = Math.max(0, Math.min(23, Math.floor((changed - start) / (60 * 60 * 1000))));
+      var index = Math.floor((changed - start) / (60 * 60 * 1000));
+      if (index < 0 || index > 23) return;
       areas[sensor.area_id].sample_count += 1;
       if (index === 23 && !isNaN(currentValue)) return;
       areas[sensor.area_id].buckets[index].values.push(value);
