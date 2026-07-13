@@ -623,6 +623,30 @@ describe('hass websocket script', () => {
     expect(series[0].values.some((value: number | null) => value === 21.5)).toBe(true);
   });
 
+  it('normalizes flat and entity-wrapped history point collections', () => {
+    const runtime = createHistoryRuntime();
+    const earlier = Math.floor((Date.now() - 3 * 60 * 60 * 1000) / 1000);
+    const later = Math.floor((Date.now() - 2 * 60 * 60 * 1000) / 1000);
+    const sensors = [{ entity_id: 'sensor.living_temperature' }];
+    const flat = [
+      { entity_id: 'sensor.living_temperature', state: '20.5', last_updated: earlier },
+      { s: '21.5', lu: later },
+    ];
+    const wrapped = {
+      result: {
+        entity_id: 'sensor.living_temperature',
+        states: flat,
+      },
+    };
+
+    expect(runtime.hdpNormalizeHistoryByEntity(flat, sensors)).toEqual({
+      'sensor.living_temperature': flat,
+    });
+    expect(runtime.hdpNormalizeHistoryByEntity(wrapped, sensors)).toEqual({
+      'sensor.living_temperature': flat,
+    });
+  });
+
   it('ignores history points outside the rolling 24-hour window', () => {
     const runtime = createHistoryRuntime();
     const now = Date.now();

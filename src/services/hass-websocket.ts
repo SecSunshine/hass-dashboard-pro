@@ -616,6 +616,20 @@ function hdpNormalizeHistoryByEntity(history, sensors) {
   var byEntity = {};
   history = hdpUnwrapHistoryResult(history);
   if (Array.isArray(history)) {
+    var flatPoints = history.length && history.every(function(item) {
+      return item && !Array.isArray(item) && typeof item === 'object' && (item.state != null || item.s != null);
+    });
+    if (flatPoints) {
+      var currentEntityId = sensors.length === 1 ? sensors[0].entity_id : '';
+      history.forEach(function(point) {
+        var explicitEntityId = point.entity_id || point.entityId;
+        if (explicitEntityId) currentEntityId = explicitEntityId;
+        if (!currentEntityId) return;
+        if (!byEntity[currentEntityId]) byEntity[currentEntityId] = [];
+        byEntity[currentEntityId].push(point);
+      });
+      return byEntity;
+    }
     history.forEach(function(item, index) {
       item = hdpUnwrapHistoryResult(item);
       if (item && !Array.isArray(item) && typeof item === 'object') {
@@ -634,6 +648,15 @@ function hdpNormalizeHistoryByEntity(history, sensors) {
       if (entityId) byEntity[entityId] = points;
     });
   } else if (history && typeof history === 'object') {
+    var wrappedPoints = history.states || history.history || history.points;
+    if (Array.isArray(wrappedPoints)) {
+      var wrappedFirst = wrappedPoints[0];
+      var wrappedEntityId = history.entity_id || history.entityId ||
+        (wrappedFirst && (wrappedFirst.entity_id || wrappedFirst.entityId)) ||
+        (sensors.length === 1 ? sensors[0].entity_id : '');
+      if (wrappedEntityId) byEntity[wrappedEntityId] = wrappedPoints;
+      return byEntity;
+    }
     Object.keys(history).forEach(function(entityId) {
       var value = history[entityId];
       if (Array.isArray(value)) byEntity[entityId] = value;
