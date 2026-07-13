@@ -110,6 +110,9 @@ describe('blueprint parser rendering', () => {
           aria-label="Curtain position"
           onchange="alert(1)"
         />
+        <input type="text" value="credential" data-entity="sensor.unsafe_text" />
+        <input type="file" type="range" data-entity="sensor.unsafe_file" />
+        <input type="range" type="file" min="0" max="100" value="30" data-action="cover-position" data-entity="cover.safe_duplicate" />
       `,
     }, 'Curtain');
 
@@ -117,6 +120,12 @@ describe('blueprint parser rendering', () => {
     expect(html).toContain('data-action="cover-position"');
     expect(html).toContain('data-entity="cover.bed_blind"');
     expect(html).not.toContain('onchange');
+    expect(html.match(/<input type="range"/g)).toHaveLength(2);
+    expect(html).not.toContain('<input type="text"');
+    expect(html).not.toContain('<input type="file"');
+    expect(html).not.toContain('type="file"');
+    expect(html).not.toContain('data-entity="sensor.unsafe_text"');
+    expect(html).not.toContain('data-entity="sensor.unsafe_file"');
   });
 
   it('preserves safe inline style declarations and drops unsafe ones', () => {

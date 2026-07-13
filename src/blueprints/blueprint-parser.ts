@@ -462,11 +462,13 @@ function sanitizeTag(tag: string): string {
   if (name === 'style') return '<style>';
 
   const attrs = sanitizeAttributes(rawAttrs || '');
+  if (name === 'input' && !/(?:^| )type="range"(?= |$)/i.test(attrs)) return escapeHTML(tag);
   return attrs ? `<${name} ${attrs}>` : `<${name}>`;
 }
 
 function sanitizeAttributes(rawAttrs: string): string {
   const attrs: string[] = [];
+  const seen = new Set<string>();
   const attrPattern = /([:@a-zA-Z_][:@a-zA-Z0-9_.-]*)(?:\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
   let match: RegExpExecArray | null;
 
@@ -475,6 +477,8 @@ function sanitizeAttributes(rawAttrs: string): string {
     const name = rawName.toLowerCase();
     if (name.startsWith('on')) continue;
     if (!isAllowedAttribute(name)) continue;
+    if (seen.has(name)) continue;
+    seen.add(name);
 
     const rawValue = match[3] ?? match[4] ?? match[5] ?? '';
     const safeValue = sanitizeAttributeValue(name, rawValue);

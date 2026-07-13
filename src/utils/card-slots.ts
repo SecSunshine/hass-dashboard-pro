@@ -1064,11 +1064,13 @@ function hdpSanitizeSlotTag(tag) {
   if (closing) return '</' + name + '>';
   if (name === 'style') return '<style>';
   var attrs = hdpSanitizeSlotAttributes(match[3] || '');
+  if (name === 'input' && !/(?:^| )type="range"(?= |$)/i.test(attrs)) return hdpEscapeSlotText(tag);
   return '<' + name + (attrs ? ' ' + attrs : '') + '>';
 }
 
 function hdpSanitizeSlotAttributes(rawAttrs) {
   var attrs = [];
+  var seenAttrs = {};
   var allowedAttrs = {
     alt:1, class:1, cx:1, cy:1, d:1, fill:1, height:1, href:1, icon:1, id:1,
     max:1, min:1, r:1, role:1, rx:1, ry:1, src:1, step:1, stroke:1, 'stroke-linecap':1,
@@ -1082,6 +1084,8 @@ function hdpSanitizeSlotAttributes(rawAttrs) {
     var name = rawName.toLowerCase();
     if (name.indexOf('on') === 0) continue;
     if (!allowedAttrs[name] && name.indexOf('data-') !== 0 && name.indexOf('aria-') !== 0) continue;
+    if (seenAttrs[name]) continue;
+    seenAttrs[name] = true;
     var value = match[3] != null ? match[3] : match[4] != null ? match[4] : match[5] || '';
     var safeValue = hdpSanitizeSlotAttributeValue(name, value);
     if (safeValue == null) continue;

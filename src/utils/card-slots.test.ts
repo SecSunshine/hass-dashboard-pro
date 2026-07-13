@@ -662,11 +662,15 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
       '<script>alert(1)</script>',
       '<img src="javascript:alert(1)" onerror="evil()">',
       '<a href="https://example.com/path">Safe</a>',
+      '<a href="https://example.com/first" href="https://example.com/second">First link wins</a>',
       '<a href="data:image/svg+xml,%3Csvg%3E">Unsafe data link</a>',
       '<a href="https://example.com/\npath">Control link</a>',
       '<img src="images/status.png" alt="Relative">',
       '<img src="data:image/png;base64,abc" alt="Data image">',
       '<input type="range" min="0" max="100" step="5" value="45" data-action="cover-position" data-entity="cover.bed_blind" onchange="evil()">',
+      '<input type="text" value="credential" data-entity="sensor.unsafe_text">',
+      '<input type="file" type="range" data-entity="sensor.unsafe_file">',
+      '<input type="range" type="file" value="30" data-entity="cover.safe_duplicate">',
       '<div tabindex="9">Bad focus order</div>',
       '</section>',
     ].join(''));
@@ -700,11 +704,19 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
     expect(sanitized).toContain('style="color: red; padding: 8px"');
     expect(sanitized).toContain('#hdp-slot-preview .bp-html-card .safe {');
     expect(sanitized).toContain('href="https://example.com/path"');
+    expect(sanitized).toContain('<a href="https://example.com/first">First link wins</a>');
+    expect(sanitized).not.toContain('https://example.com/second');
     expect(sanitized).not.toContain('href="data:image/');
     expect(sanitized).toContain('<a>Control link</a>');
     expect(sanitized).toContain('src="images/status.png"');
     expect(sanitized).toContain('src="data:image/png;base64,abc"');
     expect(sanitized).toContain('<input type="range" min="0" max="100" step="5" value="45" data-action="cover-position" data-entity="cover.bed_blind">');
+    expect(sanitized.match(/<input type="range"/g)).toHaveLength(2);
+    expect(sanitized).not.toContain('<input type="text"');
+    expect(sanitized).not.toContain('<input type="file"');
+    expect(sanitized).not.toContain('type="file"');
+    expect(sanitized).not.toContain('data-entity="sensor.unsafe_text"');
+    expect(sanitized).not.toContain('data-entity="sensor.unsafe_file"');
   });
 
   it('parses only the indented YAML content block for editor previews', () => {
