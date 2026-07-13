@@ -4,6 +4,7 @@ import {
   buildAreaSummaries,
   buildHomeProfile,
   collectVisibleEntities,
+  countVisibleDevices,
   getConfiguredAreaOrder,
   getConfiguredHiddenAreas,
   getConfiguredHiddenDeviceTypes,
@@ -402,5 +403,12 @@ describe('dashboard model', () => {
     };
 
     expect(buildHomeProfile(hass, config).device_count).toBe(1);
+  });
+
+  it('counts visible entity device ids before the device registry is available', () => {
+    const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
+    const entities = collectVisibleEntities(hass, getDashboardFilters(config));
+
+    expect(countVisibleDevices({ ...hass, devices: {} }, entities)).toBe(2);
   });
 });

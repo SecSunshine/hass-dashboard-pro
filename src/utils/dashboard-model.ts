@@ -415,7 +415,7 @@ export function countVisibleDevices(hass: Hass, entities: EntityInfo[]): number 
   const deviceIds = new Set<string>();
   for (const entity of entities) {
     const deviceId = hass.entities?.[entity.entity_id]?.device_id;
-    if (deviceId && hass.devices?.[deviceId]) deviceIds.add(deviceId);
+    if (deviceId) deviceIds.add(deviceId);
   }
   return deviceIds.size;
 }
