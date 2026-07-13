@@ -404,12 +404,13 @@ function hdpFindEnvironmentSensors(hass, metric) {
     var stateObj = hass.states[entityId];
     if (!stateObj || !stateObj.attributes) return;
     var attrs = stateObj.attributes;
-    var deviceClass = attrs.device_class || '';
+    var deviceClass = String(attrs.device_class || '').toLowerCase();
     var unit = attrs.unit_of_measurement || '';
     var lowerId = entityId.toLowerCase();
+    var semanticName = lowerId + ' ' + String(attrs.friendly_name || '').toLowerCase();
     var isMetric = metric === 'humidity'
-      ? (deviceClass === 'humidity' || unit === '%' || lowerId.indexOf('humidity') >= 0 || lowerId.indexOf('humid') >= 0)
-      : (deviceClass === 'temperature' || hdpIsTemperatureUnit(unit) || lowerId.indexOf('temperature') >= 0 || lowerId.indexOf('temp') >= 0);
+      ? (deviceClass === 'humidity' || (!deviceClass && (semanticName.indexOf('humidity') >= 0 || semanticName.indexOf('humid') >= 0 || semanticName.indexOf('湿度') >= 0)))
+      : (deviceClass === 'temperature' || (!deviceClass && (hdpIsTemperatureUnit(unit) || semanticName.indexOf('temperature') >= 0 || semanticName.indexOf('temp') >= 0 || semanticName.indexOf('温度') >= 0)));
     if (!isMetric) return;
     if (lowerId.indexOf('outdoor') >= 0 || lowerId.indexOf('weather') >= 0 || lowerId.indexOf('external') >= 0) return;
     var area = hdpResolveEntityArea(hass, entityId);

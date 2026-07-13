@@ -638,6 +638,14 @@ describe('hass websocket script', () => {
           state: 'unavailable',
           attributes: { friendly_name: 'Energy Total', device_class: 'energy', unit_of_measurement: 'kWh' },
         },
+        'sensor.living_temperature_battery': {
+          state: '55',
+          attributes: { friendly_name: 'Living Temperature Battery', device_class: 'battery', unit_of_measurement: '%' },
+        },
+        'sensor.legacy_environment': {
+          state: '48',
+          attributes: { friendly_name: '客厅湿度', unit_of_measurement: '%' },
+        },
       },
       areas: {},
       devices: {},
@@ -647,8 +655,9 @@ describe('hass websocket script', () => {
     expect(runtime.hdpFindEnvironmentSensors(hass, 'temperature').map(sensor => sensor.entity_id)).toEqual([
       'sensor.living_temperature',
     ]);
-    expect(runtime.hdpFindEnvironmentSensors(hass, 'humidity').map(sensor => sensor.entity_id)).toEqual([
+    expect(runtime.hdpFindEnvironmentSensors(hass, 'humidity').map(sensor => sensor.entity_id).sort()).toEqual([
       'sensor.bedroom_humidity',
+      'sensor.legacy_environment',
     ]);
   });
 
