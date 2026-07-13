@@ -75,7 +75,7 @@ describe('card slots', () => {
               yaml: [
                 'type: custom:html-pro-card',
                 'content: |',
-                '  <button data-entity="$entity$" data-action="more-info" aria-label="$name$">',
+                '  <button data-entity="$entity$" data-action="more-info" aria-label="$name$" title="$area$">',
                 '    $name$ · $state$ · $area$ · $domain$',
                 '  </button>',
               ].join('\n'),
@@ -102,6 +102,8 @@ describe('card slots', () => {
 
     expect(card.html).toContain('data-entity="sensor.kitchen_temperature"');
     expect(card.html).toContain('data-action="more-info"');
+    expect(card.html).toContain('aria-label="&lt;img src=x onerror=alert(1)&gt;"');
+    expect(card.html).toContain('title="Kitchen &amp; Dining"');
     expect(card.html).toContain('&lt;img src=x onerror=alert(1)&gt;');
     expect(card.html).toContain('22.2°C');
     expect(card.html).toContain('Kitchen &amp; Dining');
@@ -658,7 +660,7 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
 
     const sanitized = windowStub.testSanitizeSlotHTML([
       '<style>@import "evil.css"; @font-face { font-family: Tracker; src: url(https://tracker.test/font.woff2) } @keyframes pulse { from { opacity:.5 } 50% { opacity:1 } to { opacity:.5 } } :host { color: red } .safe { display: grid; animation: pulse 1s ease infinite; animation-name: pulse; background-image: url(https://tracker.test/pixel) } .mask { mask-image: image-set(url(https://tracker.test/mask.png) 1x); padding: 4px } @media (max-width:600px) { .responsive-preview, :host.compact { display:flex } } .bad { width: expression(alert(1)) }</style>',
-      '<section class="safe" data-entity="light.kitchen" data-action="toggle" role="button" tabindex="0" aria-label="Kitchen" onclick="evil()" style="color:red;background:url(evil);padding:8px">',
+      '<section class="safe" data-entity="light.kitchen" data-action="toggle" role="button" tabindex="0" aria-label="Kitchen &amp; Dining" onclick="evil()" style="color:red;background:url(evil);padding:8px">',
       '<script>alert(1)</script>',
       '<img src="javascript:alert(1)" onerror="evil()">',
       '<a href="https://example.com/path">Safe</a>',
@@ -698,7 +700,8 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
     expect(sanitized).not.toContain('background:');
     expect(sanitized).toContain('data-entity="light.kitchen"');
     expect(sanitized).toContain('data-action="toggle"');
-    expect(sanitized).toContain('aria-label="Kitchen"');
+    expect(sanitized).toContain('aria-label="Kitchen &amp; Dining"');
+    expect(sanitized).not.toContain('Kitchen &amp;amp; Dining');
     expect(sanitized).toContain('tabindex="0"');
     expect(sanitized).not.toContain('tabindex="9"');
     expect(sanitized).toContain('style="color: red; padding: 8px"');

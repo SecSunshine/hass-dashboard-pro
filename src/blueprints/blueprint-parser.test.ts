@@ -95,6 +95,18 @@ describe('blueprint parser rendering', () => {
     expect(html).not.toContain('tabindex="9"');
   });
 
+  it('does not double-escape safe entities in attributes', () => {
+    const html = cardConfigToHTML({
+      type: 'custom:html-pro-card',
+      content: '<button title="Kitchen &amp; Dining" aria-label="&lt;Status&gt; & live">Open</button>',
+    }, 'Attribute entities');
+
+    expect(html).toContain('title="Kitchen &amp; Dining"');
+    expect(html).toContain('aria-label="&lt;Status&gt; &amp; live"');
+    expect(html).not.toContain('&amp;amp;');
+    expect(html).not.toContain('&amp;lt;');
+  });
+
   it('keeps safe range controls for declarative entity actions', () => {
     const html = cardConfigToHTML({
       type: 'custom:html-pro-card',

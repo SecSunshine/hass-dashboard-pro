@@ -1107,10 +1107,10 @@ function hdpSanitizeSlotAttributeValue(name, value) {
     if (name === 'href' && scheme && !/^https?$/i.test(scheme[1])) return null;
     if (scheme && !/^https?$/i.test(scheme[1]) && !/^data$/i.test(scheme[1])) return null;
     if (scheme && /^data$/i.test(scheme[1]) && !/^data:image\\//i.test(schemeProbe)) return null;
-    return hdpEscapeSlotText(url);
+    return hdpEscapeSlotAttribute(url);
   }
   if (name === 'style') return hdpSanitizeSlotStyle(value);
-  return hdpEscapeSlotText(value);
+  return hdpEscapeSlotAttribute(value);
 }
 
 function hdpSanitizeSlotStyle(value) {
@@ -1121,7 +1121,7 @@ function hdpSanitizeSlotStyle(value) {
     var rawValue = declaration.slice(separator + 1).trim();
     if (!/^(?:--)?[a-zA-Z][a-zA-Z0-9-]*$/.test(property)) return '';
     if (/javascript\\s*:|expression\\s*\\(|behavior\\s*:|@import|url\\s*\\(/i.test(rawValue)) return '';
-    return rawValue ? property + ': ' + hdpEscapeSlotText(rawValue) : '';
+    return rawValue ? property + ': ' + hdpEscapeSlotAttribute(rawValue) : '';
   }).filter(Boolean).join('; ');
 }
 
@@ -1219,6 +1219,12 @@ function hdpScopeSlotCSS(css) {
 
 function hdpEscapeSlotText(value) {
   return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) {
+    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+  });
+}
+
+function hdpEscapeSlotAttribute(value) {
+  return String(value == null ? '' : value).replace(/&(?!(?:amp|lt|gt|quot|#39);)|[<>"']/g, function(ch) {
     return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
   });
 }

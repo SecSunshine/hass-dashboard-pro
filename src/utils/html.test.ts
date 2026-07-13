@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   escapeAttribute,
+  escapeAttributePreservingEntities,
   escapeHTML,
   escapeJSONAttribute,
   escapeLinkURLAttribute,
@@ -17,6 +18,8 @@ describe('html escaping helpers', () => {
 
   it('escapes attributes', () => {
     expect(escapeAttribute(`a" onclick="evil()`)).toBe('a&quot; onclick=&quot;evil()');
+    expect(escapeAttributePreservingEntities('Kitchen &amp; Dining <North>')).toBe('Kitchen &amp; Dining &lt;North&gt;');
+    expect(escapeAttributePreservingEntities('A & B &unknown;')).toBe('A &amp; B &amp;unknown;');
   });
 
   it('escapes JSON attributes', () => {
@@ -43,6 +46,7 @@ describe('html escaping helpers', () => {
 
   it('keeps link URLs on the http boundary and rejects image data URLs', () => {
     expect(escapeLinkURLAttribute('https://example.com/a?x=1&y=2')).toBe('https://example.com/a?x=1&amp;y=2');
+    expect(escapeLinkURLAttribute('https://example.com/a?x=1&amp;y=2')).toBe('https://example.com/a?x=1&amp;y=2');
     expect(sanitizeLinkURL('/config/dashboard')).toBe('/config/dashboard');
     expect(sanitizeLinkURL('#details')).toBe('#details');
     expect(sanitizeLinkURL('data:image/svg+xml,%3Csvg%3E')).toBe('');

@@ -27,7 +27,15 @@
  */
 
 import type { BlueprintDefinition, BlueprintMeta, BlueprintInput, BlueprintInputType, LovelaceCardConfig } from '../types';
-import { escapeAttribute, escapeHTML, escapeInlineStyleValue, escapeJSONAttribute, escapeLinkURLAttribute, escapeURLAttribute } from '../utils/html';
+import {
+  escapeAttribute,
+  escapeAttributePreservingEntities,
+  escapeHTML,
+  escapeInlineStyleValue,
+  escapeJSONAttribute,
+  escapeLinkURLAttribute,
+  escapeURLAttribute,
+} from '../utils/html';
 
 // ─── YAML Parser (Simple Subset) ────────────────────────────────────────────
 
@@ -503,7 +511,7 @@ function sanitizeAttributeValue(name: string, value: string): string | null {
     return safe || null;
   }
   if (name === 'style') return sanitizeStyleAttribute(value);
-  return escapeAttribute(value);
+  return escapeAttributePreservingEntities(value);
 }
 
 function sanitizeStyleAttribute(value: string): string {
@@ -525,7 +533,7 @@ function sanitizeStyleAttribute(value: string): string {
     })
     .filter(Boolean);
 
-  return escapeAttribute(safeDeclarations.join('; '));
+  return escapeAttributePreservingEntities(safeDeclarations.join('; '));
 }
 
 function stripCSSResourceLoads(css: string): string {

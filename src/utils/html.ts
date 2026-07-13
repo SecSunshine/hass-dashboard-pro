@@ -18,6 +18,13 @@ export function escapeAttribute(value: unknown): string {
   return escapeHTML(value);
 }
 
+export function escapeAttributePreservingEntities(value: unknown): string {
+  return String(value ?? '').replace(
+    /&(?!(?:amp|lt|gt|quot|#39);)|[<>"']/g,
+    char => HTML_ESCAPE_MAP[char],
+  );
+}
+
 export function escapeJSONAttribute(value: unknown): string {
   return escapeAttribute(JSON.stringify(value ?? null));
 }
@@ -52,7 +59,7 @@ export function sanitizeImageURL(value: unknown): string {
 }
 
 export function escapeURLAttribute(value: unknown): string {
-  return escapeAttribute(sanitizeImageURL(value));
+  return escapeAttributePreservingEntities(sanitizeImageURL(value));
 }
 
 export function sanitizeLinkURL(value: unknown): string {
@@ -70,7 +77,7 @@ export function sanitizeLinkURL(value: unknown): string {
 }
 
 export function escapeLinkURLAttribute(value: unknown): string {
-  return escapeAttribute(sanitizeLinkURL(value));
+  return escapeAttributePreservingEntities(sanitizeLinkURL(value));
 }
 
 export function escapeInlineStyleValue(value: unknown): string {
