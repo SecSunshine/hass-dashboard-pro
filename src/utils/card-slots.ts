@@ -114,7 +114,7 @@ export function getCardSlotCSS(): string {
     position: relative;
     z-index: 1;
   }
-  .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-card-slot {
+  .hdp-root--card-edit .hdp-view .hdp-card-slot {
     outline: 2px dashed color-mix(in srgb, var(--hdp-primary) 60%, transparent);
     outline-offset: -4px;
   }
@@ -146,7 +146,8 @@ export function getCardSlotCSS(): string {
     box-shadow: var(--hdp-shadow-card);
     backdrop-filter: blur(12px);
   }
-  .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-slot-edit-panel {
+  .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-slot-edit-panel,
+  .hdp-root--card-edit .hdp-view .hdp-slot-edit-panel {
     display: flex;
   }
   .hdp-slot-edit-panel button,
@@ -575,12 +576,12 @@ function hdpClosestCardEditControl(e) {
 
 function hdpClosestHomeEditControl(e) {
   if (e && e.target && e.target.closest) {
-    var direct = e.target.closest('.hdp-home-edit-bar [data-action]');
+    var direct = e.target.closest('.hdp-home-edit-bar [data-action], .hdp-card-edit-bar [data-action]');
     if (direct) return direct;
   }
   var path = e && typeof e.composedPath === 'function' ? e.composedPath() : [];
   for (var i = 0; i < path.length; i++) {
-    if (path[i] && path[i].matches && path[i].matches('.hdp-home-edit-bar [data-action]')) return path[i];
+    if (path[i] && path[i].matches && path[i].matches('.hdp-home-edit-bar [data-action], .hdp-card-edit-bar [data-action]')) return path[i];
   }
   return null;
 }
@@ -629,8 +630,8 @@ window.hdpToggleCardEditMode = function(force) {
   if (!root) return;
   var editing = typeof force === 'boolean' ? force : !root.classList.contains('hdp-root--card-edit');
   root.classList.toggle('hdp-root--card-edit', editing);
-  var bar = document.querySelector('.hdp-home-edit-bar');
-  if (bar) bar.setAttribute('data-editing', editing ? 'true' : 'false');
+  var bars = document.querySelectorAll('.hdp-card-edit-bar');
+  for (var i = 0; i < bars.length; i++) bars[i].setAttribute('data-editing', editing ? 'true' : 'false');
   hdpSetHomeCardDraggable(editing);
   hdpInitCardSlotDragging(root);
 };

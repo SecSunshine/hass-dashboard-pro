@@ -71,14 +71,16 @@ export function buildLayoutCard(opts: LayoutCardOptions): LovelaceCardConfig {
     : '';
   const settingsScript = showSettings ? settingsJS || '' : '';
   const cardSlotEditorScript = showSettings ? generateCardSlotEditorJS() : '';
-  const homeEditBarHTML = showSettings
-    ? `<div class="hdp-home-edit-bar" data-editing="false">
-      <button type="button" data-action="enter-card-edit">编辑首页</button>
-      <button type="button" data-action="manage-hidden-cards">管理隐藏</button>
+  const buildCardEditBar = (label: string, includeHiddenManagement = false) => showSettings
+    ? `<div class="${includeHiddenManagement ? 'hdp-home-edit-bar hdp-card-edit-bar' : 'hdp-card-edit-bar'}" data-editing="false">
+      <button type="button" data-action="enter-card-edit">${escapeHTML(label)}</button>
+      ${includeHiddenManagement ? '<button type="button" data-action="manage-hidden-cards">管理隐藏</button>' : ''}
       <button type="button" class="hdp-primary" data-action="save-card-edits">保存并应用</button>
       <button type="button" data-action="cancel-card-edits">取消</button>
     </div>`
     : '';
+  const homeEditBarHTML = buildCardEditBar('编辑首页', true);
+  const pageEditBarHTML = buildCardEditBar('编辑此页');
   const themeStudioHTML = showSettings ? buildThemeStudioHTML(tokens, hass, config) : '';
   const themeStudioJS = showSettings ? generateThemeStudioJS() : '';
   const blueprintAdminHTML = showSettings ? buildImportModalHTML() : '';
@@ -104,6 +106,7 @@ export function buildLayoutCard(opts: LayoutCardOptions): LovelaceCardConfig {
       <div class="hdp-area-header-bar">
         <span class="hdp-area-title">${escapeHTML(a.area_name)}</span>
       </div>
+      ${pageEditBarHTML}
       <div class="hdp-area-content">${a.html}</div>
     </div>`
   ).join('');
@@ -187,7 +190,7 @@ ${generateDesignTokenCSS(tokens)}
   .hdp-view {
     animation: hdpFadeIn 0.2s ease;
   }
-  .hdp-home-edit-bar {
+  .hdp-card-edit-bar {
     display: flex;
     justify-content: flex-end;
     align-items: center;
@@ -195,12 +198,12 @@ ${generateDesignTokenCSS(tokens)}
     margin-bottom: 12px;
     min-width: 0;
   }
-  .hdp-home-edit-bar[data-editing="false"] [data-action="save-card-edits"],
-  .hdp-home-edit-bar[data-editing="false"] [data-action="cancel-card-edits"],
-  .hdp-home-edit-bar[data-editing="false"] [data-action="manage-hidden-cards"] {
+  .hdp-card-edit-bar[data-editing="false"] [data-action="save-card-edits"],
+  .hdp-card-edit-bar[data-editing="false"] [data-action="cancel-card-edits"],
+  .hdp-card-edit-bar[data-editing="false"] [data-action="manage-hidden-cards"] {
     display: none;
   }
-  .hdp-home-edit-bar[data-editing="true"] [data-action="enter-card-edit"] {
+  .hdp-card-edit-bar[data-editing="true"] [data-action="enter-card-edit"] {
     display: none;
   }
   @keyframes hdpFadeIn {
@@ -235,6 +238,7 @@ ${generateDesignTokenCSS(tokens)}
       <div class="hdp-area-header-bar">
         <span class="hdp-area-title">全部设备</span>
       </div>
+      ${pageEditBarHTML}
       <div class="hdp-area-content">${devicesHTML}</div>
     </div>
     ${areaViewSections}

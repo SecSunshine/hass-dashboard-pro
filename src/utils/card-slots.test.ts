@@ -1025,7 +1025,7 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
     const css = getCardSlotCSS();
     const js = generateCardSlotEditorJS();
 
-    expect(css).toContain('.hdp-root--card-edit .hdp-view[data-view="home"] .hdp-slot-edit-panel');
+    expect(css).toContain('.hdp-root--card-edit .hdp-view .hdp-slot-edit-panel');
     expect(css).toContain('.hdp-bento--dragging');
     expect(css).toContain('.hdp-card-slot--draft-hidden');
     expect(css).toContain('.hdp-card-slot--theme-ready');
