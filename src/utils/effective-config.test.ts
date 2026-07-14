@@ -65,6 +65,22 @@ describe('effective config', () => {
     expect(effective.hdp_config?.permissions?.restrict_non_admin).toBe(true);
   });
 
+  it('keeps locally saved dashboard imagery after a successful sync', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => key === 'hdp_config'
+        ? JSON.stringify({ dashboard: { avatar_url: '/local/me.png', background_image_url: '/local/home.jpg' } })
+        : null,
+    });
+    const effective = getEffectiveStrategyConfig({
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: { dashboard: { name: 'Home', avatar_url: '', background_image_url: '' } } as any,
+    });
+
+    expect(effective.hdp_config?.dashboard?.avatar_url).toBe('/local/me.png');
+    expect(effective.hdp_config?.dashboard?.background_image_url).toBe('/local/home.jpg');
+    expect(effective.hdp_config?.dashboard?.name).toBe('Home');
+  });
+
   it('does not let a pending local config override server permissions', () => {
     vi.stubGlobal('localStorage', {
       getItem: (key: string) => key === 'hdp_config_pending_sync'

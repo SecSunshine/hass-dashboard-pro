@@ -13,7 +13,16 @@ export function getEffectiveHDPConfig(config: StrategyConfig): Partial<HDPConfig
   const strategyConfig = config.hdp_config || {};
   if (!localConfig) return Object.keys(strategyConfig).length ? strategyConfig : config.hdp_config;
   if (!Object.keys(strategyConfig).length) return localConfig;
-  if (!isLocalHDPConfigPending()) return strategyConfig;
+  if (!isLocalHDPConfigPending()) {
+    // Dashboard images are browser-local presentation settings. Keep the user's
+    // latest saved avatar/background even while HA serves a cached strategy.
+    const localDashboard = localConfig.dashboard;
+    if (!localDashboard || typeof localDashboard !== 'object') return strategyConfig;
+    const dashboard = { ...(strategyConfig.dashboard || {}) };
+    if ('avatar_url' in localDashboard) dashboard.avatar_url = localDashboard.avatar_url;
+    if ('background_image_url' in localDashboard) dashboard.background_image_url = localDashboard.background_image_url;
+    return { ...strategyConfig, dashboard };
+  }
   const merged = deepMerge(strategyConfig, localConfig) as Partial<HDPConfig>;
   if (strategyConfig.permissions) merged.permissions = strategyConfig.permissions;
   return merged;
