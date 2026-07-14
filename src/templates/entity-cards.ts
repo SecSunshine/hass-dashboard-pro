@@ -684,8 +684,20 @@ export function getDomainCardCSS(): string {
     font-size: 14px;
     cursor: pointer;
   }
+  .dc-text-input {
+    width: 100%;
+    min-height: 42px;
+    padding: 0 12px;
+    border: 1px solid var(--hdp-border);
+    border-radius: var(--hdp-radius-sm, 8px);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
+    color: var(--hdp-text);
+    font: inherit;
+    font-size: 14px;
+  }
   .dc-number-range:focus-visible,
-  .dc-select-control:focus-visible {
+  .dc-select-control:focus-visible,
+  .dc-text-input:focus-visible {
     outline: 2px solid var(--hdp-primary);
     outline-offset: 2px;
   }
@@ -765,6 +777,9 @@ export function buildDomainCard(entity: EntityInfo, stateObj: HassEntity | undef
     case 'select':
     case 'input_select':
       return buildSelectCard(entity, stateObj, skin);
+    case 'text':
+    case 'input_text':
+      return buildTextCard(entity, stateObj, skin);
     default:
       return null;
   }
@@ -1106,6 +1121,31 @@ function buildSelectCard(entity: EntityInfo, stateObj: HassEntity, skin?: string
   </div>`;
 }
 
+function buildTextCard(entity: EntityInfo, stateObj: HassEntity, skin?: string): string {
+  const attrs = stateObj.attributes || {};
+  const value = stateObj.state;
+  const available = isEntityAvailable(value);
+  const skinCls = skin ? cardSkinClass(skin) : '';
+  const entityId = escapeAttribute(entity.entity_id);
+  const maxLength = parseOptionalNumber(attrs.max) ?? parseOptionalNumber(attrs.max_length);
+  const maxLengthAttr = maxLength != null && maxLength > 0 ? ` maxlength="${escapeAttribute(String(Math.floor(maxLength)))}"` : '';
+
+  return `<div class="dvc dc-control-card dc-value-card dc-text ${skinCls}" data-entity="${entityId}" data-no-toggle>
+    <div class="dvc-bar"></div>
+    <div class="dc-control-head">
+      <div class="dvc-ico ${available ? 'dvc-ico--on' : 'dvc-ico--off'}">${getTextIcon()}</div>
+      <div class="dvc-info">
+        <div class="dvc-name">${escapeHTML(entity.name)}</div>
+        <div class="dvc-state">${available ? '文本输入' : escapeHTML(value)}</div>
+      </div>
+    </div>
+    <div class="dc-control-section">
+      <input type="text" class="dc-text-input" value="${escapeAttribute(value)}"${maxLengthAttr}
+        data-entity="${entityId}" data-action="text-set" aria-label="设置 ${escapeAttribute(entity.name)} 文本" ${available ? '' : 'disabled'} />
+    </div>
+  </div>`;
+}
+
 function buildVacuumCard(entity: EntityInfo, stateObj: HassEntity, skin?: string): string {
   const currentState = stateObj.state;
   const isActive = currentState === 'cleaning' || currentState === 'returning';
@@ -1181,4 +1221,8 @@ function getNumberIcon(): string {
 
 function getSelectIcon(): string {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="m8 10 4 4 4-4"/></svg>`;
+}
+
+function getTextIcon(): string {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><path d="M4 6h16M4 18h8"/><path d="M8 6v12M16 6v6"/></svg>`;
 }

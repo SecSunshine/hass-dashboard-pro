@@ -310,6 +310,31 @@ function hdpApplySelectOption(hass, entityId, option) {
   }
 }
 
+function hdpSetTextValue(entityId, value) {
+  var hass = hdpFindHass();
+  if (!hass || !hass.callService) { hdpShowToast('Text control is unavailable', 'error'); return; }
+  var domain = entityId.split('.')[0];
+  if (domain !== 'text' && domain !== 'input_text') return;
+  var nextValue = String(value == null ? '' : value);
+  var stateObj = hass.states && hass.states[entityId];
+  var attrs = stateObj && stateObj.attributes || {};
+  var maxLength = parseInt(attrs.max != null ? attrs.max : attrs.max_length, 10);
+  if (!isNaN(maxLength) && maxLength > 0) nextValue = nextValue.slice(0, maxLength);
+  hdpCallEntityService(hass, domain, 'set_value', { entity_id: entityId, value: nextValue }, entityId, 'Text value could not be set', {
+    onSuccess: function() { hdpApplyTextValue(hass, entityId, nextValue); }
+  });
+}
+
+function hdpApplyTextValue(hass, entityId, value) {
+  var stateObj = hass && hass.states && hass.states[entityId];
+  if (stateObj) stateObj.state = value;
+  var cards = document.querySelectorAll('[data-entity="' + entityId + '"]');
+  for (var i = 0; i < cards.length; i++) {
+    var input = cards[i].querySelector('.dc-text-input');
+    if (input) input.value = value;
+  }
+}
+
 function hdpCoverAction(entityId, action) {
   var hass = hdpFindHass();
   if (!hass || !hass.callService) { hdpShowToast('无法连接到 Home Assistant', 'error'); return; }
@@ -1207,7 +1232,7 @@ function hdpHandleDomainControl(control) {
     hdpSetClimateFanMode(entityId, control.getAttribute('data-fan-mode') || 'auto');
     return true;
   }
-  if (action === 'cover-position' || action === 'media-volume' || action === 'number-set' || action === 'select-option') return false;
+  if (action === 'cover-position' || action === 'media-volume' || action === 'number-set' || action === 'select-option' || action === 'text-set') return false;
   var domainAction = '';
   if (action.indexOf('cover-') === 0) {
     domainAction = action.substring('cover-'.length);
@@ -1345,8 +1370,14 @@ function hdpInitEntityClickHandlers() {
     }
     control = hdpClosestFromEvent(e, '[data-action="select-option"]');
     entityId = hdpEntityIdFromControl(control);
+    if (control && entityId) {
+      hdpSetSelectOption(entityId, control.value);
+      return;
+    }
+    control = hdpClosestFromEvent(e, '[data-action="text-set"]');
+    entityId = hdpEntityIdFromControl(control);
     if (!control || !entityId) return;
-    hdpSetSelectOption(entityId, control.value);
+    hdpSetTextValue(entityId, control.value);
   }, true);
 }
 `;

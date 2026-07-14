@@ -69,6 +69,16 @@ const selectEntity: EntityInfo = {
   area_name: 'Living Room',
 };
 
+const textEntity: EntityInfo = {
+  entity_id: 'text.guest_note',
+  name: 'Guest Note',
+  domain: 'text',
+  icon: null,
+  state: 'Welcome home',
+  unit: null,
+  area_name: 'Living Room',
+};
+
 describe('domain entity cards', () => {
   it('renders climate controls as declarative buttons', () => {
     const html = buildDomainCard(climateEntity, climateState);
@@ -219,6 +229,23 @@ describe('domain entity cards', () => {
     expect(html).not.toContain('data-action="toggle"');
   });
 
+  it('renders text entities as a declarative text input', () => {
+    const html = buildDomainCard(textEntity, {
+      entity_id: textEntity.entity_id,
+      state: 'Welcome home',
+      attributes: { max: 120 },
+      last_changed: '',
+      last_updated: '',
+    });
+
+    expect(html).toContain('dc-value-card dc-text');
+    expect(html).toContain('class="dc-text-input"');
+    expect(html).toContain('data-action="text-set"');
+    expect(html).toContain('maxlength="120"');
+    expect(html).toContain('value="Welcome home"');
+    expect(html).not.toContain('data-action="toggle"');
+  });
+
   it('normalizes domain-card button appearance', () => {
     const css = getDomainCardCSS();
 
@@ -258,5 +285,6 @@ describe('domain entity cards', () => {
     expect(css).toContain('.dvc.dc-control-card');
     expect(css).toContain('.dc-number-range');
     expect(css).toContain('.dc-select-control');
+    expect(css).toContain('.dc-text-input');
   });
 });
