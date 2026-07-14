@@ -56,6 +56,8 @@ export function getDomainCardCSS(): string {
   .dc-climate-temp-btn:focus-visible,
   .dc-climate-mode:focus-visible,
   .dc-climate-fan-btn:focus-visible,
+  .dc-fan-power:focus-visible,
+  .dc-fan-preset:focus-visible,
   .dc-cover-btn:focus-visible,
   .dc-cover-slider:focus-visible,
   .dc-lock-btn:focus-visible,
@@ -336,6 +338,53 @@ export function getDomainCardCSS(): string {
   }
   .dc-climate-fan-btn--active:hover {
     color: var(--hdp-text-inverse, var(--primary-background-color, Canvas));
+  }
+
+  /* ── Fan Card ── */
+  .dc-fan {
+    border-color: color-mix(in srgb, var(--hdp-success) 22%, var(--hdp-border));
+  }
+  .dc-fan .dc-control-chip-value { color: var(--hdp-success); }
+  .dc-fan-power {
+    appearance: none;
+    width: 100%;
+    min-height: 40px;
+    border: 1px solid var(--hdp-border);
+    border-radius: var(--hdp-radius-sm, 8px);
+    background: var(--hdp-control-bg, var(--hdp-card-bg));
+    color: var(--hdp-text);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 750;
+    cursor: pointer;
+  }
+  .dc-fan-power--on {
+    background: var(--hdp-success);
+    border-color: var(--hdp-success);
+    color: var(--hdp-text-inverse, Canvas);
+  }
+  .dc-fan-presets {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(68px, 1fr));
+    gap: 6px;
+  }
+  .dc-fan-preset {
+    appearance: none;
+    min-height: 34px;
+    padding: 6px 8px;
+    border: 1px solid var(--hdp-border);
+    border-radius: var(--hdp-radius-sm, 8px);
+    background: var(--hdp-control-bg, var(--hdp-card-bg));
+    color: var(--hdp-text-secondary);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .dc-fan-preset--active {
+    border-color: var(--hdp-success);
+    background: var(--hdp-success-light);
+    color: var(--hdp-success);
   }
 
   /* ── Cover Card ── */
@@ -763,6 +812,8 @@ export function buildDomainCard(entity: EntityInfo, stateObj: HassEntity | undef
   switch (entity.domain) {
     case 'climate':
       return buildAccessibleClimateCard(entity, stateObj, skin);
+    case 'fan':
+      return buildFanCard(entity, stateObj, skin);
     case 'cover':
       return buildCoverCard(entity, stateObj, skin);
     case 'lock':
@@ -885,6 +936,35 @@ function buildAccessibleClimateCard(entity: EntityInfo, stateObj: HassEntity, sk
       <div class="dc-climate-modes">${modePills}</div>
     </div>
     ${fanPills}
+  </div>`;
+}
+
+function buildFanCard(entity: EntityInfo, stateObj: HassEntity, skin?: string): string {
+  const attrs = stateObj.attributes || {};
+  const active = stateObj.state === 'on';
+  const available = isEntityAvailable(stateObj.state);
+  const percentage = Math.max(0, Math.min(100, parseOptionalNumber(attrs.percentage) ?? (active ? 100 : 0)));
+  const presetMode = typeof attrs.preset_mode === 'string' ? attrs.preset_mode : '';
+  const presetModes = normalizeStringArray(attrs.preset_modes, []);
+  const skinCls = skin ? cardSkinClass(skin) : '';
+  const entityId = escapeAttribute(entity.entity_id);
+  const presetHTML = presetModes.length
+    ? `<div class="dc-control-section"><div class="dc-control-section-label"><span>预设模式</span></div><div class="dc-fan-presets">${presetModes.map(mode => `<button type="button" class="dc-fan-preset ${mode === presetMode ? 'dc-fan-preset--active' : ''}" data-entity="${entityId}" data-action="fan-preset" data-preset="${escapeAttribute(mode)}" aria-pressed="${mode === presetMode ? 'true' : 'false'}">${escapeHTML(mode)}</button>`).join('')}</div></div>`
+    : '';
+
+  return `<div class="dvc dc-control-card dc-fan ${skinCls}" data-entity="${entityId}" data-no-toggle>
+    <div class="dvc-bar"></div>
+    <div class="dc-control-head">
+      <div class="dvc-ico ${active ? 'dvc-ico--on' : 'dvc-ico--off'}">${getFanIcon(active)}</div>
+      <div class="dvc-info"><div class="dvc-name">${escapeHTML(entity.name)}</div><div class="dvc-state"><span class="dvc-dot ${active ? 'dvc-dot--on' : 'dvc-dot--off'}"></span>${active ? '运行中' : available ? '已关闭' : escapeHTML(stateObj.state)}</div></div>
+      <div class="dc-control-chip"><div class="dc-control-chip-value">${percentage}%</div><div class="dc-control-chip-label">风速</div></div>
+    </div>
+    <div class="dc-control-section">
+      <button type="button" class="dc-fan-power ${active ? 'dc-fan-power--on' : ''}" data-entity="${entityId}" data-action="fan-toggle" aria-pressed="${active ? 'true' : 'false'}">${active ? '关闭风扇' : '开启风扇'}</button>
+      <input type="range" class="dc-number-range dc-fan-slider" min="0" max="100" step="1" value="${percentage}" data-entity="${entityId}" data-action="fan-percentage" aria-label="设置 ${escapeAttribute(entity.name)} 风速" ${available ? '' : 'disabled'} />
+      <div class="dc-number-limits"><span>0%</span><span>100%</span></div>
+    </div>
+    ${presetHTML}
   </div>`;
 }
 
@@ -1213,6 +1293,10 @@ function getMediaIcon(active: boolean): string {
 
 function getVacuumIcon(active: boolean): string {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"${active ? ` fill="${c}" opacity="0.3"` : ''}/></svg>`;
+}
+
+function getFanIcon(active: boolean): string {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><circle cx="12" cy="12" r="2"${active ? ` fill="${c}"` : ''}/><path d="M12 10c-1-4 1-7 4-7 2 0 3 2 2 4-1 3-4 4-6 3ZM14 12c4-1 7 1 7 4 0 2-2 3-4 2-3-1-4-4-3-6ZM10 14c1 4-1 7-4 7-2 0-3-2-2-4 1-3 4-4 6-3Z"/></svg>`;
 }
 
 function getNumberIcon(): string {

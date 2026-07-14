@@ -206,6 +206,10 @@ describe('hass websocket script', () => {
     expect(js).toContain('if (domainControl && hdpHandleDomainControl(domainControl))');
     expect(js).toContain("if (action === 'more-info')");
     expect(js).toContain("hdpSetClimateMode(entityId, control.getAttribute('data-mode') || 'auto');");
+    expect(js).toContain('function hdpSetFanPercentage(entityId, rawPercentage)');
+    expect(js).toContain("hdpCallEntityService(hass, 'fan', 'set_percentage'");
+    expect(js).toContain('function hdpSetFanPreset(entityId, preset)');
+    expect(js).toContain("hdpCallEntityService(hass, 'fan', 'set_preset_mode'");
     expect(js).toContain('var current = parseFloat(stateObj.attributes && stateObj.attributes.temperature);');
     expect(js).toContain('var step = parseFloat(delta);');
     expect(js).toContain('if (isNaN(current)) current = 24;');
@@ -218,7 +222,7 @@ describe('hass websocket script', () => {
     expect(js).toContain("function hdpCallCoverService(hass, entityId, service, fallbackService, data, fallbackData)");
     expect(js).toContain("supported_features");
     expect(js).toContain("tilt_position: value");
-    expect(js).toContain("if (action === 'cover-position' || action === 'media-volume' || action === 'number-set' || action === 'select-option' || action === 'text-set') return false;");
+    expect(js).toContain("if (action === 'cover-position' || action === 'media-volume' || action === 'number-set' || action === 'select-option' || action === 'text-set' || action === 'fan-percentage') return false;");
     expect(js).toContain('function hdpSetNumberValue(entityId, rawValue)');
     expect(js).toContain("domain !== 'number' && domain !== 'input_number'");
     expect(js).toContain("hdpCallEntityService(hass, domain, 'set_value'");
@@ -231,6 +235,7 @@ describe('hass websocket script', () => {
     expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"number-set\"]')");
     expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"select-option\"]')");
     expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"text-set\"]')");
+    expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"fan-percentage\"]')");
     expect(js).toContain('hdpCoverAction(entityId, domainAction);');
     expect(js).toContain("hdpDomainActionAllowed('cover', domainAction)");
     expect(js).toContain("hdpDomainActionAllowed('lock', domainAction)");

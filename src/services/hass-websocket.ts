@@ -251,6 +251,39 @@ function hdpSetClimateFanMode(entityId, fanMode) {
   hdpCallEntityService(hass, 'climate', 'set_fan_mode', { entity_id: entityId, fan_mode: fanMode }, entityId, '\u98ce\u901f\u5207\u6362\u5931\u8d25');
 }
 
+function hdpSetFanPercentage(entityId, rawPercentage) {
+  var hass = hdpFindHass();
+  if (!hass || !hass.callService) { hdpShowToast('Fan control is unavailable', 'error'); return; }
+  var value = Math.max(0, Math.min(100, Math.round(parseFloat(rawPercentage))));
+  if (isNaN(value)) return;
+  hdpCallEntityService(hass, 'fan', 'set_percentage', { entity_id: entityId, percentage: value }, entityId, 'Fan speed could not be set', {
+    onSuccess: function() { hdpApplyFanPercentage(hass, entityId, value); }
+  });
+}
+
+function hdpApplyFanPercentage(hass, entityId, percentage) {
+  var stateObj = hass && hass.states && hass.states[entityId];
+  if (stateObj) {
+    stateObj.state = percentage > 0 ? 'on' : 'off';
+    if (!stateObj.attributes) stateObj.attributes = {};
+    stateObj.attributes.percentage = percentage;
+  }
+  var cards = document.querySelectorAll('[data-entity="' + entityId + '"]');
+  for (var i = 0; i < cards.length; i++) {
+    var card = cards[i];
+    var slider = card.querySelector('.dc-fan-slider');
+    if (slider) slider.value = String(percentage);
+    var valueLabel = card.querySelector('.dc-control-chip-value');
+    if (valueLabel) valueLabel.textContent = percentage + '%';
+  }
+}
+
+function hdpSetFanPreset(entityId, preset) {
+  var hass = hdpFindHass();
+  if (!hass || !hass.callService) { hdpShowToast('Fan control is unavailable', 'error'); return; }
+  hdpCallEntityService(hass, 'fan', 'set_preset_mode', { entity_id: entityId, preset_mode: preset }, entityId, 'Fan preset could not be set');
+}
+
 // ── Cover Controls ──
 function hdpSetNumberValue(entityId, rawValue) {
   var hass = hdpFindHass();
@@ -1232,7 +1265,15 @@ function hdpHandleDomainControl(control) {
     hdpSetClimateFanMode(entityId, control.getAttribute('data-fan-mode') || 'auto');
     return true;
   }
-  if (action === 'cover-position' || action === 'media-volume' || action === 'number-set' || action === 'select-option' || action === 'text-set') return false;
+  if (action === 'fan-toggle') {
+    hdpToggleEntity(entityId);
+    return true;
+  }
+  if (action === 'fan-preset') {
+    hdpSetFanPreset(entityId, control.getAttribute('data-preset') || '');
+    return true;
+  }
+  if (action === 'cover-position' || action === 'media-volume' || action === 'number-set' || action === 'select-option' || action === 'text-set' || action === 'fan-percentage') return false;
   var domainAction = '';
   if (action.indexOf('cover-') === 0) {
     domainAction = action.substring('cover-'.length);
@@ -1345,15 +1386,23 @@ function hdpInitEntityClickHandlers() {
     }
     control = hdpClosestFromEvent(e, '[data-action="number-set"]');
     entityId = hdpEntityIdFromControl(control);
-    if (!control || !entityId) return;
-    var card = control.closest ? control.closest('[data-entity]') : null;
-    var valueLabel = card && card.querySelector ? card.querySelector('.dc-control-chip-value') : null;
-    if (valueLabel) {
-      var hass = hdpFindHass();
-      var stateObj = hass && hass.states && hass.states[entityId];
-      var unit = stateObj && stateObj.attributes && stateObj.attributes.unit_of_measurement || '';
-      valueLabel.textContent = String(control.value) + (unit ? ' ' + unit : '');
+    if (control && entityId) {
+      var card = control.closest ? control.closest('[data-entity]') : null;
+      var valueLabel = card && card.querySelector ? card.querySelector('.dc-control-chip-value') : null;
+      if (valueLabel) {
+        var hass = hdpFindHass();
+        var stateObj = hass && hass.states && hass.states[entityId];
+        var unit = stateObj && stateObj.attributes && stateObj.attributes.unit_of_measurement || '';
+        valueLabel.textContent = String(control.value) + (unit ? ' ' + unit : '');
+      }
+      return;
     }
+    control = hdpClosestFromEvent(e, '[data-action="fan-percentage"]');
+    entityId = hdpEntityIdFromControl(control);
+    if (!control || !entityId) return;
+    card = control.closest ? control.closest('[data-entity]') : null;
+    valueLabel = card && card.querySelector ? card.querySelector('.dc-control-chip-value') : null;
+    if (valueLabel) valueLabel.textContent = String(control.value) + '%';
   }, true);
   document.addEventListener('change', function(e) {
     var control = hdpClosestFromEvent(e, '[data-action="cover-position"]');
@@ -1376,8 +1425,14 @@ function hdpInitEntityClickHandlers() {
     }
     control = hdpClosestFromEvent(e, '[data-action="text-set"]');
     entityId = hdpEntityIdFromControl(control);
+    if (control && entityId) {
+      hdpSetTextValue(entityId, control.value);
+      return;
+    }
+    control = hdpClosestFromEvent(e, '[data-action="fan-percentage"]');
+    entityId = hdpEntityIdFromControl(control);
     if (!control || !entityId) return;
-    hdpSetTextValue(entityId, control.value);
+    hdpSetFanPercentage(entityId, control.value);
   }, true);
 }
 `;

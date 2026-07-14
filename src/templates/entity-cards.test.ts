@@ -79,6 +79,16 @@ const textEntity: EntityInfo = {
   area_name: 'Living Room',
 };
 
+const fanEntity: EntityInfo = {
+  entity_id: 'fan.bedroom',
+  name: 'Bedroom Fan',
+  domain: 'fan',
+  icon: null,
+  state: 'on',
+  unit: null,
+  area_name: 'Bedroom',
+};
+
 describe('domain entity cards', () => {
   it('renders climate controls as declarative buttons', () => {
     const html = buildDomainCard(climateEntity, climateState);
@@ -246,6 +256,26 @@ describe('domain entity cards', () => {
     expect(html).not.toContain('data-action="toggle"');
   });
 
+  it('renders fan entities with power, percentage and preset controls', () => {
+    const html = buildDomainCard(fanEntity, {
+      entity_id: fanEntity.entity_id,
+      state: 'on',
+      attributes: { percentage: 60, preset_mode: 'natural', preset_modes: ['normal', 'natural', 'sleep'] },
+      last_changed: '',
+      last_updated: '',
+    });
+
+    expect(html).toContain('dc-control-card dc-fan');
+    expect(html).toContain('data-action="fan-toggle"');
+    expect(html).toContain('data-action="fan-percentage"');
+    expect(html).toContain('class="dc-number-range dc-fan-slider"');
+    expect(html).toContain('value="60"');
+    expect(html).toContain('data-action="fan-preset"');
+    expect(html).toContain('data-preset="natural"');
+    expect(html).toContain('dc-fan-preset--active');
+    expect(html).not.toContain('data-action="toggle"');
+  });
+
   it('normalizes domain-card button appearance', () => {
     const css = getDomainCardCSS();
 
@@ -286,5 +316,7 @@ describe('domain entity cards', () => {
     expect(css).toContain('.dc-number-range');
     expect(css).toContain('.dc-select-control');
     expect(css).toContain('.dc-text-input');
+    expect(css).toContain('.dc-fan-power');
+    expect(css).toContain('.dc-fan-presets');
   });
 });
