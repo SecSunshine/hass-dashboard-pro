@@ -188,4 +188,26 @@ describe('area view', () => {
     expect(html).toContain('data-card-custom="true"');
     expect(html).not.toContain('class="ec-name">Power Meter With An Extremely Long Friendly Name');
   });
+
+  it('lets one area entity override its domain card slot', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: { cards: { slots: {
+        'entity.sensor.kitchen_temperature': {
+          yaml: [
+            'type: custom:html-pro-card',
+            'content: |',
+            '  <button class="custom-temperature" data-entity="$entity$" data-action="more-info">$name$：$state$</button>',
+          ].join('\n'),
+        },
+      } } } as any,
+    };
+
+    const html = buildAreaHTML('Kitchen With A Very Long Area Name', entities, hass, undefined, undefined, config);
+    expect(html).toContain('data-card-slot="entity.sensor.kitchen_temperature" data-card-custom="true"');
+    expect(html).toContain('class="custom-temperature"');
+    expect(html).toContain('Kitchen Temperature：22.2°C');
+    expect(html).toContain('data-card-slot="entity.sensor.power_meter"');
+    expect(html).not.toContain('data-card-custom="true" data-card-slot="entity.sensor.power_meter"');
+  });
 });

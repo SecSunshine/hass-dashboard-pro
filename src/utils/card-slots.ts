@@ -52,6 +52,25 @@ export function resolveSlottedCard(
   };
 }
 
+/**
+ * Prefer a card's stable entity slot while preserving existing domain-wide
+ * customizations for users who configured them before entity-level editing.
+ */
+export function resolveSlottedCardWithFallback(
+  config: StrategyConfig,
+  slotId: string,
+  fallbackSlotId: string,
+  defaultHTML: string,
+  defaultSize: BentoSize,
+  defaultOrder = 0,
+  context?: CardSlotContext,
+): SlottedCard {
+  const resolvedSlotId = getCardSlot(config, slotId) || !getCardSlot(config, fallbackSlotId)
+    ? slotId
+    : fallbackSlotId;
+  return resolveSlottedCard(config, resolvedSlotId, defaultHTML, defaultSize, defaultOrder, context);
+}
+
 export function getCardSlot(config: StrategyConfig, slotId: string): CardSlotConfig | undefined {
   const slot = config.hdp_config?.cards?.slots?.[slotId];
   return slot && typeof slot === 'object' && !Array.isArray(slot) ? slot : undefined;

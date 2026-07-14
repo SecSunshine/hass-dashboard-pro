@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { StrategyConfig } from '../types';
-import { generateCardSlotEditorJS, getCardSlotCSS, resolveSlottedCard, sortSlottedCards } from './card-slots';
+import { generateCardSlotEditorJS, getCardSlotCSS, resolveSlottedCard, resolveSlottedCardWithFallback, sortSlottedCards } from './card-slots';
 
 describe('card slots', () => {
   it('wraps default cards with stable slot metadata', () => {
@@ -18,6 +18,39 @@ describe('card slots', () => {
     expect(card.html).not.toContain('onclick=');
     expect(card.html).not.toContain('onchange=');
     expect(card.html).toContain('<div>Default</div>');
+  });
+
+  it('prefers an entity slot and falls back to a legacy domain slot', () => {
+    const domainConfig: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: { cards: { slots: { 'entity.domain.light': { enabled: false } } } } as any,
+    };
+    const domainCard = resolveSlottedCardWithFallback(
+      domainConfig,
+      'entity.light.kitchen_counter',
+      'entity.domain.light',
+      '<div>Default</div>',
+      'md',
+    );
+    expect(domainCard.slotId).toBe('entity.domain.light');
+    expect(domainCard.hidden).toBe(true);
+
+    const entityConfig: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: { cards: { slots: {
+        'entity.light.kitchen_counter': { enabled: true },
+        'entity.domain.light': { enabled: false },
+      } } } as any,
+    };
+    const entityCard = resolveSlottedCardWithFallback(
+      entityConfig,
+      'entity.light.kitchen_counter',
+      'entity.domain.light',
+      '<div>Default</div>',
+      'md',
+    );
+    expect(entityCard.slotId).toBe('entity.light.kitchen_counter');
+    expect(entityCard.hidden).toBe(false);
   });
 
   it('honors hidden, size and order slot settings', () => {

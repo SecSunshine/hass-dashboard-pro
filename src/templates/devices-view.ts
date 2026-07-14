@@ -23,7 +23,7 @@ import { buildDomainCard, getDomainCardCSS } from './entity-cards';
 import { collectVisibleEntities, getDashboardFilters } from '../utils/dashboard-model';
 import { escapeAttribute, escapeHTML } from '../utils/html';
 import { cardSkinClass, sanitizeCardSkin } from '../utils/card-skin';
-import { resolveSlottedCard, sortSlottedCards, type SlottedCard } from '../utils/card-slots';
+import { resolveSlottedCard, resolveSlottedCardWithFallback, sortSlottedCards, type SlottedCard } from '../utils/card-slots';
 import { formatTemperatureCelsius, isTemperatureUnit, normalizeTemperatureToCelsius } from '../utils/temperature';
 
 // ─── Main Export ────────────────────────────────────────────────────────────
@@ -406,7 +406,7 @@ function buildDeviceEntityCard(entity: EntityInfo, skin?: string, hass?: Hass, c
   }
 
   if (generated) {
-    return resolveSlottedCard(config || { type: 'custom:hass-dashboard-pro' }, `entity.domain.${entity.domain}`, generated, 'md', 0, slotContext).html;
+    return resolveSlottedCardWithFallback(config || { type: 'custom:hass-dashboard-pro' }, `entity.${entity.entity_id}`, `entity.domain.${entity.domain}`, generated, 'md', 0, slotContext).html;
   }
 
   // Default card for light, switch, fan, sensor, etc.
@@ -444,7 +444,7 @@ function buildDeviceEntityCard(entity: EntityInfo, skin?: string, hass?: Hass, c
       ${rightHTML}
     </div>
   </div>`;
-  return resolveSlottedCard(config || { type: 'custom:hass-dashboard-pro' }, `entity.domain.${entity.domain}`, generated, 'md', 0, slotContext).html;
+  return resolveSlottedCardWithFallback(config || { type: 'custom:hass-dashboard-pro' }, `entity.${entity.entity_id}`, `entity.domain.${entity.domain}`, generated, 'md', 0, slotContext).html;
 }
 
 // ─── Domain Color Map ───────────────────────────────────────────────────────

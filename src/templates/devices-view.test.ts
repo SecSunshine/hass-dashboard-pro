@@ -257,4 +257,25 @@ describe('devices view', () => {
     expect(html).toContain('data-card-custom="true"');
     expect(html).not.toContain('class="dvc-name">Power Meter With An Extremely Long Friendly Name');
   });
+
+  it('lets one device entity override its domain card slot', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: { cards: { slots: {
+        'entity.switch.a_active': {
+          yaml: [
+            'type: custom:html-pro-card',
+            'content: |',
+            '  <button class="custom-switch" data-entity="$entity$" data-action="toggle">$name$：$state$</button>',
+          ].join('\n'),
+        },
+      } } } as any,
+    };
+
+    const html = buildDevicesHTML(hass, config);
+    expect(html).toContain('data-card-slot="entity.switch.a_active" data-card-custom="true"');
+    expect(html).toContain('class="custom-switch"');
+    expect(html).toContain('A Active Switch：开启');
+    expect(html).toContain('data-card-slot="entity.switch.z_inactive"');
+  });
 });
