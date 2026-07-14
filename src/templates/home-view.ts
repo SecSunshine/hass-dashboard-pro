@@ -248,8 +248,22 @@ export function buildHomeHTML(hass: Hass, config: StrategyConfig, tokens?: Resol
     }
   }
 
+  const customSlotIds = Object.keys(config.hdp_config?.cards?.slots || {})
+    .filter(slotId => slotId.startsWith('home.custom.') && Boolean(config.hdp_config?.cards?.slots?.[slotId]?.yaml))
+    .sort();
+  for (let index = 0; index < customSlotIds.length; index++) {
+    const slotId = customSlotIds[index];
+    sections.push(resolveSlottedCard(
+      config,
+      slotId,
+      '<div class="hdp-custom-card-placeholder">自定义卡片</div>',
+      'md',
+      100 + index,
+    ));
+  }
+
   return sortSlottedCards(sections)
-    .map(card => bentoWrap(card.html, card.size))
+    .map(card => bentoWrap(card.html, card.size, card.gridSpan))
     .join('\n');
 }
 /**

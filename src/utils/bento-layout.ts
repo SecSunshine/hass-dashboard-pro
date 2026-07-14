@@ -90,6 +90,11 @@ export function generateBentoCSS(): string {
   }
 
   /* ── Home Layout Presets ── */
+  .hdp-home-content--custom .hdp-bento[data-hdp-bento-custom="true"] {
+    grid-column: span var(--hdp-bento-column-span) !important;
+    grid-row: span var(--hdp-bento-row-span) !important;
+  }
+
   .hdp-home-content--rows .hdp-bento {
     grid-column: 1 / -1;
     grid-row: span 1;
@@ -154,6 +159,10 @@ export function generateBentoCSS(): string {
       grid-column: span 2;
       grid-row: span 1;
     }
+    .hdp-home-content--custom .hdp-bento[data-hdp-bento-custom="true"] {
+      grid-column: span var(--hdp-bento-tablet-column-span) !important;
+      grid-row: span var(--hdp-bento-row-span) !important;
+    }
     .hdp-home-content--l_shape .hdp-bento:nth-child(1),
     .hdp-home-content--l_mirror .hdp-bento:nth-child(1) {
       grid-column: span 2;
@@ -177,6 +186,10 @@ export function generateBentoCSS(): string {
       grid-column: span 1;
       grid-row: span 1;
     }
+    .hdp-home-content--custom .hdp-bento[data-hdp-bento-custom="true"] {
+      grid-column: span 1 !important;
+      grid-row: span 1 !important;
+    }
     .hdp-home-content--l_shape .hdp-bento,
     .hdp-home-content--l_mirror .hdp-bento,
     .hdp-home-content--u_shape .hdp-bento,
@@ -188,6 +201,11 @@ export function generateBentoCSS(): string {
   `;
 }
 
+export interface BentoGridSpan {
+  columns: number;
+  rows: number;
+}
+
 // ─── HTML Wrapper ──────────────────────────────────────────────────────────
 
 /**
@@ -197,8 +215,11 @@ export function generateBentoCSS(): string {
  * @param size   Bento size class (sm/md/lg/wide/tall)
  * @returns      Wrapped HTML: `<div class="hdp-bento hdp-bento--{size}">{html}</div>`
  */
-export function bentoWrap(html: string, size: BentoSize): string {
-  return `<div class="hdp-bento hdp-bento--${size}">${html}</div>`;
+export function bentoWrap(html: string, size: BentoSize, span?: BentoGridSpan): string {
+  if (!span) return `<div class="hdp-bento hdp-bento--${size}">${html}</div>`;
+  const columns = sanitizeGridSpan(span.columns, 1, 4);
+  const rows = sanitizeGridSpan(span.rows, 1, 6);
+  return `<div class="hdp-bento hdp-bento--${size}" data-hdp-bento-custom="true" style="--hdp-bento-column-span: ${columns}; --hdp-bento-tablet-column-span: ${Math.min(columns, 2)}; --hdp-bento-row-span: ${rows};">${html}</div>`;
 }
 
 // ─── Card Size Resolution ──────────────────────────────────────────────────
@@ -251,6 +272,20 @@ export function sanitizeBentoSize(value: unknown, fallback: BentoSize = 'md'): B
   return typeof value === 'string' && VALID_SIZES.has(value as BentoSize)
     ? value as BentoSize
     : fallback;
+}
+
+export function sanitizeGridSpan(value: unknown, min: number, max: number): number {
+  const numeric = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
+  if (!Number.isFinite(numeric)) return min;
+  return Math.max(min, Math.min(max, Math.round(numeric)));
+}
+
+export function resolveBentoGridSpan(columns: unknown, rows: unknown, size: BentoSize): BentoGridSpan {
+  const preset = BENTO_SIZES[size];
+  return {
+    columns: columns == null ? preset.colDesktop : sanitizeGridSpan(columns, 1, 4),
+    rows: rows == null ? preset.rowDesktop : sanitizeGridSpan(rows, 1, 6),
+  };
 }
 
 export function sanitizeLayoutDensity(value: unknown, fallback: LayoutDensity = 'standard'): LayoutDensity {

@@ -175,9 +175,15 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
   }
   .dv-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--hdp-card-gap, 12px);
     min-width: 0;
+  }
+  @media (max-width: 1100px) {
+    .dv-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 760px) {
+    .dv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   @media (max-width: 480px) {
     .dv-grid { grid-template-columns: minmax(0, 1fr); }

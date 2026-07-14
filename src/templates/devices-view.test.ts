@@ -116,9 +116,10 @@ describe('devices view', () => {
   it('uses overflow-safe device grids and cards', () => {
     const html = buildDevicesHTML(hass, { type: 'custom:hass-dashboard-pro' });
 
-    expect(html).toContain('grid-template-columns: repeat(auto-fit, minmax(180px, 1fr))');
+    expect(html).toContain('grid-template-columns: repeat(4, minmax(0, 1fr))');
+    expect(html).toContain('grid-template-columns: repeat(3, minmax(0, 1fr))');
+    expect(html).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))');
     expect(html).toContain('grid-template-columns: minmax(0, 1fr)');
-    expect(html).not.toContain('grid-template-columns: repeat(2, minmax(0, 1fr))');
     expect(html).toContain('.dv-grid');
     expect(html).toContain('min-width: 0');
     expect(html).toContain('flex: 0 1 45%');

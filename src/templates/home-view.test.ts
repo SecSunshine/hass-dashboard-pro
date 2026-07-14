@@ -622,4 +622,33 @@ describe('home view settings', () => {
     expect(html).not.toContain('data-card-slot="home.people"');
     expect(html).not.toContain('Bob');
   });
+
+  it('renders saved standalone custom cards with their explicit grid span', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        home: { layout_preset: 'custom' },
+        cards: { slots: {
+          'home.custom.weather-wall': {
+            order: -3,
+            grid_columns: 3,
+            grid_rows: 2,
+            yaml: [
+              'type: custom:html-pro-card',
+              'content: |',
+              '  <section class="weather-wall" data-view="home">Custom weather wall</section>',
+            ].join('\n'),
+          },
+        } },
+      } as any,
+    };
+
+    const html = buildHomeHTML(hass, config);
+
+    expect(html).toContain('data-card-slot="home.custom.weather-wall" data-card-custom="true"');
+    expect(html).toContain('Custom weather wall');
+    expect(html).toContain('data-hdp-bento-custom="true"');
+    expect(html).toContain('--hdp-bento-column-span: 3');
+    expect(html).toContain('--hdp-bento-row-span: 2');
+  });
 });

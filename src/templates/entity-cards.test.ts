@@ -49,6 +49,26 @@ const coverState: HassEntity = {
   last_updated: '',
 };
 
+const numberEntity: EntityInfo = {
+  entity_id: 'number.heating_target',
+  name: 'Heating Target',
+  domain: 'number',
+  icon: null,
+  state: '21.5',
+  unit: '°C',
+  area_name: 'Living Room',
+};
+
+const selectEntity: EntityInfo = {
+  entity_id: 'select.air_purifier_mode',
+  name: 'Air Purifier Mode',
+  domain: 'select',
+  icon: null,
+  state: 'auto',
+  unit: null,
+  area_name: 'Living Room',
+};
+
 describe('domain entity cards', () => {
   it('renders climate controls as declarative buttons', () => {
     const html = buildDomainCard(climateEntity, climateState);
@@ -162,6 +182,43 @@ describe('domain entity cards', () => {
     expect(html).not.toContain('value="100"');
   });
 
+  it('renders number entities as a declarative range control', () => {
+    const html = buildDomainCard(numberEntity, {
+      entity_id: numberEntity.entity_id,
+      state: '21.5',
+      attributes: { min: 16, max: 30, step: 0.5, unit_of_measurement: '°C' },
+      last_changed: '',
+      last_updated: '',
+    });
+
+    expect(html).toContain('dc-value-card dc-number');
+    expect(html).toContain('class="dc-number-range"');
+    expect(html).toContain('data-action="number-set"');
+    expect(html).toContain('min="16"');
+    expect(html).toContain('max="30"');
+    expect(html).toContain('step="0.5"');
+    expect(html).toContain('value="21.5"');
+    expect(html).toContain('21.5 °C');
+    expect(html).not.toContain('data-action="toggle"');
+  });
+
+  it('renders select entities as a declarative select control', () => {
+    const html = buildDomainCard(selectEntity, {
+      entity_id: selectEntity.entity_id,
+      state: 'auto',
+      attributes: { options: ['auto', 'sleep', 'turbo'] },
+      last_changed: '',
+      last_updated: '',
+    });
+
+    expect(html).toContain('dc-value-card dc-select');
+    expect(html).toContain('class="dc-select-control"');
+    expect(html).toContain('data-action="select-option"');
+    expect(html).toContain('<option value="auto" selected>auto</option>');
+    expect(html).toContain('<option value="sleep" >sleep</option>');
+    expect(html).not.toContain('data-action="toggle"');
+  });
+
   it('normalizes domain-card button appearance', () => {
     const css = getDomainCardCSS();
 
@@ -196,5 +253,10 @@ describe('domain entity cards', () => {
     expect(css).toContain('.dc-vacuum-btn');
     expect(css).toContain('text-align: center;');
     expect(css).toContain('.dvc[data-no-toggle]');
+    expect(css).toContain('min-height: 88px;');
+    expect(css).toContain('display: flex;');
+    expect(css).toContain('.dvc.dc-control-card');
+    expect(css).toContain('.dc-number-range');
+    expect(css).toContain('.dc-select-control');
   });
 });

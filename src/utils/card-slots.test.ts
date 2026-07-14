@@ -72,6 +72,18 @@ describe('card slots', () => {
     expect(card.order).toBe(9);
   });
 
+  it('resolves explicit card grid spans while preserving legacy size presets', () => {
+    const card = resolveSlottedCard({
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: { cards: { slots: {
+        'home.summary': { size: 'wide', grid_columns: 3, grid_rows: 4 },
+      } } } as any,
+    }, 'home.summary', '<div>Default</div>', 'md');
+
+    expect(card.size).toBe('wide');
+    expect(card.gridSpan).toEqual({ columns: 3, rows: 4 });
+  });
+
   it('exposes the resolved size to nested card slot layouts', () => {
     const card = resolveSlottedCard({ type: 'custom:hass-dashboard-pro' }, 'home.environment.temperature', '<div>Temperature</div>', 'sm');
 
@@ -1037,8 +1049,11 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
     expect(css).toContain('background: var(--hdp-control-bg, var(--hdp-card-bg))');
     expect(css).toContain('background: var(--hdp-control-bg-hover, var(--hdp-primary-light))');
     expect(css).toContain('[data-card-edit-action="drag"]');
+    expect(css).toContain('.hdp-slot-grid-input');
     expect(css).toContain('touch-action: none;');
     expect(js).toContain('window.hdpToggleCardEditMode = function');
+    expect(js).toContain('window.hdpSetCardSlotGridSpan = function(slotId, columns, rows)');
+    expect(js).toContain("draft.home.layout_preset = 'custom';");
     expect(js).toContain("if (typeof hdpApplyThemeVarsToOverlay === 'function') hdpApplyThemeVarsToOverlay(modal);");
     expect(js).toContain('function hdpInitCardSlotEditorActions');
     expect(js).toContain("document.addEventListener('click'");

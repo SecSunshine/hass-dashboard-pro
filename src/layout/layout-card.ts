@@ -71,15 +71,16 @@ export function buildLayoutCard(opts: LayoutCardOptions): LovelaceCardConfig {
     : '';
   const settingsScript = showSettings ? settingsJS || '' : '';
   const cardSlotEditorScript = showSettings ? generateCardSlotEditorJS() : '';
-  const buildCardEditBar = (label: string, includeHiddenManagement = false) => showSettings
+  const buildCardEditBar = (label: string, includeHiddenManagement = false, allowAddCard = false) => showSettings
     ? `<div class="${includeHiddenManagement ? 'hdp-home-edit-bar hdp-card-edit-bar' : 'hdp-card-edit-bar'}" data-editing="false">
       <button type="button" data-action="enter-card-edit">${escapeHTML(label)}</button>
+      ${allowAddCard ? '<button type="button" data-action="add-card">新增卡片</button>' : ''}
       ${includeHiddenManagement ? '<button type="button" data-action="manage-hidden-cards">管理隐藏</button>' : ''}
       <button type="button" class="hdp-primary" data-action="save-card-edits">保存并应用</button>
       <button type="button" data-action="cancel-card-edits">取消</button>
     </div>`
     : '';
-  const homeEditBarHTML = buildCardEditBar('编辑首页', true);
+  const homeEditBarHTML = buildCardEditBar('编辑首页', true, true);
   const pageEditBarHTML = buildCardEditBar('编辑此页', true);
   const themeStudioHTML = showSettings ? buildThemeStudioHTML(tokens, hass, config) : '';
   const themeStudioJS = showSettings ? generateThemeStudioJS() : '';

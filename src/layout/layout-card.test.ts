@@ -258,6 +258,7 @@ describe('layout card', () => {
     expect(card.content).toContain('--hdp-dashboard-bg-image: url(/local/dashboard.jpg)');
     expect(card.content).toContain('class="hdp-home-edit-bar hdp-card-edit-bar"');
     expect(card.content).toContain('data-action="enter-card-edit"');
+    expect(card.content).toContain('data-action="add-card"');
     expect(card.content).toContain('data-action="manage-hidden-cards"');
     expect(card.content).toContain('data-action="save-card-edits"');
     expect(card.content).toContain('data-action="cancel-card-edits"');
@@ -270,6 +271,7 @@ describe('layout card', () => {
     expect(card.content).not.toContain('淇濆瓨骞跺簲鐢?/button>');
     expect(card.content).toContain('window.hdpToggleCardEditMode = function');
     expect(card.content).toContain('window.hdpOpenHiddenCardSlots = function');
+    expect(card.content).toContain('window.hdpOpenAddCard = function');
     expect(card.content).toContain('function hdpApplyCardSlotImageThemes');
   });
 

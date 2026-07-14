@@ -23,7 +23,7 @@ export function getDomainCardCSS(): string {
   return `
   /* ── Base card (self-contained, matches dvc/ec styles) ── */
   .dvc {
-    background: var(--hdp-surface-card, var(--hdp-card-bg));
+    background: var(--hdp-surface-raised, var(--hdp-surface-card, var(--hdp-card-bg)));
     border-radius: var(--hdp-radius);
     padding: var(--hdp-density-entity-padding, 14px);
     border: 1px solid var(--hdp-border);
@@ -33,6 +33,9 @@ export function getDomainCardCSS(): string {
     overflow: hidden;
     cursor: pointer;
     min-width: 0;
+    min-height: 88px;
+    display: flex;
+    align-items: center;
   }
   .dvc:hover {
     transform: translateY(-2px);
@@ -41,6 +44,10 @@ export function getDomainCardCSS(): string {
   .dvc--on { border-color: var(--hdp-primary); }
   .dvc[data-no-toggle] {
     cursor: default;
+  }
+  .dvc.dc-control-card {
+    display: block;
+    min-height: 0;
   }
   .dvc button {
     appearance: none;
@@ -72,6 +79,7 @@ export function getDomainCardCSS(): string {
     align-items: center;
     gap: 12px;
     min-width: 0;
+    width: 100%;
   }
   .dvc-ico {
     width: 38px; height: 38px;
@@ -647,6 +655,40 @@ export function getDomainCardCSS(): string {
     transform: scale(0.96);
   }
   .dc-vacuum-btn svg { width: 14px; height: 14px; }
+
+  /* -- Number / Select controls -- */
+  .dc-value-card {
+    border-color: color-mix(in srgb, var(--hdp-primary) 18%, var(--hdp-border));
+  }
+  .dc-number-range {
+    width: 100%;
+    accent-color: var(--hdp-primary);
+    cursor: pointer;
+  }
+  .dc-number-limits {
+    display: flex;
+    justify-content: space-between;
+    font: inherit;
+    font-size: 11px;
+    color: var(--hdp-text-muted);
+  }
+  .dc-select-control {
+    width: 100%;
+    min-height: 42px;
+    padding: 0 34px 0 12px;
+    border: 1px solid var(--hdp-border);
+    border-radius: var(--hdp-radius-sm, 8px);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
+    color: var(--hdp-text);
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .dc-number-range:focus-visible,
+  .dc-select-control:focus-visible {
+    outline: 2px solid var(--hdp-primary);
+    outline-offset: 2px;
+  }
   `;
 }
 
@@ -717,6 +759,12 @@ export function buildDomainCard(entity: EntityInfo, stateObj: HassEntity | undef
       return buildMediaPlayerCard(entity, stateObj, skin);
     case 'vacuum':
       return buildVacuumCard(entity, stateObj, skin);
+    case 'number':
+    case 'input_number':
+      return buildNumberCard(entity, stateObj, skin);
+    case 'select':
+    case 'input_select':
+      return buildSelectCard(entity, stateObj, skin);
     default:
       return null;
   }
@@ -1000,6 +1048,64 @@ function buildMediaPlayerCard(entity: EntityInfo, stateObj: HassEntity, skin?: s
 
 // ─── Vacuum Card ──────────────────────────────────────────────────────────────
 
+function buildNumberCard(entity: EntityInfo, stateObj: HassEntity, skin?: string): string {
+  const attrs = stateObj.attributes || {};
+  const rawValue = parseOptionalNumber(stateObj.state) ?? 0;
+  const rawMin = parseOptionalNumber(attrs.min);
+  const rawMax = parseOptionalNumber(attrs.max);
+  const min = rawMin ?? Math.min(0, rawValue);
+  const max = rawMax != null && rawMax > min ? rawMax : Math.max(min + 1, rawValue + 1);
+  const step = parseOptionalNumber(attrs.step) ?? 1;
+  const value = Math.max(min, Math.min(max, rawValue));
+  const unit = typeof attrs.unit_of_measurement === 'string' ? attrs.unit_of_measurement.trim() : '';
+  const displayValue = `${value}${unit ? ` ${unit}` : ''}`;
+  const available = isEntityAvailable(stateObj.state);
+  const skinCls = skin ? cardSkinClass(skin) : '';
+  const entityId = escapeAttribute(entity.entity_id);
+
+  return `<div class="dvc dc-control-card dc-value-card dc-number ${skinCls}" data-entity="${entityId}" data-no-toggle>
+    <div class="dvc-bar"></div>
+    <div class="dc-control-head">
+      <div class="dvc-ico ${available ? 'dvc-ico--on' : 'dvc-ico--off'}">${getNumberIcon()}</div>
+      <div class="dvc-info">
+        <div class="dvc-name">${escapeHTML(entity.name)}</div>
+        <div class="dvc-state">${available ? '数值控制' : escapeHTML(stateObj.state)}</div>
+      </div>
+      <div class="dc-control-chip"><div class="dc-control-chip-value">${escapeHTML(displayValue)}</div><div class="dc-control-chip-label">当前值</div></div>
+    </div>
+    <div class="dc-control-section">
+      <input type="range" class="dc-number-range" min="${escapeAttribute(String(min))}" max="${escapeAttribute(String(max))}" step="${escapeAttribute(String(step))}" value="${escapeAttribute(String(value))}"
+        data-entity="${entityId}" data-action="number-set" aria-label="设置 ${escapeAttribute(entity.name)} 数值" ${available ? '' : 'disabled'} />
+      <div class="dc-number-limits"><span>${escapeHTML(String(min))}</span><span>${escapeHTML(String(max))}</span></div>
+    </div>
+  </div>`;
+}
+
+function buildSelectCard(entity: EntityInfo, stateObj: HassEntity, skin?: string): string {
+  const attrs = stateObj.attributes || {};
+  const selected = stateObj.state;
+  const options = normalizeStringArray(attrs.options, selected ? [selected] : []);
+  const available = isEntityAvailable(selected);
+  const skinCls = skin ? cardSkinClass(skin) : '';
+  const entityId = escapeAttribute(entity.entity_id);
+  const optionHTML = options.map(option => `<option value="${escapeAttribute(option)}" ${option === selected ? 'selected' : ''}>${escapeHTML(option)}</option>`).join('');
+
+  return `<div class="dvc dc-control-card dc-value-card dc-select ${skinCls}" data-entity="${entityId}" data-no-toggle>
+    <div class="dvc-bar"></div>
+    <div class="dc-control-head">
+      <div class="dvc-ico ${available ? 'dvc-ico--on' : 'dvc-ico--off'}">${getSelectIcon()}</div>
+      <div class="dvc-info">
+        <div class="dvc-name">${escapeHTML(entity.name)}</div>
+        <div class="dvc-state">选项控制</div>
+      </div>
+      <div class="dc-control-chip"><div class="dc-control-chip-value">${escapeHTML(selected)}</div><div class="dc-control-chip-label">当前选项</div></div>
+    </div>
+    <div class="dc-control-section">
+      <select class="dc-select-control" data-entity="${entityId}" data-action="select-option" aria-label="设置 ${escapeAttribute(entity.name)} 选项" ${available ? '' : 'disabled'}>${optionHTML}</select>
+    </div>
+  </div>`;
+}
+
 function buildVacuumCard(entity: EntityInfo, stateObj: HassEntity, skin?: string): string {
   const currentState = stateObj.state;
   const isActive = currentState === 'cleaning' || currentState === 'returning';
@@ -1067,4 +1173,12 @@ function getMediaIcon(active: boolean): string {
 
 function getVacuumIcon(active: boolean): string {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"${active ? ` fill="${c}" opacity="0.3"` : ''}/></svg>`;
+}
+
+function getNumberIcon(): string {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><path d="M4 6h16M4 18h16"/><path d="M8 3v6M16 15v6"/><circle cx="8" cy="9" r="2"/><circle cx="16" cy="15" r="2"/></svg>`;
+}
+
+function getSelectIcon(): string {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="m8 10 4 4 4-4"/></svg>`;
 }

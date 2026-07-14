@@ -252,6 +252,64 @@ function hdpSetClimateFanMode(entityId, fanMode) {
 }
 
 // ── Cover Controls ──
+function hdpSetNumberValue(entityId, rawValue) {
+  var hass = hdpFindHass();
+  if (!hass || !hass.callService) { hdpShowToast('Number control is unavailable', 'error'); return; }
+  var domain = entityId.split('.')[0];
+  if (domain !== 'number' && domain !== 'input_number') return;
+  var value = parseFloat(rawValue);
+  if (isNaN(value)) return;
+  var stateObj = hass.states && hass.states[entityId];
+  var attrs = stateObj && stateObj.attributes || {};
+  var min = parseFloat(attrs.min);
+  var max = parseFloat(attrs.max);
+  if (!isNaN(min)) value = Math.max(min, value);
+  if (!isNaN(max)) value = Math.min(max, value);
+  hdpCallEntityService(hass, domain, 'set_value', { entity_id: entityId, value: value }, entityId, 'Number value could not be set', {
+    onSuccess: function() { hdpApplyNumberValue(hass, entityId, value); }
+  });
+}
+
+function hdpApplyNumberValue(hass, entityId, value) {
+  var stateObj = hass && hass.states && hass.states[entityId];
+  if (stateObj) stateObj.state = String(value);
+  var unit = stateObj && stateObj.attributes && stateObj.attributes.unit_of_measurement || '';
+  var cards = document.querySelectorAll('[data-entity="' + entityId + '"]');
+  for (var i = 0; i < cards.length; i++) {
+    var card = cards[i];
+    var range = card.querySelector('.dc-number-range');
+    if (range) range.value = String(value);
+    var valueLabel = card.querySelector('.dc-control-chip-value');
+    if (valueLabel) valueLabel.textContent = String(value) + (unit ? ' ' + unit : '');
+  }
+}
+
+function hdpSetSelectOption(entityId, option) {
+  var hass = hdpFindHass();
+  if (!hass || !hass.callService) { hdpShowToast('Select control is unavailable', 'error'); return; }
+  var domain = entityId.split('.')[0];
+  if (domain !== 'select' && domain !== 'input_select') return;
+  var stateObj = hass.states && hass.states[entityId];
+  var options = stateObj && stateObj.attributes && stateObj.attributes.options;
+  if (Array.isArray(options) && options.indexOf(option) === -1) return;
+  hdpCallEntityService(hass, domain, 'select_option', { entity_id: entityId, option: option }, entityId, 'Option could not be set', {
+    onSuccess: function() { hdpApplySelectOption(hass, entityId, option); }
+  });
+}
+
+function hdpApplySelectOption(hass, entityId, option) {
+  var stateObj = hass && hass.states && hass.states[entityId];
+  if (stateObj) stateObj.state = option;
+  var cards = document.querySelectorAll('[data-entity="' + entityId + '"]');
+  for (var i = 0; i < cards.length; i++) {
+    var card = cards[i];
+    var select = card.querySelector('.dc-select-control');
+    if (select) select.value = option;
+    var valueLabel = card.querySelector('.dc-control-chip-value');
+    if (valueLabel) valueLabel.textContent = option;
+  }
+}
+
 function hdpCoverAction(entityId, action) {
   var hass = hdpFindHass();
   if (!hass || !hass.callService) { hdpShowToast('无法连接到 Home Assistant', 'error'); return; }
@@ -1149,7 +1207,7 @@ function hdpHandleDomainControl(control) {
     hdpSetClimateFanMode(entityId, control.getAttribute('data-fan-mode') || 'auto');
     return true;
   }
-  if (action === 'cover-position' || action === 'media-volume') return false;
+  if (action === 'cover-position' || action === 'media-volume' || action === 'number-set' || action === 'select-option') return false;
   var domainAction = '';
   if (action.indexOf('cover-') === 0) {
     domainAction = action.substring('cover-'.length);
@@ -1256,14 +1314,39 @@ function hdpInitEntityClickHandlers() {
   document.addEventListener('input', function(e) {
     var control = hdpClosestFromEvent(e, '[data-action="media-volume"]');
     var entityId = hdpEntityIdFromControl(control);
+    if (control && entityId) {
+      hdpSetMediaVolume(entityId, Number(control.value) / 100);
+      return;
+    }
+    control = hdpClosestFromEvent(e, '[data-action="number-set"]');
+    entityId = hdpEntityIdFromControl(control);
     if (!control || !entityId) return;
-    hdpSetMediaVolume(entityId, Number(control.value) / 100);
+    var card = control.closest ? control.closest('[data-entity]') : null;
+    var valueLabel = card && card.querySelector ? card.querySelector('.dc-control-chip-value') : null;
+    if (valueLabel) {
+      var hass = hdpFindHass();
+      var stateObj = hass && hass.states && hass.states[entityId];
+      var unit = stateObj && stateObj.attributes && stateObj.attributes.unit_of_measurement || '';
+      valueLabel.textContent = String(control.value) + (unit ? ' ' + unit : '');
+    }
   }, true);
   document.addEventListener('change', function(e) {
     var control = hdpClosestFromEvent(e, '[data-action="cover-position"]');
     var entityId = hdpEntityIdFromControl(control);
+    if (control && entityId) {
+      hdpSetCoverPosition(entityId, control.value, control.getAttribute('data-cover-position-inverted') === 'true');
+      return;
+    }
+    control = hdpClosestFromEvent(e, '[data-action="number-set"]');
+    entityId = hdpEntityIdFromControl(control);
+    if (control && entityId) {
+      hdpSetNumberValue(entityId, control.value);
+      return;
+    }
+    control = hdpClosestFromEvent(e, '[data-action="select-option"]');
+    entityId = hdpEntityIdFromControl(control);
     if (!control || !entityId) return;
-    hdpSetCoverPosition(entityId, control.value, control.getAttribute('data-cover-position-inverted') === 'true');
+    hdpSetSelectOption(entityId, control.value);
   }, true);
 }
 `;

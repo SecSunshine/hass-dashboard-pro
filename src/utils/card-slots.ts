@@ -1,6 +1,6 @@
 import type { CardSlotConfig, StrategyConfig } from '../types';
 import { cardConfigToHTML, parseCardYAML } from '../blueprints/blueprint-parser';
-import { sanitizeBentoSize, type BentoSize } from './bento-layout';
+import { resolveBentoGridSpan, sanitizeBentoSize, type BentoGridSpan, type BentoSize } from './bento-layout';
 import { escapeAttribute, escapeHTML, escapeInlineStyleValue, escapeURLAttribute } from './html';
 
 export interface SlottedCard {
@@ -10,6 +10,7 @@ export interface SlottedCard {
   order: number;
   hidden: boolean;
   custom: boolean;
+  gridSpan?: BentoGridSpan;
 }
 
 interface CustomSlotRenderResult {
@@ -36,8 +37,10 @@ export function resolveSlottedCard(
   const slot = getCardSlot(config, slotId);
   const hidden = slot?.enabled === false;
   const size = sanitizeBentoSize(slot?.size, defaultSize);
+  const hasGridSpan = slot?.grid_columns != null || slot?.grid_rows != null;
+  const gridSpan = hasGridSpan ? resolveBentoGridSpan(slot?.grid_columns, slot?.grid_rows, size) : undefined;
   const order = typeof slot?.order === 'number' && Number.isFinite(slot.order) ? slot.order : defaultOrder;
-  if (hidden) return { slotId, html: '', size, order, hidden: true, custom: false };
+  if (hidden) return { slotId, html: '', size, order, hidden: true, custom: false, gridSpan };
 
   const custom = renderCustomSlotHTML(slotId, slot, context);
   const content = custom.html || defaultHTML;
@@ -49,6 +52,7 @@ export function resolveSlottedCard(
     order,
     hidden: false,
     custom: Boolean(custom.html),
+    gridSpan,
   };
 }
 
@@ -178,6 +182,23 @@ export function getCardSlotCSS(): string {
   .hdp-slot-edit-panel select {
     width: 68px;
     padding: 0 6px;
+  }
+  .hdp-slot-grid-input {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    height: 32px;
+    padding: 0 5px;
+    border: 1px solid var(--hdp-border);
+    border-radius: 8px;
+    background: var(--hdp-control-bg, var(--hdp-card-bg));
+    color: var(--hdp-text-muted);
+    font: 700 10px/1 inherit;
+  }
+  .hdp-slot-grid-input input {
+    width: 44px;
+    accent-color: var(--hdp-primary);
+    cursor: pointer;
   }
   .hdp-slot-edit-panel [data-card-edit-action="drag"] {
     cursor: grab;
@@ -347,6 +368,37 @@ export function getCardSlotCSS(): string {
     background: var(--hdp-primary);
     color: var(--hdp-text-inverse, white);
   }
+  .hdp-add-card-dialog {
+    width: min(520px, 96vw);
+  }
+  .hdp-add-card-field {
+    display: grid;
+    gap: 6px;
+    color: var(--hdp-text-secondary);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .hdp-add-card-field select,
+  .hdp-add-card-field input {
+    width: 100%;
+    min-height: 40px;
+    padding: 8px 10px;
+    border: 1px solid var(--hdp-border);
+    border-radius: var(--hdp-radius-sm, 8px);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
+    color: var(--hdp-text);
+    font: inherit;
+  }
+  .hdp-add-card-help {
+    padding: 10px 12px;
+    border-left: 3px solid var(--hdp-primary);
+    background: var(--hdp-primary-light);
+    color: var(--hdp-text-secondary);
+    font: inherit;
+    font-size: 13px;
+    line-height: 1.5;
+  }
   .hdp-card-slot--image {
     --hdp-slot-bg-opacity: 1;
     --hdp-slot-bg-scrim: linear-gradient(135deg, rgba(255,255,255,0.84), rgba(255,255,255,0.58));
@@ -490,10 +542,13 @@ function buildSlotEditPanel(slotId: string, slot?: CardSlotConfig, defaultSize: 
   const sizeOptions = ['sm', 'md', 'lg', 'wide', 'tall']
     .map(value => `<option value="${value}"${value === size ? ' selected' : ''}>${value}</option>`)
     .join('');
+  const grid = resolveBentoGridSpan(slot?.grid_columns, slot?.grid_rows, size);
   return `<div class="hdp-slot-edit-panel" data-slot-edit-panel="${escapeAttribute(slotId)}">
     <select aria-label="卡片大小" data-card-edit-action="size" data-slot-id="${slotAttr}">
       ${sizeOptions}
     </select>
+    <label class="hdp-slot-grid-input" title="宽度"><span>W</span><input type="range" min="1" max="4" step="1" value="${grid.columns}" data-card-edit-action="grid-columns" data-slot-id="${slotAttr}" aria-label="卡片宽度" /></label>
+    <label class="hdp-slot-grid-input" title="高度"><span>H</span><input type="range" min="1" max="6" step="1" value="${grid.rows}" data-card-edit-action="grid-rows" data-slot-id="${slotAttr}" aria-label="卡片高度" /></label>
     <button type="button" title="拖动排序" aria-label="拖动排序" data-card-edit-action="drag" data-slot-id="${slotAttr}">拖</button>
     <button type="button" title="上移" aria-label="上移卡片" data-card-edit-action="move" data-slot-id="${slotAttr}" data-delta="-1">↑</button>
     <button type="button" title="下移" aria-label="下移卡片" data-card-edit-action="move" data-slot-id="${slotAttr}" data-delta="1">↓</button>
@@ -598,11 +653,12 @@ function hdpInitCardSlotEditorActions() {
   document.addEventListener('click', function(e) {
     var toolbarControl = hdpClosestHomeEditControl(e);
     var toolbarAction = toolbarControl && toolbarControl.getAttribute('data-action');
-    if (toolbarAction === 'enter-card-edit' || toolbarAction === 'manage-hidden-cards' ||
+    if (toolbarAction === 'enter-card-edit' || toolbarAction === 'add-card' || toolbarAction === 'manage-hidden-cards' ||
         toolbarAction === 'save-card-edits' || toolbarAction === 'cancel-card-edits') {
       e.preventDefault();
       e.stopPropagation();
       if (toolbarAction === 'enter-card-edit') window.hdpToggleCardEditMode(true);
+      else if (toolbarAction === 'add-card') window.hdpOpenAddCard();
       else if (toolbarAction === 'manage-hidden-cards') window.hdpOpenHiddenCardSlots();
       else if (toolbarAction === 'save-card-edits') window.hdpSaveCardEdits();
       else window.hdpCancelCardEdits();
@@ -611,7 +667,7 @@ function hdpInitCardSlotEditorActions() {
     var control = hdpClosestCardEditControl(e);
     if (!control) return;
     var action = control.getAttribute('data-card-edit-action');
-    if (action === 'drag' || action === 'size') return;
+    if (action === 'drag' || action === 'size' || action === 'grid-columns' || action === 'grid-rows') return;
     var slotId = control.getAttribute('data-slot-id');
     if (!slotId) return;
     e.preventDefault();
@@ -624,10 +680,13 @@ function hdpInitCardSlotEditorActions() {
   }, true);
   document.addEventListener('change', function(e) {
     var control = hdpClosestCardEditControl(e);
-    if (!control || control.getAttribute('data-card-edit-action') !== 'size') return;
+    if (!control) return;
+    var action = control.getAttribute('data-card-edit-action');
+    if (action !== 'size' && action !== 'grid-columns' && action !== 'grid-rows') return;
     var slotId = control.getAttribute('data-slot-id');
     if (!slotId) return;
-    window.hdpSetCardSlotSize(slotId, control.value);
+    if (action === 'size') window.hdpSetCardSlotSize(slotId, control.value);
+    else window.hdpSetCardSlotGridSpan(slotId, action === 'grid-columns' ? control.value : null, action === 'grid-rows' ? control.value : null);
   }, true);
 }
 
@@ -862,6 +921,39 @@ window.hdpSetCardSlotSize = function(slotId, size) {
   }
 };
 
+function hdpEnableCustomHomeLayout() {
+  var draft = hdpGetCardEditDraft();
+  if (!draft.home || typeof draft.home !== 'object' || Array.isArray(draft.home)) draft.home = {};
+  draft.home.layout_preset = 'custom';
+  var home = document.querySelector('.hdp-home-content');
+  if (!home || !home.classList) return;
+  ['grid', 'rows', 'l_shape', 'l_mirror', 'u_shape'].forEach(function(preset) {
+    home.classList.remove('hdp-home-content--' + preset);
+  });
+  home.classList.add('hdp-home-content--custom');
+  home.setAttribute('data-layout-preset', 'custom');
+}
+
+window.hdpSetCardSlotGridSpan = function(slotId, columns, rows) {
+  var slot = hdpEnsureCardSlot(slotId);
+  var currentColumns = parseInt(slot.grid_columns, 10);
+  var currentRows = parseInt(slot.grid_rows, 10);
+  if (isNaN(currentColumns)) currentColumns = 2;
+  if (isNaN(currentRows)) currentRows = 1;
+  if (columns != null) currentColumns = Math.max(1, Math.min(4, Math.round(Number(columns) || 1)));
+  if (rows != null) currentRows = Math.max(1, Math.min(6, Math.round(Number(rows) || 1)));
+  slot.grid_columns = currentColumns;
+  slot.grid_rows = currentRows;
+  hdpEnableCustomHomeLayout();
+  hdpMarkCardDraftDirty();
+  var wrapper = hdpGetSlotWrapper(slotId);
+  if (!wrapper || !wrapper.style) return;
+  wrapper.setAttribute('data-hdp-bento-custom', 'true');
+  wrapper.style.setProperty('--hdp-bento-column-span', currentColumns);
+  wrapper.style.setProperty('--hdp-bento-tablet-column-span', Math.min(currentColumns, 2));
+  wrapper.style.setProperty('--hdp-bento-row-span', currentRows);
+};
+
 window.hdpMoveCardSlot = function(slotId, delta) {
   var wrappers = hdpGetSlotGroupWrappers(slotId);
   var index = wrappers.findIndex(function(wrapper) {
@@ -901,7 +993,7 @@ function hdpDismissCardSlotModal(modal) {
 }
 
 function hdpDismissExistingCardSlotModals() {
-  ['hdp-hidden-slots-modal', 'hdp-slot-editor-modal'].forEach(function(id) {
+  ['hdp-hidden-slots-modal', 'hdp-slot-editor-modal', 'hdp-add-card-modal'].forEach(function(id) {
     hdpDismissCardSlotModal(document.getElementById(id));
   });
 }
@@ -947,6 +1039,89 @@ function hdpGetHiddenHomeSlots(slots) {
     return slots[item.id] && slots[item.id].enabled === false;
   });
 }
+
+function hdpNextCustomHomeSlotId() {
+  var slots = (hdpGetCardEditDraft().cards || {}).slots || {};
+  var suffix;
+  do {
+    suffix = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+  } while (slots['home.custom.' + suffix]);
+  return 'home.custom.' + suffix;
+}
+
+function hdpBuildAddCardDomains() {
+  var hass = typeof hdpFindHass === 'function' ? hdpFindHass() : null;
+  var states = hass && hass.states || {};
+  var domains = {};
+  Object.keys(states).forEach(function(entityId) { domains[String(entityId).split('.')[0]] = true; });
+  return Object.keys(domains).sort().map(function(domain) {
+    return '<option value="' + hdpEscapeSlotText(domain) + '">' + hdpEscapeSlotText(domain) + '</option>';
+  }).join('');
+}
+
+window.hdpOpenAddCard = function() {
+  hdpDismissExistingCardSlotModals();
+  var modal = document.createElement('div');
+  modal.id = 'hdp-add-card-modal';
+  modal.className = 'hdp-slot-editor-modal';
+  if (typeof hdpApplyThemeVarsToOverlay === 'function') hdpApplyThemeVarsToOverlay(modal);
+  var domains = hdpBuildAddCardDomains();
+  modal.innerHTML =
+    '<div class="hdp-slot-editor-dialog hdp-add-card-dialog" role="dialog" aria-modal="true">' +
+      '<div class="hdp-slot-editor-head"><div class="hdp-slot-editor-title">新增或替换卡片</div><button type="button" data-action="close">×</button></div>' +
+      '<label class="hdp-add-card-field">类型<select id="hdp-add-card-kind"><option value="custom">新增独立自定义卡片</option><option value="domain">替换某个类别的所有卡片</option><option value="entity">替换单个设备卡片</option></select></label>' +
+      '<label class="hdp-add-card-field" id="hdp-add-card-domain-field">设备类别<select id="hdp-add-card-domain">' + domains + '</select></label>' +
+      '<label class="hdp-add-card-field" id="hdp-add-card-entity-field" hidden>实体 ID<input id="hdp-add-card-entity" placeholder="climate.living_room" /></label>' +
+      '<div class="hdp-add-card-help" id="hdp-add-card-help">创建一张独立的 HTML Pro Card，可自由设置大小、位置、背景图和 YAML。</div>' +
+      '<div class="hdp-slot-editor-actions"><span></span><button type="button" class="hdp-primary" data-action="create">继续编辑</button></div>' +
+    '</div>';
+  document.body.appendChild(modal);
+  var kind = modal.querySelector('#hdp-add-card-kind');
+  var domainField = modal.querySelector('#hdp-add-card-domain-field');
+  var entityField = modal.querySelector('#hdp-add-card-entity-field');
+  var help = modal.querySelector('#hdp-add-card-help');
+  var updateFields = function() {
+    var value = kind.value;
+    domainField.hidden = value !== 'domain';
+    entityField.hidden = value !== 'entity';
+    help.textContent = value === 'domain'
+      ? 'YAML 会替换所有该类别的设备卡片，例如全部空调或全部灯光。'
+      : value === 'entity'
+        ? 'YAML 只会替换指定实体的卡片，例如一个具体空调。'
+        : '创建一张独立的 HTML Pro Card，可自由设置大小、位置、背景图和 YAML。';
+  };
+  kind.addEventListener('change', updateFields);
+  updateFields();
+  var close = hdpBindCardSlotModal(modal, kind);
+  modal.addEventListener('click', function(e) {
+    var action = e.target && e.target.getAttribute && e.target.getAttribute('data-action');
+    if (e.target === modal || action === 'close') { close(); return; }
+    if (action !== 'create') return;
+    var slotId = '';
+    if (kind.value === 'custom') {
+      slotId = hdpNextCustomHomeSlotId();
+      var slot = hdpEnsureCardSlot(slotId);
+      slot.grid_columns = 2;
+      slot.grid_rows = 1;
+      hdpEnableCustomHomeLayout();
+    } else if (kind.value === 'domain') {
+      var domain = String(modal.querySelector('#hdp-add-card-domain').value || '').trim().toLowerCase();
+      if (!/^[a-z_][a-z0-9_]*$/.test(domain)) return;
+      slotId = 'entity.domain.' + domain;
+    } else {
+      var entityId = String(modal.querySelector('#hdp-add-card-entity').value || '').trim().toLowerCase();
+      if (!/^[a-z_][a-z0-9_]*\.[a-z0-9_]+$/.test(entityId)) {
+        if (typeof hdpShowToast === 'function') hdpShowToast('请输入有效的实体 ID，例如 climate.living_room', 'error');
+        return;
+      }
+      slotId = 'entity.' + entityId;
+    }
+    hdpEnsureCardSlot(slotId);
+    hdpMarkCardDraftDirty();
+    close();
+    window.hdpEditCardSlotYAML(slotId);
+  });
+};
 
 window.hdpOpenHiddenCardSlots = function() {
   hdpDismissExistingCardSlotModals();
@@ -1263,8 +1438,8 @@ function hdpSanitizeSlotTag(tag) {
     dd:1, details:1, div:1, dl:1, dt:1, em:1, footer:1, h1:1, h2:1, h3:1,
     h4:1, h5:1, h6:1, 'ha-icon':1, 'ha-state-icon':1, header:1, hr:1, i:1,
     img:1, input:1, li:1, line:1, main:1, nav:1, ol:1, p:1, path:1, polygon:1,
-    polyline:1, rect:1, section:1, small:1, span:1, 'state-badge':1, strong:1,
-    style:1, sub:1, summary:1, sup:1, svg:1, ul:1
+    polyline:1, rect:1, section:1, select:1, small:1, span:1, 'state-badge':1, strong:1,
+    style:1, sub:1, summary:1, sup:1, svg:1, ul:1, option:1
   };
   if (!allowedTags[name]) return hdpEscapeSlotText(tag);
   if (closing) return '</' + name + '>';
@@ -1278,10 +1453,10 @@ function hdpSanitizeSlotAttributes(rawAttrs) {
   var attrs = [];
   var seenAttrs = {};
   var allowedAttrs = {
-    alt:1, class:1, cx:1, cy:1, d:1, fill:1, height:1, href:1, icon:1, id:1,
+    alt:1, class:1, cx:1, cy:1, d:1, disabled:1, fill:1, height:1, href:1, icon:1, id:1,
     max:1, min:1, r:1, role:1, rx:1, ry:1, src:1, step:1, stroke:1, 'stroke-linecap':1,
     'stroke-linejoin':1, 'stroke-width':1, style:1, tabindex:1, title:1, type:1, value:1, viewbox:1,
-    width:1, x:1, x1:1, x2:1, y:1, y1:1, y2:1
+    width:1, x:1, x1:1, x2:1, y:1, y1:1, y2:1, selected:1
   };
   var pattern = /([:@a-zA-Z_][:@a-zA-Z0-9_.-]*)(?:\\s*=\\s*("([^"]*)"|'([^']*)'|([^\\s"'=<>\`]+)))?/g;
   var match;

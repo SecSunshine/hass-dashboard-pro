@@ -450,6 +450,8 @@ export interface CardSlotConfig {
   enabled?: boolean;
   order?: number;
   size?: string;
+  grid_columns?: number;
+  grid_rows?: number;
   background_image_url?: string;
   theme_from_image?: boolean;
   yaml?: string;
