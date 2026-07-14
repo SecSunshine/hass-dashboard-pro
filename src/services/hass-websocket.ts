@@ -138,6 +138,7 @@ function hdpCallEntityService(hass, domain, service, data, entityId, errorMessag
   options = options || {};
   function onSuccess() {
     if (options.pulse !== false) hdpPulseCard(entityId);
+    if (typeof options.onSuccess === 'function') options.onSuccess();
   }
   function onFailure(err) {
     if (options.silent) return;
@@ -189,7 +190,27 @@ function hdpToggleEntity(entityId) {
   } else if (domain === 'button' || domain === 'input_button') {
     service = 'press';
   }
-  hdpCallEntityService(hass, domain, service, { entity_id: entityId }, entityId, '\u8bbe\u5907\u63a7\u5236\u5931\u8d25');
+  hdpCallEntityService(hass, domain, service, { entity_id: entityId }, entityId, '\u8bbe\u5907\u63a7\u5236\u5931\u8d25', {
+    onSuccess: function() { hdpApplyOptimisticToggle(hass, entityId); }
+  });
+}
+
+function hdpApplyOptimisticToggle(hass, entityId) {
+  var stateObj = hass && hass.states && hass.states[entityId];
+  if (!stateObj) return;
+  var nextOn = String(stateObj.state).toLowerCase() !== 'on';
+  stateObj.state = nextOn ? 'on' : 'off';
+  var cards = document.querySelectorAll('[data-entity="' + entityId + '"]');
+  for (var i = 0; i < cards.length; i++) {
+    var card = cards[i];
+    card.setAttribute('aria-pressed', nextOn ? 'true' : 'false');
+    card.classList.toggle('dvc--on', nextOn);
+    card.classList.toggle('ec--on', nextOn);
+    var dot = card.querySelector('.dvc-dot, .ec-dot');
+    if (dot) { dot.classList.toggle('dvc-dot--on', nextOn); dot.classList.toggle('dvc-dot--off', !nextOn); dot.classList.toggle('ec-dot--on', nextOn); dot.classList.toggle('ec-dot--off', !nextOn); }
+    var toggle = card.querySelector('.dvc-tg, .tg');
+    if (toggle) { toggle.classList.toggle('dvc-tg--on', nextOn); toggle.classList.toggle('dvc-tg--off', !nextOn); toggle.classList.toggle('tg--on', nextOn); toggle.classList.toggle('tg--off', !nextOn); }
+  }
 }
 
 function hdpPulseCard(entityId) {
@@ -246,12 +267,13 @@ function hdpCoverAction(entityId, action) {
   hdpCallCoverService(hass, entityId, preferTilt ? tiltService : standardService, preferTilt ? standardService : tiltService);
 }
 
-function hdpSetCoverPosition(entityId, position) {
+function hdpSetCoverPosition(entityId, position, inverted) {
   var hass = hdpFindHass();
   if (!hass || !hass.callService) { hdpShowToast('无法连接到 Home Assistant', 'error'); return; }
   var value = Math.round(parseFloat(position));
   if (isNaN(value)) return;
   value = Math.max(0, Math.min(100, value));
+  if (inverted) value = 100 - value;
   var supported = hdpCoverSupportedFeatures(hass, entityId);
   var preferTilt = !hdpCoverSupports(supported, 4) && hdpCoverSupports(supported, 128);
   hdpCallCoverService(
@@ -1241,7 +1263,7 @@ function hdpInitEntityClickHandlers() {
     var control = hdpClosestFromEvent(e, '[data-action="cover-position"]');
     var entityId = hdpEntityIdFromControl(control);
     if (!control || !entityId) return;
-    hdpSetCoverPosition(entityId, control.value);
+    hdpSetCoverPosition(entityId, control.value, control.getAttribute('data-cover-position-inverted') === 'true');
   }, true);
 }
 `;

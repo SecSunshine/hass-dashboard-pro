@@ -240,9 +240,10 @@ export function getDomainCardCSS(): string {
     font-weight: 850;
     color: var(--hdp-text);
     text-align: center;
-    flex: 1;
-    min-width: 0;
-    overflow-wrap: anywhere;
+    flex: 1 1 96px;
+    min-width: 96px;
+    white-space: nowrap;
+    overflow-wrap: normal;
     padding: 4px 10px;
     border-radius: var(--hdp-radius);
     background: var(--hdp-surface-card, var(--hdp-card-bg));
@@ -856,10 +857,11 @@ function buildCoverCard(entity: EntityInfo, stateObj: HassEntity, skin?: string)
   const isActive = currentState === 'open' || currentState === 'opening';
   const skinCls = skin ? cardSkinClass(skin) : '';
 
-  // Position bar: 0% = closed, 100% = open
-  const barWidth = position != null ? position : (isActive ? 100 : 0);
+  // Home users read this as curtain closure: 0% open, 100% closed.
+  const closure = position != null ? 100 - position : (isActive ? 0 : 100);
+  const barWidth = closure;
   const stateLabel = COVER_STATE_LABELS[currentState] || currentState;
-  const positionText = position != null ? `开合 ${position}%` : stateLabel;
+  const positionText = position != null ? `闭合 ${closure}%` : stateLabel;
   const entityId = escapeAttribute(entity.entity_id);
 
   return `<div class="dvc dc-control-card dc-cover ${skinCls}" data-entity="${entityId}" data-no-toggle>
@@ -874,7 +876,7 @@ function buildCoverCard(entity: EntityInfo, stateObj: HassEntity, skin?: string)
         </div>
       </div>
       <div class="dc-control-chip">
-        <div class="dc-control-chip-value">${position != null ? `${position}%` : '--'}</div>
+        <div class="dc-control-chip-value">${position != null ? `${closure}%` : '--'}</div>
         <div class="dc-control-chip-label">${escapeHTML(stateLabel)}</div>
       </div>
     </div>
@@ -888,7 +890,7 @@ function buildCoverCard(entity: EntityInfo, stateObj: HassEntity, skin?: string)
         <div class="dc-cover-bar-fill" style="width: ${barWidth}%"></div>
       </div>
       <input type="range" class="dc-cover-slider" min="0" max="100" step="1" value="${barWidth}"
-        data-entity="${entityId}" data-action="cover-position" aria-label="设置 ${escapeAttribute(entity.name)} 位置" />
+        data-entity="${entityId}" data-action="cover-position" data-cover-position-inverted="true" aria-label="设置 ${escapeAttribute(entity.name)} 闭合程度" />
     </div>
     <div class="dc-cover-actions">
       <button type="button" class="dc-cover-btn dc-cover-btn--primary" data-entity="${entityId}" data-action="cover-open" aria-label="打开 ${escapeAttribute(entity.name)}">

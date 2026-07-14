@@ -209,7 +209,7 @@ describe('hass websocket script', () => {
     expect(js).toContain('var current = parseFloat(stateObj.attributes && stateObj.attributes.temperature);');
     expect(js).toContain('var step = parseFloat(delta);');
     expect(js).toContain('if (isNaN(current)) current = 24;');
-    expect(js).toContain('function hdpSetCoverPosition(entityId, position)');
+    expect(js).toContain('function hdpSetCoverPosition(entityId, position, inverted)');
     expect(js).toContain("preferTilt ? 'set_cover_tilt_position' : 'set_cover_position'");
     expect(js).toContain("open_cover_tilt");
     expect(js).toContain("set_cover_tilt_position");

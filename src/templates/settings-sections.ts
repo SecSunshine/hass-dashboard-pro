@@ -841,6 +841,26 @@ window.hdpPersistSettingsAndReload = function(successDelay, fallbackDelay, confi
 
 window.hdpSaveSetting = function(path, value) {
   hdpSetDraftPath(path, value);
+  if (path === 'dashboard.background_image_url' && typeof document !== 'undefined' && typeof document.getElementById === 'function') {
+    var root = document.getElementById('hdp-root');
+    var backgroundUrl = hdpNormalizeSettingsImageUrl(value);
+    if (root) {
+      root.classList.toggle('hdp-root--image-bg', Boolean(backgroundUrl));
+      if (backgroundUrl) root.style.setProperty('--hdp-dashboard-bg-image', 'url(' + backgroundUrl + ')');
+      else root.style.removeProperty('--hdp-dashboard-bg-image');
+    }
+  }
+  if (path === 'dashboard.avatar_url' && typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
+    var avatarUrl = hdpNormalizeSettingsImageUrl(value);
+    var avatars = document.querySelectorAll('.sb-avatar');
+    for (var i = 0; i < avatars.length; i++) {
+      var avatar = avatars[i];
+      if (!avatarUrl) continue;
+      var image = avatar.querySelector('.sb-avatar-img') || document.createElement('img');
+      image.className = 'sb-avatar-img'; image.setAttribute('alt', 'Dashboard avatar'); image.setAttribute('loading', 'lazy'); image.setAttribute('src', avatarUrl);
+      if (!image.parentNode) { avatar.textContent = ''; avatar.appendChild(image); }
+    }
+  }
 };
 
 window.hdpSelectHomeLayout = function(preset, evt) {
