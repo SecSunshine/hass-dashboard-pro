@@ -21,7 +21,7 @@ export function getEffectiveHDPConfig(config: StrategyConfig): Partial<HDPConfig
     const dashboard = { ...(strategyConfig.dashboard || {}) };
     if ('avatar_url' in localDashboard) dashboard.avatar_url = localDashboard.avatar_url;
     if ('background_image_url' in localDashboard) dashboard.background_image_url = localDashboard.background_image_url;
-    return { ...strategyConfig, dashboard };
+    return { ...strategyConfig, dashboard: dashboard as Partial<HDPConfig['dashboard']> };
   }
   const merged = deepMerge(strategyConfig, localConfig) as Partial<HDPConfig>;
   if (strategyConfig.permissions) merged.permissions = strategyConfig.permissions;
