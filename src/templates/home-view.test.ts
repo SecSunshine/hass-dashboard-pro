@@ -464,6 +464,59 @@ describe('home view settings', () => {
     expect(html).toContain('data-card-slot="home.people.person.bob"');
   });
 
+  it('allows one area power row to be customized independently', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        cards: {
+          slots: {
+            'home.power_usage.kitchen': {
+              yaml: [
+                'type: custom:html-pro-card',
+                'content: |',
+                '  <div class="custom-power" data-view="area">$name$：$state$</div>',
+              ].join('\n'),
+            },
+          },
+        },
+      } as any,
+    };
+    const html = buildHomeHTML({
+      ...hass,
+      states: {
+        ...hass.states,
+        'sensor.kitchen_power': {
+          entity_id: 'sensor.kitchen_power',
+          state: '420',
+          attributes: { friendly_name: 'Kitchen Power', device_class: 'power', unit_of_measurement: 'W' },
+          last_changed: '',
+          last_updated: '',
+        },
+        'sensor.living_power': {
+          entity_id: 'sensor.living_power',
+          state: '80',
+          attributes: { friendly_name: 'Living Power', device_class: 'power', unit_of_measurement: 'W' },
+          last_changed: '',
+          last_updated: '',
+        },
+      },
+      areas: {
+        ...hass.areas,
+        living: { area_id: 'living', name: 'Living', picture: null },
+      },
+      entities: {
+        ...hass.entities,
+        'sensor.kitchen_power': { entity_id: 'sensor.kitchen_power', device_id: null, area_id: 'kitchen', platform: 'demo', disabled_by: null, hidden_by: null },
+        'sensor.living_power': { entity_id: 'sensor.living_power', device_id: null, area_id: 'living', platform: 'demo', disabled_by: null, hidden_by: null },
+      },
+    }, config);
+
+    expect(html).toContain('data-card-slot="home.power_usage.kitchen" data-card-custom="true"');
+    expect(html).toContain('class="custom-power"');
+    expect(html).toContain('Kitchen：420 W');
+    expect(html).toContain('data-card-slot="home.power_usage.living"');
+  });
+
   it('renders automations summary as a configuration popup button', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const html = buildHomeHTML({

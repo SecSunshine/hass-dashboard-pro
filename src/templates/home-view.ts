@@ -135,7 +135,7 @@ export function buildHomeView(hass: Hass, config: StrategyConfig, tokens?: Resol
         break;
       case 'power_usage': {
         const power = buildHousePowerUsage(hass, config);
-        if (power.has_data) cards.push(buildPowerCard(power, tokens));
+        if (power.has_data) cards.push(buildPowerCard(power, tokens, config));
         break;
       }
       case 'favorites': {
@@ -216,7 +216,7 @@ export function buildHomeHTML(hass: Hass, config: StrategyConfig, tokens?: Resol
           sections.push(resolveSlottedCard(
             config,
             'home.power_usage',
-            extractCardHTML(buildPowerCard(power, tokens)),
+            extractCardHTML(buildPowerCard(power, tokens, config)),
             resolveCardSize('home_power', layout.sizes.home_power, cs),
             defaultOrder,
           ));
@@ -509,7 +509,7 @@ function buildStatusBadges(domains: DomainStatus[], tokens?: ResolvedTokens, con
     return config
       ? resolveSlottedCard(config, `home.status_badges.${d.domain}`, badgeHTML, 'sm', index).html
       : badgeHTML;
-  }).join('');
+  });
 
   return {
     type: 'custom:html-pro-card',
@@ -925,10 +925,10 @@ ${generateDesignTokenCSS(tokens)}
 
 // 鈹€鈹€鈹€ 5. Power Usage Card 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
-function buildPowerCard(power: ReturnType<typeof buildHousePowerUsage>, tokens?: ResolvedTokens): LovelaceCardConfig {
-  const roomRows = power.rooms.slice(0, 6).map(r => {
+function buildPowerCard(power: ReturnType<typeof buildHousePowerUsage>, tokens?: ResolvedTokens, config?: StrategyConfig): LovelaceCardConfig {
+  const roomRows: Array<string | SlottedCard> = power.rooms.slice(0, 6).map((r, index) => {
     const percent = Number.isFinite(Number(r.percent)) ? Math.max(0, Math.min(100, Number(r.percent))) : 0;
-    return `
+    const roomHTML = `
       <div class="pw-room">
         <div class="pw-room-top">
           <span class="pw-room-name">${escapeHTML(r.area_name)}</span>
@@ -940,7 +940,21 @@ function buildPowerCard(power: ReturnType<typeof buildHousePowerUsage>, tokens?:
         <div class="pw-room-pct">${percent}%</div>
       </div>
     `;
-  }).join('');
+    return config
+      ? resolveSlottedCard(config, `home.power_usage.${r.area_id}`, roomHTML, 'sm', index, {
+        name: r.area_name,
+        state: r.display,
+        area: r.area_name,
+        domain: 'sensor',
+      })
+      : roomHTML;
+  });
+  const renderedRoomRows = config
+    ? sortSlottedCards(roomRows.filter((room): room is SlottedCard => typeof room !== 'string')).map(room => room.html).join('')
+    : roomRows.join('');
+  const emptyHTML = config && !renderedRoomRows
+    ? '<div class="pw-empty">区域功率已隐藏，可在管理隐藏中恢复</div>'
+    : '';
 
   return {
     type: 'custom:html-pro-card',
@@ -984,6 +998,20 @@ ${generateDesignTokenCSS(tokens)}
     margin-bottom: 12px;
   }
   .pw-room:last-child { margin-bottom: 0; }
+  .pw-hdr + .hdp-card-slot {
+    display: block;
+    min-width: 0;
+    height: auto;
+  }
+  .pw-hdr + .hdp-card-slot[data-card-slot-size="md"],
+  .pw-hdr + .hdp-card-slot[data-card-slot-size="lg"],
+  .pw-hdr + .hdp-card-slot[data-card-slot-size="tall"],
+  .pw-hdr + .hdp-card-slot[data-card-slot-size="wide"] {
+    padding: 8px;
+    border: 1px solid var(--hdp-border);
+    border-radius: var(--hdp-radius);
+    background: var(--hdp-surface-card, var(--hdp-card-bg));
+  }
   .pw-room-top {
     display: flex;
     justify-content: space-between;
@@ -1022,6 +1050,14 @@ ${generateDesignTokenCSS(tokens)}
     text-align: right;
     margin-top: 2px;
   }
+  .pw-empty {
+    padding: 12px 14px;
+    border: 1px dashed var(--hdp-border);
+    border-radius: var(--hdp-radius);
+    color: var(--hdp-text-muted);
+    font: inherit;
+    font-size: 12px;
+  }
 </style>
 <div class="pw-hdr">
   <span class="pw-title">全屋功率</span>
@@ -1032,7 +1068,7 @@ ${generateDesignTokenCSS(tokens)}
     <span class="pw-total-val">${power.total_display}</span>
   </div>
 </div>
-${roomRows}`,
+${renderedRoomRows}${emptyHTML}`,
   };
 }
 

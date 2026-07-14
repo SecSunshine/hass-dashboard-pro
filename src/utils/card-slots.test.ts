@@ -540,6 +540,38 @@ describe('card slots', () => {
     ]));
   });
 
+  it('lists dynamically hidden area power slots for restoration', () => {
+    const windowStub: Record<string, any> = {};
+    new Function(
+      'window',
+      'document',
+      'localStorage',
+      'Image',
+      'prompt',
+      'confirm',
+      'location',
+      'setTimeout',
+      'clearTimeout',
+      `${generateCardSlotEditorJS()}\nwindow.testGetHiddenHomeSlots = hdpGetHiddenHomeSlots;`,
+    )(
+      windowStub,
+      { readyState: 'loading', addEventListener: () => {} },
+      { getItem: () => null, setItem: () => {} },
+      function ImageStub() {},
+      () => null,
+      () => false,
+      { reload: () => {} },
+      setTimeout,
+      clearTimeout,
+    );
+
+    expect(windowStub.testGetHiddenHomeSlots({
+      'home.power_usage.kitchen': { enabled: false },
+    })).toEqual(expect.arrayContaining([
+      { id: 'home.power_usage.kitchen', label: '区域功率：kitchen' },
+    ]));
+  });
+
   it('cancels pending YAML previews when the owning editor closes', () => {
     const textareaListeners: Record<string, () => void> = {};
     const documentListeners: Record<string, Array<(event: any) => void>> = {};
