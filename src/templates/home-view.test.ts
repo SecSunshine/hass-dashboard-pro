@@ -438,6 +438,32 @@ describe('home view settings', () => {
     expect(html).toContain('Kitchen Light 自定义');
   });
 
+  it('allows one person card to be customized independently', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        cards: {
+          slots: {
+            'home.people.person.alice': {
+              yaml: [
+                'type: custom:html-pro-card',
+                'content: |',
+                '  <button class="custom-person" data-entity="$entity$" data-action="more-info">$name$：$state$</button>',
+              ].join('\n'),
+            },
+          },
+        },
+      } as any,
+    };
+    const html = buildHomeHTML(hass, config);
+
+    expect(html).toContain('data-card-slot="home.people.person.alice" data-card-custom="true"');
+    expect(html).toContain('class="custom-person"');
+    expect(html).toContain('data-entity="person.alice"');
+    expect(html).toContain('Alice：home');
+    expect(html).toContain('data-card-slot="home.people.person.bob"');
+  });
+
   it('renders automations summary as a configuration popup button', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const html = buildHomeHTML({

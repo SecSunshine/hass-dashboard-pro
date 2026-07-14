@@ -508,6 +508,38 @@ describe('card slots', () => {
     ]));
   });
 
+  it('lists dynamically hidden person slots for restoration', () => {
+    const windowStub: Record<string, any> = {};
+    new Function(
+      'window',
+      'document',
+      'localStorage',
+      'Image',
+      'prompt',
+      'confirm',
+      'location',
+      'setTimeout',
+      'clearTimeout',
+      `${generateCardSlotEditorJS()}\nwindow.testGetHiddenHomeSlots = hdpGetHiddenHomeSlots;`,
+    )(
+      windowStub,
+      { readyState: 'loading', addEventListener: () => {} },
+      { getItem: () => null, setItem: () => {} },
+      function ImageStub() {},
+      () => null,
+      () => false,
+      { reload: () => {} },
+      setTimeout,
+      clearTimeout,
+    );
+
+    expect(windowStub.testGetHiddenHomeSlots({
+      'home.people.person.alice': { enabled: false },
+    })).toEqual(expect.arrayContaining([
+      { id: 'home.people.person.alice', label: '家庭成员：alice' },
+    ]));
+  });
+
   it('cancels pending YAML previews when the owning editor closes', () => {
     const textareaListeners: Record<string, () => void> = {};
     const documentListeners: Record<string, Array<(event: any) => void>> = {};

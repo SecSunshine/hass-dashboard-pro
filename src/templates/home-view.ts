@@ -127,7 +127,7 @@ export function buildHomeView(hass: Hass, config: StrategyConfig, tokens?: Resol
       }
       case 'people': {
         const persons = getPersons(hass, getHiddenPersons(config));
-        if (persons.length > 0) cards.push(buildPeopleCard(persons, tokens));
+        if (persons.length > 0) cards.push(buildPeopleCard(persons, tokens, config));
         break;
       }
       case 'environment':
@@ -194,7 +194,7 @@ export function buildHomeHTML(hass: Hass, config: StrategyConfig, tokens?: Resol
           sections.push(resolveSlottedCard(
             config,
             'home.people',
-            extractCardHTML(buildPeopleCard(persons, tokens)),
+            extractCardHTML(buildPeopleCard(persons, tokens, config)),
             resolveCardSize('home_people', layout.sizes.home_people, cs),
             defaultOrder,
           ));
@@ -596,21 +596,35 @@ ${generateDesignTokenCSS(tokens)}
 
 // 鈹€鈹€鈹€ 3. People Card 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
-function buildPeopleCard(persons: PersonInfo[], tokens?: ResolvedTokens): LovelaceCardConfig {
+function buildPeopleCard(persons: PersonInfo[], tokens?: ResolvedTokens, config?: StrategyConfig): LovelaceCardConfig {
   const homeCount = persons.filter(p => p.is_home).length;
-  const people = persons.map(p => {
+  const people: Array<string | SlottedCard> = persons.map((p, index) => {
     const avatarHTML = p.picture
       ? `<div class="pp-avatar" style="background-image: url('${escapeInlineStyleValue(escapeURLAttribute(p.picture))}')"></div>`
       : `<div class="pp-avatar pp-avatar--fallback">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
         </div>`;
     const stateCls = p.is_home ? 'pp-state--home' : 'pp-state--away';
-    return `<div class="pp-item">
+    const personHTML = `<button type="button" class="pp-item" data-entity="${escapeAttribute(p.entity_id)}" data-action="more-info">
       ${avatarHTML}
       <div class="pp-name">${escapeHTML(p.name)}</div>
       <div class="pp-state ${stateCls}">${escapeHTML(p.display)}</div>
-    </div>`;
-  }).join('');
+    </button>`;
+    return config
+      ? resolveSlottedCard(config, `home.people.${p.entity_id}`, personHTML, 'sm', index, {
+        entity: p.entity_id,
+        name: p.name,
+        state: p.state,
+        domain: 'person',
+      })
+      : personHTML;
+  });
+  const renderedPeople = config
+    ? sortSlottedCards(people.filter((person): person is SlottedCard => typeof person !== 'string')).map(person => person.html).join('')
+    : people.join('');
+  const emptyHTML = config && !renderedPeople
+    ? '<div class="pp-empty">家庭成员已隐藏，可在管理隐藏中恢复</div>'
+    : '';
 
   return {
     type: 'custom:html-pro-card',
@@ -646,6 +660,20 @@ ${generateDesignTokenCSS(tokens)}
     flex-wrap: wrap;
     min-width: 0;
   }
+  .pp-grid > .hdp-card-slot {
+    display: flex;
+    flex: 1 1 64px;
+    max-width: 96px;
+    min-width: 0;
+    height: auto;
+  }
+  .pp-grid > .hdp-card-slot[data-card-slot-size="md"],
+  .pp-grid > .hdp-card-slot[data-card-slot-size="lg"],
+  .pp-grid > .hdp-card-slot[data-card-slot-size="tall"],
+  .pp-grid > .hdp-card-slot[data-card-slot-size="wide"] {
+    flex-basis: min(100%, 220px);
+    max-width: min(100%, 220px);
+  }
   .pp-item {
     display: flex;
     flex: 1 1 64px;
@@ -655,7 +683,15 @@ ${generateDesignTokenCSS(tokens)}
     gap: 6px;
     min-width: 0;
     text-align: center;
+    appearance: none;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
   }
+  .pp-item:hover .pp-avatar { box-shadow: 0 0 0 2px var(--hdp-primary); }
+  .pp-item:focus-visible { outline: 2px solid var(--hdp-primary); outline-offset: 3px; border-radius: var(--hdp-radius-sm); }
   .pp-avatar {
     width: 44px; height: 44px;
     border-radius: 50%;
@@ -701,7 +737,7 @@ ${generateDesignTokenCSS(tokens)}
   <span class="pp-title">家庭成员</span>
   <span class="pp-count">${homeCount} 人在家</span>
 </div>
-<div class="pp-grid">${people}</div>`,
+<div class="pp-grid">${renderedPeople}${emptyHTML}</div>`,
   };
 }
 
