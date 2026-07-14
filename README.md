@@ -113,6 +113,17 @@ strategy:
 
 Open the **Visual Settings** page from the dashboard sidebar to adjust appearance interactively. Changes persist in `localStorage`.
 
+### Card Editing
+
+Administrators can choose **Edit Home** or **Edit This Page** to customize generated cards without editing the dashboard YAML. Changes remain drafts until **Save and Apply**; **Cancel** discards every pending card change.
+
+- Each card supports safe `custom:html-pro-card` YAML, background images, local image color extraction, sizing, hiding, and reset to the generated default.
+- Home sections can be edited as individual items: status badges, people, environment metrics, power areas, favorites, summary metrics, and welcome weather/alarm details.
+- Area and device pages use stable per-entity slots: `entity.<entity_id>`, for example `entity.light.kitchen_counter`.
+- Existing domain-wide overrides remain supported as a fallback: `entity.domain.light` applies when that entity has no individual override.
+
+Custom card YAML is limited to the safe `custom:html-pro-card` subset. Declarative bindings such as `data-entity`, `data-action`, and `$entity$` / `$name$` / `$state$` placeholders are supported; scripts and inline event handlers are rejected.
+
 ## Development
 
 ```bash
