@@ -925,6 +925,7 @@ function hdpGetHiddenSlotLabel(slotId) {
   if (id.indexOf('home.favorites.') === 0) return '收藏设备：' + id.slice('home.favorites.'.length);
   if (id.indexOf('home.people.person.') === 0) return '家庭成员：' + id.slice('home.people.person.'.length);
   if (id.indexOf('home.power_usage.') === 0) return '区域功率：' + id.slice('home.power_usage.'.length);
+  if (id.indexOf('entity.') === 0) return '实体卡片：' + id.slice('entity.'.length);
   return id;
 }
 

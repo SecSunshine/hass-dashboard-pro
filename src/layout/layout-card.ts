@@ -80,7 +80,7 @@ export function buildLayoutCard(opts: LayoutCardOptions): LovelaceCardConfig {
     </div>`
     : '';
   const homeEditBarHTML = buildCardEditBar('编辑首页', true);
-  const pageEditBarHTML = buildCardEditBar('编辑此页');
+  const pageEditBarHTML = buildCardEditBar('编辑此页', true);
   const themeStudioHTML = showSettings ? buildThemeStudioHTML(tokens, hass, config) : '';
   const themeStudioJS = showSettings ? generateThemeStudioJS() : '';
   const blueprintAdminHTML = showSettings ? buildImportModalHTML() : '';
