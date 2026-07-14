@@ -140,7 +140,7 @@ export function buildHomeView(hass: Hass, config: StrategyConfig, tokens?: Resol
       }
       case 'favorites': {
         const favorites = getFavorites(hass, config);
-        if (favorites.length > 0) cards.push(buildFavoritesCard(favorites, tokens));
+        if (favorites.length > 0) cards.push(buildFavoritesCard(favorites, tokens, config));
         break;
       }
       case 'summary':
@@ -229,7 +229,7 @@ export function buildHomeHTML(hass: Hass, config: StrategyConfig, tokens?: Resol
           sections.push(resolveSlottedCard(
             config,
             'home.favorites',
-            extractCardHTML(buildFavoritesCard(favorites, tokens)),
+            extractCardHTML(buildFavoritesCard(favorites, tokens, config)),
             resolveCardSize('home_favorites', layout.sizes.home_favorites, cs),
             defaultOrder,
           ));
@@ -1002,19 +1002,44 @@ ${roomRows}`,
 
 // 鈹€鈹€鈹€ 6. Favorites Card 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
-function buildFavoritesCard(favorites: FavoriteEntity[], tokens?: ResolvedTokens): LovelaceCardConfig {
+function buildFavoritesCard(favorites: FavoriteEntity[], tokens?: ResolvedTokens, config?: StrategyConfig): LovelaceCardConfig {
   const skinCls = cardSkinClass(tokens?.card_style);
-  const items = favorites.map(f => {
+  const items = favorites.map((f, index) => {
     const iconSVG = getFavoriteIcon(f.domain, f.is_active);
     const stateCls = f.is_active ? 'fav-item--active fav--active' : '';
-    return `<div class="fav-item ${stateCls} ${skinCls}" data-entity="${escapeAttribute(f.entity_id)}" data-action="toggle">
+    const itemHTML = `<div class="fav-item ${stateCls} ${skinCls}" data-entity="${escapeAttribute(f.entity_id)}" data-action="toggle">
       <div class="fav-icon">${iconSVG}</div>
       <div class="fav-info">
         <div class="fav-name">${escapeHTML(f.name)}</div>
         <div class="fav-state">${escapeHTML(f.display)}</div>
       </div>
     </div>`;
-  }).join('');
+    return config
+      ? resolveSlottedCard(config, `home.favorites.${f.entity_id}`, itemHTML, 'sm', index, {
+        entity: f.entity_id,
+        name: f.name,
+        state: f.state,
+        domain: f.domain,
+      })
+      : null;
+  });
+  const renderedItems = config
+    ? sortSlottedCards(items.filter((item): item is SlottedCard => item !== null)).map(item => item.html).join('')
+    : items.map((_, index) => {
+      const favorite = favorites[index];
+      const iconSVG = getFavoriteIcon(favorite.domain, favorite.is_active);
+      const stateCls = favorite.is_active ? 'fav-item--active fav--active' : '';
+      return `<div class="fav-item ${stateCls} ${skinCls}" data-entity="${escapeAttribute(favorite.entity_id)}" data-action="toggle">
+        <div class="fav-icon">${iconSVG}</div>
+        <div class="fav-info">
+          <div class="fav-name">${escapeHTML(favorite.name)}</div>
+          <div class="fav-state">${escapeHTML(favorite.display)}</div>
+        </div>
+      </div>`;
+    }).join('');
+  const emptyHTML = config && !renderedItems
+    ? '<div class="fav-empty">收藏设备已隐藏，可在管理隐藏中恢复</div>'
+    : '';
 
   return {
     type: 'custom:html-pro-card',
@@ -1038,6 +1063,16 @@ ${generateDesignTokenCSS(tokens)}
     display: flex;
     flex-direction: column;
     gap: 8px;
+  }
+  .fav-list > .hdp-card-slot {
+    min-width: 0;
+    height: auto;
+  }
+  .fav-list > .hdp-card-slot[data-card-slot-size="md"],
+  .fav-list > .hdp-card-slot[data-card-slot-size="lg"],
+  .fav-list > .hdp-card-slot[data-card-slot-size="tall"],
+  .fav-list > .hdp-card-slot[data-card-slot-size="wide"] {
+    min-height: 72px;
   }
   .fav-item {
     display: flex;
@@ -1086,11 +1121,19 @@ ${generateDesignTokenCSS(tokens)}
     font-size: 12px;
     color: var(--hdp-text-secondary);
   }
+  .fav-empty {
+    padding: 12px 14px;
+    border: 1px dashed var(--hdp-border);
+    border-radius: var(--hdp-radius);
+    color: var(--hdp-text-muted);
+    font: inherit;
+    font-size: 12px;
+  }
 </style>
 <div class="fav-hdr">
   <span class="fav-title">收藏设备</span>
 </div>
-<div class="fav-list">${items}</div>`,
+<div class="fav-list">${renderedItems}${emptyHTML}</div>`,
   };
 }
 

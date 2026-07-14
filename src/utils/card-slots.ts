@@ -898,13 +898,30 @@ function hdpBindCardSlotModal(modal, focusTarget, cleanup) {
   return close;
 }
 
+function hdpGetHiddenSlotLabel(slotId) {
+  var id = String(slotId || '');
+  if (id.indexOf('home.favorites.') === 0) return '收藏设备：' + id.slice('home.favorites.'.length);
+  return id;
+}
+
+function hdpGetHiddenHomeSlots(slots) {
+  var known = {};
+  var allSlots = HDP_HOME_CARD_SLOTS.slice();
+  allSlots.forEach(function(item) { known[item.id] = true; });
+  Object.keys(slots || {}).forEach(function(slotId) {
+    if (!slots[slotId] || slots[slotId].enabled !== false || known[slotId]) return;
+    allSlots.push({ id: slotId, label: hdpGetHiddenSlotLabel(slotId) });
+  });
+  return allSlots.filter(function(item) {
+    return slots[item.id] && slots[item.id].enabled === false;
+  });
+}
+
 window.hdpOpenHiddenCardSlots = function() {
   hdpDismissExistingCardSlotModals();
   var draft = hdpGetCardEditDraft();
   var slots = (draft.cards && draft.cards.slots) || {};
-  var hidden = HDP_HOME_CARD_SLOTS.filter(function(item) {
-    return slots[item.id] && slots[item.id].enabled === false;
-  });
+  var hidden = hdpGetHiddenHomeSlots(slots);
   var modal = document.createElement('div');
   modal.id = 'hdp-hidden-slots-modal';
   modal.className = 'hdp-slot-editor-modal';

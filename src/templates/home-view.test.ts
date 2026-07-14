@@ -412,6 +412,32 @@ describe('home view settings', () => {
     expect(html).toContain('.fav-item--active');
   });
 
+  it('allows one favorite entity to be customized independently', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      favorite_entities: ['light.kitchen'],
+      hdp_config: {
+        cards: {
+          slots: {
+            'home.favorites.light.kitchen': {
+              yaml: [
+                'type: custom:html-pro-card',
+                'content: |',
+                '  <button class="custom-favorite" data-entity="$entity$" data-action="toggle">$name$ 自定义</button>',
+              ].join('\n'),
+            },
+          },
+        },
+      } as any,
+    };
+    const html = buildHomeHTML(hass, config);
+
+    expect(html).toContain('data-card-slot="home.favorites.light.kitchen" data-card-custom="true"');
+    expect(html).toContain('class="custom-favorite"');
+    expect(html).toContain('data-entity="light.kitchen"');
+    expect(html).toContain('Kitchen Light 自定义');
+  });
+
   it('renders automations summary as a configuration popup button', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const html = buildHomeHTML({

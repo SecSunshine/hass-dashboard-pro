@@ -476,6 +476,38 @@ describe('card slots', () => {
     expect(windowStub.hdpCardEditDraft.cards.slots['home.environment.humidity'].order).toBe(2);
   });
 
+  it('lists dynamically hidden favorite slots for restoration', () => {
+    const windowStub: Record<string, any> = {};
+    new Function(
+      'window',
+      'document',
+      'localStorage',
+      'Image',
+      'prompt',
+      'confirm',
+      'location',
+      'setTimeout',
+      'clearTimeout',
+      `${generateCardSlotEditorJS()}\nwindow.testGetHiddenHomeSlots = hdpGetHiddenHomeSlots;`,
+    )(
+      windowStub,
+      { readyState: 'loading', addEventListener: () => {} },
+      { getItem: () => null, setItem: () => {} },
+      function ImageStub() {},
+      () => null,
+      () => false,
+      { reload: () => {} },
+      setTimeout,
+      clearTimeout,
+    );
+
+    expect(windowStub.testGetHiddenHomeSlots({
+      'home.favorites.light.kitchen': { enabled: false },
+    })).toEqual(expect.arrayContaining([
+      { id: 'home.favorites.light.kitchen', label: '收藏设备：light.kitchen' },
+    ]));
+  });
+
   it('cancels pending YAML previews when the owning editor closes', () => {
     const textareaListeners: Record<string, () => void> = {};
     const documentListeners: Record<string, Array<(event: any) => void>> = {};
