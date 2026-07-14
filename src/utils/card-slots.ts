@@ -148,7 +148,13 @@ export function getCardSlotCSS(): string {
   }
   .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-slot-edit-panel,
   .hdp-root--card-edit .hdp-view .hdp-slot-edit-panel {
+    display: none;
+  }
+  .hdp-root--card-edit .hdp-view .hdp-card-slot:hover .hdp-slot-edit-panel,
+  .hdp-root--card-edit .hdp-view .hdp-card-slot:focus-within .hdp-slot-edit-panel {
     display: flex;
+    flex-wrap: wrap;
+    max-width: calc(100% - 16px);
   }
   .hdp-slot-edit-panel button,
   .hdp-slot-edit-panel select {
