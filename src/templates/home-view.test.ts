@@ -393,6 +393,32 @@ describe('home view settings', () => {
     expect(html).not.toContain('<div class="hw-alarm');
   });
 
+  it('allows welcome weather to be customized without replacing alarm status', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        header: { weather_entity: 'weather.home', alarm_entity: 'alarm_control_panel.home' },
+        cards: { slots: {
+          'home.welcome.weather': {
+            yaml: [
+              'type: custom:html-pro-card',
+              'content: |',
+              '  <button class="custom-weather" data-entity="$entity$" data-action="more-info">$name$ / $state$</button>',
+            ].join('\n'),
+          },
+        } },
+      } as any,
+    };
+    const html = buildHomeHTML(hass, config);
+
+    expect(html).toContain('data-card-slot="home.welcome.weather" data-card-custom="true"');
+    expect(html).toContain('class="custom-weather"');
+    expect(html).toContain('data-entity="weather.home"');
+    expect(html).toContain('24°C');
+    expect(html).toContain('data-card-slot="home.welcome.alarm"');
+    expect(html).toContain('class="hw-alarm');
+  });
+
   it('sanitizes persisted card skin classes', () => {
     const config: StrategyConfig = { type: 'custom:hass-dashboard-pro' };
     const html = buildHomeHTML(hass, config, { card_style: 'bad" onclick="evil()' } as any);

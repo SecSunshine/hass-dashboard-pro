@@ -501,6 +501,8 @@ export function generateCardSlotEditorJS(): string {
   return `
 var HDP_HOME_CARD_SLOTS = [
   { id: 'home.welcome', label: '欢迎卡片' },
+  { id: 'home.welcome.weather', label: '天气信息' },
+  { id: 'home.welcome.alarm', label: '安防状态' },
   { id: 'home.status_badges', label: '状态徽章' },
   { id: 'home.status_badges.light', label: '灯光徽章' },
   { id: 'home.status_badges.switch', label: '开关徽章' },

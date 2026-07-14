@@ -362,6 +362,24 @@ function buildWelcomeCard(hass: Hass, config: StrategyConfig, tokens?: ResolvedT
         <span class="hw-a-text">${alarmDisplay}</span>
       </div>`
     : '';
+  const metaSlots: SlottedCard[] = [];
+  if (weatherHTML) {
+    metaSlots.push(resolveSlottedCard(config, 'home.welcome.weather', weatherHTML, 'sm', 0, {
+      entity: header.weatherEntity,
+      name: weather?.condition_display,
+      state: weather?.temp,
+      domain: 'weather',
+    }));
+  }
+  if (alarmHTML) {
+    metaSlots.push(resolveSlottedCard(config, 'home.welcome.alarm', alarmHTML, 'sm', 1, {
+      entity: header.alarmEntity,
+      name: alarm?.display,
+      state: alarm?.display,
+      domain: 'alarm_control_panel',
+    }));
+  }
+  const metaHTML = sortSlottedCards(metaSlots).map(slot => slot.html).join('');
 
   return {
     type: 'custom:html-pro-card',
@@ -427,6 +445,17 @@ ${generateDesignTokenCSS(tokens)}
     align-items: center;
     flex-wrap: wrap;
   }
+  .hw-meta > .hdp-card-slot {
+    flex: 0 1 auto;
+    min-width: 0;
+    height: auto;
+  }
+  .hw-meta > .hdp-card-slot[data-card-slot-size="md"],
+  .hw-meta > .hdp-card-slot[data-card-slot-size="lg"],
+  .hw-meta > .hdp-card-slot[data-card-slot-size="tall"],
+  .hw-meta > .hdp-card-slot[data-card-slot-size="wide"] {
+    flex: 1 1 100%;
+  }
   .hw-weather {
     display: flex;
     align-items: center;
@@ -488,8 +517,7 @@ ${generateDesignTokenCSS(tokens)}
     </div>
     <div class="hw-greeting">${escapeHTML(greeting)}<span class="hw-greeting-name">${userName ? '，' + escapeHTML(userName) : ''}</span></div>
     <div class="hw-meta">
-      ${weatherHTML}
-      ${alarmHTML}
+      ${metaHTML}
     </div>
   </div>
 </div>`,
