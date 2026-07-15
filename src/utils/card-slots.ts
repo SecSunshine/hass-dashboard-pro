@@ -1059,6 +1059,19 @@ function hdpBuildAddCardDomains() {
   }).join('');
 }
 
+function hdpBuildAddCardEntities() {
+  var hass = typeof hdpFindHass === 'function' ? hdpFindHass() : null;
+  var states = hass && hass.states || {};
+  return Object.keys(states).sort(function(a, b) {
+    var aName = String(states[a] && states[a].attributes && states[a].attributes.friendly_name || a);
+    var bName = String(states[b] && states[b].attributes && states[b].attributes.friendly_name || b);
+    return aName.localeCompare(bName) || a.localeCompare(b);
+  }).slice(0, 800).map(function(entityId) {
+    var name = String(states[entityId] && states[entityId].attributes && states[entityId].attributes.friendly_name || entityId);
+    return '<option value="' + hdpEscapeSlotText(entityId) + '" label="' + hdpEscapeSlotText(name) + '"></option>';
+  }).join('');
+}
+
 window.hdpOpenAddCard = function() {
   hdpDismissExistingCardSlotModals();
   var modal = document.createElement('div');
@@ -1066,12 +1079,13 @@ window.hdpOpenAddCard = function() {
   modal.className = 'hdp-slot-editor-modal';
   if (typeof hdpApplyThemeVarsToOverlay === 'function') hdpApplyThemeVarsToOverlay(modal);
   var domains = hdpBuildAddCardDomains();
+  var entities = hdpBuildAddCardEntities();
   modal.innerHTML =
     '<div class="hdp-slot-editor-dialog hdp-add-card-dialog" role="dialog" aria-modal="true">' +
       '<div class="hdp-slot-editor-head"><div class="hdp-slot-editor-title">新增或替换卡片</div><button type="button" data-action="close">×</button></div>' +
       '<label class="hdp-add-card-field">类型<select id="hdp-add-card-kind"><option value="custom">新增独立自定义卡片</option><option value="domain">替换某个类别的所有卡片</option><option value="entity">替换单个设备卡片</option></select></label>' +
       '<label class="hdp-add-card-field" id="hdp-add-card-domain-field">设备类别<select id="hdp-add-card-domain">' + domains + '</select></label>' +
-      '<label class="hdp-add-card-field" id="hdp-add-card-entity-field" hidden>实体 ID<input id="hdp-add-card-entity" placeholder="climate.living_room" /></label>' +
+      '<label class="hdp-add-card-field" id="hdp-add-card-entity-field" hidden>设备<input id="hdp-add-card-entity" list="hdp-add-card-entities" placeholder="搜索或输入实体 ID" /><datalist id="hdp-add-card-entities">' + entities + '</datalist></label>' +
       '<div class="hdp-add-card-help" id="hdp-add-card-help">创建一张独立的 HTML Pro Card，可自由设置大小、位置、背景图和 YAML。</div>' +
       '<div class="hdp-slot-editor-actions"><span></span><button type="button" class="hdp-primary" data-action="create">继续编辑</button></div>' +
     '</div>';
@@ -1380,12 +1394,19 @@ function hdpFindUnsafeSlotLine(text) {
 
 function hdpGetSlotTemplate(template, slotId) {
   var title = String(slotId || 'custom.card').replace(/^home\\./, '').replace(/[_.-]+/g, ' ');
+  var entityBinding = '';
+  if (String(slotId || '').indexOf('entity.domain.') === 0) entityBinding = '$entity$';
+  else if (String(slotId || '').indexOf('entity.') === 0) entityBinding = String(slotId).slice('entity.'.length);
+  var entityAttrs = entityBinding
+    ? ' data-entity="' + hdpEscapeSlotText(entityBinding) + '" data-action="toggle"'
+    : ' data-view="home"';
+  var entityLabel = entityBinding === '$entity$' ? '$name$' : title;
   var templates = {
     'entity-control': [
       'type: custom:html-pro-card',
       'content: |',
-      '  <div class="hdp-custom-control" data-entity="light.example" data-action="toggle">',
-      '    <strong>' + hdpEscapeSlotText(title) + '</strong>',
+      '  <div class="hdp-custom-control"' + entityAttrs + '>',
+      '    <strong>' + hdpEscapeSlotText(entityLabel) + '</strong>',
       '    <span>点击切换设备</span>',
       '  </div>'
     ],
@@ -1402,9 +1423,7 @@ function hdpGetSlotTemplate(template, slotId) {
       'type: custom:html-pro-card',
       'content: |',
       '  <div class="hdp-custom-list">',
-      '    <button type="button" data-entity="light.example" data-action="toggle">灯光</button>',
-      '    <button type="button" data-entity="cover.example" data-action="cover-open">窗帘打开</button>',
-      '    <button type="button" data-entity="cover.example" data-action="cover-close">窗帘关闭</button>',
+      '    <button type="button"' + entityAttrs + '>' + hdpEscapeSlotText(entityLabel) + '</button>',
       '  </div>'
     ],
     'blank': [

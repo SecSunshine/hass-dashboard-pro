@@ -1076,6 +1076,10 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
     expect(js).toContain('new Image()');
     expect(js).toContain('data-template="entity-control"');
     expect(js).toContain('function hdpGetSlotTemplate(template, slotId)');
+    expect(js).toContain("if (String(slotId || '').indexOf('entity.domain.') === 0) entityBinding = '$entity$';");
+    expect(js).toContain("else if (String(slotId || '').indexOf('entity.') === 0) entityBinding = String(slotId).slice('entity.'.length);");
+    expect(js).toContain('function hdpBuildAddCardEntities()');
+    expect(js).toContain('list="hdp-add-card-entities"');
     expect(js).toContain('textarea.addEventListener(\'input\', schedulePreview)');
     expect(js).toContain('function hdpFindUnsafeSlotLine(text)');
     expect(js).toContain("if (save) save.disabled = true;");
