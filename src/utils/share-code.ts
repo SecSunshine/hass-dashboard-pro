@@ -237,6 +237,12 @@ function normalizeCardSlots(value: unknown): Record<string, unknown> {
     if (slotValue.enabled === false) slot.enabled = false;
     if (typeof slotValue.order === 'number' && Number.isFinite(slotValue.order)) slot.order = slotValue.order;
     if (typeof slotValue.size === 'string' && sanitizeBentoSize(slotValue.size, 'md') === slotValue.size) slot.size = slotValue.size;
+    if (typeof slotValue.grid_columns === 'number' && Number.isFinite(slotValue.grid_columns)) {
+      slot.grid_columns = Math.max(1, Math.min(4, Math.round(slotValue.grid_columns)));
+    }
+    if (typeof slotValue.grid_rows === 'number' && Number.isFinite(slotValue.grid_rows)) {
+      slot.grid_rows = Math.max(1, Math.min(6, Math.round(slotValue.grid_rows)));
+    }
     const backgroundUrl = sanitizeImageURL(slotValue.background_image_url);
     if (backgroundUrl) slot.background_image_url = backgroundUrl;
     if (backgroundUrl && slotValue.theme_from_image === true) slot.theme_from_image = true;

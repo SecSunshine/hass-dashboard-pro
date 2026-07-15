@@ -90,6 +90,8 @@ describe('share code', () => {
               enabled: false,
               order: 3,
               size: 'wide',
+              grid_columns: 3,
+              grid_rows: 2,
               background_image_url: '/local/card.jpg',
               theme_from_image: true,
               yaml: 'type: custom:html-pro-card\ncontent: |\n  <div data-action="toggle">Safe</div>',
@@ -142,12 +144,14 @@ describe('share code', () => {
     expect(imported.hdp_config?.people?.hidden_persons).toEqual(['person.alice', 'person.bob']);
     expect(imported.hdp_config?.dashboard).toEqual({
       name: 'Imported Home',
-      background_image_url: 'images/dashboard.jpg',
+      background_image_url: '/local/images/dashboard.jpg',
     });
     expect(imported.hdp_config?.cards?.slots?.['home.summary']).toEqual({
       enabled: false,
       order: 3,
       size: 'wide',
+      grid_columns: 3,
+      grid_rows: 2,
       background_image_url: '/local/card.jpg',
       theme_from_image: true,
       yaml: 'type: custom:html-pro-card\ncontent: |\n  <div data-action="toggle">Safe</div>',

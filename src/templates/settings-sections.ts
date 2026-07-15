@@ -752,7 +752,12 @@ function hdpNormalizeSettingsImageUrl(value) {
   if (/[\\r\\n)"'\\\\]/.test(text)) return null;
   if (/^data:/i.test(text) && !/^data:image\\//i.test(text)) return null;
   if (/^[a-z][a-z0-9+.-]*:/i.test(text) && !/^(https?:|data:image\\/)/i.test(text)) return null;
-  return text;
+  if (/^(https?:|data:image\\/)/i.test(text) || text.charAt(0) === '/') return text;
+  if (/^(?:\\.{1,2}\\/|\\/)/.test(text)
+    || !/^[a-z0-9][a-z0-9._/ -]*$/i.test(text)
+    || text.indexOf('//') >= 0
+    || text.split('/').some(function(part) { return part === '.' || part === '..'; })) return null;
+  return '/local/' + text;
 }
 
 function hdpSyncSettingsControlsFromDraft() {
@@ -1025,6 +1030,7 @@ if (!window.hdpSettingsCommandHandlerReady) {
       if (typeof hdpShowToast === 'function') hdpShowToast('图片地址无效，未修改设置', 'error');
       return;
     }
+    if (control.type === 'url') control.value = value;
     window.hdpSaveSetting(path, value);
   }, true);
   document.addEventListener('input', function(e) {
@@ -1359,6 +1365,12 @@ function hdpNormalizeCardSlots(value) {
     if (slot.enabled === false) normalized.enabled = false;
     if (typeof slot.order === 'number' && isFinite(slot.order)) normalized.order = slot.order;
     if (allowedSizes.indexOf(slot.size) >= 0) normalized.size = slot.size;
+    if (typeof slot.grid_columns === 'number' && isFinite(slot.grid_columns)) {
+      normalized.grid_columns = Math.max(1, Math.min(4, Math.round(slot.grid_columns)));
+    }
+    if (typeof slot.grid_rows === 'number' && isFinite(slot.grid_rows)) {
+      normalized.grid_rows = Math.max(1, Math.min(6, Math.round(slot.grid_rows)));
+    }
     var backgroundUrl = hdpNormalizeSettingsImageUrl(slot.background_image_url);
     if (backgroundUrl) normalized.background_image_url = backgroundUrl;
     if (backgroundUrl && slot.theme_from_image === true) normalized.theme_from_image = true;

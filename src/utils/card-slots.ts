@@ -128,6 +128,10 @@ export function getCardSlotCSS(): string {
   .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-home-content > .hdp-bento:active {
     cursor: grabbing;
   }
+  .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-home-content {
+    grid-auto-rows: minmax(96px, auto);
+    align-items: start;
+  }
   .hdp-bento--dragging {
     opacity: 0.42;
   }
@@ -208,6 +212,29 @@ export function getCardSlotCSS(): string {
   .hdp-slot-edit-panel [data-card-edit-action="drag"]:active {
     cursor: grabbing;
   }
+  .hdp-slot-resize-handle {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    z-index: 21;
+    display: none;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid var(--hdp-border);
+    border-radius: 8px;
+    background: var(--hdp-control-bg, var(--hdp-card-bg));
+    color: var(--hdp-primary);
+    font: 800 18px/1 sans-serif;
+    cursor: nwse-resize;
+    touch-action: none;
+    user-select: none;
+    box-shadow: var(--hdp-shadow-card);
+  }
+  .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-card-slot:hover .hdp-slot-resize-handle,
+  .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-card-slot:focus-within .hdp-slot-resize-handle {
+    display: block;
+  }
   .hdp-card-slot--draft-hidden > :not(.hdp-slot-edit-panel):not(.hdp-slot-hidden-note) {
     opacity: 0.28;
     filter: grayscale(0.4);
@@ -232,27 +259,38 @@ export function getCardSlotCSS(): string {
     display: block;
   }
   .hdp-slot-editor-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 1000000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 18px;
-    background: var(--hdp-overlay-bg, rgba(8,12,22,0.46));
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 2147483000 !important;
+    display: grid !important;
+    place-items: center !important;
+    box-sizing: border-box !important;
+    isolation: isolate;
+    overflow: auto !important;
+    padding: 18px !important;
+    background: var(--hdp-overlay-bg, rgba(8,12,22,0.46)) !important;
     backdrop-filter: blur(10px);
   }
+  .hdp-slot-editor-modal *,
+  .hdp-slot-editor-modal *::before,
+  .hdp-slot-editor-modal *::after { box-sizing: border-box; }
   .hdp-slot-editor-dialog {
-    width: min(860px, 96vw);
-    max-height: 90dvh;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 18px;
+    position: relative !important;
+    z-index: 1;
+    align-self: center;
+    width: min(860px, calc(100vw - 36px)) !important;
+    max-height: min(90dvh, calc(100vh - 36px));
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    overflow: auto !important;
+    padding: 18px !important;
     border-radius: var(--hdp-radius-lg, 18px);
-    background: var(--hdp-modal-bg, var(--hdp-bg));
+    background: var(--hdp-modal-bg, var(--hdp-bg)) !important;
     border: 1px solid var(--hdp-border);
     box-shadow: var(--hdp-shadow-elevated, 0 24px 80px rgba(0,0,0,0.28));
+    color: var(--hdp-text) !important;
+    font: 14px/1.45 var(--hdp-font, system-ui, sans-serif) !important;
   }
   .hdp-slot-editor-head,
   .hdp-slot-editor-actions {
@@ -369,7 +407,8 @@ export function getCardSlotCSS(): string {
     color: var(--hdp-text-inverse, white);
   }
   .hdp-add-card-dialog {
-    width: min(520px, 96vw);
+    width: min(520px, calc(100vw - 36px)) !important;
+    min-height: 0;
   }
   .hdp-add-card-field {
     display: grid;
@@ -556,7 +595,7 @@ function buildSlotEditPanel(slotId: string, slot?: CardSlotConfig, defaultSize: 
     <button type="button" title="背景图" aria-label="设置卡片背景图" data-card-edit-action="background" data-slot-id="${slotAttr}">图</button>
     <button type="button" title="隐藏" aria-label="隐藏卡片" data-card-edit-action="hide" data-slot-id="${slotAttr}">藏</button>
     <button type="button" title="恢复默认" aria-label="恢复默认卡片" data-card-edit-action="reset" data-slot-id="${slotAttr}">↺</button>
-  </div>`;
+  </div><button type="button" class="hdp-slot-resize-handle" title="拖动调整卡片大小" aria-label="拖动调整卡片大小" data-card-edit-action="resize" data-slot-id="${slotAttr}">↘</button>`;
 }
 
 export function generateCardSlotEditorJS(): string {
@@ -667,7 +706,7 @@ function hdpInitCardSlotEditorActions() {
     var control = hdpClosestCardEditControl(e);
     if (!control) return;
     var action = control.getAttribute('data-card-edit-action');
-    if (action === 'drag' || action === 'size' || action === 'grid-columns' || action === 'grid-rows') return;
+    if (action === 'drag' || action === 'resize' || action === 'size' || action === 'grid-columns' || action === 'grid-rows') return;
     var slotId = control.getAttribute('data-slot-id');
     if (!slotId) return;
     e.preventDefault();
@@ -863,12 +902,53 @@ function hdpInitCardSlotDragging(root) {
   var pointerDragging = null;
   var pointerHandle = null;
   var pointerMoved = false;
+  var pointerResize = null;
   root.addEventListener('pointerdown', function(e) {
     if (!root.classList.contains('hdp-root--card-edit')) return;
     var handle = hdpClosestCardEditControl(e);
-    if (!handle || handle.getAttribute('data-card-edit-action') !== 'drag') return;
+    if (!handle) return;
+    var action = handle.getAttribute('data-card-edit-action');
+    if (action !== 'drag' && action !== 'resize') return;
     var wrapper = hdpFindSlotWrapperFromTarget(handle);
     if (!wrapper) return;
+    if (action === 'resize') {
+      var slotId = handle.getAttribute('data-slot-id');
+      var home = wrapper.parentNode && wrapper.parentNode.classList && wrapper.parentNode.classList.contains('hdp-home-content')
+        ? wrapper.parentNode
+        : null;
+      if (!slotId || !home || !wrapper.getBoundingClientRect || !home.getBoundingClientRect) return;
+      var wrapperRect = wrapper.getBoundingClientRect();
+      var homeRect = home.getBoundingClientRect();
+      var styles = typeof getComputedStyle === 'function' ? getComputedStyle(home) : null;
+      var gap = styles ? parseFloat(styles.columnGap || styles.gap || '0') : 0;
+      if (isNaN(gap)) gap = 0;
+      var rowHeight = styles ? parseFloat(styles.getPropertyValue('--hdp-density-row-height') || '120') : 120;
+      if (isNaN(rowHeight) || rowHeight < 1) rowHeight = 120;
+      var slot = hdpEnsureCardSlot(slotId);
+      var initialColumns = parseInt(slot.grid_columns, 10);
+      var initialRows = parseInt(slot.grid_rows, 10);
+      if (isNaN(initialColumns)) initialColumns = Math.max(1, Math.min(4, Math.round((wrapperRect.width + gap) / ((homeRect.width - gap * 3) / 4 + gap))));
+      if (isNaN(initialRows)) initialRows = Math.max(1, Math.min(6, Math.round((wrapperRect.height + gap) / (rowHeight + gap))));
+      pointerResize = {
+        slotId: slotId,
+        wrapper: wrapper,
+        handle: handle,
+        startX: e.clientX,
+        startY: e.clientY,
+        startWidth: wrapperRect.width,
+        startHeight: wrapperRect.height,
+        columnWidth: Math.max(1, (homeRect.width - gap * 3) / 4),
+        rowHeight: rowHeight,
+        gap: gap,
+        columns: initialColumns,
+        rows: initialRows
+      };
+      wrapper.classList.add('hdp-bento--resizing');
+      if (handle.setPointerCapture) handle.setPointerCapture(e.pointerId);
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
     pointerDragging = wrapper;
     draggingGroup = hdpGetSlotGroupWrappers(wrapper);
     pointerHandle = handle;
@@ -878,6 +958,19 @@ function hdpInitCardSlotDragging(root) {
     e.preventDefault();
   });
   root.addEventListener('pointermove', function(e) {
+    if (pointerResize) {
+      var resize = pointerResize;
+      var columns = Math.max(1, Math.min(4, Math.round((resize.startWidth + (e.clientX - resize.startX) + resize.gap) / (resize.columnWidth + resize.gap))));
+      var rows = Math.max(1, Math.min(6, Math.round((resize.startHeight + (e.clientY - resize.startY) + resize.gap) / (resize.rowHeight + resize.gap))));
+      resize.columns = columns;
+      resize.rows = rows;
+      resize.wrapper.setAttribute('data-hdp-bento-custom', 'true');
+      resize.wrapper.style.setProperty('--hdp-bento-column-span', columns);
+      resize.wrapper.style.setProperty('--hdp-bento-tablet-column-span', Math.min(columns, 2));
+      resize.wrapper.style.setProperty('--hdp-bento-row-span', rows);
+      e.preventDefault();
+      return;
+    }
     if (!pointerDragging || !document.elementFromPoint) return;
     var hovered = document.elementFromPoint(e.clientX, e.clientY);
     var target = hdpFindSlotWrapperFromTarget(hovered);
@@ -890,6 +983,16 @@ function hdpInitCardSlotDragging(root) {
     e.preventDefault();
   });
   function finishPointerDrag(e) {
+    if (pointerResize) {
+      var resize = pointerResize;
+      if (resize.handle && resize.handle.releasePointerCapture) {
+        try { resize.handle.releasePointerCapture(e.pointerId); } catch(err) {}
+      }
+      resize.wrapper.classList.remove('hdp-bento--resizing');
+      window.hdpSetCardSlotGridSpan(resize.slotId, resize.columns, resize.rows);
+      pointerResize = null;
+      return;
+    }
     if (!pointerDragging) return;
     if (pointerHandle && pointerHandle.releasePointerCapture) {
       try { pointerHandle.releasePointerCapture(e.pointerId); } catch(err) {}
@@ -1018,6 +1121,23 @@ function hdpBindCardSlotModal(modal, focusTarget, cleanup) {
   return close;
 }
 
+// The dashboard card can be rendered inside a scoped html-card-pro tree while
+// these dialogs are appended to document.body. Inline layout guards keep the
+// modal usable in both rendering modes.
+function hdpPrepareCardSlotModal(modal) {
+  if (!modal || !modal.style) return;
+  modal.style.cssText += ';position:fixed!important;inset:0!important;z-index:2147483000!important;display:grid!important;place-items:center!important;box-sizing:border-box!important;overflow:auto!important;padding:18px!important;background:var(--hdp-overlay-bg,rgba(8,12,22,.46))!important;';
+  var dialog = modal.querySelector && modal.querySelector('.hdp-slot-editor-dialog');
+  if (!dialog || !dialog.style) return;
+  dialog.style.cssText += ';position:relative!important;z-index:1;box-sizing:border-box;width:min(860px,calc(100vw - 36px))!important;max-height:min(90dvh,calc(100vh - 36px));display:flex!important;flex-direction:column!important;gap:12px!important;overflow:auto!important;padding:18px!important;background:var(--hdp-modal-bg,var(--hdp-bg))!important;color:var(--hdp-text)!important;font:14px/1.45 var(--hdp-font,system-ui,sans-serif)!important;';
+  var heads = dialog.querySelectorAll ? dialog.querySelectorAll('.hdp-slot-editor-head,.hdp-slot-editor-actions') : [];
+  for (var i = 0; i < heads.length; i++) heads[i].style.cssText += ';display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;';
+  var fields = dialog.querySelectorAll ? dialog.querySelectorAll('.hdp-add-card-field') : [];
+  for (var j = 0; j < fields.length; j++) fields[j].style.cssText += ';display:grid!important;gap:6px!important;';
+  var controls = dialog.querySelectorAll ? dialog.querySelectorAll('.hdp-add-card-field select,.hdp-add-card-field input') : [];
+  for (var k = 0; k < controls.length; k++) controls[k].style.cssText += ';box-sizing:border-box!important;width:100%!important;min-height:40px!important;';
+}
+
 function hdpGetHiddenSlotLabel(slotId) {
   var id = String(slotId || '');
   if (id.indexOf('home.favorites.') === 0) return '收藏设备：' + id.slice('home.favorites.'.length);
@@ -1089,6 +1209,7 @@ window.hdpOpenAddCard = function() {
       '<div class="hdp-add-card-help" id="hdp-add-card-help">创建一张独立的 HTML Pro Card，可自由设置大小、位置、背景图和 YAML。</div>' +
       '<div class="hdp-slot-editor-actions"><span></span><button type="button" class="hdp-primary" data-action="create">继续编辑</button></div>' +
     '</div>';
+  hdpPrepareCardSlotModal(modal);
   document.body.appendChild(modal);
   var kind = modal.querySelector('#hdp-add-card-kind');
   var domainField = modal.querySelector('#hdp-add-card-domain-field');
@@ -1156,6 +1277,7 @@ window.hdpOpenHiddenCardSlots = function() {
       '<div class="hdp-slot-editor-head"><div class="hdp-slot-editor-title">隐藏卡片管理</div><button type="button" data-action="close">×</button></div>' +
       '<div class="hdp-hidden-slot-list">' + rows + '</div>' +
     '</div>';
+  hdpPrepareCardSlotModal(modal);
   document.body.appendChild(modal);
   var close = hdpBindCardSlotModal(modal, modal.querySelector('[data-action="close"]'));
   modal.addEventListener('click', function(e) {
@@ -1224,6 +1346,7 @@ function hdpOpenSlotEditor(slotId, yaml) {
       '<div class="hdp-slot-editor-body"><textarea id="hdp-slot-yaml" spellcheck="false"></textarea><div class="hdp-slot-editor-preview" id="hdp-slot-preview"></div></div>' +
       '<div class="hdp-slot-editor-actions"><button type="button" data-action="clear">清除自定义</button><span></span><button type="button" data-action="preview">预览</button><button type="button" class="hdp-primary" data-action="save">保存到草稿</button></div>' +
     '</div>';
+  hdpPrepareCardSlotModal(modal);
   document.body.appendChild(modal);
   var textarea = modal.querySelector('#hdp-slot-yaml');
   textarea.value = yaml || hdpGetSlotTemplate('entity-control', slotId);

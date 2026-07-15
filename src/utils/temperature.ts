@@ -23,7 +23,11 @@ export function isTemperatureLikeEntity(entityId: unknown, deviceClass: unknown,
 export function shouldConvertFahrenheitToCelsius(value: number, unit: unknown): boolean {
   const normalizedUnit = normalizeTemperatureUnit(unit);
   if (normalizedUnit === 'fahrenheit') return true;
-  return (normalizedUnit === 'celsius' || normalizedUnit === null) && value > 60 && value < 140;
+  // A number in this range is not a plausible room temperature in Celsius,
+  // but is common when a Fahrenheit-only device incorrectly reports "°C".
+  // Keep the guard narrow enough that real high-temperature sensors are not
+  // silently converted outside the indoor dashboard range.
+  return (normalizedUnit === 'celsius' || normalizedUnit === null) && value >= 45 && value < 140;
 }
 
 export function normalizeTemperatureToCelsius(raw: unknown, unit: unknown): number {

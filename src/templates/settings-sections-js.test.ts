@@ -252,7 +252,8 @@ describe('settings sections client script', () => {
 
     const relative = createUrlInput('images/dashboard.jpg');
     listeners.change[0]({ target: { closest: () => relative } });
-    expect(runtime.hdpSettingsDraft.dashboard.background_image_url).toBe('images/dashboard.jpg');
+    expect(runtime.hdpSettingsDraft.dashboard.background_image_url).toBe('/local/images/dashboard.jpg');
+    expect(relative.value).toBe('/local/images/dashboard.jpg');
   });
 
   it('delegates design and maintenance commands from safe data attributes', () => {
@@ -613,7 +614,7 @@ Old `);
         name: 'Imported Home',
         icon: 'mdi:home',
         avatar_url: '',
-        background_image_url: 'images/dashboard.jpg',
+        background_image_url: '/local/images/dashboard.jpg',
       });
       expect(JSON.parse(store.get('hdp_config') || '{}').devices.hidden_domains).toEqual(['sensor']);
       expect(JSON.parse(store.get('hdp_config') || '{}').cards.slots['home.summary']).toMatchObject({

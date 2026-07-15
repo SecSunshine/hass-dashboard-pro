@@ -49,11 +49,16 @@ export function sanitizeImageURL(value: unknown): string {
     const url = new URL(raw, origin);
     if (!['http:', 'https:', 'data:'].includes(url.protocol)) return '';
     if (url.protocol === 'data:' && !/^data:image\//i.test(raw)) return '';
-    return raw;
+    if (/^(https?:|data:image\/)/i.test(raw) || raw.startsWith('/')) return raw;
+    if (/^(?:\.{1,2}\/|\/)/.test(raw)) return '';
+    // HA serves user-uploaded dashboard images from /local. A file picker can
+    // provide just a filename, which otherwise resolves against the current
+    // Lovelace route and fails after a refresh.
+    if (!/^[a-z0-9][a-z0-9._/ -]*$/i.test(raw)
+      || raw.includes('//')
+      || raw.split('/').some(part => part === '.' || part === '..')) return '';
+    return `/local/${raw}`;
   } catch {
-    if (raw.startsWith('/') || raw.startsWith('./') || raw.startsWith('../')) {
-      return raw;
-    }
     return '';
   }
 }

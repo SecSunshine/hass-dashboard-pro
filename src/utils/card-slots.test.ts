@@ -1050,10 +1050,12 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
     expect(css).toContain('background: var(--hdp-control-bg, var(--hdp-card-bg))');
     expect(css).toContain('background: var(--hdp-control-bg-hover, var(--hdp-primary-light))');
     expect(css).toContain('[data-card-edit-action="drag"]');
+    expect(css).toContain('.hdp-slot-resize-handle');
     expect(css).toContain('.hdp-slot-grid-input');
     expect(css).toContain('touch-action: none;');
     expect(js).toContain('window.hdpToggleCardEditMode = function');
     expect(js).toContain('window.hdpSetCardSlotGridSpan = function(slotId, columns, rows)');
+    expect(js).toContain("action !== 'drag' && action !== 'resize'");
     expect(js).toContain("draft.home.layout_preset = 'custom';");
     expect(js).toContain("if (typeof hdpApplyThemeVarsToOverlay === 'function') hdpApplyThemeVarsToOverlay(modal);");
     expect(js).toContain('function hdpInitCardSlotEditorActions');

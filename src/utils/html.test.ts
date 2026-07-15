@@ -39,7 +39,9 @@ describe('html escaping helpers', () => {
     expect(escapeURLAttribute('data:text/html,<svg>')).toBe('');
     expect(escapeURLAttribute('data:image/png;base64,abc')).toBe('data:image/png;base64,abc');
     expect(sanitizeImageURL('DATA:IMAGE/PNG;base64,abc')).toBe('DATA:IMAGE/PNG;base64,abc');
-    expect(sanitizeImageURL('images/dashboard.jpg')).toBe('images/dashboard.jpg');
+    expect(sanitizeImageURL('images/dashboard.jpg')).toBe('/local/images/dashboard.jpg');
+    expect(sanitizeImageURL('20145706_07ca5.thumb.400_0.jpeg')).toBe('/local/20145706_07ca5.thumb.400_0.jpeg');
+    expect(sanitizeImageURL('../private.jpg')).toBe('');
     expect(sanitizeImageURL('java\nscript:alert(1)')).toBe('');
     expect(sanitizeImageURL(1)).toBe('');
   });

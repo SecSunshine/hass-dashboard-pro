@@ -20,4 +20,9 @@ describe('temperature utilities', () => {
     expect(normalizeTemperatureToCelsius('72', '°C')).toBe(22.2);
     expect(normalizeTemperatureToCelsius('22', '°C')).toBe(22);
   });
+
+  it('corrects implausible indoor Fahrenheit readings such as 47°C', () => {
+    expect(shouldConvertFahrenheitToCelsius(47, '°C')).toBe(true);
+    expect(normalizeTemperatureToCelsius('47', '°C')).toBe(8.3);
+  });
 });
