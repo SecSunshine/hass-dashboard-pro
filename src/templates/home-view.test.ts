@@ -164,6 +164,7 @@ describe('home view settings', () => {
     expect(html).toContain('color: var(--hdp-text-inverse, var(--primary-background-color, Canvas));');
     expect(html).not.toContain('color: white;');
     expect(html).not.toContain('<div class="sd-badge');
+    expect(html).not.toContain('</button>,<button');
   });
 
   it('allows one status badge to be customized independently', () => {

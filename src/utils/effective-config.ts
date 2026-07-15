@@ -2,6 +2,8 @@ import type { HDPConfig, StrategyConfig } from '../types';
 
 const HDP_CONFIG_KEY = 'hdp_config';
 const HDP_CONFIG_PENDING_KEY = 'hdp_config_pending_sync';
+const HDP_CONFIG_LOCAL_OVERRIDE_KEY = 'hdp_config_local_override_at';
+const LOCAL_OVERRIDE_TTL_MS = 5 * 60 * 1000;
 
 export function getEffectiveStrategyConfig(config: StrategyConfig): StrategyConfig {
   const hdpConfig = getEffectiveHDPConfig(config);
@@ -14,6 +16,13 @@ export function getEffectiveHDPConfig(config: StrategyConfig): Partial<HDPConfig
   if (!localConfig) return Object.keys(strategyConfig).length ? strategyConfig : config.hdp_config;
   if (!Object.keys(strategyConfig).length) return localConfig;
   if (!isLocalHDPConfigPending()) {
+    // A strategy refresh can briefly lag behind the successful Lovelace save.
+    // Keep the freshly saved home/card configuration for this first reload.
+    if (hasRecentLocalOverride()) {
+      const merged = deepMerge(strategyConfig, localConfig) as Partial<HDPConfig>;
+      if (strategyConfig.permissions) merged.permissions = strategyConfig.permissions;
+      return merged;
+    }
     // Dashboard images are browser-local presentation settings. Keep the user's
     // latest saved avatar/background even while HA serves a cached strategy.
     const localDashboard = localConfig.dashboard;
@@ -26,6 +35,17 @@ export function getEffectiveHDPConfig(config: StrategyConfig): Partial<HDPConfig
   const merged = deepMerge(strategyConfig, localConfig) as Partial<HDPConfig>;
   if (strategyConfig.permissions) merged.permissions = strategyConfig.permissions;
   return merged;
+}
+
+function hasRecentLocalOverride(): boolean {
+  try {
+    if (typeof localStorage === 'undefined') return false;
+    const savedAt = Number(localStorage.getItem(HDP_CONFIG_LOCAL_OVERRIDE_KEY));
+    const age = Date.now() - savedAt;
+    return Number.isFinite(savedAt) && savedAt > 0 && age >= 0 && age < LOCAL_OVERRIDE_TTL_MS;
+  } catch {
+    return false;
+  }
 }
 
 export function readLocalHDPConfig(): Partial<HDPConfig> | null {

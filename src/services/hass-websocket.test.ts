@@ -189,6 +189,7 @@ describe('hass websocket script', () => {
     const js = generateLovelaceConfigJS();
 
     expect(js).toContain("localStorage.setItem('hdp_config_pending_sync', pendingSync ? 'true' : 'false');");
+    expect(js).toContain("localStorage.setItem('hdp_config_local_override_at', String(Date.now()));");
     expect(js).toContain('return hdpSaveHDPConfig(hdpConfig, false);');
     expect(js).toContain("throw new Error('No Home Assistant connection');");
     expect(js).toContain('return hdpSaveHDPConfig(hdpConfig, true).then(function() {');

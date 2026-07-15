@@ -1630,6 +1630,7 @@ function hdpSaveHDPConfig(data, pendingSync) {
       : Object.assign({}, existing, data);
     localStorage.setItem('hdp_config', JSON.stringify(merged));
     localStorage.setItem('hdp_config_pending_sync', pendingSync ? 'true' : 'false');
+    localStorage.setItem('hdp_config_local_override_at', String(Date.now()));
     return Promise.resolve(merged);
   } catch(e) {
     console.error('[HDP] Failed to save config:', e);

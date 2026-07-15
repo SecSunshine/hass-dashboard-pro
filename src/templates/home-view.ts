@@ -632,7 +632,7 @@ ${generateDesignTokenCSS(tokens)}
   .sd-badge--danger .sd-icon { color: var(--hdp-danger); }
   .sd-badge--accent .sd-icon { color: var(--hdp-accent); }
 </style>
-<div class="sd-wrap">${badges}</div>`,
+<div class="sd-wrap">${badges.join('')}</div>`,
   };
 }
 
@@ -860,6 +860,8 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
 ${generateDesignTokenCSS(tokens)}
 <style>
   .env-hdr {
+    position: relative;
+    z-index: 2;
     display: flex;
     align-items: center;
     margin-bottom: 14px;

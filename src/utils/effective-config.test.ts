@@ -81,6 +81,23 @@ describe('effective config', () => {
     expect(effective.hdp_config?.dashboard?.name).toBe('Home');
   });
 
+  it('uses a freshly saved local layout while strategy data catches up', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => key === 'hdp_config'
+        ? JSON.stringify({ home: { layout_preset: 'l_shape' } })
+        : key === 'hdp_config_local_override_at'
+        ? String(Date.now())
+        : null,
+    });
+
+    const effective = getEffectiveStrategyConfig({
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: { home: { layout_preset: 'grid' } } as any,
+    });
+
+    expect(effective.hdp_config?.home?.layout_preset).toBe('l_shape');
+  });
+
   it('does not let a pending local config override server permissions', () => {
     vi.stubGlobal('localStorage', {
       getItem: (key: string) => key === 'hdp_config_pending_sync'
