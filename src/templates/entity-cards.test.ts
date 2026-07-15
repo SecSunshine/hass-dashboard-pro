@@ -109,6 +109,16 @@ const dateTimeEntity: EntityInfo = {
   area_name: 'Bedroom',
 };
 
+const counterEntity: EntityInfo = {
+  entity_id: 'counter.guest_count',
+  name: 'Guest Count',
+  domain: 'counter',
+  icon: null,
+  state: '3',
+  unit: null,
+  area_name: 'Living Room',
+};
+
 describe('domain entity cards', () => {
   it('renders climate controls as declarative buttons', () => {
     const html = buildDomainCard(climateEntity, climateState);
@@ -325,6 +335,22 @@ describe('domain entity cards', () => {
     expect(html).toContain('class="dc-text-input dc-datetime-input"');
     expect(html).toContain('value="2026-07-15T22:30"');
     expect(html).toContain('data-action="datetime-set"');
+    expect(html).not.toContain('data-action="toggle"');
+  });
+
+  it('renders counters with increment and decrement actions', () => {
+    const html = buildDomainCard(counterEntity, {
+      entity_id: counterEntity.entity_id,
+      state: counterEntity.state,
+      attributes: { minimum: 0, maximum: 5, step: 1 },
+      last_changed: '',
+      last_updated: '',
+    });
+
+    expect(html).toContain('dc-value-card dc-counter');
+    expect(html).toContain('class="dc-climate-target-val dc-counter-value">3</div>');
+    expect(html).toContain('data-action="counter-change" data-delta="-1"');
+    expect(html).toContain('data-action="counter-change" data-delta="1"');
     expect(html).not.toContain('data-action="toggle"');
   });
 

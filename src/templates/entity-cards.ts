@@ -861,6 +861,8 @@ export function buildDomainCard(entity: EntityInfo, stateObj: HassEntity | undef
       return buildTextCard(entity, stateObj, skin);
     case 'input_datetime':
       return buildDateTimeCard(entity, stateObj, skin);
+    case 'counter':
+      return buildCounterCard(entity, stateObj, skin);
     default:
       return null;
   }
@@ -1297,6 +1299,27 @@ function buildDateTimeCard(entity: EntityInfo, stateObj: HassEntity, skin?: stri
   </div>`;
 }
 
+function buildCounterCard(entity: EntityInfo, stateObj: HassEntity, skin?: string): string {
+  const attrs = stateObj.attributes || {};
+  const value = parseOptionalNumber(stateObj.state) ?? 0;
+  const minimum = parseOptionalNumber(attrs.minimum) ?? parseOptionalNumber(attrs.min) ?? 0;
+  const maximum = parseOptionalNumber(attrs.maximum) ?? parseOptionalNumber(attrs.max) ?? Math.max(minimum, value);
+  const available = isEntityAvailable(stateObj.state);
+  const skinCls = skin ? cardSkinClass(skin) : '';
+  const entityId = escapeAttribute(entity.entity_id);
+  const canDecrement = available && value > minimum;
+  const canIncrement = available && value < maximum;
+
+  return `<div class="dvc dc-control-card dc-value-card dc-counter ${skinCls}" data-entity="${entityId}" data-no-toggle>
+    <div class="dvc-bar"></div>
+    <div class="dc-control-head">
+      <div class="dvc-ico ${available ? 'dvc-ico--on' : 'dvc-ico--off'}">${getCounterIcon()}</div>
+      <div class="dvc-info"><div class="dvc-name">${escapeHTML(entity.name)}</div><div class="dvc-state">${available ? `${minimum} - ${maximum}` : escapeHTML(stateObj.state)}</div></div>
+    </div>
+    <div class="dc-control-section"><div class="dc-climate-target-row"><button type="button" class="dc-climate-temp-btn" data-entity="${entityId}" data-action="counter-change" data-delta="-1" aria-label="减少 ${escapeAttribute(entity.name)}" ${canDecrement ? '' : 'disabled'}>-</button><div class="dc-climate-target-val dc-counter-value">${escapeHTML(String(value))}</div><button type="button" class="dc-climate-temp-btn" data-entity="${entityId}" data-action="counter-change" data-delta="1" aria-label="增加 ${escapeAttribute(entity.name)}" ${canIncrement ? '' : 'disabled'}>+</button></div></div>
+  </div>`;
+}
+
 function buildVacuumCard(entity: EntityInfo, stateObj: HassEntity, skin?: string): string {
   const currentState = stateObj.state;
   const isActive = currentState === 'cleaning' || currentState === 'returning';
@@ -1388,4 +1411,8 @@ function getTextIcon(): string {
 
 function getDateTimeIcon(): string {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/><path d="M12 14v3l2 1"/></svg>`;
+}
+
+function getCounterIcon(): string {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12h8M12 8v8"/></svg>`;
 }

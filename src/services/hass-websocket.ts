@@ -430,6 +430,44 @@ function hdpApplyDateTimeValue(hass, entityId, value) {
   }
 }
 
+function hdpChangeCounter(entityId, delta) {
+  var hass = hdpFindHass();
+  if (!hass || !hass.callService) { hdpShowToast('Counter control is unavailable', 'error'); return; }
+  if (entityId.split('.')[0] !== 'counter') return;
+  var stateObj = hass.states && hass.states[entityId];
+  var attrs = stateObj && stateObj.attributes || {};
+  var current = parseFloat(stateObj && stateObj.state);
+  var minimum = parseFloat(attrs.minimum != null ? attrs.minimum : attrs.min);
+  var maximum = parseFloat(attrs.maximum != null ? attrs.maximum : attrs.max);
+  var step = parseFloat(attrs.step);
+  if (isNaN(current)) return;
+  if (isNaN(step) || step <= 0) step = 1;
+  var direction = Number(delta) < 0 ? -1 : 1;
+  var nextValue = current + direction * step;
+  if (!isNaN(minimum)) nextValue = Math.max(minimum, nextValue);
+  if (!isNaN(maximum)) nextValue = Math.min(maximum, nextValue);
+  if (nextValue === current) return;
+  var service = direction < 0 ? 'decrement' : 'increment';
+  hdpCallEntityService(hass, 'counter', service, { entity_id: entityId }, entityId, 'Counter could not be changed', {
+    onSuccess: function() { hdpApplyCounterValue(hass, entityId, nextValue, minimum, maximum); }
+  });
+}
+
+function hdpApplyCounterValue(hass, entityId, value, minimum, maximum) {
+  var stateObj = hass && hass.states && hass.states[entityId];
+  if (stateObj) stateObj.state = String(value);
+  var cards = document.querySelectorAll('[data-entity="' + entityId + '"]');
+  for (var i = 0; i < cards.length; i++) {
+    var card = cards[i];
+    var valueLabel = card.querySelector('.dc-counter-value');
+    if (valueLabel) valueLabel.textContent = String(value);
+    var decrement = card.querySelector('[data-action="counter-change"][data-delta="-1"]');
+    var increment = card.querySelector('[data-action="counter-change"][data-delta="1"]');
+    if (decrement) decrement.disabled = !isNaN(minimum) && value <= minimum;
+    if (increment) increment.disabled = !isNaN(maximum) && value >= maximum;
+  }
+}
+
 function hdpCoverAction(entityId, action) {
   var hass = hdpFindHass();
   if (!hass || !hass.callService) { hdpShowToast('无法连接到 Home Assistant', 'error'); return; }
@@ -1337,6 +1375,10 @@ function hdpHandleDomainControl(control) {
   }
   if (action === 'button-press') {
     hdpToggleEntity(entityId);
+    return true;
+  }
+  if (action === 'counter-change') {
+    hdpChangeCounter(entityId, Number(control.getAttribute('data-delta') || 0));
     return true;
   }
   if (action === 'cover-position' || action === 'media-volume' || action === 'number-set' || action === 'select-option' || action === 'text-set' || action === 'datetime-set' || action === 'fan-percentage') return false;

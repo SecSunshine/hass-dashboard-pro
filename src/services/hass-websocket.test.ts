@@ -240,11 +240,15 @@ describe('hass websocket script', () => {
     expect(js).toContain("hdpCallEntityService(hass, domain, 'set_value'");
     expect(js).toContain('function hdpSetDateTimeValue(entityId, value, hasDate, hasTime)');
     expect(js).toContain("hdpCallEntityService(hass, 'input_datetime', 'set_datetime'");
+    expect(js).toContain('function hdpChangeCounter(entityId, delta)');
+    expect(js).toContain("var service = direction < 0 ? 'decrement' : 'increment';");
+    expect(js).toContain("hdpCallEntityService(hass, 'counter', service");
     expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"number-set\"]')");
     expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"select-option\"]')");
     expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"text-set\"]')");
     expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"fan-percentage\"]')");
     expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"datetime-set\"]')");
+    expect(js).toContain("if (action === 'counter-change')");
     expect(js).toContain('hdpCoverAction(entityId, domainAction);');
     expect(js).toContain("hdpDomainActionAllowed('cover', domainAction)");
     expect(js).toContain("hdpDomainActionAllowed('lock', domainAction)");
