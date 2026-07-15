@@ -401,6 +401,35 @@ function hdpApplyTextValue(hass, entityId, value) {
   }
 }
 
+function hdpSetDateTimeValue(entityId, value, hasDate, hasTime) {
+  var hass = hdpFindHass();
+  if (!hass || !hass.callService) { hdpShowToast('Date and time control is unavailable', 'error'); return; }
+  if (entityId.split('.')[0] !== 'input_datetime') return;
+  var rawValue = String(value || '').trim();
+  if (!rawValue) return;
+  var data = { entity_id: entityId };
+  if (hasDate && hasTime) {
+    data.datetime = rawValue.replace('T', ' ') + (rawValue.length === 16 ? ':00' : '');
+  } else if (hasDate) {
+    data.date = rawValue;
+  } else if (hasTime) {
+    data.time = rawValue + (rawValue.length === 5 ? ':00' : '');
+  } else return;
+  hdpCallEntityService(hass, 'input_datetime', 'set_datetime', data, entityId, 'Date and time could not be set', {
+    onSuccess: function() { hdpApplyDateTimeValue(hass, entityId, rawValue); }
+  });
+}
+
+function hdpApplyDateTimeValue(hass, entityId, value) {
+  var stateObj = hass && hass.states && hass.states[entityId];
+  if (stateObj) stateObj.state = String(value || '').replace('T', ' ');
+  var cards = document.querySelectorAll('[data-entity="' + entityId + '"]');
+  for (var i = 0; i < cards.length; i++) {
+    var input = cards[i].querySelector('.dc-datetime-input');
+    if (input) input.value = value;
+  }
+}
+
 function hdpCoverAction(entityId, action) {
   var hass = hdpFindHass();
   if (!hass || !hass.callService) { hdpShowToast('无法连接到 Home Assistant', 'error'); return; }
@@ -1310,7 +1339,7 @@ function hdpHandleDomainControl(control) {
     hdpToggleEntity(entityId);
     return true;
   }
-  if (action === 'cover-position' || action === 'media-volume' || action === 'number-set' || action === 'select-option' || action === 'text-set' || action === 'fan-percentage') return false;
+  if (action === 'cover-position' || action === 'media-volume' || action === 'number-set' || action === 'select-option' || action === 'text-set' || action === 'datetime-set' || action === 'fan-percentage') return false;
   var domainAction = '';
   if (action.indexOf('cover-') === 0) {
     domainAction = action.substring('cover-'.length);
@@ -1468,8 +1497,14 @@ function hdpInitEntityClickHandlers() {
     }
     control = hdpClosestFromEvent(e, '[data-action="fan-percentage"]');
     entityId = hdpEntityIdFromControl(control);
+    if (control && entityId) {
+      hdpSetFanPercentage(entityId, control.value);
+      return;
+    }
+    control = hdpClosestFromEvent(e, '[data-action="datetime-set"]');
+    entityId = hdpEntityIdFromControl(control);
     if (!control || !entityId) return;
-    hdpSetFanPercentage(entityId, control.value);
+    hdpSetDateTimeValue(entityId, control.value, control.getAttribute('data-has-date') === 'true', control.getAttribute('data-has-time') === 'true');
   }, true);
 }
 `;

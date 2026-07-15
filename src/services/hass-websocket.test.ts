@@ -228,7 +228,7 @@ describe('hass websocket script', () => {
     expect(js).toContain("function hdpCallCoverService(hass, entityId, service, fallbackService, data, fallbackData)");
     expect(js).toContain("supported_features");
     expect(js).toContain("tilt_position: value");
-    expect(js).toContain("if (action === 'cover-position' || action === 'media-volume' || action === 'number-set' || action === 'select-option' || action === 'text-set' || action === 'fan-percentage') return false;");
+    expect(js).toContain("if (action === 'cover-position' || action === 'media-volume' || action === 'number-set' || action === 'select-option' || action === 'text-set' || action === 'datetime-set' || action === 'fan-percentage') return false;");
     expect(js).toContain('function hdpSetNumberValue(entityId, rawValue)');
     expect(js).toContain("domain !== 'number' && domain !== 'input_number'");
     expect(js).toContain("hdpCallEntityService(hass, domain, 'set_value'");
@@ -238,10 +238,13 @@ describe('hass websocket script', () => {
     expect(js).toContain('function hdpSetTextValue(entityId, value)');
     expect(js).toContain("domain !== 'text' && domain !== 'input_text'");
     expect(js).toContain("hdpCallEntityService(hass, domain, 'set_value'");
+    expect(js).toContain('function hdpSetDateTimeValue(entityId, value, hasDate, hasTime)');
+    expect(js).toContain("hdpCallEntityService(hass, 'input_datetime', 'set_datetime'");
     expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"number-set\"]')");
     expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"select-option\"]')");
     expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"text-set\"]')");
     expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"fan-percentage\"]')");
+    expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"datetime-set\"]')");
     expect(js).toContain('hdpCoverAction(entityId, domainAction);');
     expect(js).toContain("hdpDomainActionAllowed('cover', domainAction)");
     expect(js).toContain("hdpDomainActionAllowed('lock', domainAction)");

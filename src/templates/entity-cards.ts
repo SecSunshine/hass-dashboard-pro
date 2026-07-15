@@ -859,6 +859,8 @@ export function buildDomainCard(entity: EntityInfo, stateObj: HassEntity | undef
     case 'text':
     case 'input_text':
       return buildTextCard(entity, stateObj, skin);
+    case 'input_datetime':
+      return buildDateTimeCard(entity, stateObj, skin);
     default:
       return null;
   }
@@ -1270,6 +1272,31 @@ function buildTextCard(entity: EntityInfo, stateObj: HassEntity, skin?: string):
   </div>`;
 }
 
+function buildDateTimeCard(entity: EntityInfo, stateObj: HassEntity, skin?: string): string {
+  const attrs = stateObj.attributes || {};
+  const rawValue = stateObj.state;
+  const available = isEntityAvailable(rawValue);
+  const hasDate = attrs.has_date !== false;
+  const hasTime = attrs.has_time !== false;
+  const inputType = hasDate && hasTime ? 'datetime-local' : hasDate ? 'date' : 'time';
+  const normalized = rawValue.replace(' ', 'T');
+  const dateValue = /^\d{4}-\d{2}-\d{2}/.test(normalized) ? normalized.slice(0, 10) : '';
+  const timeMatch = normalized.match(/(?:T|\s)(\d{2}:\d{2})/);
+  const timeValue = timeMatch ? timeMatch[1] : '';
+  const inputValue = hasDate && hasTime ? (dateValue && timeValue ? `${dateValue}T${timeValue}` : '') : hasDate ? dateValue : timeValue;
+  const skinCls = skin ? cardSkinClass(skin) : '';
+  const entityId = escapeAttribute(entity.entity_id);
+
+  return `<div class="dvc dc-control-card dc-value-card dc-datetime ${skinCls}" data-entity="${entityId}" data-no-toggle>
+    <div class="dvc-bar"></div>
+    <div class="dc-control-head">
+      <div class="dvc-ico ${available ? 'dvc-ico--on' : 'dvc-ico--off'}">${getDateTimeIcon()}</div>
+      <div class="dvc-info"><div class="dvc-name">${escapeHTML(entity.name)}</div><div class="dvc-state">${available ? (hasDate && hasTime ? '日期与时间' : hasDate ? '日期' : '时间') : escapeHTML(rawValue)}</div></div>
+    </div>
+    <div class="dc-control-section"><input type="${inputType}" class="dc-text-input dc-datetime-input" value="${escapeAttribute(inputValue)}" data-entity="${entityId}" data-action="datetime-set" data-has-date="${hasDate ? 'true' : 'false'}" data-has-time="${hasTime ? 'true' : 'false'}" aria-label="设置 ${escapeAttribute(entity.name)}" ${available ? '' : 'disabled'} /></div>
+  </div>`;
+}
+
 function buildVacuumCard(entity: EntityInfo, stateObj: HassEntity, skin?: string): string {
   const currentState = stateObj.state;
   const isActive = currentState === 'cleaning' || currentState === 'returning';
@@ -1357,4 +1384,8 @@ function getSelectIcon(): string {
 
 function getTextIcon(): string {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><path d="M4 6h16M4 18h8"/><path d="M8 6v12M16 6v6"/></svg>`;
+}
+
+function getDateTimeIcon(): string {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/><path d="M12 14v3l2 1"/></svg>`;
 }

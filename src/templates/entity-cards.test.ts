@@ -99,6 +99,16 @@ const buttonEntity: EntityInfo = {
   area_name: 'Living Room',
 };
 
+const dateTimeEntity: EntityInfo = {
+  entity_id: 'input_datetime.overnight_mode',
+  name: 'Overnight Mode',
+  domain: 'input_datetime',
+  icon: null,
+  state: '2026-07-15 22:30:00',
+  unit: null,
+  area_name: 'Bedroom',
+};
+
 describe('domain entity cards', () => {
   it('renders climate controls as declarative buttons', () => {
     const html = buildDomainCard(climateEntity, climateState);
@@ -298,6 +308,23 @@ describe('domain entity cards', () => {
     expect(html).toContain('dc-control-card dc-button-card');
     expect(html).toContain('class="dc-button-press"');
     expect(html).toContain('data-action="button-press"');
+    expect(html).not.toContain('data-action="toggle"');
+  });
+
+  it('renders input datetimes as native date-time controls', () => {
+    const html = buildDomainCard(dateTimeEntity, {
+      entity_id: dateTimeEntity.entity_id,
+      state: dateTimeEntity.state,
+      attributes: { has_date: true, has_time: true },
+      last_changed: '',
+      last_updated: '',
+    });
+
+    expect(html).toContain('dc-value-card dc-datetime');
+    expect(html).toContain('type="datetime-local"');
+    expect(html).toContain('class="dc-text-input dc-datetime-input"');
+    expect(html).toContain('value="2026-07-15T22:30"');
+    expect(html).toContain('data-action="datetime-set"');
     expect(html).not.toContain('data-action="toggle"');
   });
 
