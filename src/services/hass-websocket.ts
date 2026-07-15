@@ -189,6 +189,8 @@ function hdpToggleEntity(entityId) {
     return;
   } else if (domain === 'button' || domain === 'input_button') {
     service = 'press';
+    hdpCallEntityService(hass, domain, service, { entity_id: entityId }, entityId, '设备控制失败');
+    return;
   }
   hdpCallEntityService(hass, domain, service, { entity_id: entityId }, entityId, '\u8bbe\u5907\u63a7\u5236\u5931\u8d25', {
     onSuccess: function() { hdpApplyOptimisticToggle(hass, entityId); }
@@ -1271,6 +1273,10 @@ function hdpHandleDomainControl(control) {
   }
   if (action === 'fan-preset') {
     hdpSetFanPreset(entityId, control.getAttribute('data-preset') || '');
+    return true;
+  }
+  if (action === 'button-press') {
+    hdpToggleEntity(entityId);
     return true;
   }
   if (action === 'cover-position' || action === 'media-volume' || action === 'number-set' || action === 'select-option' || action === 'text-set' || action === 'fan-percentage') return false;

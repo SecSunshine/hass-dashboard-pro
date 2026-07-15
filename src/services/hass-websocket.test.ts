@@ -210,6 +210,8 @@ describe('hass websocket script', () => {
     expect(js).toContain("hdpCallEntityService(hass, 'fan', 'set_percentage'");
     expect(js).toContain('function hdpSetFanPreset(entityId, preset)');
     expect(js).toContain("hdpCallEntityService(hass, 'fan', 'set_preset_mode'");
+    expect(js).toContain("if (action === 'button-press')");
+    expect(js).toContain('hdpToggleEntity(entityId);');
     expect(js).toContain('var current = parseFloat(stateObj.attributes && stateObj.attributes.temperature);');
     expect(js).toContain('var step = parseFloat(delta);');
     expect(js).toContain('if (isNaN(current)) current = 24;');

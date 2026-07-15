@@ -89,6 +89,16 @@ const fanEntity: EntityInfo = {
   area_name: 'Bedroom',
 };
 
+const buttonEntity: EntityInfo = {
+  entity_id: 'button.clean_filter',
+  name: 'Clean Filter',
+  domain: 'button',
+  icon: null,
+  state: '2026-07-15T00:00:00+00:00',
+  unit: null,
+  area_name: 'Living Room',
+};
+
 describe('domain entity cards', () => {
   it('renders climate controls as declarative buttons', () => {
     const html = buildDomainCard(climateEntity, climateState);
@@ -276,6 +286,21 @@ describe('domain entity cards', () => {
     expect(html).not.toContain('data-action="toggle"');
   });
 
+  it('renders button entities as one-shot press actions', () => {
+    const html = buildDomainCard(buttonEntity, {
+      entity_id: buttonEntity.entity_id,
+      state: buttonEntity.state,
+      attributes: {},
+      last_changed: '',
+      last_updated: '',
+    });
+
+    expect(html).toContain('dc-control-card dc-button-card');
+    expect(html).toContain('class="dc-button-press"');
+    expect(html).toContain('data-action="button-press"');
+    expect(html).not.toContain('data-action="toggle"');
+  });
+
   it('normalizes domain-card button appearance', () => {
     const css = getDomainCardCSS();
 
@@ -318,5 +343,6 @@ describe('domain entity cards', () => {
     expect(css).toContain('.dc-text-input');
     expect(css).toContain('.dc-fan-power');
     expect(css).toContain('.dc-fan-presets');
+    expect(css).toContain('.dc-button-press');
   });
 });

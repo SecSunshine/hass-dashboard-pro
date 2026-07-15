@@ -387,6 +387,31 @@ export function getDomainCardCSS(): string {
     color: var(--hdp-success);
   }
 
+  /* ── Press Button Card ── */
+  .dc-button-card {
+    border-color: color-mix(in srgb, var(--hdp-accent, var(--hdp-primary)) 22%, var(--hdp-border));
+  }
+  .dc-button-press {
+    appearance: none;
+    width: 100%;
+    min-height: 42px;
+    border: 1px solid var(--hdp-primary);
+    border-radius: var(--hdp-radius-sm, 8px);
+    background: var(--hdp-primary);
+    color: var(--hdp-text-inverse, Canvas);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.15s ease, filter 0.15s ease;
+  }
+  .dc-button-press:hover { filter: brightness(1.06); }
+  .dc-button-press:active { transform: scale(0.98); }
+  .dc-button-press:focus-visible {
+    outline: 2px solid var(--hdp-primary);
+    outline-offset: 2px;
+  }
+
   /* ── Cover Card ── */
   .dc-cover {
     border-color: color-mix(in srgb, var(--hdp-accent, #7c6ef7) 18%, var(--hdp-border));
@@ -814,6 +839,9 @@ export function buildDomainCard(entity: EntityInfo, stateObj: HassEntity | undef
       return buildAccessibleClimateCard(entity, stateObj, skin);
     case 'fan':
       return buildFanCard(entity, stateObj, skin);
+    case 'button':
+    case 'input_button':
+      return buildPressButtonCard(entity, stateObj, skin);
     case 'cover':
       return buildCoverCard(entity, stateObj, skin);
     case 'lock':
@@ -965,6 +993,22 @@ function buildFanCard(entity: EntityInfo, stateObj: HassEntity, skin?: string): 
       <div class="dc-number-limits"><span>0%</span><span>100%</span></div>
     </div>
     ${presetHTML}
+  </div>`;
+}
+
+function buildPressButtonCard(entity: EntityInfo, stateObj: HassEntity, skin?: string): string {
+  const available = isEntityAvailable(stateObj.state);
+  const skinCls = skin ? cardSkinClass(skin) : '';
+  const entityId = escapeAttribute(entity.entity_id);
+  const lastPressed = typeof stateObj.state === 'string' && stateObj.state ? stateObj.state : '--';
+
+  return `<div class="dvc dc-control-card dc-button-card ${skinCls}" data-entity="${entityId}" data-no-toggle>
+    <div class="dvc-bar"></div>
+    <div class="dc-control-head">
+      <div class="dvc-ico ${available ? 'dvc-ico--on' : 'dvc-ico--off'}">${getPressButtonIcon()}</div>
+      <div class="dvc-info"><div class="dvc-name">${escapeHTML(entity.name)}</div><div class="dvc-state">${available ? '按下执行操作' : escapeHTML(stateObj.state)}</div></div>
+    </div>
+    <div class="dc-control-section"><button type="button" class="dc-button-press" data-entity="${entityId}" data-action="button-press" ${available ? '' : 'disabled'}>执行</button></div>
   </div>`;
 }
 
@@ -1297,6 +1341,10 @@ function getVacuumIcon(active: boolean): string {
 
 function getFanIcon(active: boolean): string {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><circle cx="12" cy="12" r="2"${active ? ` fill="${c}"` : ''}/><path d="M12 10c-1-4 1-7 4-7 2 0 3 2 2 4-1 3-4 4-6 3ZM14 12c4-1 7 1 7 4 0 2-2 3-4 2-3-1-4-4-3-6ZM10 14c1 4-1 7-4 7-2 0-3-2-2-4 1-3 4-4 6-3Z"/></svg>`;
+}
+
+function getPressButtonIcon(): string {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/></svg>`;
 }
 
 function getNumberIcon(): string {
