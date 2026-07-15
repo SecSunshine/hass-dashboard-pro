@@ -1464,7 +1464,7 @@ function hdpSanitizeSlotTag(tag) {
   if (closing) return '</' + name + '>';
   if (name === 'style') return '<style>';
   var attrs = hdpSanitizeSlotAttributes(match[3] || '');
-  if (name === 'input' && !/(?:^| )type="range"(?= |$)/i.test(attrs)) return hdpEscapeSlotText(tag);
+  if (name === 'input' && !/(?:^| )type="(?:range|text|date|time|datetime-local)"(?= |$)/i.test(attrs)) return hdpEscapeSlotText(tag);
   return '<' + name + (attrs ? ' ' + attrs : '') + '>';
 }
 

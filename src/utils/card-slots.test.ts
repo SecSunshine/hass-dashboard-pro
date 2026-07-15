@@ -922,7 +922,8 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
       '<img src="images/status.png" alt="Relative">',
       '<img src="data:image/png;base64,abc" alt="Data image">',
       '<input type="range" min="0" max="100" step="5" value="45" data-action="cover-position" data-entity="cover.bed_blind" onchange="evil()">',
-      '<input type="text" value="credential" data-entity="sensor.unsafe_text">',
+      '<input type="text" value="Guest note" data-action="text-set" data-entity="text.guest_note">',
+      '<input type="datetime-local" value="2026-07-15T22:30" data-action="datetime-set" data-entity="input_datetime.sleep">',
       '<input type="file" type="range" data-entity="sensor.unsafe_file">',
       '<input type="range" type="file" value="30" data-entity="cover.safe_duplicate">',
       '<div tabindex="9">Bad focus order</div>',
@@ -967,10 +968,10 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
     expect(sanitized).toContain('src="data:image/png;base64,abc"');
     expect(sanitized).toContain('<input type="range" min="0" max="100" step="5" value="45" data-action="cover-position" data-entity="cover.bed_blind">');
     expect(sanitized.match(/<input type="range"/g)).toHaveLength(2);
-    expect(sanitized).not.toContain('<input type="text"');
+    expect(sanitized).toContain('<input type="text" value="Guest note" data-action="text-set" data-entity="text.guest_note">');
+    expect(sanitized).toContain('<input type="datetime-local" value="2026-07-15T22:30" data-action="datetime-set" data-entity="input_datetime.sleep">');
     expect(sanitized).not.toContain('<input type="file"');
     expect(sanitized).not.toContain('type="file"');
-    expect(sanitized).not.toContain('data-entity="sensor.unsafe_text"');
     expect(sanitized).not.toContain('data-entity="sensor.unsafe_file"');
   });
 
