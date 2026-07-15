@@ -210,6 +210,10 @@ describe('hass websocket script', () => {
     expect(js).toContain("hdpCallEntityService(hass, 'fan', 'set_percentage'");
     expect(js).toContain('function hdpSetFanPreset(entityId, preset)');
     expect(js).toContain("hdpCallEntityService(hass, 'fan', 'set_preset_mode'");
+    expect(js).toContain('function hdpApplyFanPreset(hass, entityId, preset)');
+    expect(js).toContain("power.classList.toggle('dc-fan-power--on', nextOn);");
+    expect(js).toContain("power.textContent = nextOn ? '关闭风扇' : '开启风扇';");
+    expect(js).toContain("buttons[j].classList.toggle('dc-fan-preset--active', active);");
     expect(js).toContain("if (action === 'button-press')");
     expect(js).toContain('hdpToggleEntity(entityId);');
     expect(js).toContain('var current = parseFloat(stateObj.attributes && stateObj.attributes.temperature);');

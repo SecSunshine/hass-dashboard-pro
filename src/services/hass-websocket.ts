@@ -212,6 +212,18 @@ function hdpApplyOptimisticToggle(hass, entityId) {
     if (dot) { dot.classList.toggle('dvc-dot--on', nextOn); dot.classList.toggle('dvc-dot--off', !nextOn); dot.classList.toggle('ec-dot--on', nextOn); dot.classList.toggle('ec-dot--off', !nextOn); }
     var toggle = card.querySelector('.dvc-tg, .tg');
     if (toggle) { toggle.classList.toggle('dvc-tg--on', nextOn); toggle.classList.toggle('dvc-tg--off', !nextOn); toggle.classList.toggle('tg--on', nextOn); toggle.classList.toggle('tg--off', !nextOn); }
+    var icon = card.querySelector('.dvc-ico, .ec-ico');
+    if (icon) { icon.classList.toggle('dvc-ico--on', nextOn); icon.classList.toggle('dvc-ico--off', !nextOn); icon.classList.toggle('ec-ico--on', nextOn); icon.classList.toggle('ec-ico--off', !nextOn); }
+    if (entityId.split('.')[0] === 'fan') {
+      var power = card.querySelector('.dc-fan-power');
+      if (power) {
+        power.classList.toggle('dc-fan-power--on', nextOn);
+        power.setAttribute('aria-pressed', nextOn ? 'true' : 'false');
+        power.textContent = nextOn ? '关闭风扇' : '开启风扇';
+      }
+      var stateLabel = card.querySelector('.dc-fan .dvc-state');
+      if (stateLabel) stateLabel.childNodes[stateLabel.childNodes.length - 1].nodeValue = nextOn ? '运行中' : '已关闭';
+    }
   }
 }
 
@@ -283,7 +295,26 @@ function hdpApplyFanPercentage(hass, entityId, percentage) {
 function hdpSetFanPreset(entityId, preset) {
   var hass = hdpFindHass();
   if (!hass || !hass.callService) { hdpShowToast('Fan control is unavailable', 'error'); return; }
-  hdpCallEntityService(hass, 'fan', 'set_preset_mode', { entity_id: entityId, preset_mode: preset }, entityId, 'Fan preset could not be set');
+  hdpCallEntityService(hass, 'fan', 'set_preset_mode', { entity_id: entityId, preset_mode: preset }, entityId, 'Fan preset could not be set', {
+    onSuccess: function() { hdpApplyFanPreset(hass, entityId, preset); }
+  });
+}
+
+function hdpApplyFanPreset(hass, entityId, preset) {
+  var stateObj = hass && hass.states && hass.states[entityId];
+  if (stateObj) {
+    if (!stateObj.attributes) stateObj.attributes = {};
+    stateObj.attributes.preset_mode = preset;
+  }
+  var cards = document.querySelectorAll('[data-entity="' + entityId + '"]');
+  for (var i = 0; i < cards.length; i++) {
+    var buttons = cards[i].querySelectorAll('.dc-fan-preset');
+    for (var j = 0; j < buttons.length; j++) {
+      var active = buttons[j].getAttribute('data-preset') === preset;
+      buttons[j].classList.toggle('dc-fan-preset--active', active);
+      buttons[j].setAttribute('aria-pressed', active ? 'true' : 'false');
+    }
+  }
 }
 
 // ── Cover Controls ──
