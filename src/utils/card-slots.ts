@@ -440,7 +440,11 @@ export function getCardSlotCSS(): string {
   }
   .hdp-card-slot--image {
     --hdp-slot-bg-opacity: 1;
-    --hdp-slot-bg-scrim: linear-gradient(135deg, rgba(255,255,255,0.84), rgba(255,255,255,0.58));
+    --hdp-slot-bg-scrim: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--hdp-card-bg) 88%, transparent),
+      color-mix(in srgb, var(--hdp-card-bg) 64%, transparent)
+    );
     background: color-mix(in srgb, var(--hdp-card-bg) 82%, transparent);
   }
   .hdp-card-slot--theme-ready {

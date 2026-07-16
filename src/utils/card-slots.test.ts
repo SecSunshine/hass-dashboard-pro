@@ -1049,6 +1049,8 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
     expect(css).toContain('background: var(--hdp-modal-bg, var(--hdp-bg))');
     expect(css).toContain('background: var(--hdp-control-bg, var(--hdp-card-bg))');
     expect(css).toContain('background: var(--hdp-control-bg-hover, var(--hdp-primary-light))');
+    expect(css).toContain('color-mix(in srgb, var(--hdp-card-bg) 88%, transparent)');
+    expect(css).not.toContain('rgba(255,255,255,0.84)');
     expect(css).toContain('[data-card-edit-action="drag"]');
     expect(css).toContain('.hdp-slot-resize-handle');
     expect(css).toContain('.hdp-slot-grid-input');
