@@ -108,6 +108,8 @@ export function buildSettingsHTML(config: StrategyConfig, tokens?: ResolvedToken
 ${getSettingsSectionsCSS()}
   .hdp-view[data-view="settings"] .hdp-area-content,
   .hdp-view[data-view="hdp-settings"] .hdp-area-content {
+    display: block;
+    grid-auto-rows: auto;
     width: min(100%, 1040px);
     margin: 0 auto;
   }
@@ -910,7 +912,18 @@ function hdpVisualGetElementById(id) {
 }
 
 function generateVisualConfigPersistenceJS(): string {
+  const previewPresets = Object.fromEntries(Object.entries(THEME_PRESETS).map(([key, value]) => [key, {
+    colors: value.colors,
+    card_style: value.card_style,
+    border_radius: value.border_radius,
+    card_padding: value.card_padding,
+    card_gap: value.card_gap,
+    font_family: value.font_family,
+    shadows: value.shadows,
+  }]));
   return `
+var HDP_VISUAL_PRESETS = ${escapeScriptJSON(previewPresets)};
+
 function hdpLoadRawHDPConfig() {
   try {
     var raw = localStorage.getItem('hdp_config');
@@ -951,6 +964,159 @@ window.hdpLoadDraftVisualConfig = function() {
   return JSON.parse(JSON.stringify(window.hdpDraftVisualConfig || {}));
 };
 
+function hdpVisualControls(selector) {
+  if (typeof hdpVisualQueryAll === 'function') return hdpVisualQueryAll(selector);
+  return document.querySelectorAll ? document.querySelectorAll(selector) : [];
+}
+
+function hdpVisualToggleSelection(selector, attribute, value, activeClass) {
+  var controls = hdpVisualControls(selector);
+  for (var i = 0; i < controls.length; i++) {
+    var active = controls[i].getAttribute(attribute) === value;
+    controls[i].classList.toggle(activeClass, active);
+    controls[i].setAttribute('aria-pressed', active ? 'true' : 'false');
+  }
+}
+
+function hdpVisualToggleSwitch(id, active) {
+  var control = typeof hdpVisualGetElementById === 'function' ? hdpVisualGetElementById(id) : document.getElementById(id);
+  if (!control) return;
+  control.classList.toggle('toggle-switch--on', active);
+  control.classList.toggle('toggle-switch--off', !active);
+  control.setAttribute('aria-checked', active ? 'true' : 'false');
+}
+
+window.hdpSyncVisualDraftControls = function(config) {
+  var cfg = config && typeof config === 'object' ? config : {};
+  var preset = HDP_VISUAL_PRESETS[cfg.theme] || {};
+  hdpVisualToggleSelection('.theme-card', 'data-preset', cfg.theme || '', 'theme-card--active');
+  hdpVisualToggleSelection('.mood-card', 'data-mood', cfg.mood_preset || '', 'mood-card--active');
+  hdpVisualToggleSelection('.style-card', 'data-style', cfg.card_style || preset.card_style || '', 'style-card--active');
+  hdpVisualToggleSelection('.font-card', 'data-font', cfg.font_family || preset.font_family || '', 'font-card--active');
+  hdpVisualToggleSelection('.lc-density-btn', 'data-density', cfg.layout_density || 'standard', 'lc-density-btn--active');
+  hdpVisualToggleSwitch('auto-dark-toggle', cfg.auto_dark !== false);
+  hdpVisualToggleSwitch('auto-mood-toggle', cfg.auto_mood === true);
+  hdpVisualToggleSwitch('shadow-toggle', cfg.shadows !== false && preset.shadows !== false);
+};
+
+function hdpVisualSafeCSSValue(value) {
+  if (typeof value !== 'string') return null;
+  var text = value.trim();
+  return text && !/[;{}]/.test(text) ? text : null;
+}
+
+function hdpCaptureVisualPreview() {
+  if (window.hdpVisualPreviewSnapshot || !document.documentElement || !document.documentElement.style) return;
+  var properties = [
+    '--hdp-bg', '--hdp-card-bg', '--hdp-primary', '--hdp-text', '--hdp-text-secondary',
+    '--hdp-border', '--hdp-radius', '--hdp-card-padding', '--hdp-card-gap', '--hdp-font',
+    '--hdp-shadow-card', '--hdp-density', '--hdp-density-gap', '--hdp-density-padding',
+    '--hdp-density-row-height', '--hdp-density-entity-padding'
+  ];
+  var values = {};
+  for (var i = 0; i < properties.length; i++) {
+    values[properties[i]] = document.documentElement.style.getPropertyValue(properties[i]);
+  }
+  var cards = document.querySelectorAll ? document.querySelectorAll('.hdp-card') : [];
+  var cardClasses = [];
+  for (var j = 0; j < cards.length; j++) cardClasses.push({ element: cards[j], className: cards[j].className });
+  var paletteStyle = document.getElementById ? document.getElementById('hdp-palette-override') : null;
+  window.hdpVisualPreviewSnapshot = {
+    properties: properties,
+    values: values,
+    cards: cardClasses,
+    paletteStyleText: paletteStyle && typeof paletteStyle.textContent === 'string' ? paletteStyle.textContent : null
+  };
+}
+
+function hdpRemovePaletteOverride() {
+  var current = document.getElementById ? document.getElementById('hdp-palette-override') : null;
+  if (current && typeof current.remove === 'function') current.remove();
+}
+
+function hdpResetVisualPreviewToSnapshot(clearSnapshot) {
+  var snapshot = window.hdpVisualPreviewSnapshot;
+  if (!snapshot || !document.documentElement || !document.documentElement.style) return;
+  for (var i = 0; i < snapshot.properties.length; i++) {
+    var property = snapshot.properties[i];
+    var value = snapshot.values[property];
+    if (value) document.documentElement.style.setProperty(property, value);
+    else document.documentElement.style.removeProperty(property);
+  }
+  for (var j = 0; j < snapshot.cards.length; j++) {
+    if (snapshot.cards[j].element) snapshot.cards[j].element.className = snapshot.cards[j].className;
+  }
+  if (clearSnapshot) {
+    hdpRemovePaletteOverride();
+    if (snapshot.paletteStyleText && document.createElement && document.head && document.head.appendChild) {
+      var restoredStyle = document.createElement('style');
+      restoredStyle.id = 'hdp-palette-override';
+      restoredStyle.textContent = snapshot.paletteStyleText;
+      document.head.appendChild(restoredStyle);
+    }
+    window.hdpVisualPreviewSnapshot = undefined;
+  }
+}
+
+function hdpVisualSetProperty(property, value, suffix) {
+  if (value === undefined || value === null || !document.documentElement || !document.documentElement.style) return;
+  var safe = typeof value === 'number' ? String(value) : hdpVisualSafeCSSValue(value);
+  if (safe === null) return;
+  document.documentElement.style.setProperty(property, safe + (suffix || ''));
+}
+
+window.hdpApplyVisualDraftPreview = function(config) {
+  var cfg = config && typeof config === 'object' ? config : {};
+  var preset = HDP_VISUAL_PRESETS[cfg.theme] || {};
+  var presetColors = preset.colors || {};
+  var colors = cfg.colors && typeof cfg.colors === 'object' && !Array.isArray(cfg.colors) ? cfg.colors : {};
+  function colorValue(key) {
+    return cfg[key] !== undefined ? cfg[key] : (colors[key] !== undefined ? colors[key] : presetColors[key]);
+  }
+
+  hdpCaptureVisualPreview();
+  hdpResetVisualPreviewToSnapshot(false);
+  if (!cfg.mood_preset && !cfg.seed_color) hdpRemovePaletteOverride();
+  hdpVisualSetProperty('--hdp-bg', colorValue('page_bg'));
+  hdpVisualSetProperty('--hdp-card-bg', colorValue('card_bg'));
+  hdpVisualSetProperty('--hdp-primary', colorValue('primary'));
+  hdpVisualSetProperty('--hdp-text', colorValue('text_primary'));
+  hdpVisualSetProperty('--hdp-text-secondary', colorValue('text_secondary'));
+  hdpVisualSetProperty('--hdp-border', colorValue('border'));
+  hdpVisualSetProperty('--hdp-radius', cfg.border_radius !== undefined ? cfg.border_radius : preset.border_radius, 'px');
+  hdpVisualSetProperty('--hdp-card-padding', cfg.card_padding !== undefined ? cfg.card_padding : preset.card_padding, 'px');
+  hdpVisualSetProperty('--hdp-card-gap', cfg.card_gap !== undefined ? cfg.card_gap : preset.card_gap, 'px');
+  hdpVisualSetProperty('--hdp-font', cfg.font_family || preset.font_family);
+  if (cfg.shadows === false || preset.shadows === false) hdpVisualSetProperty('--hdp-shadow-card', 'none');
+
+  var density = cfg.layout_density || 'standard';
+  var densityMap = {
+    compact: { gap: 8, padding: 12, rowHeight: 84, entityPadding: 10 },
+    standard: { gap: 14, padding: 18, rowHeight: 96, entityPadding: 14 },
+    spacious: { gap: 20, padding: 24, rowHeight: 112, entityPadding: 18 }
+  };
+  var densityValues = densityMap[density] || densityMap.standard;
+  hdpVisualSetProperty('--hdp-density', density);
+  hdpVisualSetProperty('--hdp-density-gap', densityValues.gap, 'px');
+  hdpVisualSetProperty('--hdp-density-padding', densityValues.padding, 'px');
+  hdpVisualSetProperty('--hdp-density-row-height', densityValues.rowHeight, 'px');
+  hdpVisualSetProperty('--hdp-density-entity-padding', densityValues.entityPadding, 'px');
+
+  var skin = cfg.card_style || preset.card_style;
+  if (skin && /^[a-z0-9-]+$/i.test(skin) && document.querySelectorAll) {
+    var cards = document.querySelectorAll('.hdp-card');
+    for (var i = 0; i < cards.length; i++) {
+      cards[i].className = cards[i].className.replace(/hdp-card--\\S+/g, '').trim();
+      cards[i].classList.add('hdp-card');
+      cards[i].classList.add('hdp-card--' + skin);
+    }
+  }
+};
+
+window.hdpRestoreVisualDraftPreview = function() {
+  hdpResetVisualPreviewToSnapshot(true);
+};
+
 window.hdpSaveVisualConfig = function(config) {
   var cfg = config || {};
   window.hdpDraftVisualConfig = JSON.parse(JSON.stringify(cfg));
@@ -959,6 +1125,8 @@ window.hdpSaveVisualConfig = function(config) {
     ? window.hdpReplaceVisualConfig(cfg)
     : (typeof hdpSaveConfig === 'function' ? hdpSaveConfig({ visual: cfg }) : null);
   if (fullConfig && typeof hdpMarkSettingsDirty === 'function') hdpMarkSettingsDirty();
+  window.hdpApplyVisualDraftPreview(cfg);
+  window.hdpSyncVisualDraftControls(cfg);
   return Promise.resolve(cfg);
 };
 
@@ -972,9 +1140,14 @@ window.hdpClearVisualConfigAndReload = function(delay) {
   if (typeof window.hdpReplaceVisualConfig === 'function') {
     var replaced = window.hdpReplaceVisualConfig({});
   }
+  window.hdpApplyVisualDraftPreview({});
+  window.hdpSyncVisualDraftControls({});
   if (typeof hdpShowToast === 'function') hdpShowToast('视觉设置已恢复默认，保存后生效', 'info');
   return Promise.resolve();
 };
+
+window.hdpVisualPreviewSnapshot = undefined;
+hdpCaptureVisualPreview();
 `;
 }
 
@@ -1203,6 +1376,12 @@ ${generateDesignTokenCSS(tokens)}
       btn.addEventListener('click', function() {
         var preset = this.getAttribute('data-preset');
         var cfg = JSON.parse(localStorage.getItem('hdp_visual_config') || '{}');
+        [
+          'theme_id', 'mood_preset', 'seed_color', 'auto_mood', 'time_moods', 'colors',
+          'page_bg', 'card_bg', 'primary', 'text_primary', 'text_secondary', 'text_muted',
+          'border', 'accent', 'primary_light', 'gradient_primary', 'success', 'warning',
+          'danger', 'info', 'shadow_card', 'shadow_elevated'
+        ].forEach(function(key) { delete cfg[key]; });
         cfg.theme = preset;
         hdpSaveVisualConfigAndReload(cfg);
       });

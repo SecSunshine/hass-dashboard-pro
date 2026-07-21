@@ -121,16 +121,22 @@ describe('devices view', () => {
     expect(html).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))');
     expect(html).toContain('grid-template-columns: minmax(0, 1fr)');
     expect(html).toContain('.dv-grid');
+    expect(html).toContain('padding: 8px;');
+    expect(html).toContain('.dv-grid > .hdp-card-slot');
+    expect(html).toContain('overflow: visible;');
     expect(html).toContain('min-width: 0');
     expect(html).toContain('flex: 0 1 45%');
     expect(html).toContain('overflow-wrap: anywhere');
     expect(html).toContain('<button type="button" class="dv-chip"');
-    expect(html).toContain('max-width: min(220px, 68vw)');
+    expect(html).toContain('min-width: max-content');
+    expect(html).toContain('max-width: none');
+    expect(html).toContain('scroll-snap-type: x proximity');
+    expect(html).toContain('scrollbar-width: thin');
     expect(html).toContain(`.dv-chip-label {
     font-weight: 600;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;`);
+    flex: 0 0 auto;
+    overflow: visible;
+    text-overflow: clip;`);
     expect(html).toContain('flex: 0 0 auto;');
     expect(html).toContain('data-action="scroll-domain"');
     expect(html).not.toContain('onclick="hdpScrollToDomain');
@@ -142,6 +148,16 @@ describe('devices view', () => {
     expect(html).toContain('box-shadow: var(--hdp-shadow-card, 0 1px 3px color-mix(in srgb, var(--hdp-text, CanvasText) 15%, transparent));');
   });
 
+  it('renders device domains as compact native drawers', () => {
+    const html = buildDevicesHTML(hass, { type: 'custom:hass-dashboard-pro' });
+
+    expect(html).toContain('<details class="dv-section"');
+    expect(html).toContain('<summary class="dv-section-hdr">');
+    expect(html).toContain('dv-section-chevron');
+    expect(html).toContain('aria-hidden="true">⌄</span>');
+    expect(html).not.toMatch(/<details class="dv-section"[^>]* open/);
+  });
+
   it('generates status-badge navigation helpers for device domains', () => {
     const js = generateDevicesJS();
 
@@ -150,6 +166,7 @@ describe('devices view', () => {
     expect(js).toContain('window.hdpOpenDeviceDomainModal(domain);');
     expect(js).toContain("window.hdpShowView('devices')");
     expect(js).toContain('window.hdpScrollToDomain(domain)');
+    expect(js).toContain("el.open = true");
   });
 
   it('applies hidden areas to the all devices view', () => {

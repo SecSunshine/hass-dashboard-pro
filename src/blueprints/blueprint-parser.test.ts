@@ -38,6 +38,7 @@ describe('blueprint parser rendering', () => {
     const html = cardConfigToHTML({
       type: 'custom:html-pro-card',
       content: `
+        <!-- Internal layout note -->
         <style>.tile { color: red; } @import url("https://example.com/a.css");</style>
         <div class="tile" onclick="alert(1)" data-entity="light.kitchen">
           <img src="javascript:alert(1)" onerror="alert(1)" />
@@ -53,6 +54,8 @@ describe('blueprint parser rendering', () => {
     expect(html).toContain(`${getScopeSelector(html)} .tile { color: red; }`);
     expect(html).toContain('data-entity="light.kitchen"');
     expect(html).not.toContain('<script>');
+    expect(html).not.toContain('Internal layout note');
+    expect(html).not.toContain('&lt;!--');
     expect(html).not.toContain('onclick=');
     expect(html).not.toContain('onerror=');
     expect(html).not.toContain('javascript:');

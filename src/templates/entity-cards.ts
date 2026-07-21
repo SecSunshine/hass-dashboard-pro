@@ -993,7 +993,7 @@ function buildFanCard(entity: EntityInfo, stateObj: HassEntity, skin?: string): 
     </div>
     <div class="dc-control-section">
       <button type="button" class="dc-fan-power ${active ? 'dc-fan-power--on' : ''}" data-entity="${entityId}" data-action="fan-toggle" aria-pressed="${active ? 'true' : 'false'}">${active ? '关闭风扇' : '开启风扇'}</button>
-      <input type="range" class="dc-number-range dc-fan-slider" min="0" max="100" step="1" value="${percentage}" data-entity="${entityId}" data-action="fan-percentage" aria-label="设置 ${escapeAttribute(entity.name)} 风速" ${available ? '' : 'disabled'} />
+      <input type="range" class="dc-number-range dc-fan-slider" min="0" max="100" step="1" value="${percentage}" data-entity="${entityId}" data-hdp-action="fan-percentage" aria-label="设置 ${escapeAttribute(entity.name)} 风速" ${available ? '' : 'disabled'} />
       <div class="dc-number-limits"><span>0%</span><span>100%</span></div>
     </div>
     ${presetHTML}
@@ -1081,7 +1081,7 @@ function buildCoverCard(entity: EntityInfo, stateObj: HassEntity, skin?: string)
         <div class="dc-cover-bar-fill" style="width: ${barWidth}%"></div>
       </div>
       <input type="range" class="dc-cover-slider" min="0" max="100" step="1" value="${barWidth}"
-        data-entity="${entityId}" data-action="cover-position" data-cover-position-inverted="true" aria-label="设置 ${escapeAttribute(entity.name)} 闭合程度" />
+        data-entity="${entityId}" data-hdp-action="cover-position" data-cover-position-inverted="true" aria-label="设置 ${escapeAttribute(entity.name)} 闭合程度" />
     </div>
     <div class="dc-cover-actions">
       <button type="button" class="dc-cover-btn dc-cover-btn--primary" data-entity="${entityId}" data-action="cover-open" aria-label="打开 ${escapeAttribute(entity.name)}">
@@ -1171,7 +1171,7 @@ function buildMediaPlayerCard(entity: EntityInfo, stateObj: HassEntity, skin?: s
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
       </div>
       <input type="range" class="dc-media-vol-slider" min="0" max="100" value="${volumePct}"
-        data-entity="${escapeAttribute(entity.entity_id)}" data-action="media-volume" />
+        data-entity="${escapeAttribute(entity.entity_id)}" data-hdp-action="media-volume" />
       <span class="dc-media-vol-val">${volumePct}%</span>
     </div>
     <div class="dc-media-controls">
@@ -1218,7 +1218,7 @@ function buildNumberCard(entity: EntityInfo, stateObj: HassEntity, skin?: string
     </div>
     <div class="dc-control-section">
       <input type="range" class="dc-number-range" min="${escapeAttribute(String(min))}" max="${escapeAttribute(String(max))}" step="${escapeAttribute(String(step))}" value="${escapeAttribute(String(value))}"
-        data-entity="${entityId}" data-action="number-set" aria-label="设置 ${escapeAttribute(entity.name)} 数值" ${available ? '' : 'disabled'} />
+        data-entity="${entityId}" data-hdp-action="number-set" aria-label="设置 ${escapeAttribute(entity.name)} 数值" ${available ? '' : 'disabled'} />
       <div class="dc-number-limits"><span>${escapeHTML(String(min))}</span><span>${escapeHTML(String(max))}</span></div>
     </div>
   </div>`;
@@ -1244,7 +1244,7 @@ function buildSelectCard(entity: EntityInfo, stateObj: HassEntity, skin?: string
       <div class="dc-control-chip"><div class="dc-control-chip-value">${escapeHTML(selected)}</div><div class="dc-control-chip-label">当前选项</div></div>
     </div>
     <div class="dc-control-section">
-      <select class="dc-select-control" data-entity="${entityId}" data-action="select-option" aria-label="设置 ${escapeAttribute(entity.name)} 选项" ${available ? '' : 'disabled'}>${optionHTML}</select>
+      <select class="dc-select-control" data-entity="${entityId}" data-hdp-action="select-option" aria-label="设置 ${escapeAttribute(entity.name)} 选项" ${available ? '' : 'disabled'}>${optionHTML}</select>
     </div>
   </div>`;
 }
@@ -1269,7 +1269,7 @@ function buildTextCard(entity: EntityInfo, stateObj: HassEntity, skin?: string):
     </div>
     <div class="dc-control-section">
       <input type="text" class="dc-text-input" value="${escapeAttribute(value)}"${maxLengthAttr}
-        data-entity="${entityId}" data-action="text-set" aria-label="设置 ${escapeAttribute(entity.name)} 文本" ${available ? '' : 'disabled'} />
+        data-entity="${entityId}" data-hdp-action="text-set" aria-label="设置 ${escapeAttribute(entity.name)} 文本" ${available ? '' : 'disabled'} />
     </div>
   </div>`;
 }
@@ -1295,7 +1295,7 @@ function buildDateTimeCard(entity: EntityInfo, stateObj: HassEntity, skin?: stri
       <div class="dvc-ico ${available ? 'dvc-ico--on' : 'dvc-ico--off'}">${getDateTimeIcon()}</div>
       <div class="dvc-info"><div class="dvc-name">${escapeHTML(entity.name)}</div><div class="dvc-state">${available ? (hasDate && hasTime ? '日期与时间' : hasDate ? '日期' : '时间') : escapeHTML(rawValue)}</div></div>
     </div>
-    <div class="dc-control-section"><input type="${inputType}" class="dc-text-input dc-datetime-input" value="${escapeAttribute(inputValue)}" data-entity="${entityId}" data-action="datetime-set" data-has-date="${hasDate ? 'true' : 'false'}" data-has-time="${hasTime ? 'true' : 'false'}" aria-label="设置 ${escapeAttribute(entity.name)}" ${available ? '' : 'disabled'} /></div>
+    <div class="dc-control-section"><input type="${inputType}" class="dc-text-input dc-datetime-input" value="${escapeAttribute(inputValue)}" data-entity="${entityId}" data-hdp-action="datetime-set" data-has-date="${hasDate ? 'true' : 'false'}" data-has-time="${hasTime ? 'true' : 'false'}" aria-label="设置 ${escapeAttribute(entity.name)}" ${available ? '' : 'disabled'} /></div>
   </div>`;
 }
 

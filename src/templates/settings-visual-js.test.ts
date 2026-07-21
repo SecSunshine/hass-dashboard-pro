@@ -3,8 +3,17 @@ import type { StrategyConfig } from '../types';
 import { generateStorageJS } from '../services/storage';
 import { generateSettingsJS } from './settings-view';
 
-function createRuntime(config: StrategyConfig = { type: 'custom:hass-dashboard-pro' }) {
+type VisualFixture = {
+  selectors?: Record<string, any[]>;
+  ids?: Record<string, any>;
+};
+
+function createRuntime(
+  config: StrategyConfig = { type: 'custom:hass-dashboard-pro' },
+  visualFixture: VisualFixture = {},
+) {
   const store = new Map<string, string>();
+  const styleValues = new Map<string, string>();
   const timers: Array<{ delay: number; fn: () => void }> = [];
   const window = {} as any;
   const localStorage = {
@@ -12,11 +21,25 @@ function createRuntime(config: StrategyConfig = { type: 'custom:hass-dashboard-p
     setItem: (key: string, value: string) => { store.set(key, value); },
     removeItem: (key: string) => { store.delete(key); },
   };
+  const visualRoot = {
+    querySelector: (selector: string) => selector.startsWith('#')
+      ? visualFixture.ids?.[selector.slice(1)] ?? null
+      : null,
+    querySelectorAll: (selector: string) => visualFixture.selectors?.[selector] ?? [],
+  };
   const document = {
-    documentElement: { style: { setProperty: () => undefined } },
-    getElementById: () => null,
+    documentElement: {
+      style: {
+        setProperty: (key: string, value: string) => { styleValues.set(key, value); },
+        getPropertyValue: (key: string) => styleValues.get(key) ?? '',
+        removeProperty: (key: string) => { styleValues.delete(key); },
+      },
+    },
+    getElementById: (id: string) => id === 'st-visual-body'
+      ? visualRoot
+      : visualFixture.ids?.[id] ?? null,
     addEventListener: () => undefined,
-    querySelectorAll: () => [],
+    querySelectorAll: (selector: string) => visualFixture.selectors?.[selector] ?? [],
   };
   const location = { reloaded: false, reload: () => { location.reloaded = true; } };
   const setTimeout = (fn: () => void, delay: number) => {
@@ -43,15 +66,70 @@ function createRuntime(config: StrategyConfig = { type: 'custom:hass-dashboard-p
         },
         contains: (className: string) => className === 'st-chip--active' && chip.active,
       },
+      getAttribute: (name: string) => name === 'data-array-mode' ? 'exclude' : null,
       setAttribute: () => undefined,
     };
     return { target: { closest: () => chip } };
   };
 
-  return { runtime, store, timers, location, eventForChip };
+  return { runtime, store, styleValues, timers, location, eventForChip };
 }
 
+function createVisualButton(attributes: Record<string, string>, initialClasses: string[] = []) {
+  const classes = new Set(initialClasses);
+  const listeners = new Map<string, Array<(this: any) => void>>();
+  const aria = new Map<string, string>();
+  const button = {
+    classList: {
+      add: (...names: string[]) => names.forEach(name => classes.add(name)),
+      toggle: (name: string, force?: boolean) => {
+        const active = force === undefined ? !classes.has(name) : force;
+        if (active) classes.add(name);
+        else classes.delete(name);
+        return active;
+      },
+      contains: (name: string) => classes.has(name),
+    },
+    getAttribute: (name: string) => attributes[name] ?? null,
+    setAttribute: (name: string, value: string) => { aria.set(name, value); },
+    addEventListener: (name: string, listener: (this: any) => void) => {
+      listeners.set(name, [...(listeners.get(name) ?? []), listener]);
+    },
+    click: () => (listeners.get('click') ?? []).forEach(listener => listener.call(button)),
+    classes,
+    aria,
+  };
+  return button;
+}
 describe('settings visual client script', () => {
+  it('updates the selected theme and live preview from an actual control click', () => {
+    const light = createVisualButton({ 'data-preset': 'light' }, ['theme-card', 'theme-card--active']);
+    const dark = createVisualButton({ 'data-preset': 'dark' }, ['theme-card']);
+    const { runtime, store, styleValues } = createRuntime({
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        visual: {
+          theme: 'light',
+          mood_preset: 'calm',
+          primary: '#ff0000',
+          colors: { page_bg: '#ffeeee' },
+        },
+      } as any,
+    }, {
+      selectors: { '.theme-card': [light, dark] },
+    });
+
+    dark.click();
+
+    expect(runtime.hdpSettingsDraft.visual).toEqual({ theme: 'dark' });
+    expect(runtime.hdpDraftVisualDirty).toBe(true);
+    expect(dark.classes.has('theme-card--active')).toBe(true);
+    expect(light.classes.has('theme-card--active')).toBe(false);
+    expect(dark.aria.get('aria-pressed')).toBe('true');
+    expect(styleValues.get('--hdp-bg')).toBe('#0C0E14');
+    expect(styleValues.get('--hdp-text')).toBe('#F1F3F8');
+    expect(store.get('hdp_visual_config')).toBeUndefined();
+  });
   it('stages visual config through window-scoped helpers and saves on commit', async () => {
     const { runtime, store, timers, location } = createRuntime();
 
@@ -175,7 +253,7 @@ describe('settings visual client script', () => {
   });
 
   it('discards staged visual changes when cancelling settings', async () => {
-    const { runtime, store, timers } = createRuntime({
+    const { runtime, store, styleValues, timers } = createRuntime({
       type: 'custom:hass-dashboard-pro',
       hdp_config: {
         visual: { theme: 'light' },
@@ -187,6 +265,7 @@ describe('settings visual client script', () => {
     expect(runtime.hdpDraftVisualDirty).toBe(true);
     expect(runtime.hdpSettingsDraft.visual).toEqual({ theme: 'dark', card_style: 'glass' });
     expect(store.get('hdp_visual_config')).toBeUndefined();
+    expect(styleValues.get('--hdp-bg')).toBe('#0C0E14');
 
     runtime.hdpCancelSettings();
 
@@ -194,6 +273,7 @@ describe('settings visual client script', () => {
     expect(runtime.hdpDraftVisualConfig).toBeUndefined();
     expect(runtime.hdpSettingsDirty).toBe(false);
     expect(runtime.hdpSettingsDraft.visual).toEqual({ theme: 'light' });
+    expect(styleValues.get('--hdp-bg')).toBeUndefined();
     expect(store.get('hdp_visual_config')).toBeUndefined();
     expect(timers.map(timer => timer.delay)).not.toContain(120);
 

@@ -141,6 +141,17 @@ describe('dashboard model', () => {
           last_changed: '',
           last_updated: '',
         },
+        'sensor.lumi_chip_temperature': {
+          entity_id: 'sensor.lumi_chip_temperature',
+          state: '46',
+          attributes: { friendly_name: 'Aqara 空调伴侣 P3 芯片温度', unit_of_measurement: '°C' },
+          last_changed: '',
+          last_updated: '',
+        },
+      },
+      areas: {
+        ...hass.areas,
+        bedroom: { area_id: 'bedroom', name: '主卧', picture: null },
       },
     };
     const areaMap = new Map([
@@ -162,12 +173,22 @@ describe('dashboard model', () => {
         unit: '°C',
         area_name: 'Closet',
       }]],
+      ['bedroom', [{
+        entity_id: 'sensor.lumi_chip_temperature',
+        name: 'Aqara 空调伴侣 P3 芯片温度',
+        domain: 'sensor',
+        icon: null,
+        state: '46',
+        unit: '°C',
+        area_name: '主卧',
+      }]],
     ]);
 
     const summaries = buildAreaSummaries(tempHass, areaMap, []);
 
     expect(summaries.find(area => area.area_id === 'kitchen')?.temp).toBe('22.2°C');
     expect(summaries.find(area => area.area_id === 'closet')?.temp).toBe('30°C');
+    expect(summaries.find(area => area.area_id === 'bedroom')?.temp).toBeNull();
   });
 
   it('applies hidden areas and hidden domains consistently', () => {

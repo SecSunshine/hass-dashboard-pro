@@ -9,7 +9,7 @@ import type { AreaSummary, EntityInfo, Hass, HassArea, HassEntity, StrategyConfi
 import { HIDDEN_DOMAINS } from '../types';
 import { getEntityDeviceType, isEntityOn, isUnavailableState } from './area-entities';
 import { getEffectiveHDPConfig } from './effective-config';
-import { formatTemperatureCelsius, isTemperatureUnit, normalizeTemperatureToCelsius } from './temperature';
+import { formatTemperatureCelsius, isAmbientTemperatureEntity, normalizeTemperatureToCelsius } from './temperature';
 
 export const UNASSIGNED_AREA_ID = '__unassigned';
 export const UNASSIGNED_AREA_NAME = '未分配区域';
@@ -341,12 +341,12 @@ export function buildAreaSummaries(
 
 function isAreaSummaryTemperatureSensor(hass: Hass, entity: EntityInfo): boolean {
   const attrs = hass.states[entity.entity_id]?.attributes || {};
-  const deviceClass = attrs.device_class as string | undefined;
-  const lowerId = entity.entity_id.toLowerCase();
-  return deviceClass === 'temperature'
-    || isTemperatureUnit(entity.unit)
-    || lowerId.includes('temperature')
-    || lowerId.includes('temp');
+  return isAmbientTemperatureEntity(
+    entity.entity_id,
+    attrs.device_class,
+    entity.unit,
+    attrs.friendly_name || entity.name,
+  );
 }
 
 function sortAreaSummaries(summaries: AreaSummary[], areaOrder: string[]): AreaSummary[] {

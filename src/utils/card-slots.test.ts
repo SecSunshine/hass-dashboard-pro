@@ -911,6 +911,7 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
     );
 
     const sanitized = windowStub.testSanitizeSlotHTML([
+      '<!-- Layout notes that must not render -->',
       '<style>@import "evil.css"; @font-face { font-family: Tracker; src: url(https://tracker.test/font.woff2) } @keyframes pulse { from { opacity:.5 } 50% { opacity:1 } to { opacity:.5 } } :host { color: red } .safe { display: grid; animation: pulse 1s ease infinite; animation-name: pulse; background-image: url(https://tracker.test/pixel) } .mask { mask-image: image-set(url(https://tracker.test/mask.png) 1x); padding: 4px } @media (max-width:600px) { .responsive-preview, :host.compact { display:flex } } .bad { width: expression(alert(1)) }</style>',
       '<section class="safe" data-entity="light.kitchen" data-action="toggle" role="button" tabindex="0" aria-label="Kitchen &amp; Dining" onclick="evil()" style="color:red;background:url(evil);padding:8px">',
       '<script>alert(1)</script>',
@@ -931,6 +932,8 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
     ].join(''));
 
     expect(sanitized).not.toContain('<script');
+    expect(sanitized).not.toContain('Layout notes');
+    expect(sanitized).not.toContain('&lt;!--');
     expect(sanitized).not.toContain('onclick');
     expect(sanitized).not.toContain('onerror');
     expect(sanitized).not.toContain('javascript:');
@@ -1042,6 +1045,8 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
     expect(css).toContain('.hdp-bento--dragging');
     expect(css).toContain('.hdp-card-slot--draft-hidden');
     expect(css).toContain('.hdp-card-slot--theme-ready');
+    expect(css).toContain('.hdp-card-slot--custom > .bp-html-card');
+    expect(css).toContain('overscroll-behavior: contain;');
     expect(css).toContain('.hdp-slot-template-bar');
     expect(css).toContain('.hdp-slot-editor-preview[data-state="error"]');
     expect(css).toContain('.hdp-slot-editor-actions button:disabled');
@@ -1049,10 +1054,14 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
     expect(css).toContain('background: var(--hdp-modal-bg, var(--hdp-bg))');
     expect(css).toContain('background: var(--hdp-control-bg, var(--hdp-card-bg))');
     expect(css).toContain('background: var(--hdp-control-bg-hover, var(--hdp-primary-light))');
+    expect(css).toContain('.hdp-add-card-grid');
+    expect(css).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))');
     expect(css).toContain('color-mix(in srgb, var(--hdp-card-bg) 88%, transparent)');
     expect(css).not.toContain('rgba(255,255,255,0.84)');
     expect(css).toContain('[data-card-edit-action="drag"]');
     expect(css).toContain('.hdp-slot-resize-handle');
+    expect(css).toMatch(/\.hdp-slot-edit-panel\s*\{[^}]*z-index:\s*22;/s);
+    expect(css).toMatch(/\.hdp-slot-resize-handle\s*\{[^}]*z-index:\s*21;/s);
     expect(css).toContain('.hdp-slot-grid-input');
     expect(css).toContain('touch-action: none;');
     expect(js).toContain('window.hdpToggleCardEditMode = function');
@@ -1084,6 +1093,16 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
     expect(js).toContain("if (String(slotId || '').indexOf('entity.domain.') === 0) entityBinding = '$entity$';");
     expect(js).toContain("else if (String(slotId || '').indexOf('entity.') === 0) entityBinding = String(slotId).slice('entity.'.length);");
     expect(js).toContain('function hdpBuildAddCardEntities()');
+    expect(js).toContain('function hdpSlotEditorOverlayCSS()');
+    expect(js).toContain('height:min(66dvh,720px)');
+    expect(js).toContain(".replace(/<!--[\\s\\S]*?-->/g, '')");
+    const openEditorIndex = js.indexOf('function hdpOpenSlotEditor(slotId, yaml)');
+    const editorStyleIndex = js.indexOf("'<style>' + hdpSlotEditorOverlayCSS() + '</style>'", openEditorIndex);
+    expect(editorStyleIndex).toBeGreaterThan(openEditorIndex);
+    expect(js).toContain('function hdpAppendDraftAddedHomeCard(slotId, slot)');
+    expect(js).toContain("window.hdpEditCardSlotYAML(slotId);");
+    expect(js).toContain("String(slotId).indexOf('home.custom.') === 0");
+    expect(js).toContain('data-card-edit-action="reset" data-slot-id="' + "' + id + '" + '">删除</button>');
     expect(js).toContain('list="hdp-add-card-entities"');
     expect(js).toContain('textarea.addEventListener(\'input\', schedulePreview)');
     expect(js).toContain('function hdpFindUnsafeSlotLine(text)');

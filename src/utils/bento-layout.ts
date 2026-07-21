@@ -53,7 +53,7 @@ export function generateBentoCSS(): string {
   .hdp-home-content {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    grid-auto-rows: minmax(var(--hdp-density-row-height, 120px), auto);
+    grid-auto-rows: var(--hdp-density-row-height, 120px);
     grid-auto-flow: dense;
     gap: var(--hdp-card-gap, var(--hdp-density-gap, 12px));
     width: 100%;
@@ -65,12 +65,17 @@ export function generateBentoCSS(): string {
   .hdp-area-content {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: minmax(calc(var(--hdp-density-row-height, 120px) - 20px), auto);
+    grid-auto-rows: auto;
     grid-auto-flow: dense;
+    align-items: start;
     gap: var(--hdp-card-gap, var(--hdp-density-gap, 12px));
     width: 100%;
     min-width: 0;
     box-sizing: border-box;
+  }
+  .hdp-area-content > .hdp-bento {
+    grid-column: 1 / -1;
+    grid-row: auto;
   }
 
   /* ── Bento Card Size Classes (Desktop) ── */
@@ -100,28 +105,42 @@ export function generateBentoCSS(): string {
     grid-row: span 1;
   }
 
-  .hdp-home-content--l_shape .hdp-bento:nth-child(1) {
-    grid-column: 1 / span 2;
-    grid-row: span 2;
-  }
-  .hdp-home-content--l_shape .hdp-bento:nth-child(2),
-  .hdp-home-content--l_shape .hdp-bento:nth-child(3) {
-    grid-column: 3 / span 2;
-  }
-  .hdp-home-content--l_shape .hdp-bento:nth-child(n+4) {
-    grid-column: span 2;
-  }
-
-  .hdp-home-content--l_mirror .hdp-bento:nth-child(1) {
-    grid-column: 3 / span 2;
+  /* L: welcome banner, environment/power feature column, then one bottom row. */
+  .hdp-home-content--l_shape > .hdp-bento[data-hdp-slot="home.welcome"],
+  .hdp-home-content--l_mirror > .hdp-bento[data-hdp-slot="home.welcome"] {
+    grid-column: 1 / -1;
     grid-row: 1 / span 2;
   }
-  .hdp-home-content--l_mirror .hdp-bento:nth-child(2),
-  .hdp-home-content--l_mirror .hdp-bento:nth-child(3) {
+  .hdp-home-content--l_shape > .hdp-bento[data-hdp-slot="home.environment"] {
     grid-column: 1 / span 2;
+    grid-row: 3 / span 2;
   }
-  .hdp-home-content--l_mirror .hdp-bento:nth-child(n+4) {
-    grid-column: span 2;
+  .hdp-home-content--l_shape > .hdp-bento[data-hdp-slot="home.power_usage"] {
+    grid-column: 1 / span 2;
+    grid-row: 5 / span 2;
+  }
+  .hdp-home-content--l_mirror > .hdp-bento[data-hdp-slot="home.environment"] {
+    grid-column: 3 / span 2;
+    grid-row: 3 / span 2;
+  }
+  .hdp-home-content--l_mirror > .hdp-bento[data-hdp-slot="home.power_usage"] {
+    grid-column: 3 / span 2;
+    grid-row: 5 / span 2;
+  }
+  .hdp-home-content--l_shape > .hdp-bento:is(
+    [data-hdp-slot="home.status_badges"],
+    [data-hdp-slot="home.people"],
+    [data-hdp-slot="home.favorites"],
+    [data-hdp-slot="home.summary"]
+  ),
+  .hdp-home-content--l_mirror > .hdp-bento:is(
+    [data-hdp-slot="home.status_badges"],
+    [data-hdp-slot="home.people"],
+    [data-hdp-slot="home.favorites"],
+    [data-hdp-slot="home.summary"]
+  ) {
+    grid-column: span 1;
+    grid-row: 7 / span 2;
   }
 
   .hdp-home-content--u_shape .hdp-bento:nth-child(1),
@@ -153,8 +172,8 @@ export function generateBentoCSS(): string {
     .hdp-bento--lg   { grid-column: span 2; grid-row: span 2; }
     .hdp-bento--wide { grid-column: span 2; grid-row: span 1; }
     .hdp-bento--tall { grid-column: span 1; grid-row: span 2; }
-    .hdp-home-content--l_shape .hdp-bento,
-    .hdp-home-content--l_mirror .hdp-bento,
+    .hdp-home-content--l_shape > .hdp-bento[data-hdp-slot],
+    .hdp-home-content--l_mirror > .hdp-bento[data-hdp-slot],
     .hdp-home-content--u_shape .hdp-bento {
       grid-column: span 2;
       grid-row: span 1;
@@ -163,8 +182,8 @@ export function generateBentoCSS(): string {
       grid-column: span var(--hdp-bento-tablet-column-span) !important;
       grid-row: span var(--hdp-bento-row-span) !important;
     }
-    .hdp-home-content--l_shape .hdp-bento:nth-child(1),
-    .hdp-home-content--l_mirror .hdp-bento:nth-child(1) {
+    .hdp-home-content--l_shape > .hdp-bento[data-hdp-slot="home.welcome"],
+    .hdp-home-content--l_mirror > .hdp-bento[data-hdp-slot="home.welcome"] {
       grid-column: span 2;
       grid-row: span 2;
     }
@@ -190,8 +209,8 @@ export function generateBentoCSS(): string {
       grid-column: span 1 !important;
       grid-row: span 1 !important;
     }
-    .hdp-home-content--l_shape .hdp-bento,
-    .hdp-home-content--l_mirror .hdp-bento,
+    .hdp-home-content--l_shape > .hdp-bento[data-hdp-slot],
+    .hdp-home-content--l_mirror > .hdp-bento[data-hdp-slot],
     .hdp-home-content--u_shape .hdp-bento,
     .hdp-home-content--rows .hdp-bento {
       grid-column: span 1;
@@ -215,11 +234,21 @@ export interface BentoGridSpan {
  * @param size   Bento size class (sm/md/lg/wide/tall)
  * @returns      Wrapped HTML: `<div class="hdp-bento hdp-bento--{size}">{html}</div>`
  */
-export function bentoWrap(html: string, size: BentoSize, span?: BentoGridSpan): string {
-  if (!span) return `<div class="hdp-bento hdp-bento--${size}">${html}</div>`;
+export function bentoWrap(html: string, size: BentoSize, span?: BentoGridSpan, slotId?: string): string {
+  const slotAttribute = slotId ? ` data-hdp-slot="${escapeBentoAttribute(slotId)}"` : '';
+  if (!span) return `<div class="hdp-bento hdp-bento--${size}"${slotAttribute}>${html}</div>`;
   const columns = sanitizeGridSpan(span.columns, 1, 4);
   const rows = sanitizeGridSpan(span.rows, 1, 6);
-  return `<div class="hdp-bento hdp-bento--${size}" data-hdp-bento-custom="true" style="--hdp-bento-column-span: ${columns}; --hdp-bento-tablet-column-span: ${Math.min(columns, 2)}; --hdp-bento-row-span: ${rows};">${html}</div>`;
+  return `<div class="hdp-bento hdp-bento--${size}"${slotAttribute} data-hdp-bento-custom="true" style="--hdp-bento-column-span: ${columns}; --hdp-bento-tablet-column-span: ${Math.min(columns, 2)}; --hdp-bento-row-span: ${rows};">${html}</div>`;
+}
+
+function escapeBentoAttribute(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 // ─── Card Size Resolution ──────────────────────────────────────────────────
@@ -263,9 +292,9 @@ export interface DensityPreset {
 }
 
 export const DENSITY_PRESETS: Record<LayoutDensity, DensityPreset> = {
-  compact:  { gap: 8,  padding: 12, rowHeight: 100, entityPadding: 10 },
-  standard: { gap: 14, padding: 18, rowHeight: 120, entityPadding: 14 },
-  spacious: { gap: 20, padding: 24, rowHeight: 140, entityPadding: 18 },
+  compact:  { gap: 8,  padding: 12, rowHeight: 84, entityPadding: 10 },
+  standard: { gap: 14, padding: 18, rowHeight: 96, entityPadding: 14 },
+  spacious: { gap: 20, padding: 24, rowHeight: 112, entityPadding: 18 },
 };
 
 export function sanitizeBentoSize(value: unknown, fallback: BentoSize = 'md'): BentoSize {

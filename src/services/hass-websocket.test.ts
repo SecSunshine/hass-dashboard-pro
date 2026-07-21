@@ -244,11 +244,11 @@ describe('hass websocket script', () => {
     expect(js).toContain('function hdpChangeCounter(entityId, delta)');
     expect(js).toContain("var service = direction < 0 ? 'decrement' : 'increment';");
     expect(js).toContain("hdpCallEntityService(hass, 'counter', service");
-    expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"number-set\"]')");
-    expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"select-option\"]')");
-    expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"text-set\"]')");
-    expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"fan-percentage\"]')");
-    expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"datetime-set\"]')");
+    expect(js).toContain("hdpClosestFromEvent(e, '[data-hdp-action=\"number-set\"],[data-action=\"number-set\"]')");
+    expect(js).toContain("hdpClosestFromEvent(e, '[data-hdp-action=\"select-option\"],[data-action=\"select-option\"]')");
+    expect(js).toContain("hdpClosestFromEvent(e, '[data-hdp-action=\"text-set\"],[data-action=\"text-set\"]')");
+    expect(js).toContain("hdpClosestFromEvent(e, '[data-hdp-action=\"fan-percentage\"],[data-action=\"fan-percentage\"]')");
+    expect(js).toContain("hdpClosestFromEvent(e, '[data-hdp-action=\"datetime-set\"],[data-action=\"datetime-set\"]')");
     expect(js).toContain("if (action === 'counter-change')");
     expect(js).toContain('hdpCoverAction(entityId, domainAction);');
     expect(js).toContain("hdpDomainActionAllowed('cover', domainAction)");
@@ -256,7 +256,7 @@ describe('hass websocket script', () => {
     expect(js).toContain("hdpDomainActionAllowed('media', domainAction)");
     expect(js).toContain("hdpDomainActionAllowed('vacuum', domainAction)");
     expect(js).toContain("document.addEventListener('change'");
-    expect(js).toContain("hdpClosestFromEvent(e, '[data-action=\"cover-position\"]')");
+    expect(js).toContain("hdpClosestFromEvent(e, '[data-hdp-action=\"cover-position\"],[data-action=\"cover-position\"]')");
     expect(js).toContain("}, true);");
     expect(js).toContain("if (hdpClosestFromEvent(e, '[data-no-toggle]')) return;");
     expect(js).toContain('if (window.hdpEntityClickHandlersInitialized) return;');
@@ -418,7 +418,7 @@ describe('hass websocket script', () => {
         })[name] || null,
         closest: (selector: string) => (
           selector === '[data-action]' ||
-          selector === actionSelector
+          selector.includes(actionSelector)
         ) ? rangeControl : selector === '[data-entity]'
           ? (owner || rangeControl)
           : selector === combinedSelector && !nested

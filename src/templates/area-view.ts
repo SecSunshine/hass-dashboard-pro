@@ -23,7 +23,7 @@ import { buildDomainCard, getDomainCardCSS } from './entity-cards';
 import { escapeAttribute, escapeHTML } from '../utils/html';
 import { cardSkinClass, sanitizeCardSkin } from '../utils/card-skin';
 import { resolveSlottedCard, resolveSlottedCardWithFallback, sortSlottedCards, type SlottedCard } from '../utils/card-slots';
-import { formatTemperatureCelsius, isTemperatureUnit, normalizeTemperatureToCelsius } from '../utils/temperature';
+import { formatTemperatureCelsius, isAmbientTemperatureEntity, normalizeTemperatureToCelsius } from '../utils/temperature';
 
 // ─── Area-specific Skin Resolution (Phase 6) ────────────────────────────────
 
@@ -78,8 +78,8 @@ export function buildAreaView(areaName: string, entities: EntityInfo[], hass: Ha
     cards.push(buildEntityGrid(entities, tokens, undefined, hass));
   } else {
     // Multiple domains — show each as a grouped section
-    for (const group of groups) {
-      cards.push(buildDomainSection(group, tokens, undefined, hass));
+    for (let index = 0; index < groups.length; index++) {
+      cards.push(buildDomainSection(groups[index], tokens, undefined, hass, undefined, index === 0));
     }
   }
 
@@ -124,7 +124,7 @@ export function buildAreaHTML(areaName: string, entities: EntityInfo[], hass: Ha
       sections.push(resolveSlottedCard(
         slotConfig,
         `area.domain.${group.domain}`,
-        extractAreaHTML(buildDomainSection(group, tokens, areaSkin, hass, slotConfig)),
+        extractAreaHTML(buildDomainSection(group, tokens, areaSkin, hass, slotConfig, index === 0)),
         resolveCardSize(`area_domain_${group.domain}`, defaultSize, cs),
         index + 1,
       ));
@@ -167,7 +167,7 @@ function groupByDomain(entities: EntityInfo[]): DomainSection[] {
 
   return sorted.map(([domain, ents]) => ({
     domain,
-    label: DOMAIN_GROUPS[domain]?.label || domain,
+    label: DOMAIN_GROUPS[domain]?.label || '其他设备',
     entities: ents,
     active_count: ents.filter(e => isEntityOn(e.state, e.domain)).length,
     total: ents.length,
@@ -194,12 +194,12 @@ function getDomainColorClass(domain: string): string {
 
 function isAreaViewTemperatureSensor(hass: Hass, entity: EntityInfo): boolean {
   const attrs = hass.states[entity.entity_id]?.attributes || {};
-  const deviceClass = attrs.device_class as string | undefined;
-  const lowerId = entity.entity_id.toLowerCase();
-  return deviceClass === 'temperature'
-    || isTemperatureUnit(entity.unit)
-    || lowerId.includes('temperature')
-    || lowerId.includes('temp');
+  return isAmbientTemperatureEntity(
+    entity.entity_id,
+    attrs.device_class,
+    entity.unit,
+    attrs.friendly_name || entity.name,
+  );
 }
 
 // ─── Area Header ───────────────────────────────────────────────────────────
@@ -249,6 +249,11 @@ function buildAreaHeader(areaName: string, entities: EntityInfo[], hass: Hass, t
     content: /* html */ `
 ${generateDesignTokenCSS(tokens)}
 <style>
+  .ds-section {
+    min-width: 0;
+    padding: 8px;
+    box-sizing: border-box;
+  }
   .ah {
     padding: 2px 0 0 0;
     min-width: 0;
@@ -492,7 +497,7 @@ function buildEntityCard(entity: EntityInfo, skin?: string, hass?: Hass, config?
 
 // ─── Domain Section (with entity card CSS) ─────────────────────────────────
 
-function buildDomainSection(group: DomainSection, tokens?: ResolvedTokens, areaSkin?: string, hass?: Hass, config?: StrategyConfig): LovelaceCardConfig {
+function buildDomainSection(group: DomainSection, tokens?: ResolvedTokens, areaSkin?: string, hass?: Hass, config?: StrategyConfig, expanded = false): LovelaceCardConfig {
   const skin = areaSkin || tokens?.card_style;
   const cards = group.entities.map(e => buildEntityCard(e, skin, hass, config)).join('');
   const countBadge = group.active_count > 0
@@ -506,13 +511,43 @@ function buildDomainSection(group: DomainSection, tokens?: ResolvedTokens, areaS
     content: /* html */ `
 ${generateDesignTokenCSS(tokens)}
 <style>
+  .ds-section {
+    min-width: 0;
+    padding: 8px;
+    box-sizing: border-box;
+    border: 1px solid var(--hdp-border);
+    border-radius: var(--hdp-radius);
+    background: color-mix(in srgb, var(--hdp-card-bg) 88%, transparent);
+  }
+  .ds-section[open] {
+    background: color-mix(in srgb, var(--hdp-card-bg) 96%, var(--hdp-primary) 4%);
+  }
+  .ds-section > summary {
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+  }
+  .ds-section > summary::-webkit-details-marker { display: none; }
   .ds-hdr {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 10px;
     min-width: 0;
+    padding: 4px;
   }
+  .ds-section[open] .ds-hdr { margin-bottom: 10px; }
+  .ds-chevron {
+    width: 28px;
+    height: 28px;
+    margin-left: auto;
+    display: grid;
+    place-items: center;
+    border-radius: var(--hdp-radius-sm);
+    color: var(--hdp-text-secondary);
+    background: var(--hdp-control-bg, var(--hdp-card-bg));
+    transition: transform .2s ease;
+  }
+  .ds-section[open] .ds-chevron { transform: rotate(180deg); }
   .ds-icon {
     width: 28px; height: 28px;
     border-radius: var(--hdp-radius-sm);
@@ -561,12 +596,15 @@ ${generateDesignTokenCSS(tokens)}
   ${ENTITY_CARD_CSS}
   ${getDomainCardCSS()}
 </style>
-<div class="ds-hdr">
-  <div class="ds-icon ds-icon--${group.color_class}">${getSectionIcon(group.domain)}</div>
-  <span class="ds-label">${escapeHTML(group.label)}</span>
-  ${countBadge}
-</div>
-<div class="ds-grid">${cards}</div>`,
+<details class="ds-section"${expanded ? ' open' : ''}>
+  <summary class="ds-hdr">
+    <span class="ds-icon ds-icon--${group.color_class}">${getSectionIcon(group.domain)}</span>
+    <span class="ds-label">${escapeHTML(group.label)}</span>
+    ${countBadge}
+    <span class="ds-chevron" aria-hidden="true">⌄</span>
+  </summary>
+  <div class="ds-grid">${cards}</div>
+</details>`,
   };
 }
 
@@ -586,6 +624,8 @@ ${generateDesignTokenCSS(tokens)}
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--hdp-card-gap);
     min-width: 0;
+    padding: 8px;
+    box-sizing: border-box;
   }
   @media (max-width: 900px) {
     .eg { grid-template-columns: repeat(2, minmax(0, 1fr)); }

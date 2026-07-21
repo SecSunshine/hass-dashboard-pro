@@ -87,6 +87,10 @@ describe('share code', () => {
         cards: {
           slots: {
             'home.summary': {
+              kind: 'domain',
+              domain: 'light',
+              entity_id: 'light.kitchen_ceiling',
+              title: `  ${'A'.repeat(90)}  `,
               enabled: false,
               order: 3,
               size: 'wide',
@@ -96,7 +100,15 @@ describe('share code', () => {
               theme_from_image: true,
               yaml: 'type: custom:html-pro-card\ncontent: |\n  <div data-action="toggle">Safe</div>',
             },
-            bad: { size: 'huge', order: 'first', enabled: 'no', background_image_url: 1 },
+            bad: {
+              kind: 'native',
+              domain: 'bad-domain',
+              entity_id: 'not-an-entity',
+              size: 'huge',
+              order: 'first',
+              enabled: 'no',
+              background_image_url: 1,
+            },
             'unsafe-image': { background_image_url: 'java\nscript:alert(1)', theme_from_image: true },
           },
         },
@@ -147,6 +159,10 @@ describe('share code', () => {
       background_image_url: '/local/images/dashboard.jpg',
     });
     expect(imported.hdp_config?.cards?.slots?.['home.summary']).toEqual({
+      kind: 'domain',
+      domain: 'light',
+      entity_id: 'light.kitchen_ceiling',
+      title: 'A'.repeat(80),
       enabled: false,
       order: 3,
       size: 'wide',

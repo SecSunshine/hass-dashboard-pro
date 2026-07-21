@@ -8,7 +8,7 @@
 import type { Hass, EntityInfo, StrategyConfig } from '../types';
 import { isEntityOn } from './area-entities';
 import { collectVisibleEntities, countVisibleDevices, getDashboardFilters } from './dashboard-model';
-import { formatTemperatureCelsius, isTemperatureLikeEntity, isTemperatureUnit, normalizeTemperatureToCelsius } from './temperature';
+import { formatTemperatureCelsius, isAmbientTemperatureEntity, isTemperatureLikeEntity, isTemperatureUnit, normalizeTemperatureToCelsius } from './temperature';
 
 // ─── Person Tracking ───────────────────────────────────────────────────────
 
@@ -96,10 +96,12 @@ export function getClimateSummary(hass: Hass, config?: StrategyConfig): ClimateS
     if (isNaN(value)) continue;
 
     const lowerId = entityId.toLowerCase();
-    const isTemperatureSensor = deviceClass === 'temperature'
-      || isTemperatureUnit(uom)
-      || lowerId.includes('temperature')
-      || lowerId.includes('temp');
+    const isTemperatureSensor = isAmbientTemperatureEntity(
+      entityId,
+      deviceClass,
+      uom,
+      attrs.friendly_name,
+    );
 
     if (isTemperatureSensor) {
       // Only count indoor sensors (skip weather/outdoor)

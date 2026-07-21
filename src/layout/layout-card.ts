@@ -27,6 +27,7 @@ import { escapeAttribute, escapeHTML, escapeInlineStyleValue, escapeURLAttribute
 import { safeBlueprintViewId } from '../utils/dom-id';
 import { getConfiguredHiddenAreas, getDashboardFilters } from '../utils/dashboard-model';
 import { generateCardSlotEditorJS, getCardSlotCSS } from '../utils/card-slots';
+import { getEffectiveHDPConfig } from '../utils/effective-config';
 
 export interface LayoutCardOptions {
   hass: Hass;
@@ -53,7 +54,7 @@ export function buildLayoutCard(opts: LayoutCardOptions): LovelaceCardConfig {
 
   const title = config.hdp_config?.dashboard?.name || config.sidebar_title || config.title || '智能家居';
   const hiddenAreas = getConfiguredHiddenAreas(config);
-  const homeLayoutPreset = sanitizeHomeLayoutPreset(config.hdp_config?.home?.layout_preset);
+  const homeLayoutPreset = sanitizeHomeLayoutPreset(getEffectiveHDPConfig(config)?.home?.layout_preset);
   const dashboardBackground = escapeURLAttribute(config.hdp_config?.dashboard?.background_image_url || '');
   const dashboardStyle = dashboardBackground
     ? ` style="--hdp-dashboard-bg-image: url(${escapeInlineStyleValue(dashboardBackground)});"`

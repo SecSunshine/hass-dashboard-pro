@@ -542,6 +542,39 @@ describe('home view settings', () => {
     expect(html).toContain('class="custom-power"');
     expect(html).toContain('Kitchen：420 W');
     expect(html).toContain('data-card-slot="home.power_usage.living"');
+    expect(html).toContain('<div class="pw-grid">');
+    expect(html).toContain('<div class="pw-card">');
+    expect(html).toContain('padding-inline-end: 2px');
+    expect(html).toContain('max-width: 46%');
+    expect(html).toContain('overscroll-behavior: contain');
+    expect(html).toContain('grid-template-columns: repeat(2, minmax(150px, 220px))');
+    expect(html).toContain('grid-template-columns: repeat(4, minmax(150px, 220px))');
+    expect(html).toContain('data-card-slot="home.power_usage"');
+    expect(html).toContain('data-hdp-slot="home.power_usage"');
+    expect(html).toContain('hdp-bento hdp-bento--lg');
+  });
+
+  it('fills resized environment slots instead of leaving invisible grid space', () => {
+    const html = buildHomeHTML(hass, { type: 'custom:hass-dashboard-pro' });
+
+    expect(html).toContain('<div class="env-card">');
+    expect(html).toContain('.env-card {');
+    expect(html).toContain('grid-template-columns: repeat(2, minmax(150px, 220px))');
+    expect(html).toContain('grid-template-columns: repeat(4, minmax(150px, 220px))');
+    expect(html).toContain('grid-auto-rows: minmax(64px, 1fr)');
+    expect(html).toContain('data-card-slot="home.environment"');
+    expect(html).toContain('hdp-bento hdp-bento--lg');
+    expect(html).toContain('height: 100%;');
+  });
+
+  it('keeps home card titles and values inside a safe content inset', () => {
+    const html = buildHomeHTML(hass, { type: 'custom:hass-dashboard-pro' });
+
+    expect(html).toContain('.env-card {');
+    expect(html).toContain('.sum-card {');
+    expect(html.match(/padding: 12px;/g)?.length).toBeGreaterThanOrEqual(2);
+    expect(html).toContain('<div class="sum-card">');
+    expect(html).toContain('overscroll-behavior: contain;');
   });
 
   it('renders automations summary as a configuration popup button', () => {
@@ -651,5 +684,40 @@ describe('home view settings', () => {
     expect(html).toContain('data-hdp-bento-custom="true"');
     expect(html).toContain('--hdp-bento-column-span: 3');
     expect(html).toContain('--hdp-bento-row-span: 2');
+  });
+
+  it('renders saved domain and entity home cards as interactive controls', () => {
+    const config: StrategyConfig = {
+      type: 'custom:hass-dashboard-pro',
+      hdp_config: {
+        home: { layout_preset: 'custom' },
+        cards: { slots: {
+          'home.custom.lights': {
+            kind: 'domain',
+            domain: 'light',
+            title: 'All Lights',
+            grid_columns: 2,
+            grid_rows: 2,
+          },
+          'home.custom.kitchen-light': {
+            kind: 'entity',
+            entity_id: 'light.kitchen',
+            title: 'Kitchen Control',
+            grid_columns: 1,
+            grid_rows: 2,
+          },
+        } },
+      } as any,
+    };
+
+    const html = buildHomeHTML(hass, config);
+
+    expect(html).toContain('data-card-slot="home.custom.lights"');
+    expect(html).toContain('All Lights');
+    expect(html).toContain('data-card-slot="home.custom.kitchen-light"');
+    expect(html).toContain('Kitchen Control');
+    expect(html.match(/data-entity="light\.kitchen"/g)?.length).toBeGreaterThanOrEqual(2);
+    expect(html).toContain('data-action="toggle"');
+    expect(html).toContain('--hdp-bento-column-span: 1');
   });
 });

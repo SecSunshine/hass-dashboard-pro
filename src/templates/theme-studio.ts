@@ -1205,9 +1205,9 @@ export function generateThemeStudioJS(): string {
 
     // Apply density CSS variables
     var densityMap = {
-      compact:  { gap: 8,  padding: 12, rowHeight: 100, entityPadding: 10 },
-      standard: { gap: 14, padding: 18, rowHeight: 120, entityPadding: 14 },
-      spacious: { gap: 20, padding: 24, rowHeight: 140, entityPadding: 18 }
+      compact:  { gap: 8,  padding: 12, rowHeight: 84, entityPadding: 10 },
+      standard: { gap: 14, padding: 18, rowHeight: 96, entityPadding: 14 },
+      spacious: { gap: 20, padding: 24, rowHeight: 112, entityPadding: 18 }
     };
     var dp = densityMap[state.density] || densityMap.standard;
     root.style.setProperty('--hdp-density', state.density);

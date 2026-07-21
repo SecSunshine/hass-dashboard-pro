@@ -20,6 +20,26 @@ export function isTemperatureLikeEntity(entityId: unknown, deviceClass: unknown,
     || lowerId.includes('temp');
 }
 
+const NON_AMBIENT_TEMPERATURE_PATTERN = /(?:^|[\s._-])(chip|cpu|gpu|soc|pcb|board|disk|drive|ssd|nvme|battery|compressor|motor|water|watertemp|inwatertemp|outwatertemp|storage|freezing|freezer|refrigeration|fridge|hot[\s._-]?pot|pool|inlet|outlet|exhaust|coil|heatsink)(?:$|[\s._-])/i;
+
+/**
+ * Room summaries only accept ambient temperature candidates. Internal device
+ * diagnostics remain visible as normal entities but are never room climate.
+ */
+export function isAmbientTemperatureEntity(
+  entityId: unknown,
+  deviceClass: unknown,
+  unit: unknown,
+  friendlyName?: unknown,
+): boolean {
+  if (!isTemperatureLikeEntity(entityId, deviceClass, unit)) return false;
+  const searchable = (String(entityId || '') + ' ' + String(friendlyName || ''))
+    .toLowerCase()
+    .replace(/[^a-z0-9\u4e00-\u9fff]+/g, '_');
+  if (NON_AMBIENT_TEMPERATURE_PATTERN.test(searchable)) return false;
+  return !/(芯片|处理器|硬盘|磁盘|电池|压缩机|电机|水温|进水|出水|冰箱|冷藏|冷冻|锅|线圈|散热)/.test(searchable);
+}
+
 export function shouldConvertFahrenheitToCelsius(value: number, unit: unknown): boolean {
   const normalizedUnit = normalizeTemperatureUnit(unit);
   if (normalizedUnit === 'fahrenheit') return true;

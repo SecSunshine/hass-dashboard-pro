@@ -55,7 +55,7 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
 
   // Summary chips (horizontal scroll row)
   const chipsHTML = sorted.map(([domain, entities]) => {
-    const label = DOMAIN_GROUPS[domain]?.label || domain;
+    const label = DOMAIN_GROUPS[domain]?.label || '其他设备';
     const activeCount = entities.filter(e => isEntityOn(e.state, e.domain)).length;
     const safeDomain = escapeAttribute(domain);
     return `<button type="button" class="dv-chip" data-domain="${safeDomain}" data-action="scroll-domain">
@@ -68,7 +68,7 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
   const skin = sanitizeCardSkin(tokens?.card_style);
   const cs = tokens?.card_sizes;
   const slottedSections: SlottedCard[] = sorted.map(([domain, entities], index) => {
-    const sectionHTML = buildDomainSection(domain, entities, skin, hass, config);
+    const sectionHTML = buildDomainSection(domain, entities, skin, hass, config, false);
     const defaultSize = entities.length <= 4 ? 'md' : 'wide';
     return resolveSlottedCard(
       config,
@@ -93,19 +93,31 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
 <style>
   .dv-chips {
     display: flex;
+    align-items: center;
     gap: 8px;
     overflow-x: auto;
-    padding-bottom: 8px;
+    overflow-y: hidden;
+    padding: 0 2px 8px;
     margin-bottom: 16px;
-    scrollbar-width: none;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--hdp-text-muted) 42%, transparent) transparent;
+    scroll-snap-type: x proximity;
+    overscroll-behavior-inline: contain;
+    touch-action: pan-x;
   }
-  .dv-chips::-webkit-scrollbar { display: none; }
+  .dv-chips::-webkit-scrollbar { height: 6px; }
+  .dv-chips::-webkit-scrollbar-track { background: transparent; }
+  .dv-chips::-webkit-scrollbar-thumb {
+    border-radius: var(--hdp-radius-pill, 20px);
+    background: color-mix(in srgb, var(--hdp-text-muted) 42%, transparent);
+  }
   .dv-chip {
     display: flex;
     align-items: center;
     gap: 6px;
-    min-width: 0;
-    max-width: min(220px, 68vw);
+    flex: 0 0 auto;
+    min-width: max-content;
+    max-width: none;
     padding: 6px 14px;
     border-radius: var(--hdp-radius-pill, 20px);
     background: var(--hdp-surface-card, var(--hdp-card-bg));
@@ -118,6 +130,7 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
     white-space: nowrap;
     transition: all 0.2s ease;
     min-height: 44px;
+    scroll-snap-align: start;
   }
   .dv-chip:hover {
     transform: translateY(-2px);
@@ -126,9 +139,9 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
   }
   .dv-chip-label {
     font-weight: 600;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    flex: 0 0 auto;
+    overflow: visible;
+    text-overflow: clip;
   }
   .dv-chip-count {
     flex: 0 0 auto;
@@ -142,14 +155,41 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
   .dv-section {
     margin-bottom: 0;
     min-width: 0;
+    padding: 8px;
+    box-sizing: border-box;
+    border: 1px solid var(--hdp-border);
+    border-radius: var(--hdp-radius);
+    background: color-mix(in srgb, var(--hdp-card-bg) 88%, transparent);
   }
+  .dv-section[open] {
+    background: color-mix(in srgb, var(--hdp-card-bg) 96%, var(--hdp-primary) 4%);
+  }
+  .dv-section > summary {
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+  }
+  .dv-section > summary::-webkit-details-marker { display: none; }
   .dv-section-hdr {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 10px;
     min-width: 0;
+    padding: 4px;
   }
+  .dv-section[open] .dv-section-hdr { margin-bottom: 10px; }
+  .dv-section-chevron {
+    width: 28px;
+    height: 28px;
+    margin-left: auto;
+    display: grid;
+    place-items: center;
+    border-radius: var(--hdp-radius-sm, 8px);
+    color: var(--hdp-text-secondary);
+    background: var(--hdp-control-bg, var(--hdp-card-bg));
+    transition: transform .2s ease;
+  }
+  .dv-section[open] .dv-section-chevron { transform: rotate(180deg); }
   .dv-section-icon {
     width: 28px; height: 28px;
     border-radius: var(--hdp-radius-sm, 8px);
@@ -178,6 +218,11 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--hdp-card-gap, 12px);
     min-width: 0;
+  }
+  .dv-grid > .hdp-card-slot {
+    height: auto;
+    overflow: visible;
+    padding: 2px;
   }
   @media (max-width: 1100px) {
     .dv-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -214,7 +259,10 @@ window.hdpScrollToDomain = function(domain) {
   if (!el && targetDomain.indexOf('.') > -1) {
     el = document.getElementById('dv-domain-' + targetDomain.split('.')[0]);
   }
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (el) {
+    if (String(el.tagName || '').toLowerCase() === 'details') el.open = true;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 };
 
 window.hdpShowDeviceDomain = function(domain) {
@@ -231,8 +279,8 @@ window.hdpShowDeviceDomain = function(domain) {
 
 // ─── Domain Section ─────────────────────────────────────────────────────────
 
-function buildDomainSection(domain: string, entities: EntityInfo[], skin?: string, hass?: Hass, config?: StrategyConfig): string {
-  const label = DOMAIN_GROUPS[domain]?.label || domain;
+function buildDomainSection(domain: string, entities: EntityInfo[], skin?: string, hass?: Hass, config?: StrategyConfig, expanded = false): string {
+  const label = DOMAIN_GROUPS[domain]?.label || '其他设备';
   const activeCount = entities.filter(e => isEntityOn(e.state, e.domain)).length;
   const iconColor = getDomainColor(domain);
 
@@ -240,16 +288,17 @@ function buildDomainSection(domain: string, entities: EntityInfo[], skin?: strin
 
   const safeDomain = escapeAttribute(domain);
 
-  return `<div class="dv-section" id="dv-domain-${safeDomain}">
-    <div class="dv-section-hdr">
-      <div class="dv-section-icon" style="background: ${iconColor.bg}; color: ${iconColor.fg};">
+  return `<details class="dv-section" id="dv-domain-${safeDomain}"${expanded ? ' open' : ''}>
+    <summary class="dv-section-hdr">
+      <span class="dv-section-icon" style="background: ${iconColor.bg}; color: ${iconColor.fg};">
         ${getDomainIconSVG(domain)}
-      </div>
+      </span>
       <span class="dv-section-label">${escapeHTML(label)}</span>
       <span class="dv-section-cnt">${activeCount}/${entities.length}</span>
-    </div>
+      <span class="dv-section-chevron" aria-hidden="true">⌄</span>
+    </summary>
     <div class="dv-grid">${cardsHTML}</div>
-  </div>`;
+  </details>`;
 }
 
 function sortEntitiesForDisplay(entities: EntityInfo[]): void {

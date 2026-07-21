@@ -210,6 +210,37 @@ describe('layout card', () => {
     expect(card.content).toContain('Alice Admin');
   });
 
+  it('renders an external image URL with a double slash for avatar and dashboard background', () => {
+    const imageUrl = 'https://haowallpaper.com/link//common/file/previewFileImg/19285714629383040';
+    const card = buildLayoutCard({
+      hass: {
+        ...hass,
+        user: { name: 'Alice Admin', is_admin: true },
+      },
+      config: {
+        type: 'custom:hass-dashboard-pro',
+        hdp_config: {
+          dashboard: {
+            name: 'Home',
+            icon: 'mdi:home',
+            avatar_url: imageUrl,
+            background_image_url: imageUrl,
+          },
+        } as any,
+      },
+      homeHTML: '',
+      areaSections: [],
+      devicesHTML: '',
+      settingsHTML: '',
+      areaSummaries: [],
+      blueprintPages: [],
+    });
+
+    expect(card.content).toContain(`src="${imageUrl}"`);
+    expect(card.content).toContain(`--hdp-dashboard-bg-image: url(${imageUrl})`);
+    expect(card.content).toContain('hdp-root hdp-root--image-bg');
+  });
+
   it('falls back to user initials and rejects unsafe avatar URLs', () => {
     const card = buildLayoutCard({
       hass: {

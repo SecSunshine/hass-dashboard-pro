@@ -452,6 +452,7 @@ const ALLOWED_ATTRS = new Set([
 
 function sanitizeHtmlProContent(content: string, scopeSelector: string, animationPrefix: string): string {
   return content
+    .replace(/<!--[\s\S]*?-->/g, '')
     .replace(/<\s*(script|iframe|object|embed|form)\b[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
     .replace(/<\s*style\b[^>]*>([\s\S]*?)<\s*\/\s*style\s*>/gi, (_, css) => {
       return `<style>${scopeBlueprintCSS(String(css), scopeSelector, animationPrefix)}</style>`;

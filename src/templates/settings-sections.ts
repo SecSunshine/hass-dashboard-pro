@@ -20,11 +20,12 @@
  */
 
 import type { Hass, StrategyConfig, BlueprintInstance, HomeLayoutPreset, HomeSectionKey } from '../types';
-import { HIDDEN_DOMAINS, HOME_SECTION_LABELS } from '../types';
+import { DOMAIN_GROUPS, HIDDEN_DOMAINS, HOME_SECTION_LABELS } from '../types';
 import { buildBlueprintGalleryHTML } from '../blueprints/blueprint-gallery';
 import { buildDashboardDesignPlan, buildPlanAlternatives, type DashboardDesignPlan } from '../utils/design-plan';
 import { escapeAttribute, escapeHTML } from '../utils/html';
 import { getEntityDeviceType } from '../utils/area-entities';
+import { getEffectiveHDPConfig } from '../utils/effective-config';
 import {
   getConfiguredHiddenAreas,
   getConfiguredAreaOrder,
@@ -278,9 +279,19 @@ export function getSettingsSectionsCSS(): string {
     appearance: none;
   }
   .st-chip--active {
-    background: var(--hdp-primary-light, rgba(79,110,247,0.1));
+    background: var(--hdp-primary);
     border-color: var(--hdp-primary);
-    color: var(--hdp-primary);
+    color: var(--hdp-text-inverse, #fff);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--hdp-primary) 28%, transparent);
+  }
+  .st-chip--active::before {
+    content: '✓';
+    flex: 0 0 auto;
+    font-weight: 900;
+  }
+  .st-chip--active:hover {
+    background: var(--hdp-primary);
+    color: var(--hdp-text-inverse, #fff);
   }
   .st-chip:hover {
     background: var(--hdp-surface-raised, var(--hdp-card-bg));
@@ -771,7 +782,8 @@ function hdpSyncSettingsControlsFromDraft() {
     var value = hdpGetDraftPathValue(path);
     var item = control.getAttribute('data-value');
     if (item != null && control.classList) {
-      var active = Array.isArray(value) && value.indexOf(item) >= 0;
+      var contains = Array.isArray(value) && value.indexOf(item) >= 0;
+      var active = control.getAttribute('data-array-mode') === 'exclude' ? !contains : contains;
       control.classList.toggle('st-chip--active', active);
       control.setAttribute('aria-pressed', active ? 'true' : 'false');
       continue;
@@ -894,8 +906,10 @@ window.hdpToggleArrayItem = function(path, item) {
   else arr.push(item);
   hdpMarkSettingsDirty();
   if (chip) {
-    chip.classList.toggle('st-chip--active');
-    chip.setAttribute('aria-pressed', chip.classList.contains('st-chip--active') ? 'true' : 'false');
+    var contains = arr.indexOf(item) >= 0;
+    var active = chip.getAttribute('data-array-mode') === 'exclude' ? !contains : contains;
+    chip.classList.toggle('st-chip--active', active);
+    chip.setAttribute('aria-pressed', active ? 'true' : 'false');
   }
 };
 
@@ -906,6 +920,34 @@ window.hdpSaveKeywordList = function(path, value) {
     .filter(function(item, index, list) { return item && list.indexOf(item) === index; });
   hdpSetDraftPath(path, arr);
 };
+
+function hdpStageSettingsForm(sourceControl) {
+  var root = sourceControl && sourceControl.getRootNode ? sourceControl.getRootNode() : document;
+  if (!root || !root.querySelectorAll) return true;
+  var fields = root.querySelectorAll('[data-setting]:not([data-action])');
+  for (var i = 0; i < fields.length; i++) {
+    var field = fields[i];
+    var path = field.getAttribute && field.getAttribute('data-setting');
+    if (!path) continue;
+    if (field.getAttribute('data-value-type') === 'keyword-list') {
+      window.hdpSaveKeywordList(path, field.value);
+      continue;
+    }
+    var value = field.type === 'url' ? hdpNormalizeSettingsImageUrl(field.value) : field.value;
+    if (field.type === 'url' && value === null) {
+      if (field.setCustomValidity) {
+        field.setCustomValidity('请输入 HTTP(S)、/local/ 或相对图片路径');
+        if (field.reportValidity) field.reportValidity();
+        field.setCustomValidity('');
+      }
+      if (typeof hdpShowToast === 'function') hdpShowToast('图片地址无效，设置未保存', 'error');
+      return false;
+    }
+    if (field.type === 'url') field.value = value;
+    hdpSetDraftPath(path, value);
+  }
+  return true;
+}
 
 window.hdpCommitSettings = function() {
   if (window.hdpDraftVisualDirty && typeof window.hdpLoadDraftVisualConfig === 'function') {
@@ -921,24 +963,32 @@ window.hdpCommitSettings = function() {
 };
 
 window.hdpCancelSettings = function() {
+  if (typeof window.hdpRestoreVisualDraftPreview === 'function') window.hdpRestoreVisualDraftPreview();
   window.hdpSettingsDraft = hdpCloneConfig(hdpLoadRawSettingsConfig());
   window.hdpDraftVisualConfig = undefined;
   window.hdpDraftVisualDirty = false;
+  if (typeof window.hdpSyncVisualDraftControls === 'function') {
+    window.hdpSyncVisualDraftControls(window.hdpSettingsDraft.visual || {});
+  }
   hdpSyncSettingsControlsFromDraft();
   hdpMarkSettingsClean();
   if (typeof hdpShowToast === 'function') hdpShowToast('已放弃未保存更改', 'info');
 };
 
-function hdpClosestSettingsAction(e) {
+function hdpClosestSettingsControl(e, selector) {
   if (e && e.target && e.target.closest) {
-    var direct = e.target.closest('[data-action]');
+    var direct = e.target.closest(selector);
     if (direct) return direct;
   }
   var path = e && typeof e.composedPath === 'function' ? e.composedPath() : [];
   for (var i = 0; i < path.length; i++) {
-    if (path[i] && path[i].matches && path[i].matches('[data-action]')) return path[i];
+    if (path[i] && path[i].matches && path[i].matches(selector)) return path[i];
   }
   return null;
+}
+
+function hdpClosestSettingsAction(e) {
+  return hdpClosestSettingsControl(e, '[data-action]');
 }
 
 if (!window.hdpSettingsCommandHandlerReady) {
@@ -950,7 +1000,9 @@ if (!window.hdpSettingsCommandHandlerReady) {
     if (action === 'save-settings' || action === 'cancel-settings') {
       e.preventDefault();
       e.stopPropagation();
-      if (action === 'save-settings') window.hdpCommitSettings();
+      if (action === 'save-settings') {
+        if (hdpStageSettingsForm(control)) window.hdpCommitSettings();
+      }
       else window.hdpCancelSettings();
       return;
     }
@@ -1014,7 +1066,7 @@ if (!window.hdpSettingsCommandHandlerReady) {
     control.click();
   });
   document.addEventListener('change', function(e) {
-    var control = e && e.target && e.target.closest ? e.target.closest('[data-setting]') : null;
+    var control = hdpClosestSettingsControl(e, '[data-setting]');
     if (!control || control.getAttribute('data-action')) return;
     var path = control.getAttribute('data-setting');
     if (!path) return;
@@ -1034,7 +1086,7 @@ if (!window.hdpSettingsCommandHandlerReady) {
     window.hdpSaveSetting(path, value);
   }, true);
   document.addEventListener('input', function(e) {
-    var control = e && e.target && e.target.closest ? e.target.closest('[data-value-type="keyword-list"][data-setting]') : null;
+    var control = hdpClosestSettingsControl(e, '[data-value-type="keyword-list"][data-setting]');
     if (!control) return;
     window.hdpSaveKeywordList(control.getAttribute('data-setting'), control.value);
   }, true);
@@ -1371,6 +1423,14 @@ function hdpNormalizeCardSlots(value) {
     if (typeof slot.grid_rows === 'number' && isFinite(slot.grid_rows)) {
       normalized.grid_rows = Math.max(1, Math.min(6, Math.round(slot.grid_rows)));
     }
+    if (['custom', 'domain', 'entity'].indexOf(slot.kind) >= 0) normalized.kind = slot.kind;
+    if (typeof slot.domain === 'string' && /^[a-z_][a-z0-9_]*$/.test(slot.domain)) {
+      normalized.domain = slot.domain;
+    }
+    if (typeof slot.entity_id === 'string' && /^[a-z_][a-z0-9_]*\.[a-z0-9_]+$/.test(slot.entity_id)) {
+      normalized.entity_id = slot.entity_id;
+    }
+    if (typeof slot.title === 'string') normalized.title = slot.title.trim().slice(0, 80);
     var backgroundUrl = hdpNormalizeSettingsImageUrl(slot.background_image_url);
     if (backgroundUrl) normalized.background_image_url = backgroundUrl;
     if (backgroundUrl && slot.theme_from_image === true) normalized.theme_from_image = true;
@@ -1660,7 +1720,7 @@ function toggleHTML(settingPath: string, value: boolean): string {
 
 function chipHTML(action: string, path: string, value: string, label: string, active: boolean): string {
   const activeClass = active ? ' st-chip--active' : '';
-  return `<button type="button" class="st-chip${activeClass}" data-action="${escapeAttribute(action)}" data-setting="${escapeAttribute(path)}" data-value="${escapeAttribute(value)}" aria-pressed="${active ? 'true' : 'false'}" title="${escapeAttribute(label)}">${escapeHTML(label)}</button>`;
+  return `<button type="button" class="st-chip${activeClass}" data-action="${escapeAttribute(action)}" data-setting="${escapeAttribute(path)}" data-value="${escapeAttribute(value)}" data-array-mode="exclude" aria-pressed="${active ? 'true' : 'false'}" title="${escapeAttribute(label)}">${escapeHTML(label)}</button>`;
 }
 
 // ─── 1. Dashboard ──────────────────────────────────────────────────────────
@@ -1736,9 +1796,10 @@ export function buildQuickGenerateSection(hass: Hass, config: StrategyConfig): s
 }
 
 export function buildHomeSection(config: StrategyConfig): string {
-  const hiddenSections: string[] = (config as any).hdp_config?.home?.hidden_sections || [];
-  const hiddenInfoCards: string[] = (config as any).hdp_config?.home?.hidden_info_cards || [];
-  const layoutPreset = sanitizeHomeLayoutPreset((config as any).hdp_config?.home?.layout_preset);
+  const homeConfig = getEffectiveHDPConfig(config)?.home;
+  const hiddenSections: string[] = homeConfig?.hidden_sections || [];
+  const hiddenInfoCards: string[] = homeConfig?.hidden_info_cards || [];
+  const layoutPreset = sanitizeHomeLayoutPreset(homeConfig?.layout_preset);
   const sectionKeys: HomeSectionKey[] = ['status_badges', 'people', 'environment', 'power_usage', 'favorites', 'summary'];
   const infoCardLabels: Record<string, string> = {
     updates: '可用更新',
@@ -1752,8 +1813,8 @@ export function buildHomeSection(config: StrategyConfig): string {
   const layoutLabels: Record<HomeLayoutPreset, { label: string; desc: string }> = {
     grid: { label: '行列式布局', desc: '均衡网格，适合通用家庭总览。' },
     rows: { label: '纵向行布局', desc: '大卡片逐行展开，适合窄屏和信息阅读。' },
-    l_shape: { label: 'L 型布局', desc: '左侧主视觉，右侧信息列，首屏重心稳定。' },
-    l_mirror: { label: '镜像 L 型', desc: '右侧主视觉，左侧状态群，更适合右手操作区。' },
+    l_shape: { label: 'L 型布局', desc: '欢迎卡通栏，环境与功率沿左侧排列，其余卡片位于底部一行。' },
+    l_mirror: { label: '镜像 L 型', desc: '欢迎卡通栏，环境与功率沿右侧排列，其余卡片位于底部一行。' },
     u_shape: { label: 'U 型布局', desc: '上下横向信息包围核心卡片，适合大屏展示。' },
     custom: { label: '自定义顺序', desc: '使用手动区块顺序和卡片尺寸。' },
   };
@@ -1766,7 +1827,7 @@ export function buildHomeSection(config: StrategyConfig): string {
 
   const infoChips = Object.entries(infoCardLabels).map(([key, label]) => {
     const hidden = hiddenInfoCards.includes(key);
-    return chipHTML('toggle-home-info-card', 'home.hidden_info_cards', key, label, hidden);
+    return chipHTML('toggle-home-info-card', 'home.hidden_info_cards', key, label, !hidden);
   }).join('');
   const layoutChoices = (Object.keys(layoutLabels) as HomeLayoutPreset[]).map(preset => {
     const active = preset === layoutPreset;
@@ -1786,7 +1847,7 @@ export function buildHomeSection(config: StrategyConfig): string {
     <div class="st-row-desc">选择首页要显示的内容区块</div>
     <div class="st-chip-list">${chips}</div>
     <div class="st-section-subtitle">系统概览项目</div>
-    <div class="st-row-desc">高亮项目会从系统概览隐藏</div>
+    <div class="st-row-desc">带勾且高亮的项目会显示在系统概览</div>
     <div class="st-chip-list">${infoChips}</div>
   `);
 }
@@ -1871,7 +1932,7 @@ export function buildPeopleSection(hass: any, config: StrategyConfig): string {
 
   const chips = persons.map(p => {
     const hidden = hiddenPersons.includes(p.id);
-    return chipHTML('toggle-hidden-person', 'people.hidden_persons', p.id, p.name, hidden);
+    return chipHTML('toggle-hidden-person', 'people.hidden_persons', p.id, p.name, !hidden);
   }).join('') || '<span class="st-row-desc">未找到 person 实体</span>';
 
   return sectionCard('people', '家庭成员', iconPeople(), `
@@ -1906,14 +1967,14 @@ export function buildAreasSection(hass: any, config: StrategyConfig): string {
 
   const areaChips = areaEntries.map(([id, area]: [string, any]) => {
     const hidden = hiddenAreas.includes(id);
-    return chipHTML('toggle-hidden-area', 'areas.hidden_areas', id, area.name, hidden);
+    return chipHTML('toggle-hidden-area', 'areas.hidden_areas', id, area.name, !hidden);
   }).join('') || '<span class="st-row-desc">未找到区域</span>';
 
   return sectionCard('areas', '区域', iconAreas(), `
     <div class="st-row">
       <div>
         <div class="st-row-label">隐藏区域</div>
-        <div class="st-row-desc">点击切换区域是否显示（高亮=隐藏）</div>
+        <div class="st-row-desc">带勾且高亮的区域会显示在仪表盘</div>
       </div>
     </div>
     <div class="st-chip-list">${areaChips}</div>
@@ -1971,7 +2032,7 @@ export function buildDevicesSection(config: StrategyConfig, hass?: Hass): string
 
   const chips = domains.map(d => {
     const hidden = hiddenDomains.includes(d);
-    return chipHTML('toggle-hidden-domain', 'devices.hidden_domains', d, domainLabels[d] || d, hidden);
+    return chipHTML('toggle-hidden-domain', 'devices.hidden_domains', d, domainLabels[d] || DOMAIN_GROUPS[d]?.label || '其他设备', !hidden);
   }).join('');
 
   const deviceTypeHTML = buildHiddenDeviceTypeChips(hass, hiddenDomains, hiddenDeviceTypes);
@@ -1980,7 +2041,7 @@ export function buildDevicesSection(config: StrategyConfig, hass?: Hass): string
 
   return sectionCard('devices', '设备类型', iconDevices(), `
     <div class="st-row-label">隐藏设备类型</div>
-    <div class="st-row-desc">点击切换设备类型是否显示（高亮=隐藏）</div>
+    <div class="st-row-desc">带勾且高亮的设备类型会显示在仪表盘</div>
     <div class="st-chip-list">${chips}</div>
     ${deviceTypeHTML}
     <div class="st-section-subtitle">关键词过滤</div>
@@ -2009,6 +2070,31 @@ function buildHiddenDeviceTypeChips(hass: Hass | undefined, hiddenDomains: strin
     'sensor.power': '功率传感器',
     'sensor.energy': '电量传感器',
     'sensor.illuminance': '照度传感器',
+    'sensor.battery': '电池电量',
+    'sensor.voltage': '电压传感器',
+    'sensor.current': '电流传感器',
+    'sensor.frequency': '频率传感器',
+    'sensor.pressure': '压力传感器',
+    'sensor.atmospheric_pressure': '大气压力',
+    'sensor.signal_strength': '信号强度',
+    'sensor.carbon_dioxide': '二氧化碳',
+    'sensor.carbon_monoxide': '一氧化碳',
+    'sensor.pm1': 'PM1 颗粒物',
+    'sensor.pm10': 'PM10 颗粒物',
+    'sensor.pm25': 'PM2.5 颗粒物',
+    'sensor.volatile_organic_compounds': '挥发性有机物',
+    'sensor.gas': '燃气传感器',
+    'sensor.water': '用水量',
+    'sensor.weight': '重量传感器',
+    'sensor.duration': '时长传感器',
+    'sensor.timestamp': '时间戳',
+    'sensor.data_rate': '数据速率',
+    'sensor.data_size': '数据容量',
+    'sensor.speed': '速度传感器',
+    'sensor.wind_speed': '风速传感器',
+    'sensor.apparent_power': '视在功率',
+    'sensor.reactive_power': '无功功率',
+    'sensor.power_factor': '功率因数',
     'binary_sensor.motion': '人体/运动',
     'binary_sensor.door': '门磁',
     'binary_sensor.window': '窗磁',
@@ -2016,6 +2102,22 @@ function buildHiddenDeviceTypeChips(hass: Hass | undefined, hiddenDomains: strin
     'binary_sensor.moisture': '漏水',
     'binary_sensor.occupancy': '占用',
     'binary_sensor.presence': '存在',
+    'binary_sensor.opening': '开合状态',
+    'binary_sensor.connectivity': '连接状态',
+    'binary_sensor.battery': '电池状态',
+    'binary_sensor.battery_charging': '充电状态',
+    'binary_sensor.problem': '故障状态',
+    'binary_sensor.safety': '安全状态',
+    'binary_sensor.tamper': '防拆状态',
+    'binary_sensor.vibration': '震动状态',
+    'binary_sensor.running': '运行状态',
+    'binary_sensor.sound': '声音检测',
+    'binary_sensor.heat': '高温检测',
+    'binary_sensor.cold': '低温检测',
+    'binary_sensor.power': '供电状态',
+    'binary_sensor.plug': '插头状态',
+    'binary_sensor.lock': '门锁状态',
+    'binary_sensor.garage_door': '车库门',
   };
   const defaultDeviceTypes = Object.keys(deviceTypeLabels);
   const detectedDeviceTypes = Object.entries(hass?.states || {})
@@ -2029,7 +2131,8 @@ function buildHiddenDeviceTypeChips(hass: Hass | undefined, hiddenDomains: strin
 
   const chips = deviceTypes.map(type => {
     const hidden = hiddenDeviceTypes.includes(type);
-    return chipHTML('toggle-hidden-device-type', 'devices.hidden_device_types', type, deviceTypeLabels[type] || type, hidden);
+    const fallbackLabel = DOMAIN_GROUPS[type.split('.')[0]]?.label || '其他设备';
+    return chipHTML('toggle-hidden-device-type', 'devices.hidden_device_types', type, deviceTypeLabels[type] || fallbackLabel, !hidden);
   }).join('');
 
   return `<div class="st-section-subtitle">传感器/设备子类型</div><div class="st-chip-list">${chips}</div>`;

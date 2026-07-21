@@ -114,8 +114,28 @@ function hdpToastStyle(type) {
     'opacity:0;transition:opacity 0.3s ease,transform 0.3s ease;max-width:min(90vw,520px);text-align:center;';
 }
 
+function hdpFindDashboardRoot() {
+  var direct = document.getElementById('hdp-root');
+  if (direct) return direct;
+  function search(root, depth) {
+    if (!root || depth < 0) return null;
+    if (root.querySelector) {
+      var found = root.querySelector('#hdp-root');
+      if (found) return found;
+      var elements = root.querySelectorAll('*');
+      for (var i = 0; i < elements.length; i++) {
+        if (!elements[i].shadowRoot) continue;
+        var nested = search(elements[i].shadowRoot, depth - 1);
+        if (nested) return nested;
+      }
+    }
+    return null;
+  }
+  return search(document, 5);
+}
+
 function hdpApplyThemeVarsToOverlay(overlay) {
-  var root = document.getElementById('hdp-root');
+  var root = hdpFindDashboardRoot();
   if (!overlay || !root || !window.getComputedStyle) return;
   var styles = window.getComputedStyle(root);
   [
@@ -1325,7 +1345,16 @@ function hdpEntityIdFromControl(control) {
 function hdpIsNativeInteractiveControl(control) {
   var tag = String(control && control.tagName || '').toLowerCase();
   if (tag === 'a') return !!(control.getAttribute && control.getAttribute('href'));
-  return tag === 'button' || tag === 'input' || tag === 'select' || tag === 'textarea' || tag === 'summary';
+  if (tag === 'button' || tag === 'input' || tag === 'select' || tag === 'textarea' || tag === 'summary') return true;
+  if (!control || !control.getAttribute) return false;
+  var action = control.getAttribute('data-hdp-action') || control.getAttribute('data-action') || '';
+  return action === 'cover-position'
+    || action === 'media-volume'
+    || action === 'number-set'
+    || action === 'select-option'
+    || action === 'text-set'
+    || action === 'datetime-set'
+    || action === 'fan-percentage';
 }
 
 function hdpDomainActionAllowed(namespace, action) {
@@ -1456,12 +1485,9 @@ function hdpInitEntityClickHandlers() {
       e.stopPropagation();
       return;
     }
-    if (domainControl) {
-      var deferredAction = domainControl.getAttribute('data-action') || '';
-      if (deferredAction === 'cover-position' || deferredAction === 'media-volume') {
-        e.stopPropagation();
-        return;
-      }
+    if (domainControl && hdpIsNativeInteractiveControl(domainControl)) {
+      e.stopPropagation();
+      return;
     }
     // Domain-specific cards own their inner buttons and service calls.
     if (hdpClosestFromEvent(e, '[data-no-toggle]')) return;
@@ -1469,7 +1495,7 @@ function hdpInitEntityClickHandlers() {
     var card = hdpClosestFromEvent(e, '[data-entity]');
     if (!card) return;
     // Domain-specific cards (climate, cover, lock, etc.) have their own buttons
-    if (card.hasAttribute('data-no-toggle')) return;
+    if (card.hasAttribute && card.hasAttribute('data-no-toggle')) return;
     var entityId = card.getAttribute('data-entity');
     if (!entityId) return;
     // Don't toggle sensors or binary_sensors
@@ -1486,13 +1512,13 @@ function hdpInitEntityClickHandlers() {
     card.click();
   });
   document.addEventListener('input', function(e) {
-    var control = hdpClosestFromEvent(e, '[data-action="media-volume"]');
+    var control = hdpClosestFromEvent(e, '[data-hdp-action="media-volume"],[data-action="media-volume"]');
     var entityId = hdpEntityIdFromControl(control);
     if (control && entityId) {
       hdpSetMediaVolume(entityId, Number(control.value) / 100);
       return;
     }
-    control = hdpClosestFromEvent(e, '[data-action="number-set"]');
+    control = hdpClosestFromEvent(e, '[data-hdp-action="number-set"],[data-action="number-set"]');
     entityId = hdpEntityIdFromControl(control);
     if (control && entityId) {
       var card = control.closest ? control.closest('[data-entity]') : null;
@@ -1505,7 +1531,7 @@ function hdpInitEntityClickHandlers() {
       }
       return;
     }
-    control = hdpClosestFromEvent(e, '[data-action="fan-percentage"]');
+    control = hdpClosestFromEvent(e, '[data-hdp-action="fan-percentage"],[data-action="fan-percentage"]');
     entityId = hdpEntityIdFromControl(control);
     if (!control || !entityId) return;
     card = control.closest ? control.closest('[data-entity]') : null;
@@ -1513,37 +1539,37 @@ function hdpInitEntityClickHandlers() {
     if (valueLabel) valueLabel.textContent = String(control.value) + '%';
   }, true);
   document.addEventListener('change', function(e) {
-    var control = hdpClosestFromEvent(e, '[data-action="cover-position"]');
+    var control = hdpClosestFromEvent(e, '[data-hdp-action="cover-position"],[data-action="cover-position"]');
     var entityId = hdpEntityIdFromControl(control);
     if (control && entityId) {
       hdpSetCoverPosition(entityId, control.value, control.getAttribute('data-cover-position-inverted') === 'true');
       return;
     }
-    control = hdpClosestFromEvent(e, '[data-action="number-set"]');
+    control = hdpClosestFromEvent(e, '[data-hdp-action="number-set"],[data-action="number-set"]');
     entityId = hdpEntityIdFromControl(control);
     if (control && entityId) {
       hdpSetNumberValue(entityId, control.value);
       return;
     }
-    control = hdpClosestFromEvent(e, '[data-action="select-option"]');
+    control = hdpClosestFromEvent(e, '[data-hdp-action="select-option"],[data-action="select-option"]');
     entityId = hdpEntityIdFromControl(control);
     if (control && entityId) {
       hdpSetSelectOption(entityId, control.value);
       return;
     }
-    control = hdpClosestFromEvent(e, '[data-action="text-set"]');
+    control = hdpClosestFromEvent(e, '[data-hdp-action="text-set"],[data-action="text-set"]');
     entityId = hdpEntityIdFromControl(control);
     if (control && entityId) {
       hdpSetTextValue(entityId, control.value);
       return;
     }
-    control = hdpClosestFromEvent(e, '[data-action="fan-percentage"]');
+    control = hdpClosestFromEvent(e, '[data-hdp-action="fan-percentage"],[data-action="fan-percentage"]');
     entityId = hdpEntityIdFromControl(control);
     if (control && entityId) {
       hdpSetFanPercentage(entityId, control.value);
       return;
     }
-    control = hdpClosestFromEvent(e, '[data-action="datetime-set"]');
+    control = hdpClosestFromEvent(e, '[data-hdp-action="datetime-set"],[data-action="datetime-set"]');
     entityId = hdpEntityIdFromControl(control);
     if (!control || !entityId) return;
     hdpSetDateTimeValue(entityId, control.value, control.getAttribute('data-has-date') === 'true', control.getAttribute('data-has-time') === 'true');

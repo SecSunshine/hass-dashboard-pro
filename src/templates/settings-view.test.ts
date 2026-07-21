@@ -139,6 +139,8 @@ describe('settings view', () => {
       html.indexOf('#st-visual-body .settings-studio-btn'),
     );
     expect(html).toContain('.hdp-view[data-view="settings"] .hdp-area-content');
+    expect(html).toContain('display: block;');
+    expect(html).toContain('grid-auto-rows: auto;');
     expect(html).toContain('width: min(100%, 1040px)');
     expect(html).not.toContain('.st-section-body > div {');
     expect(html).toContain('.theme-grid');
@@ -300,7 +302,7 @@ describe('settings view', () => {
     expect(html).toContain('data-action="reset-visual-config"');
     expect(html).toContain('data-action="save-settings"');
     expect(html).toContain('修改会先暂存，点击保存后生效');
-    expect(js).toContain("if (action === 'save-settings') window.hdpCommitSettings();");
+    expect(js).toContain("if (hdpStageSettingsForm(control)) window.hdpCommitSettings();");
     expect(js).toContain('window.hdpSettingsCommandHandlerReady');
     expect(js).toContain("control.setAttribute('aria-checked', !isOn ? 'true' : 'false');");
     expect(js).toContain("this.setAttribute('aria-checked', shadowOn ? 'true' : 'false');");
@@ -341,7 +343,7 @@ describe('settings view', () => {
     expect(html).not.toContain('data-setting="devices.hidden_domains" data-value="automation"');
   });
 
-  it('marks legacy hidden area, domain, and person settings as active', () => {
+  it('marks legacy hidden area, domain, and person settings as not visible', () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',
       hidden_areas: ['kitchen'],
@@ -350,9 +352,9 @@ describe('settings view', () => {
     };
     const html = buildSettingsHTML(config, undefined, hass);
 
-    expect(html).toContain('data-action="toggle-hidden-area" data-setting="areas.hidden_areas" data-value="kitchen" aria-pressed="true" title="Kitchen"');
-    expect(html).toContain('data-action="toggle-hidden-domain" data-setting="devices.hidden_domains" data-value="number" aria-pressed="true" title="数字"');
-    expect(html).toContain('data-action="toggle-hidden-person" data-setting="people.hidden_persons" data-value="person.alice" aria-pressed="true" title="Alice"');
+    expect(html).toContain('data-action="toggle-hidden-area" data-setting="areas.hidden_areas" data-value="kitchen" data-array-mode="exclude" aria-pressed="false" title="Kitchen"');
+    expect(html).toContain('data-action="toggle-hidden-domain" data-setting="devices.hidden_domains" data-value="number" data-array-mode="exclude" aria-pressed="false" title="数字"');
+    expect(html).toContain('data-action="toggle-hidden-person" data-setting="people.hidden_persons" data-value="person.alice" data-array-mode="exclude" aria-pressed="false" title="Alice"');
   });
 
   it('offers home summary info card visibility controls', () => {
@@ -371,7 +373,7 @@ describe('settings view', () => {
     expect(html).toContain('U 型布局');
     expect(html).toContain('data-action="select-home-layout" data-layout-preset="l_shape"');
     expect(html).toContain('系统概览项目');
-    expect(html).toContain('data-action="toggle-home-info-card" data-setting="home.hidden_info_cards" data-value="entities" aria-pressed="true"');
+    expect(html).toContain('data-action="toggle-home-info-card" data-setting="home.hidden_info_cards" data-value="entities" data-array-mode="exclude" aria-pressed="false"');
     expect(html).toContain('data-setting="home.hidden_info_cards" data-value="areas"');
     expect(html).toContain('data-setting="home.hidden_info_cards" data-value="active"');
     expect(html).toContain('data-setting="home.hidden_info_cards" data-value="automations"');
@@ -395,7 +397,7 @@ describe('settings view', () => {
     };
     const html = buildSettingsHTML(config, undefined, hass);
 
-    expect(html).toContain('data-action="toggle-hidden-domain" data-setting="devices.hidden_domains" data-value="sensor" aria-pressed="true"');
+    expect(html).toContain('data-action="toggle-hidden-domain" data-setting="devices.hidden_domains" data-value="sensor" data-array-mode="exclude" aria-pressed="false"');
     expect(html).toContain('data-setting="devices.hidden_device_types" data-value="sensor.temperature"');
   });
 
@@ -408,7 +410,7 @@ describe('settings view', () => {
     };
     const html = buildSettingsHTML(config, undefined, hass);
 
-    expect(html).toContain('data-action="toggle-hidden-device-type" data-setting="devices.hidden_device_types" data-value="sensor.temperature" aria-pressed="true"');
+    expect(html).toContain('data-action="toggle-hidden-device-type" data-setting="devices.hidden_device_types" data-value="sensor.temperature" data-array-mode="exclude" aria-pressed="false"');
     expect(html).not.toContain('onclick="hdpToggleArrayItem');
   });
 
@@ -422,7 +424,7 @@ describe('settings view', () => {
     const html = buildSettingsHTML(config, undefined, hass);
     const visibleIds = collectVisibleEntities(hass, getDashboardFilters(config)).map(entity => entity.entity_id);
 
-    expect(html).toContain('data-action="toggle-hidden-device-type" data-setting="devices.hidden_device_types" data-value="binary_sensor.motion" aria-pressed="true"');
+    expect(html).toContain('data-action="toggle-hidden-device-type" data-setting="devices.hidden_device_types" data-value="binary_sensor.motion" data-array-mode="exclude" aria-pressed="false"');
     expect(visibleIds).not.toContain('binary_sensor.kitchen_motion');
   });
 
@@ -444,9 +446,9 @@ describe('settings view', () => {
     };
     const html = buildSettingsHTML(config, undefined, hass);
 
-    expect(html).toContain('data-action="toggle-hidden-person" data-setting="people.hidden_persons" data-value="person.hidden" aria-pressed="true"');
+    expect(html).toContain('data-action="toggle-hidden-person" data-setting="people.hidden_persons" data-value="person.hidden" data-array-mode="exclude" aria-pressed="false"');
     expect(html).toContain('Hidden Person');
-    expect(html).toContain('data-action="toggle-hidden-person" data-setting="people.hidden_persons" data-value="person.missing" aria-pressed="true"');
+    expect(html).toContain('data-action="toggle-hidden-person" data-setting="people.hidden_persons" data-value="person.missing" data-array-mode="exclude" aria-pressed="false"');
   });
 
   it('escapes dashboard setting input values', () => {
@@ -617,7 +619,7 @@ describe('settings view', () => {
     };
     const html = buildSettingsHTML(config, undefined, hass);
 
-    expect(html).toContain('data-action="toggle-hidden-area" data-setting="areas.hidden_areas" data-value="garage" aria-pressed="true"');
+    expect(html).toContain('data-action="toggle-hidden-area" data-setting="areas.hidden_areas" data-value="garage" data-array-mode="exclude" aria-pressed="false"');
     expect(html).toContain('data-setting="areas.hidden_areas" data-value="garage"');
   });
 

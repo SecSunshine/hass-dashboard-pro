@@ -99,6 +99,16 @@ describe('area view', () => {
     expect(html).toContain('.ec[role="button"]:focus-visible');
   });
 
+  it('renders multi-domain area sections as drawers', () => {
+    const html = buildAreaHTML('Kitchen', entities, hass);
+
+    expect(html).toContain('<details class="ds-section" open>');
+    expect(html).toContain('aria-hidden="true">⌄</span>');
+    expect(html).toContain('<summary class="ds-hdr">');
+    expect(html).toContain('ds-chevron');
+    expect(html.match(/<details class="ds-section"/g)?.length).toBe(2);
+  });
+
   it('lets area domain slots replace default domain sections', () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',

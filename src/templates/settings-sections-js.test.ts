@@ -98,10 +98,10 @@ function createRuntime(
 
   const eventForChip = () => {
     const chip: MockChip = {
-      active: false,
-      pressed: 'false',
+      active: true,
+      pressed: 'true',
       disabled: false,
-      attrs: {} as Record<string, string>,
+      attrs: { 'data-array-mode': 'exclude' } as Record<string, string>,
       classList: {
         toggle: (className: string) => {
           if (className === 'st-chip--active') chip.active = !chip.active;
@@ -256,6 +256,68 @@ describe('settings sections client script', () => {
     expect(relative.value).toBe('/local/images/dashboard.jpg');
   });
 
+  it('stages dashboard images from controls retargeted through a shadow root', () => {
+    const { runtime, listeners, store } = createRuntime();
+    const imageUrl = 'https://haowallpaper.com/link//common/file/previewFileImg/19285714629383040';
+    const createUrlInput = (path: string) => ({
+      value: imageUrl,
+      type: 'url',
+      getAttribute: (name: string) => name === 'data-setting' ? path : null,
+      matches: (selector: string) => selector === '[data-setting]',
+    });
+    const dispatchShadowChange = (control: ReturnType<typeof createUrlInput>) => listeners.change[0]({
+      target: { closest: () => null },
+      composedPath: () => [control, { matches: () => false }],
+    });
+
+    dispatchShadowChange(createUrlInput('dashboard.avatar_url'));
+    dispatchShadowChange(createUrlInput('dashboard.background_image_url'));
+
+    expect(runtime.hdpSettingsDraft.dashboard.avatar_url).toBe(imageUrl);
+    expect(runtime.hdpSettingsDraft.dashboard.background_image_url).toBe(imageUrl);
+    expect(store.get('hdp_config')).toBeUndefined();
+
+    runtime.hdpCommitSettings();
+    const saved = JSON.parse(store.get('hdp_config') || '{}');
+    expect(saved.dashboard.avatar_url).toBe(imageUrl);
+    expect(saved.dashboard.background_image_url).toBe(imageUrl);
+  });
+
+  it('collects focused dashboard image fields when save is clicked', () => {
+    const { runtime, listeners, store } = createRuntime();
+    const imageUrl = 'https://haowallpaper.com/link//common/file/previewFileImg/19285714629383040';
+    const createUrlInput = (path: string) => ({
+      value: imageUrl,
+      type: 'url',
+      getAttribute: (name: string) => name === 'data-setting' ? path : null,
+    });
+    const root = {
+      querySelectorAll: (selector: string) => selector === '[data-setting]:not([data-action])'
+        ? [
+            createUrlInput('dashboard.avatar_url'),
+            createUrlInput('dashboard.background_image_url'),
+          ]
+        : [],
+    };
+    const saveControl = {
+      getAttribute: (name: string) => name === 'data-action' ? 'save-settings' : null,
+      getRootNode: () => root,
+      classList: { contains: () => false },
+    };
+
+    listeners.click[0]({
+      target: { closest: () => saveControl },
+      preventDefault: () => {},
+      stopPropagation: () => {},
+    });
+
+    expect(runtime.hdpSettingsDraft.dashboard.avatar_url).toBe(imageUrl);
+    expect(runtime.hdpSettingsDraft.dashboard.background_image_url).toBe(imageUrl);
+    const saved = JSON.parse(store.get('hdp_config') || '{}');
+    expect(saved.dashboard.avatar_url).toBe(imageUrl);
+    expect(saved.dashboard.background_image_url).toBe(imageUrl);
+  });
+
   it('delegates design and maintenance commands from safe data attributes', () => {
     const { runtime, listeners } = createRuntime();
     const calls: Array<string | Record<string, unknown>> = [];
@@ -345,7 +407,7 @@ describe('settings sections client script', () => {
     expect(runtime.hdpSettingsDraft.devices.hidden_domains).toEqual(['sensor']);
     expect(runtime.hdpSettingsDraft.devices.hidden_device_types).toEqual(['binary_sensor.motion']);
     expect(runtime.hdpSettingsDirty).toBe(true);
-    expect(chips.map(chip => chip.pressed)).toEqual(['true', 'true', 'true']);
+    expect(chips.map(chip => chip.pressed)).toEqual(['false', 'false', 'false']);
     expect(chips.every(chip => chip.disabled)).toBe(false);
 
     runtime.hdpCommitSettings();
@@ -448,7 +510,7 @@ Old `);
   it('restores the save bar state when cancelling staged settings', () => {
     const { runtime, store, settingControls, layoutChoices, saveBar, saveText, timers, getReloadCount } = createRuntime();
     const nameInput = createMockSettingElement({ 'data-setting': 'dashboard.name' }, 'Draft Home');
-    const hiddenDomainChip = createMockSettingElement({ 'data-setting': 'devices.hidden_domains', 'data-value': 'sensor' });
+    const hiddenDomainChip = createMockSettingElement({ 'data-setting': 'devices.hidden_domains', 'data-value': 'sensor', 'data-array-mode': 'exclude' });
     const unavailableToggle = createMockSettingElement({ 'data-setting': 'areas.hide_unavailable', role: 'switch' });
     const gridLayout = createMockSettingElement({ 'data-layout-preset': 'grid' });
     const mirrorLayout = createMockSettingElement({ 'data-layout-preset': 'l_mirror' });
@@ -475,8 +537,8 @@ Old `);
     expect(saveText.textContent).toBe('修改设置后点击保存生效');
     expect(runtime.hdpSettingsDraft).toEqual({});
     expect(nameInput.value).toBe('');
-    expect(hiddenDomainChip.active).toBe(false);
-    expect(hiddenDomainChip.attrs['aria-pressed']).toBe('false');
+    expect(hiddenDomainChip.active).toBe(true);
+    expect(hiddenDomainChip.attrs['aria-pressed']).toBe('true');
     expect(unavailableToggle.active).toBe(false);
     expect(unavailableToggle.attrs['aria-checked']).toBe('false');
     expect(gridLayout.active).toBe(true);
@@ -582,6 +644,9 @@ Old `);
         cards: {
           slots: {
             'home.summary': {
+              kind: 'entity',
+              entity_id: 'light.source_lamp',
+              title: '  Imported Lamp  ',
               size: 'wide',
               order: 2,
               background_image_url: '/local/summary.jpg',
@@ -618,6 +683,9 @@ Old `);
       });
       expect(JSON.parse(store.get('hdp_config') || '{}').devices.hidden_domains).toEqual(['sensor']);
       expect(JSON.parse(store.get('hdp_config') || '{}').cards.slots['home.summary']).toMatchObject({
+        kind: 'entity',
+        entity_id: 'light.source_lamp',
+        title: 'Imported Lamp',
         size: 'wide',
         order: 2,
         background_image_url: '/local/summary.jpg',

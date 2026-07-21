@@ -204,7 +204,7 @@ describe('domain entity cards', () => {
     expect(html).toContain('闭合 32%');
     expect(html).toContain('已打开');
     expect(html).toContain('class="dc-cover-slider"');
-    expect(html).toContain('data-action="cover-position"');
+    expect(html).toContain('data-hdp-action="cover-position"');
     expect(html).toContain('value="32"');
     expect(html).toContain('aria-label="设置 Bedroom Curtain 闭合程度"');
     expect(html).toContain('data-action="cover-open"');
@@ -228,7 +228,7 @@ describe('domain entity cards', () => {
 
     expect(html).toContain('55%');
     expect(html).toContain('value="55"');
-    expect(html).toContain('data-action="cover-position"');
+    expect(html).toContain('data-hdp-action="cover-position"');
     expect(html).not.toContain('value="100"');
   });
 
@@ -243,7 +243,7 @@ describe('domain entity cards', () => {
 
     expect(html).toContain('dc-value-card dc-number');
     expect(html).toContain('class="dc-number-range"');
-    expect(html).toContain('data-action="number-set"');
+    expect(html).toContain('data-hdp-action="number-set"');
     expect(html).toContain('min="16"');
     expect(html).toContain('max="30"');
     expect(html).toContain('step="0.5"');
@@ -263,7 +263,7 @@ describe('domain entity cards', () => {
 
     expect(html).toContain('dc-value-card dc-select');
     expect(html).toContain('class="dc-select-control"');
-    expect(html).toContain('data-action="select-option"');
+    expect(html).toContain('data-hdp-action="select-option"');
     expect(html).toContain('<option value="auto" selected>auto</option>');
     expect(html).toContain('<option value="sleep" >sleep</option>');
     expect(html).not.toContain('data-action="toggle"');
@@ -280,7 +280,7 @@ describe('domain entity cards', () => {
 
     expect(html).toContain('dc-value-card dc-text');
     expect(html).toContain('class="dc-text-input"');
-    expect(html).toContain('data-action="text-set"');
+    expect(html).toContain('data-hdp-action="text-set"');
     expect(html).toContain('maxlength="120"');
     expect(html).toContain('value="Welcome home"');
     expect(html).not.toContain('data-action="toggle"');
@@ -297,7 +297,7 @@ describe('domain entity cards', () => {
 
     expect(html).toContain('dc-control-card dc-fan');
     expect(html).toContain('data-action="fan-toggle"');
-    expect(html).toContain('data-action="fan-percentage"');
+    expect(html).toContain('data-hdp-action="fan-percentage"');
     expect(html).toContain('class="dc-number-range dc-fan-slider"');
     expect(html).toContain('value="60"');
     expect(html).toContain('data-action="fan-preset"');
@@ -334,7 +334,7 @@ describe('domain entity cards', () => {
     expect(html).toContain('type="datetime-local"');
     expect(html).toContain('class="dc-text-input dc-datetime-input"');
     expect(html).toContain('value="2026-07-15T22:30"');
-    expect(html).toContain('data-action="datetime-set"');
+    expect(html).toContain('data-hdp-action="datetime-set"');
     expect(html).not.toContain('data-action="toggle"');
   });
 

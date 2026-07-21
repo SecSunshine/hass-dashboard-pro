@@ -118,6 +118,15 @@ export function getCardSlotCSS(): string {
     position: relative;
     z-index: 1;
   }
+  .hdp-card-slot--custom > .bp-html-card {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    box-sizing: border-box;
+  }
   .hdp-root--card-edit .hdp-view .hdp-card-slot {
     outline: 2px dashed color-mix(in srgb, var(--hdp-primary) 60%, transparent);
     outline-offset: -4px;
@@ -129,7 +138,7 @@ export function getCardSlotCSS(): string {
     cursor: grabbing;
   }
   .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-home-content {
-    grid-auto-rows: minmax(96px, auto);
+    grid-auto-rows: var(--hdp-density-row-height, 120px);
     align-items: start;
   }
   .hdp-bento--dragging {
@@ -141,28 +150,29 @@ export function getCardSlotCSS(): string {
   }
   .hdp-slot-edit-panel {
     position: absolute;
-    top: 8px;
-    right: 8px;
-    z-index: 20;
+    top: 10px;
+    right: 10px;
+    z-index: 22;
     display: none;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
+    max-width: calc(100% - 20px);
     padding: 6px;
-    border-radius: 12px;
-    background: color-mix(in srgb, var(--hdp-card-bg) 92%, transparent);
-    border: 1px solid var(--hdp-border);
-    box-shadow: var(--hdp-shadow-card);
-    backdrop-filter: blur(12px);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--hdp-card-bg) 96%, var(--hdp-primary) 4%);
+    border: 1px solid color-mix(in srgb, var(--hdp-border) 76%, var(--hdp-primary) 24%);
+    box-shadow: var(--hdp-shadow-elevated, var(--hdp-shadow-card));
+    backdrop-filter: blur(14px) saturate(135%);
+    box-sizing: border-box;
   }
   .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-slot-edit-panel,
   .hdp-root--card-edit .hdp-view .hdp-slot-edit-panel {
     display: none;
   }
-  .hdp-root--card-edit .hdp-view .hdp-card-slot:hover .hdp-slot-edit-panel,
-  .hdp-root--card-edit .hdp-view .hdp-card-slot:focus-within .hdp-slot-edit-panel {
+  .hdp-root--card-edit .hdp-view .hdp-card-slot:hover > .hdp-slot-edit-panel,
+  .hdp-root--card-edit .hdp-view .hdp-card-slot:focus-within > .hdp-slot-edit-panel {
     display: flex;
-    flex-wrap: wrap;
-    max-width: calc(100% - 16px);
+    flex-wrap: nowrap;
   }
   .hdp-slot-edit-panel button,
   .hdp-slot-edit-panel select {
@@ -231,8 +241,8 @@ export function getCardSlotCSS(): string {
     user-select: none;
     box-shadow: var(--hdp-shadow-card);
   }
-  .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-card-slot:hover .hdp-slot-resize-handle,
-  .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-card-slot:focus-within .hdp-slot-resize-handle {
+  .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-card-slot:hover > .hdp-slot-resize-handle,
+  .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-card-slot:focus-within > .hdp-slot-resize-handle {
     display: block;
   }
   .hdp-card-slot--draft-hidden > :not(.hdp-slot-edit-panel):not(.hdp-slot-hidden-note) {
@@ -410,6 +420,11 @@ export function getCardSlotCSS(): string {
     width: min(520px, calc(100vw - 36px)) !important;
     min-height: 0;
   }
+  .hdp-add-card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
   .hdp-add-card-field {
     display: grid;
     gap: 6px;
@@ -505,6 +520,9 @@ export function getCardSlotCSS(): string {
     .hdp-slot-editor-body {
       grid-template-columns: 1fr;
     }
+    .hdp-add-card-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
   `;
 }
@@ -585,20 +603,18 @@ function buildSlotEditPanel(slotId: string, slot?: CardSlotConfig, defaultSize: 
   const sizeOptions = ['sm', 'md', 'lg', 'wide', 'tall']
     .map(value => `<option value="${value}"${value === size ? ' selected' : ''}>${value}</option>`)
     .join('');
-  const grid = resolveBentoGridSpan(slot?.grid_columns, slot?.grid_rows, size);
+  const resetButton = slotId.startsWith('home.custom.')
+    ? `<button type="button" title="删除新增卡片" aria-label="删除新增卡片" data-card-edit-action="reset" data-slot-id="${slotAttr}">删</button>`
+    : `<button type="button" title="恢复默认" aria-label="恢复默认卡片" data-card-edit-action="reset" data-slot-id="${slotAttr}">↺</button>`;
   return `<div class="hdp-slot-edit-panel" data-slot-edit-panel="${escapeAttribute(slotId)}">
-    <select aria-label="卡片大小" data-card-edit-action="size" data-slot-id="${slotAttr}">
+    <select aria-label="卡片大小" title="预设尺寸" data-card-edit-action="size" data-slot-id="${slotAttr}">
       ${sizeOptions}
     </select>
-    <label class="hdp-slot-grid-input" title="宽度"><span>W</span><input type="range" min="1" max="4" step="1" value="${grid.columns}" data-card-edit-action="grid-columns" data-slot-id="${slotAttr}" aria-label="卡片宽度" /></label>
-    <label class="hdp-slot-grid-input" title="高度"><span>H</span><input type="range" min="1" max="6" step="1" value="${grid.rows}" data-card-edit-action="grid-rows" data-slot-id="${slotAttr}" aria-label="卡片高度" /></label>
-    <button type="button" title="拖动排序" aria-label="拖动排序" data-card-edit-action="drag" data-slot-id="${slotAttr}">拖</button>
-    <button type="button" title="上移" aria-label="上移卡片" data-card-edit-action="move" data-slot-id="${slotAttr}" data-delta="-1">↑</button>
-    <button type="button" title="下移" aria-label="下移卡片" data-card-edit-action="move" data-slot-id="${slotAttr}" data-delta="1">↓</button>
+    <button type="button" title="拖动调整位置" aria-label="拖动调整位置" data-card-edit-action="drag" data-slot-id="${slotAttr}">拖</button>
     <button type="button" title="编辑 YAML" data-card-edit-action="yaml" data-slot-id="${slotAttr}">YAML</button>
     <button type="button" title="背景图" aria-label="设置卡片背景图" data-card-edit-action="background" data-slot-id="${slotAttr}">图</button>
     <button type="button" title="隐藏" aria-label="隐藏卡片" data-card-edit-action="hide" data-slot-id="${slotAttr}">藏</button>
-    <button type="button" title="恢复默认" aria-label="恢复默认卡片" data-card-edit-action="reset" data-slot-id="${slotAttr}">↺</button>
+    ${resetButton}
   </div><button type="button" class="hdp-slot-resize-handle" title="拖动调整卡片大小" aria-label="拖动调整卡片大小" data-card-edit-action="resize" data-slot-id="${slotAttr}">↘</button>`;
 }
 
@@ -945,7 +961,8 @@ function hdpInitCardSlotDragging(root) {
         rowHeight: rowHeight,
         gap: gap,
         columns: initialColumns,
-        rows: initialRows
+        rows: initialRows,
+        live: false
       };
       wrapper.classList.add('hdp-bento--resizing');
       if (handle.setPointerCapture) handle.setPointerCapture(e.pointerId);
@@ -964,6 +981,10 @@ function hdpInitCardSlotDragging(root) {
   root.addEventListener('pointermove', function(e) {
     if (pointerResize) {
       var resize = pointerResize;
+      if (!resize.live && (e.clientX !== resize.startX || e.clientY !== resize.startY)) {
+        resize.live = true;
+        hdpEnableCustomHomeLayout();
+      }
       var columns = Math.max(1, Math.min(4, Math.round((resize.startWidth + (e.clientX - resize.startX) + resize.gap) / (resize.columnWidth + resize.gap))));
       var rows = Math.max(1, Math.min(6, Math.round((resize.startHeight + (e.clientY - resize.startY) + resize.gap) / (resize.rowHeight + resize.gap))));
       resize.columns = columns;
@@ -972,6 +993,7 @@ function hdpInitCardSlotDragging(root) {
       resize.wrapper.style.setProperty('--hdp-bento-column-span', columns);
       resize.wrapper.style.setProperty('--hdp-bento-tablet-column-span', Math.min(columns, 2));
       resize.wrapper.style.setProperty('--hdp-bento-row-span', rows);
+      if (resize.handle) resize.handle.textContent = columns + '×' + rows;
       e.preventDefault();
       return;
     }
@@ -993,7 +1015,8 @@ function hdpInitCardSlotDragging(root) {
         try { resize.handle.releasePointerCapture(e.pointerId); } catch(err) {}
       }
       resize.wrapper.classList.remove('hdp-bento--resizing');
-      window.hdpSetCardSlotGridSpan(resize.slotId, resize.columns, resize.rows);
+      if (resize.handle) resize.handle.textContent = '↘';
+      if (resize.live) window.hdpSetCardSlotGridSpan(resize.slotId, resize.columns, resize.rows);
       pointerResize = null;
       return;
     }
@@ -1088,9 +1111,33 @@ window.hdpResetCardSlot = function(slotId) {
   var draft = hdpGetCardEditDraft();
   if (draft.cards && draft.cards.slots) delete draft.cards.slots[slotId];
   var card = document.querySelector('[data-card-slot="' + slotId + '"]');
-  if (card) card.classList.remove('hdp-card-slot--draft-hidden');
+  if (String(slotId).indexOf('home.custom.') === 0) {
+    var wrapper = hdpGetSlotWrapperFromElement(card);
+    if (wrapper && wrapper.remove) wrapper.remove();
+    hdpPersistHomeSlotDomOrder(false);
+  } else if (card) {
+    card.classList.remove('hdp-card-slot--draft-hidden');
+  }
   hdpMarkCardDraftDirty();
-  if (typeof hdpShowToast === 'function') hdpShowToast('已恢复默认，保存后生效', 'info');
+  if (typeof hdpShowToast === 'function') hdpShowToast(
+    String(slotId).indexOf('home.custom.') === 0 ? '已从草稿删除卡片' : '已恢复默认，保存后生效',
+    'info'
+  );
+};
+
+window.hdpRestoreHiddenCardSlot = function(slotId) {
+  var draft = hdpGetCardEditDraft();
+  var slots = draft.cards && draft.cards.slots;
+  var slot = slots && slots[slotId];
+  if (String(slotId).indexOf('home.custom.') === 0 && slot) {
+    delete slot.enabled;
+    var card = hdpGetSlotElement(slotId);
+    if (card) card.classList.remove('hdp-card-slot--draft-hidden');
+    hdpMarkCardDraftDirty();
+    if (typeof hdpShowToast === 'function') hdpShowToast('已恢复卡片，保存后生效', 'info');
+    return;
+  }
+  window.hdpResetCardSlot(slotId);
 };
 
 function hdpDismissCardSlotModal(modal) {
@@ -1133,13 +1180,27 @@ function hdpPrepareCardSlotModal(modal) {
   modal.style.cssText += ';position:fixed!important;inset:0!important;z-index:2147483000!important;display:grid!important;place-items:center!important;box-sizing:border-box!important;overflow:auto!important;padding:18px!important;background:var(--hdp-overlay-bg,rgba(8,12,22,.46))!important;';
   var dialog = modal.querySelector && modal.querySelector('.hdp-slot-editor-dialog');
   if (!dialog || !dialog.style) return;
-  dialog.style.cssText += ';position:relative!important;z-index:1;box-sizing:border-box;width:min(860px,calc(100vw - 36px))!important;max-height:min(90dvh,calc(100vh - 36px));display:flex!important;flex-direction:column!important;gap:12px!important;overflow:auto!important;padding:18px!important;background:var(--hdp-modal-bg,var(--hdp-bg))!important;color:var(--hdp-text)!important;font:14px/1.45 var(--hdp-font,system-ui,sans-serif)!important;';
+  var isYamlEditor = modal.id === 'hdp-slot-editor-modal';
+  var dialogWidth = dialog.classList && dialog.classList.contains('hdp-add-card-dialog') ? '520px' : (isYamlEditor ? '1200px' : '860px');
+  var yamlEditorMobile = isYamlEditor && window.matchMedia && window.matchMedia('(max-width: 800px)').matches;
+  var dialogOverflow = isYamlEditor && !yamlEditorMobile ? 'hidden' : 'auto';
+  dialog.style.cssText += ';position:relative!important;z-index:1;box-sizing:border-box;width:min(' + dialogWidth + ',calc(100vw - 36px))!important;max-height:min(90dvh,calc(100vh - 36px));display:flex!important;flex-direction:column!important;gap:12px!important;overflow:' + dialogOverflow + '!important;padding:18px!important;border:1px solid var(--hdp-border,var(--divider-color,rgba(127,127,127,.24)))!important;border-radius:var(--hdp-radius-lg,var(--ha-card-border-radius,16px))!important;background:var(--hdp-modal-bg,var(--hdp-bg,var(--ha-card-background,var(--card-background-color,#fff))))!important;color:var(--hdp-text,var(--primary-text-color,#1f2937))!important;box-shadow:var(--hdp-shadow-elevated,0 20px 60px rgba(0,0,0,.28))!important;font:14px/1.45 var(--hdp-font,system-ui,sans-serif)!important;';
   var heads = dialog.querySelectorAll ? dialog.querySelectorAll('.hdp-slot-editor-head,.hdp-slot-editor-actions') : [];
   for (var i = 0; i < heads.length; i++) heads[i].style.cssText += ';display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;';
   var fields = dialog.querySelectorAll ? dialog.querySelectorAll('.hdp-add-card-field') : [];
-  for (var j = 0; j < fields.length; j++) fields[j].style.cssText += ';display:grid!important;gap:6px!important;';
+  for (var j = 0; j < fields.length; j++) {
+    fields[j].style.cssText += ';display:' + (fields[j].hidden ? 'none' : 'grid') + '!important;gap:6px!important;';
+  }
+  var addCardGrid = dialog.querySelector ? dialog.querySelector('.hdp-add-card-grid') : null;
+  if (addCardGrid && addCardGrid.style) addCardGrid.style.cssText += ';display:grid!important;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))!important;gap:12px!important;';
   var controls = dialog.querySelectorAll ? dialog.querySelectorAll('.hdp-add-card-field select,.hdp-add-card-field input') : [];
-  for (var k = 0; k < controls.length; k++) controls[k].style.cssText += ';box-sizing:border-box!important;width:100%!important;min-height:40px!important;';
+  for (var k = 0; k < controls.length; k++) controls[k].style.cssText += ';box-sizing:border-box!important;width:100%!important;min-height:40px!important;border:1px solid var(--hdp-border,var(--divider-color,rgba(127,127,127,.24)))!important;border-radius:var(--hdp-radius-sm,8px)!important;background:var(--hdp-surface-card,var(--hdp-card-bg,var(--ha-card-background,var(--card-background-color,#fff))))!important;color:var(--hdp-text,var(--primary-text-color,#1f2937))!important;padding:8px 10px!important;font:inherit!important;';
+  var buttons = dialog.querySelectorAll ? dialog.querySelectorAll('.hdp-slot-editor-head button,.hdp-slot-editor-actions button') : [];
+  for (var m = 0; m < buttons.length; m++) buttons[m].style.cssText += ';min-height:38px!important;padding:8px 14px!important;border:1px solid var(--hdp-border,var(--divider-color,rgba(127,127,127,.24)))!important;border-radius:10px!important;background:var(--hdp-control-bg,var(--hdp-card-bg,var(--ha-card-background,var(--card-background-color,#fff))))!important;color:var(--hdp-text,var(--primary-text-color,#1f2937))!important;font:inherit!important;font-weight:700!important;cursor:pointer!important;';
+  var primary = dialog.querySelector ? dialog.querySelector('.hdp-slot-editor-actions .hdp-primary') : null;
+  if (primary) primary.style.cssText += ';background:var(--hdp-primary)!important;border-color:var(--hdp-primary)!important;color:var(--hdp-text-inverse,white)!important;';
+  var help = dialog.querySelector ? dialog.querySelector('.hdp-add-card-help') : null;
+  if (help) help.style.cssText += ';padding:10px 12px!important;border-left:3px solid var(--hdp-primary)!important;background:var(--hdp-primary-light)!important;color:var(--hdp-text-secondary)!important;line-height:1.5!important;';
 }
 
 function hdpGetHiddenSlotLabel(slotId) {
@@ -1196,6 +1257,54 @@ function hdpBuildAddCardEntities() {
   }).join('');
 }
 
+function hdpBuildDraftAddedCardPreview(slot) {
+  var hass = typeof hdpFindHass === 'function' ? hdpFindHass() : null;
+  var states = hass && hass.states || {};
+  if (slot.kind === 'entity') {
+    var stateObj = states[slot.entity_id];
+    var attrs = stateObj && stateObj.attributes || {};
+    var name = String(slot.title || attrs.friendly_name || slot.entity_id || '设备卡片');
+    var state = stateObj ? String(stateObj.state) + (attrs.unit_of_measurement ? ' ' + attrs.unit_of_measurement : '') : '保存后读取设备';
+    return '<div class="hdp-add-card-draft"><strong>' + hdpEscapeSlotText(name) + '</strong><span>' + hdpEscapeSlotText(state) + '</span></div>';
+  }
+  if (slot.kind === 'domain') {
+    var ids = Object.keys(states).filter(function(entityId) { return entityId.split('.')[0] === slot.domain; });
+    var labels = ids.slice(0, 4).map(function(entityId) {
+      var stateObj = states[entityId];
+      return String(stateObj && stateObj.attributes && stateObj.attributes.friendly_name || entityId);
+    });
+    return '<div class="hdp-add-card-draft"><strong>' + hdpEscapeSlotText(slot.title || slot.domain || '设备类别') + '</strong><span>' + hdpEscapeSlotText(ids.length + ' 个设备' + (labels.length ? ' · ' + labels.join('、') : '')) + '</span></div>';
+  }
+  return '<div class="hdp-add-card-draft"><strong>' + hdpEscapeSlotText(slot.title || '自定义卡片') + '</strong><span>点击 YAML 编辑内容</span></div>';
+}
+
+function hdpBuildDraftAddedCardControls(slotId) {
+  var id = hdpEscapeSlotText(slotId);
+  return '<div class="hdp-slot-edit-panel" data-slot-edit-panel="' + id + '">' +
+    '<button type="button" data-card-edit-action="drag" data-slot-id="' + id + '">拖</button>' +
+    '<button type="button" data-card-edit-action="yaml" data-slot-id="' + id + '">YAML</button>' +
+    '<button type="button" data-card-edit-action="background" data-slot-id="' + id + '">图片</button>' +
+    '<button type="button" data-card-edit-action="hide" data-slot-id="' + id + '">隐藏</button>' +
+    '<button type="button" data-card-edit-action="reset" data-slot-id="' + id + '">删除</button>' +
+  '</div><button type="button" class="hdp-slot-resize-handle" data-card-edit-action="resize" data-slot-id="' + id + '">↘</button>';
+}
+
+function hdpAppendDraftAddedHomeCard(slotId, slot) {
+  var home = document.querySelector('.hdp-home-content');
+  if (!home || !document.createElement) return;
+  var wrapper = document.createElement('div');
+  wrapper.className = 'hdp-bento hdp-bento--lg';
+  wrapper.setAttribute('data-hdp-bento-custom', 'true');
+  wrapper.style.setProperty('--hdp-bento-column-span', slot.grid_columns || 2);
+  wrapper.style.setProperty('--hdp-bento-tablet-column-span', Math.min(slot.grid_columns || 2, 2));
+  wrapper.style.setProperty('--hdp-bento-row-span', slot.grid_rows || 2);
+  wrapper.innerHTML = '<div class="hdp-card-slot hdp-card-slot--default hdp-card-slot--draft-added" data-card-slot="' + hdpEscapeSlotText(slotId) + '" data-card-custom="false" data-card-slot-size="lg">' +
+    hdpBuildDraftAddedCardControls(slotId) + hdpBuildDraftAddedCardPreview(slot) + '</div>';
+  wrapper.draggable = true;
+  home.appendChild(wrapper);
+  hdpPersistHomeSlotDomOrder();
+}
+
 window.hdpOpenAddCard = function() {
   hdpDismissExistingCardSlotModals();
   var modal = document.createElement('div');
@@ -1207,11 +1316,13 @@ window.hdpOpenAddCard = function() {
   modal.innerHTML =
     '<div class="hdp-slot-editor-dialog hdp-add-card-dialog" role="dialog" aria-modal="true">' +
       '<div class="hdp-slot-editor-head"><div class="hdp-slot-editor-title">新增或替换卡片</div><button type="button" data-action="close">×</button></div>' +
-      '<label class="hdp-add-card-field">类型<select id="hdp-add-card-kind"><option value="custom">新增独立自定义卡片</option><option value="domain">替换某个类别的所有卡片</option><option value="entity">替换单个设备卡片</option></select></label>' +
+      '<label class="hdp-add-card-field">卡片类型<select id="hdp-add-card-kind"><option value="custom">独立自定义卡片</option><option value="domain">设备类别卡片</option><option value="entity">单个设备卡片</option></select></label>' +
+      '<label class="hdp-add-card-field">标题（可选）<input id="hdp-add-card-title" placeholder="使用默认名称" maxlength="80" /></label>' +
       '<label class="hdp-add-card-field" id="hdp-add-card-domain-field">设备类别<select id="hdp-add-card-domain">' + domains + '</select></label>' +
       '<label class="hdp-add-card-field" id="hdp-add-card-entity-field" hidden>设备<input id="hdp-add-card-entity" list="hdp-add-card-entities" placeholder="搜索或输入实体 ID" /><datalist id="hdp-add-card-entities">' + entities + '</datalist></label>' +
+      '<div class="hdp-add-card-grid"><label class="hdp-add-card-field">宽度（1-4）<input id="hdp-add-card-columns" type="number" min="1" max="4" value="2" /></label><label class="hdp-add-card-field">高度（1-6）<input id="hdp-add-card-rows" type="number" min="1" max="6" value="2" /></label></div>' +
       '<div class="hdp-add-card-help" id="hdp-add-card-help">创建一张独立的 HTML Pro Card，可自由设置大小、位置、背景图和 YAML。</div>' +
-      '<div class="hdp-slot-editor-actions"><span></span><button type="button" class="hdp-primary" data-action="create">继续编辑</button></div>' +
+      '<div class="hdp-slot-editor-actions"><button type="button" data-action="close">取消</button><button type="button" class="hdp-primary" data-action="create">创建卡片</button></div>' +
     '</div>';
   hdpPrepareCardSlotModal(modal);
   document.body.appendChild(modal);
@@ -1223,10 +1334,12 @@ window.hdpOpenAddCard = function() {
     var value = kind.value;
     domainField.hidden = value !== 'domain';
     entityField.hidden = value !== 'entity';
+    domainField.style.setProperty('display', value === 'domain' ? 'grid' : 'none', 'important');
+    entityField.style.setProperty('display', value === 'entity' ? 'grid' : 'none', 'important');
     help.textContent = value === 'domain'
-      ? 'YAML 会替换所有该类别的设备卡片，例如全部空调或全部灯光。'
+      ? '在首页新增该类别的设备集合，自动使用当前 HA 实体并支持直接控制。'
       : value === 'entity'
-        ? 'YAML 只会替换指定实体的卡片，例如一个具体空调。'
+        ? '在首页新增一个指定设备的控制卡片，自动使用该设备的专用控件。'
         : '创建一张独立的 HTML Pro Card，可自由设置大小、位置、背景图和 YAML。';
   };
   kind.addEventListener('change', updateFields);
@@ -1236,29 +1349,44 @@ window.hdpOpenAddCard = function() {
     var action = e.target && e.target.getAttribute && e.target.getAttribute('data-action');
     if (e.target === modal || action === 'close') { close(); return; }
     if (action !== 'create') return;
-    var slotId = '';
+    var slotId = hdpNextCustomHomeSlotId();
+    var slot = hdpEnsureCardSlot(slotId);
+    slot.kind = kind.value;
+    slot.title = String(modal.querySelector('#hdp-add-card-title').value || '').trim().slice(0, 80);
+    slot.grid_columns = Math.max(1, Math.min(4, Math.round(Number(modal.querySelector('#hdp-add-card-columns').value) || 2)));
+    slot.grid_rows = Math.max(1, Math.min(6, Math.round(Number(modal.querySelector('#hdp-add-card-rows').value) || 2)));
+    slot.order = hdpGetHomeSlotWrappers().length;
     if (kind.value === 'custom') {
-      slotId = hdpNextCustomHomeSlotId();
-      var slot = hdpEnsureCardSlot(slotId);
-      slot.grid_columns = 2;
-      slot.grid_rows = 1;
-      hdpEnableCustomHomeLayout();
+      slot.yaml = hdpGetSlotTemplate('blank', slotId);
     } else if (kind.value === 'domain') {
       var domain = String(modal.querySelector('#hdp-add-card-domain').value || '').trim().toLowerCase();
-      if (!/^[a-z_][a-z0-9_]*$/.test(domain)) return;
-      slotId = 'entity.domain.' + domain;
+      if (!/^[a-z_][a-z0-9_]*$/.test(domain)) {
+        if (typeof hdpShowToast === 'function') hdpShowToast('请选择有效的设备类别', 'error');
+        return;
+      }
+      slot.domain = domain;
     } else {
       var entityId = String(modal.querySelector('#hdp-add-card-entity').value || '').trim().toLowerCase();
       if (!/^[a-z_][a-z0-9_]*\.[a-z0-9_]+$/.test(entityId)) {
         if (typeof hdpShowToast === 'function') hdpShowToast('请输入有效的实体 ID，例如 climate.living_room', 'error');
         return;
       }
-      slotId = 'entity.' + entityId;
+      var hass = typeof hdpFindHass === 'function' ? hdpFindHass() : null;
+      if (!hass || !hass.states || !hass.states[entityId]) {
+        if (typeof hdpShowToast === 'function') hdpShowToast('未找到该实体，请从列表选择现有设备', 'error');
+        return;
+      }
+      slot.entity_id = entityId;
     }
-    hdpEnsureCardSlot(slotId);
+    hdpEnableCustomHomeLayout();
     hdpMarkCardDraftDirty();
+    hdpAppendDraftAddedHomeCard(slotId, slot);
     close();
-    window.hdpEditCardSlotYAML(slotId);
+    if (kind.value === 'custom') {
+      window.hdpEditCardSlotYAML(slotId);
+    } else if (typeof hdpShowToast === 'function') {
+      hdpShowToast('卡片已加入草稿，点击“保存并应用”后永久生效', 'success');
+    }
   });
 };
 
@@ -1292,7 +1420,7 @@ window.hdpOpenHiddenCardSlots = function() {
     }
     var slotId = target && target.getAttribute && target.getAttribute('data-slot');
     if (!slotId) return;
-    window.hdpResetCardSlot(slotId);
+    window.hdpRestoreHiddenCardSlot(slotId);
     target.closest('.hdp-hidden-slot-row').remove();
   });
 };
@@ -1339,6 +1467,7 @@ function hdpOpenSlotEditor(slotId, yaml) {
   modal.className = 'hdp-slot-editor-modal';
   if (typeof hdpApplyThemeVarsToOverlay === 'function') hdpApplyThemeVarsToOverlay(modal);
   modal.innerHTML =
+    '<style>' + hdpSlotEditorOverlayCSS() + '</style>' +
     '<div class="hdp-slot-editor-dialog" role="dialog" aria-modal="true">' +
       '<div class="hdp-slot-editor-head"><div><div class="hdp-slot-editor-title">编辑卡片槽位：' + hdpEscapeSlotText(slotId) + '</div><div class="hdp-slot-editor-error" id="hdp-slot-editor-error"></div></div><button type="button" data-action="close">×</button></div>' +
       '<div class="hdp-slot-template-bar" aria-label="卡片模板">' +
@@ -1392,6 +1521,17 @@ function hdpOpenSlotEditor(slotId, yaml) {
     }
   });
   hdpPreviewSlotYaml(textarea.value, modal);
+}
+
+function hdpSlotEditorOverlayCSS() {
+  return '#hdp-slot-editor-modal .hdp-slot-editor-dialog{width:min(1200px,calc(100vw - 36px))!important;overflow:hidden!important}' +
+    '#hdp-slot-editor-modal .hdp-slot-template-bar{display:flex;flex-wrap:wrap;gap:8px}' +
+    '#hdp-slot-editor-modal .hdp-slot-template-bar button{appearance:none;min-height:36px;padding:7px 12px;border:1px solid var(--hdp-border,var(--divider-color,rgba(127,127,127,.24)));border-radius:999px;background:var(--hdp-control-bg,var(--hdp-card-bg,var(--ha-card-background,var(--card-background-color,#fff))));color:var(--hdp-text,var(--primary-text-color,#1f2937));font:inherit;font-size:12px;font-weight:800;cursor:pointer}' +
+    '#hdp-slot-editor-modal .hdp-slot-template-bar button:hover{border-color:var(--hdp-primary,var(--primary-color,#03a9f4));color:var(--hdp-primary,var(--primary-color,#03a9f4));background:var(--hdp-control-bg-hover,var(--hdp-primary-light,rgba(3,169,244,.12)))}' +
+    '#hdp-slot-editor-modal .hdp-slot-editor-body{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important;height:min(66dvh,720px);min-height:460px;overflow:hidden}' +
+    '#hdp-slot-editor-modal #hdp-slot-yaml{box-sizing:border-box;width:100%;height:100%;min-width:0;min-height:0;resize:none;overflow:auto;padding:14px;border:1px solid var(--hdp-border,var(--divider-color,rgba(127,127,127,.24)));border-radius:12px;background:var(--hdp-surface-card,var(--hdp-card-bg,var(--ha-card-background,var(--card-background-color,#fff))));color:var(--hdp-text,var(--primary-text-color,#1f2937));caret-color:var(--hdp-primary,var(--primary-color,#03a9f4));font:13px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;tab-size:2}' +
+    '#hdp-slot-editor-modal .hdp-slot-editor-preview{box-sizing:border-box;width:100%;height:100%;min-width:0;min-height:0;overflow:auto;padding:14px;border:1px dashed var(--hdp-border,var(--divider-color,rgba(127,127,127,.24)));border-radius:12px;background:var(--hdp-surface-muted,var(--hdp-card-bg,var(--ha-card-background,var(--card-background-color,#fff))));color:var(--hdp-text,var(--primary-text-color,#1f2937))}' +
+    '@media(max-width:800px){#hdp-slot-editor-modal .hdp-slot-editor-dialog{overflow:auto!important}#hdp-slot-editor-modal .hdp-slot-editor-body{grid-template-columns:minmax(0,1fr)!important;height:auto;min-height:0;overflow:visible}#hdp-slot-editor-modal #hdp-slot-yaml,#hdp-slot-editor-modal .hdp-slot-editor-preview{height:42dvh;min-height:320px}}';
 }
 
 function hdpPreviewSlotYaml(yaml, scope) {
@@ -1566,6 +1706,7 @@ function hdpGetSlotTemplate(template, slotId) {
 
 function hdpSanitizeSlotHTML(html) {
   return String(html || '')
+    .replace(/<!--[\\s\\S]*?-->/g, '')
     .replace(/<\\s*(script|iframe|object|embed|form)\\b[\\s\\S]*?<\\s*\\/\\s*\\1\\s*>/gi, '')
     .replace(/<\\s*style\\b[^>]*>([\\s\\S]*?)<\\s*\\/\\s*style\\s*>/gi, function(_, css) {
       return '<style>' + hdpScopeSlotCSS(String(css)) + '</style>';

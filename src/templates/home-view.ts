@@ -19,7 +19,7 @@
  *   - Min touch target: 44px
  */
 
-import type { Hass, HomeLayoutPreset, HomeSectionKey, LovelaceCardConfig, StrategyConfig } from '../types';
+import type { CardSlotConfig, EntityInfo, Hass, HomeLayoutPreset, HomeSectionKey, LovelaceCardConfig, StrategyConfig } from '../types';
 import { generateDesignTokenCSS } from '../styles/design-tokens';
 import type { ResolvedTokens } from '../utils/visual-config';
 import { bentoWrap, resolveCardSize } from '../utils/bento-layout';
@@ -37,8 +37,10 @@ import {
 import type { PersonInfo, DomainStatus, FavoriteEntity } from '../utils/home-data';
 import { escapeAttribute, escapeHTML, escapeInlineStyleValue, escapeURLAttribute } from '../utils/html';
 import { cardSkinClass } from '../utils/card-skin';
-import { getConfiguredHiddenPersons } from '../utils/dashboard-model';
+import { collectVisibleEntities, getConfiguredHiddenPersons, getDashboardFilters } from '../utils/dashboard-model';
+import { getEffectiveHDPConfig } from '../utils/effective-config';
 import { resolveSlottedCard, sortSlottedCards, type SlottedCard } from '../utils/card-slots';
+import { buildDomainCard, getDomainCardCSS } from './entity-cards';
 
 const DEFAULT_HOME_SECTION_ORDER: HomeSectionKey[] = ['status_badges', 'people', 'environment', 'power_usage', 'favorites', 'summary'];
 
@@ -55,8 +57,8 @@ const HOME_LAYOUT_PRESETS: Record<Exclude<HomeLayoutPreset, 'custom'>, {
       home_welcome: 'lg',
       home_status_badges: 'wide',
       home_people: 'md',
-      home_environment: 'md',
-      home_power: 'md',
+      home_environment: 'lg',
+      home_power: 'lg',
       home_favorites: 'wide',
       home_summary: 'md',
     },
@@ -74,25 +76,25 @@ const HOME_LAYOUT_PRESETS: Record<Exclude<HomeLayoutPreset, 'custom'>, {
     },
   },
   l_shape: {
-    order: ['status_badges', 'environment', 'summary', 'people', 'power_usage', 'favorites'],
+    order: ['environment', 'power_usage', 'status_badges', 'people', 'favorites', 'summary'],
     sizes: {
       home_welcome: 'lg',
       home_status_badges: 'md',
       home_people: 'md',
       home_environment: 'md',
-      home_power: 'md',
+      home_power: 'lg',
       home_favorites: 'md',
       home_summary: 'md',
     },
   },
   l_mirror: {
-    order: ['status_badges', 'environment', 'summary', 'people', 'power_usage', 'favorites'],
+    order: ['environment', 'power_usage', 'status_badges', 'people', 'favorites', 'summary'],
     sizes: {
       home_welcome: 'lg',
       home_status_badges: 'md',
       home_people: 'md',
       home_environment: 'md',
-      home_power: 'md',
+      home_power: 'lg',
       home_favorites: 'md',
       home_summary: 'md',
     },
@@ -104,7 +106,7 @@ const HOME_LAYOUT_PRESETS: Record<Exclude<HomeLayoutPreset, 'custom'>, {
       home_status_badges: 'md',
       home_people: 'md',
       home_environment: 'md',
-      home_power: 'md',
+      home_power: 'lg',
       home_favorites: 'md',
       home_summary: 'md',
     },
@@ -248,23 +250,137 @@ export function buildHomeHTML(hass: Hass, config: StrategyConfig, tokens?: Resol
     }
   }
 
-  const customSlotIds = Object.keys(config.hdp_config?.cards?.slots || {})
-    .filter(slotId => slotId.startsWith('home.custom.') && Boolean(config.hdp_config?.cards?.slots?.[slotId]?.yaml))
+  const customSlots = config.hdp_config?.cards?.slots || {};
+  const customSlotIds = Object.keys(customSlots)
+    .filter(slotId => {
+      const slot = customSlots[slotId];
+      return slotId.startsWith('home.custom.') && Boolean(slot?.yaml || slot?.kind);
+    })
     .sort();
   for (let index = 0; index < customSlotIds.length; index++) {
     const slotId = customSlotIds[index];
+    const slot = customSlots[slotId] || {};
+    const fallback = buildAddedHomeCard(hass, config, slot, tokens);
+    const context = buildAddedHomeCardContext(hass, slot);
+    const defaultSize = slot.kind === 'domain' || slot.kind === 'entity' ? 'lg' : 'md';
     sections.push(resolveSlottedCard(
       config,
       slotId,
-      '<div class="hdp-custom-card-placeholder">自定义卡片</div>',
-      'md',
+      fallback,
+      defaultSize,
       100 + index,
+      context,
     ));
   }
 
   return sortSlottedCards(sections)
-    .map(card => bentoWrap(card.html, card.size, card.gridSpan))
+    .map(card => bentoWrap(card.html, card.size, card.gridSpan, card.slotId))
     .join('\n');
+}
+
+function buildAddedHomeCard(
+  hass: Hass,
+  config: StrategyConfig,
+  slot: CardSlotConfig,
+  tokens?: ResolvedTokens,
+): string {
+  if (slot.kind === 'domain' && slot.domain) {
+    const entities = collectVisibleEntities(hass, getDashboardFilters(config))
+      .filter(entity => entity.domain === slot.domain)
+      .sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name));
+    const title = slot.title || getAddedDomainLabel(slot.domain);
+    const cards = entities.length
+      ? entities.map(entity => buildAddedEntityCard(entity, hass, tokens)).join('')
+      : '<div class="hdp-added-card-empty">当前筛选条件下没有可显示的设备</div>';
+    return `${getAddedHomeCardStyles()}
+      <section class="hdp-added-card hdp-added-domain-card">
+        <header class="hdp-added-card-head"><strong>${escapeHTML(title)}</strong><span>${entities.length}</span></header>
+        <div class="hdp-added-card-grid">${cards}</div>
+      </section>`;
+  }
+
+  if (slot.kind === 'entity' && slot.entity_id) {
+    const entity = buildAddedEntityInfo(hass, slot.entity_id);
+    if (!entity) {
+      return `${getAddedHomeCardStyles()}<div class="hdp-added-card-empty">实体 ${escapeHTML(slot.entity_id)} 不存在或暂不可用</div>`;
+    }
+    return `${getAddedHomeCardStyles()}
+      <section class="hdp-added-card hdp-added-entity-card">
+        <header class="hdp-added-card-head"><strong>${escapeHTML(slot.title || entity.name)}</strong><span>${escapeHTML(entity.area_name || entity.domain)}</span></header>
+        <div class="hdp-added-card-entity">${buildAddedEntityCard(entity, hass, tokens)}</div>
+      </section>`;
+  }
+
+  return `${getAddedHomeCardStyles()}
+    <div class="hdp-custom-card-placeholder">
+      <strong>${escapeHTML(slot.title || '自定义卡片')}</strong>
+      <span>进入编辑模式后可使用 YAML 替换内容</span>
+    </div>`;
+}
+
+function buildAddedHomeCardContext(hass: Hass, slot: CardSlotConfig) {
+  if (slot.kind === 'entity' && slot.entity_id) {
+    const entity = buildAddedEntityInfo(hass, slot.entity_id);
+    return entity ? {
+      entity: entity.entity_id,
+      name: entity.name,
+      state: entity.state,
+      area: entity.area_name,
+      domain: entity.domain,
+    } : undefined;
+  }
+  if (slot.kind === 'domain' && slot.domain) {
+    return { domain: slot.domain, name: slot.title || getAddedDomainLabel(slot.domain) };
+  }
+  return { name: slot.title || '自定义卡片' };
+}
+
+function buildAddedEntityInfo(hass: Hass, entityId: string): EntityInfo | null {
+  const stateObj = hass.states[entityId];
+  if (!stateObj) return null;
+  const attrs = stateObj.attributes || {};
+  const registry = hass.entities?.[entityId];
+  const areaId = registry?.area_id || (registry?.device_id ? hass.devices?.[registry.device_id]?.area_id : undefined);
+  return {
+    entity_id: entityId,
+    name: String(attrs.friendly_name || entityId.split('.').slice(1).join(' ').replace(/_/g, ' ')),
+    domain: entityId.split('.')[0],
+    icon: typeof attrs.icon === 'string' ? attrs.icon : null,
+    state: String(stateObj.state == null ? 'unknown' : stateObj.state),
+    unit: typeof attrs.unit_of_measurement === 'string' ? attrs.unit_of_measurement : null,
+    device_class: typeof attrs.device_class === 'string' ? attrs.device_class : null,
+    area_name: areaId ? String(hass.areas?.[areaId]?.name || '') : '',
+  };
+}
+
+function buildAddedEntityCard(entity: EntityInfo, hass: Hass, tokens?: ResolvedTokens): string {
+  const specialized = buildDomainCard(entity, hass.states[entity.entity_id], tokens?.card_style);
+  if (specialized) return specialized;
+  const action = ['light', 'switch', 'input_boolean'].includes(entity.domain) ? 'toggle' : 'more-info';
+  const state = entity.unit ? `${entity.state} ${entity.unit}` : entity.state;
+  return `<button type="button" class="hdp-added-entity-row" data-entity="${escapeAttribute(entity.entity_id)}" data-action="${action}">
+    <ha-state-icon data-entity="${escapeAttribute(entity.entity_id)}"></ha-state-icon>
+    <span><strong>${escapeHTML(entity.name)}</strong><small>${escapeHTML(state)}</small></span>
+  </button>`;
+}
+
+function getAddedDomainLabel(domain: string): string {
+  const labels: Record<string, string> = {
+    light: '灯光', switch: '开关', climate: '空调', cover: '窗帘', fan: '风扇',
+    media_player: '媒体', sensor: '传感器', binary_sensor: '二元传感器', lock: '门锁',
+    vacuum: '扫地机', camera: '摄像头', automation: '自动化', scene: '场景',
+  };
+  return labels[domain] || domain;
+}
+
+function getAddedHomeCardStyles(): string {
+  return `<style>${getDomainCardCSS()}
+    .hdp-added-card{height:100%;min-height:0;display:flex;flex-direction:column;gap:12px;padding:var(--hdp-card-padding);border:1px solid var(--hdp-border);border-radius:var(--hdp-radius);background:var(--hdp-surface-card,var(--hdp-card-bg));box-shadow:var(--hdp-shadow-card);color:var(--hdp-text)}
+    .hdp-added-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:0 0 auto}.hdp-added-card-head strong{font-size:15px}.hdp-added-card-head span{padding:3px 8px;border-radius:999px;background:var(--hdp-primary-light);color:var(--hdp-primary);font-size:12px;font-weight:800}
+    .hdp-added-card-grid{min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}.hdp-added-card-entity{min-height:0;overflow:auto}.hdp-added-card-entity>.hdp-card{height:100%}
+    .hdp-added-entity-row{appearance:none;width:100%;min-width:0;min-height:64px;display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--hdp-border);border-radius:var(--hdp-radius-sm);background:var(--hdp-control-bg,var(--hdp-card-bg));color:var(--hdp-text);font:inherit;text-align:left;cursor:pointer}.hdp-added-entity-row:hover{border-color:var(--hdp-primary);background:var(--hdp-control-bg-hover,var(--hdp-primary-light))}.hdp-added-entity-row ha-state-icon{flex:0 0 auto;color:var(--hdp-primary)}.hdp-added-entity-row span{min-width:0;display:grid;gap:2px}.hdp-added-entity-row strong,.hdp-added-entity-row small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hdp-added-entity-row small{color:var(--hdp-text-secondary)}
+    .hdp-added-card-empty,.hdp-custom-card-placeholder{height:100%;min-height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:18px;border:1px dashed var(--hdp-border);border-radius:var(--hdp-radius);background:var(--hdp-surface-muted,var(--hdp-card-bg));color:var(--hdp-text-secondary);text-align:center}.hdp-custom-card-placeholder strong{color:var(--hdp-text)}
+  </style>`;
 }
 /**
  * Extract the inner HTML content from a card config, stripping
@@ -281,7 +397,7 @@ function isHomeSectionVisible(config: StrategyConfig, key: HomeSectionKey): bool
 }
 
 function getHomeLayout(config: StrategyConfig): { order: HomeSectionKey[]; sizes: HomeLayoutSizeMap } {
-  const preset = config.hdp_config?.home?.layout_preset;
+  const preset = getEffectiveHDPConfig(config)?.home?.layout_preset;
   if (preset && preset !== 'custom' && HOME_LAYOUT_PRESETS[preset]) {
     return HOME_LAYOUT_PRESETS[preset];
   }
@@ -292,11 +408,11 @@ function getHomeLayout(config: StrategyConfig): { order: HomeSectionKey[]; sizes
 }
 
 function getHiddenHomeSections(config: StrategyConfig): HomeSectionKey[] {
-  return (config.hdp_config?.home?.hidden_sections || []) as HomeSectionKey[];
+  return (getEffectiveHDPConfig(config)?.home?.hidden_sections || []) as HomeSectionKey[];
 }
 
 function getOrderedHomeSections(config: StrategyConfig): HomeSectionKey[] {
-  const configured = config.hdp_config?.home?.section_order || [];
+  const configured = getEffectiveHDPConfig(config)?.home?.section_order || [];
   const order = configured.filter((key): key is HomeSectionKey =>
     DEFAULT_HOME_SECTION_ORDER.includes(key as HomeSectionKey));
 
@@ -406,6 +522,9 @@ ${generateDesignTokenCSS(tokens)}
     background: var(--hdp-gradient-primary);
     border-radius: var(--hdp-radius-lg);
     padding: 24px;
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
     position: relative;
     overflow: hidden;
   }
@@ -859,12 +978,20 @@ function buildEnvironmentCard(hass: Hass, config: StrategyConfig, tokens?: Resol
     content: /* html */ `
 ${generateDesignTokenCSS(tokens)}
 <style>
+  .env-card {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    box-sizing: border-box;
+  }
   .env-hdr {
     position: relative;
     z-index: 2;
     display: flex;
     align-items: center;
-    margin-bottom: 14px;
+    margin-bottom: 10px;
   }
   .env-title {
     font: inherit;
@@ -873,8 +1000,13 @@ ${generateDesignTokenCSS(tokens)}
     color: var(--hdp-text);
   }
   .env-grid {
+    flex: 1;
+    min-height: 0;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(2, minmax(150px, 220px));
+    grid-auto-rows: minmax(64px, 1fr);
+    justify-content: start;
+    align-content: start;
     gap: 12px;
   }
   .env-grid > .hdp-card-slot {
@@ -886,10 +1018,14 @@ ${generateDesignTokenCSS(tokens)}
   .env-grid > .hdp-card-slot[data-card-slot-size="lg"],
   .env-grid > .hdp-card-slot[data-card-slot-size="tall"] { grid-column: span 2; }
   .env-grid > .hdp-card-slot[data-card-slot-size="wide"] { grid-column: 1 / -1; }
+  .hdp-card-slot[data-card-slot="home.environment"][data-card-slot-size="wide"] .env-grid {
+    grid-template-columns: repeat(4, minmax(150px, 220px));
+  }
   .env-item {
     appearance: none;
     font: inherit;
     width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     text-align: left;
@@ -960,10 +1096,12 @@ ${generateDesignTokenCSS(tokens)}
     .env-grid > .hdp-card-slot[data-card-slot-size="wide"] { grid-column: 1 / -1; }
   }
 </style>
-<div class="env-hdr">
-  <span class="env-title">家居环境</span>
-</div>
-<div class="env-grid">${renderedItems}</div>`,
+<div class="env-card">
+  <div class="env-hdr">
+    <span class="env-title">家居环境</span>
+  </div>
+  <div class="env-grid">${renderedItems}</div>
+</div>`,
   };
 }
 
@@ -1007,11 +1145,19 @@ function buildPowerCard(power: ReturnType<typeof buildHousePowerUsage>, tokens?:
     content: /* html */ `
 ${generateDesignTokenCSS(tokens)}
 <style>
+  .pw-card {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    box-sizing: border-box;
+  }
   .pw-hdr {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 14px;
+    margin-bottom: 10px;
   }
   .pw-title {
     font: inherit;
@@ -1040,17 +1186,30 @@ ${generateDesignTokenCSS(tokens)}
   }
   .pw-room {
     margin-bottom: 12px;
+    min-width: 0;
+    padding-inline: 4px;
   }
   .pw-room:last-child { margin-bottom: 0; }
-  .pw-hdr + .hdp-card-slot {
+  .pw-grid {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    align-content: start;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 14px;
+    min-width: 0;
+  }
+  .pw-grid > .hdp-card-slot {
     display: block;
     min-width: 0;
     height: auto;
   }
-  .pw-hdr + .hdp-card-slot[data-card-slot-size="md"],
-  .pw-hdr + .hdp-card-slot[data-card-slot-size="lg"],
-  .pw-hdr + .hdp-card-slot[data-card-slot-size="tall"],
-  .pw-hdr + .hdp-card-slot[data-card-slot-size="wide"] {
+  .pw-grid > .hdp-card-slot[data-card-slot-size="md"],
+  .pw-grid > .hdp-card-slot[data-card-slot-size="lg"],
+  .pw-grid > .hdp-card-slot[data-card-slot-size="tall"],
+  .pw-grid > .hdp-card-slot[data-card-slot-size="wide"] {
     padding: 8px;
     border: 1px solid var(--hdp-border);
     border-radius: var(--hdp-radius);
@@ -1060,6 +1219,7 @@ ${generateDesignTokenCSS(tokens)}
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
     margin-bottom: 5px;
   }
   .pw-room-name {
@@ -1067,12 +1227,20 @@ ${generateDesignTokenCSS(tokens)}
     font-size: 13px;
     font-weight: 600;
     color: var(--hdp-text);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .pw-room-val {
     font: inherit;
     font-size: 12px;
     font-weight: 600;
     color: var(--hdp-text-secondary);
+    flex: 0 0 auto;
+    max-width: 46%;
+    padding-inline-end: 2px;
+    white-space: nowrap;
   }
   .pw-bar {
     height: 6px;
@@ -1102,17 +1270,22 @@ ${generateDesignTokenCSS(tokens)}
     font: inherit;
     font-size: 12px;
   }
+  @media (max-width: 720px) {
+    .pw-grid { grid-template-columns: minmax(0, 1fr); }
+  }
 </style>
-<div class="pw-hdr">
-  <span class="pw-title">全屋功率</span>
-  <div class="pw-total">
-    <div class="pw-total-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+<div class="pw-card">
+  <div class="pw-hdr">
+    <span class="pw-title">全屋功率</span>
+    <div class="pw-total">
+      <div class="pw-total-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+      </div>
+      <span class="pw-total-val">${power.total_display}</span>
     </div>
-    <span class="pw-total-val">${power.total_display}</span>
   </div>
-</div>
-${renderedRoomRows}${emptyHTML}`,
+  <div class="pw-grid">${renderedRoomRows}</div>${emptyHTML}
+</div>`,
   };
 }
 
@@ -1376,10 +1549,18 @@ function buildSummaryCard(hass: Hass, tokens?: ResolvedTokens, config?: Strategy
     content: /* html */ `
 ${generateDesignTokenCSS(tokens)}
 <style>
+  .sum-card {
+    height: 100%;
+    min-height: 0;
+    padding: 12px;
+    box-sizing: border-box;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
   .sum-hdr {
     display: flex;
     align-items: center;
-    margin-bottom: 14px;
+    margin-bottom: 10px;
   }
   .sum-title {
     font: inherit;
@@ -1474,9 +1655,11 @@ ${generateDesignTokenCSS(tokens)}
     color: var(--hdp-text-muted);
   }
 </style>
-<div class="sum-hdr">
-  <span class="sum-title">系统概览</span>
-</div>
-<div class="sum-grid">${renderedItems.map(item => item.html).join('')}${emptyHTML}</div>`,
+<div class="sum-card">
+  <div class="sum-hdr">
+    <span class="sum-title">系统概览</span>
+  </div>
+  <div class="sum-grid">${renderedItems.map(item => item.html).join('')}${emptyHTML}</div>
+</div>`,
   };
 }

@@ -371,6 +371,28 @@ export const DOMAIN_GROUPS: Record<string, { label: string; color: string }> = {
   button: { label: '按钮', color: '#EDE9FE' },
   scene: { label: '场景', color: '#FEF3C7' },
   automation: { label: '自动化', color: '#FEE2E2' },
+  alarm_control_panel: { label: '安防面板', color: '#FEE2E2' },
+  humidifier: { label: '加湿器', color: '#DBEAFE' },
+  water_heater: { label: '热水器', color: '#FEF3C7' },
+  remote: { label: '遥控器', color: '#EDE9FE' },
+  siren: { label: '警报器', color: '#FEE2E2' },
+  number: { label: '数值调节', color: '#DBEAFE' },
+  select: { label: '选项', color: '#EDE9FE' },
+  text: { label: '文本', color: '#F1F5F9' },
+  input_boolean: { label: '辅助开关', color: '#EDE9FE' },
+  input_button: { label: '辅助按钮', color: '#EDE9FE' },
+  input_number: { label: '辅助数值', color: '#DBEAFE' },
+  input_select: { label: '辅助选项', color: '#EDE9FE' },
+  input_text: { label: '辅助文本', color: '#F1F5F9' },
+  input_datetime: { label: '日期时间', color: '#DBEAFE' },
+  counter: { label: '计数器', color: '#DBEAFE' },
+  timer: { label: '计时器', color: '#DBEAFE' },
+  device_tracker: { label: '设备跟踪', color: '#ECFDF5' },
+  event: { label: '事件', color: '#F1F5F9' },
+  lawn_mower: { label: '割草机', color: '#ECFDF5' },
+  valve: { label: '阀门', color: '#DBEAFE' },
+  calendar: { label: '日历', color: '#F1F5F9' },
+  todo: { label: '待办事项', color: '#F1F5F9' },
 };
 
 export const HIDDEN_DOMAINS = new Set(['automation', 'script', 'scene', 'group', 'zone', 'person', 'sun', 'weather', 'conversation', 'update', 'tts', 'stt']);
@@ -452,6 +474,11 @@ export interface CardSlotConfig {
   size?: string;
   grid_columns?: number;
   grid_rows?: number;
+  /** Source for a user-created home card. */
+  kind?: 'custom' | 'domain' | 'entity';
+  domain?: string;
+  entity_id?: string;
+  title?: string;
   background_image_url?: string;
   theme_from_image?: boolean;
   yaml?: string;

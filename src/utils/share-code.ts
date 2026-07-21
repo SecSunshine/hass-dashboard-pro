@@ -243,6 +243,16 @@ function normalizeCardSlots(value: unknown): Record<string, unknown> {
     if (typeof slotValue.grid_rows === 'number' && Number.isFinite(slotValue.grid_rows)) {
       slot.grid_rows = Math.max(1, Math.min(6, Math.round(slotValue.grid_rows)));
     }
+    if (slotValue.kind === 'custom' || slotValue.kind === 'domain' || slotValue.kind === 'entity') {
+      slot.kind = slotValue.kind;
+    }
+    if (typeof slotValue.domain === 'string' && /^[a-z_][a-z0-9_]*$/.test(slotValue.domain)) {
+      slot.domain = slotValue.domain;
+    }
+    if (typeof slotValue.entity_id === 'string' && /^[a-z_][a-z0-9_]*\.[a-z0-9_]+$/.test(slotValue.entity_id)) {
+      slot.entity_id = slotValue.entity_id;
+    }
+    if (typeof slotValue.title === 'string') slot.title = slotValue.title.trim().slice(0, 80);
     const backgroundUrl = sanitizeImageURL(slotValue.background_image_url);
     if (backgroundUrl) slot.background_image_url = backgroundUrl;
     if (backgroundUrl && slotValue.theme_from_image === true) slot.theme_from_image = true;
