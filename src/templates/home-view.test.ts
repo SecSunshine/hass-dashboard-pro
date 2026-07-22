@@ -296,16 +296,19 @@ describe('home view settings', () => {
     expect(html).toContain('background: var(--hdp-surface-muted, var(--hdp-divider));');
   });
 
-  it('uses topology layout presets for home section ordering and sizing', () => {
+  it('uses one default home grid with enough space for system summary', () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',
       hdp_config: {
-        home: { layout_preset: 'rows' },
+        home: { section_order: ['summary', 'environment'] },
       } as any,
     };
     const html = buildHomeHTML(hass, config);
 
-    expect(html).toContain('hdp-bento hdp-bento--wide');
+    expect(html).toContain('hdp-bento hdp-bento--lg" data-hdp-slot="home.summary" data-hdp-bento-custom="true"');
+    expect(html).toContain('--hdp-bento-column-span: 2');
+    expect(html).toContain('--hdp-bento-row-span: 3');
+    expect(html.indexOf('data-hdp-slot="home.summary"')).toBeLessThan(html.indexOf('data-hdp-slot="home.environment"'));
     expect(html).not.toContain('layout_preset');
   });
 
@@ -547,8 +550,7 @@ describe('home view settings', () => {
     expect(html).toContain('padding-inline-end: 2px');
     expect(html).toContain('max-width: 46%');
     expect(html).toContain('overscroll-behavior: contain');
-    expect(html).toContain('grid-template-columns: repeat(2, minmax(150px, 220px))');
-    expect(html).toContain('grid-template-columns: repeat(4, minmax(150px, 220px))');
+    expect(html).toContain('grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 180px))');
     expect(html).toContain('data-card-slot="home.power_usage"');
     expect(html).toContain('data-hdp-slot="home.power_usage"');
     expect(html).toContain('hdp-bento hdp-bento--lg');
@@ -559,9 +561,10 @@ describe('home view settings', () => {
 
     expect(html).toContain('<div class="env-card">');
     expect(html).toContain('.env-card {');
-    expect(html).toContain('grid-template-columns: repeat(2, minmax(150px, 220px))');
-    expect(html).toContain('grid-template-columns: repeat(4, minmax(150px, 220px))');
-    expect(html).toContain('grid-auto-rows: minmax(64px, 1fr)');
+    expect(html).toContain('grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 180px))');
+    expect(html).toContain('grid-auto-rows: minmax(68px, 1fr)');
+    expect(html).toContain('width: 42px; height: 42px;');
+    expect(html).toContain('.env-icon svg { width: 21px; height: 21px; }');
     expect(html).toContain('data-card-slot="home.environment"');
     expect(html).toContain('hdp-bento hdp-bento--lg');
     expect(html).toContain('height: 100%;');
@@ -572,9 +575,12 @@ describe('home view settings', () => {
 
     expect(html).toContain('.env-card {');
     expect(html).toContain('.sum-card {');
-    expect(html.match(/padding: 12px;/g)?.length).toBeGreaterThanOrEqual(2);
+    expect(html).toContain('padding: 12px;');
+    expect(html).toContain('padding: 12px;');
     expect(html).toContain('<div class="sum-card">');
-    expect(html).toContain('overscroll-behavior: contain;');
+    expect(html).toContain('grid-template-columns: repeat(4, minmax(0, 1fr));');
+    expect(html).toContain('grid-auto-rows: minmax(82px, 1fr);');
+    expect(html).toContain('overflow: visible;');
   });
 
   it('renders automations summary as a configuration popup button', () => {
@@ -661,7 +667,6 @@ describe('home view settings', () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',
       hdp_config: {
-        home: { layout_preset: 'custom' },
         cards: { slots: {
           'home.custom.weather-wall': {
             order: -3,
@@ -690,7 +695,6 @@ describe('home view settings', () => {
     const config: StrategyConfig = {
       type: 'custom:hass-dashboard-pro',
       hdp_config: {
-        home: { layout_preset: 'custom' },
         cards: { slots: {
           'home.custom.lights': {
             kind: 'domain',

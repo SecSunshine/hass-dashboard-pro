@@ -922,7 +922,7 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
       '<a href="https://example.com/\npath">Control link</a>',
       '<img src="images/status.png" alt="Relative">',
       '<img src="data:image/png;base64,abc" alt="Data image">',
-      '<input type="range" min="0" max="100" step="5" value="45" data-action="cover-position" data-entity="cover.bed_blind" onchange="evil()">',
+      '<input type="range" name="safe_cover_position" min="0" max="100" step="5" value="45" data-action="cover-position" data-entity="cover.bed_blind" onchange="evil()">',
       '<input type="text" value="Guest note" data-action="text-set" data-entity="text.guest_note">',
       '<input type="datetime-local" value="2026-07-15T22:30" data-action="datetime-set" data-entity="input_datetime.sleep">',
       '<input type="file" type="range" data-entity="sensor.unsafe_file">',
@@ -969,7 +969,7 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
     expect(sanitized).toContain('<a>Control link</a>');
     expect(sanitized).toContain('src="images/status.png"');
     expect(sanitized).toContain('src="data:image/png;base64,abc"');
-    expect(sanitized).toContain('<input type="range" min="0" max="100" step="5" value="45" data-action="cover-position" data-entity="cover.bed_blind">');
+    expect(sanitized).toContain('<input type="range" name="safe_cover_position" min="0" max="100" step="5" value="45" data-action="cover-position" data-entity="cover.bed_blind">');
     expect(sanitized.match(/<input type="range"/g)).toHaveLength(2);
     expect(sanitized).toContain('<input type="text" value="Guest note" data-action="text-set" data-entity="text.guest_note">');
     expect(sanitized).toContain('<input type="datetime-local" value="2026-07-15T22:30" data-action="datetime-set" data-entity="input_datetime.sleep">');
@@ -1067,7 +1067,7 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
     expect(js).toContain('window.hdpToggleCardEditMode = function');
     expect(js).toContain('window.hdpSetCardSlotGridSpan = function(slotId, columns, rows)');
     expect(js).toContain("action !== 'drag' && action !== 'resize'");
-    expect(js).toContain("draft.home.layout_preset = 'custom';");
+    expect(js).not.toContain('layout_preset');
     expect(js).toContain("if (typeof hdpApplyThemeVarsToOverlay === 'function') hdpApplyThemeVarsToOverlay(modal);");
     expect(js).toContain('function hdpInitCardSlotEditorActions');
     expect(js).toContain("document.addEventListener('click'");
@@ -1104,6 +1104,13 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
     expect(js).toContain("String(slotId).indexOf('home.custom.') === 0");
     expect(js).toContain('data-card-edit-action="reset" data-slot-id="' + "' + id + '" + '">删除</button>');
     expect(js).toContain('list="hdp-add-card-entities"');
+    expect(js).toContain('name="hdp_add_card_kind"');
+    expect(js).toContain('name="hdp_add_card_title"');
+    expect(js).toContain('name="hdp_add_card_domain"');
+    expect(js).toContain('name="hdp_add_card_entity"');
+    expect(js).toContain('name="hdp_add_card_columns"');
+    expect(js).toContain('name="hdp_add_card_rows"');
+    expect(js).toContain('name="hdp_slot_yaml"');
     expect(js).toContain('textarea.addEventListener(\'input\', schedulePreview)');
     expect(js).toContain('function hdpFindUnsafeSlotLine(text)');
     expect(js).toContain("if (save) save.disabled = true;");
@@ -1121,5 +1128,42 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
       'clearTimeout',
       js,
     )).not.toThrow();
+  });
+
+  it('resolves modal actions through the composed event path', () => {
+    const windowStub: Record<string, any> = {};
+    new Function(
+      'window',
+      'document',
+      'localStorage',
+      'Image',
+      'prompt',
+      'confirm',
+      'location',
+      'setTimeout',
+      'clearTimeout',
+      `${generateCardSlotEditorJS()}\nwindow.testClosestCardSlotModalAction = hdpClosestCardSlotModalAction;`,
+    )(
+      windowStub,
+      { readyState: 'loading', addEventListener: () => {} },
+      { getItem: () => null, setItem: () => {} },
+      function ImageStub() {},
+      () => null,
+      () => false,
+      { reload: () => {} },
+      setTimeout,
+      clearTimeout,
+    );
+    const modal = { contains: (node: unknown) => node === control };
+    const control = {
+      matches: (selector: string) => selector === '[data-action]',
+      getAttribute: (name: string) => name === 'data-action' ? 'close' : null,
+    };
+    const resolved = windowStub.testClosestCardSlotModalAction({
+      target: { closest: () => null },
+      composedPath: () => [{}, control, modal],
+    }, modal);
+
+    expect(resolved).toBe(control);
   });
 });

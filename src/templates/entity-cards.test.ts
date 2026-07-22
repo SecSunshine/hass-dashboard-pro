@@ -385,6 +385,7 @@ describe('domain entity cards', () => {
     expect(css).toContain('border: 2px solid var(--hdp-surface-card, var(--hdp-card-bg));');
     expect(css).toContain('box-shadow: var(--hdp-shadow-card, 0 1px 4px color-mix(in srgb, var(--hdp-text, CanvasText) 20%, transparent));');
     expect(css).toContain('.dc-media-btn');
+    expect(css).toMatch(/\.dc-media\s*\{[^}]*display:\s*block;[^}]*min-height:\s*144px;/s);
     expect(css).toContain('.dc-vacuum-btn');
     expect(css).toContain('text-align: center;');
     expect(css).toContain('.dvc[data-no-toggle]');

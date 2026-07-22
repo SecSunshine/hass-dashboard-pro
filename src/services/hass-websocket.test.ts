@@ -257,6 +257,7 @@ describe('hass websocket script', () => {
     expect(js).toContain("hdpDomainActionAllowed('vacuum', domainAction)");
     expect(js).toContain("document.addEventListener('change'");
     expect(js).toContain("hdpClosestFromEvent(e, '[data-hdp-action=\"cover-position\"],[data-action=\"cover-position\"]')");
+    expect(js).toContain("hdpClosestFromEvent(e, '[data-entity]') || hdpClosestFromEvent(e, '[data-no-toggle]')");
     expect(js).toContain("}, true);");
     expect(js).toContain("if (hdpClosestFromEvent(e, '[data-no-toggle]')) return;");
     expect(js).toContain('if (window.hdpEntityClickHandlersInitialized) return;');

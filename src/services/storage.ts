@@ -28,7 +28,6 @@ export function getDefaultConfig(): HDPConfig {
       section_order: ['status_badges', 'people', 'environment', 'power_usage', 'favorites', 'summary'],
       hidden_sections: [],
       hidden_info_cards: [],
-      layout_preset: 'grid',
     },
     header: {
       show_time: true,

@@ -410,7 +410,6 @@ export interface HDPConfig {
     section_order: string[];
     hidden_sections: string[];
     hidden_info_cards: string[];
-    layout_preset?: HomeLayoutPreset;
   };
   header: {
     show_time: boolean;
@@ -572,8 +571,6 @@ export type HomeSectionKey =
   | 'power_usage'
   | 'favorites'
   | 'summary';
-
-export type HomeLayoutPreset = 'grid' | 'rows' | 'l_shape' | 'l_mirror' | 'u_shape' | 'custom';
 
 export const HOME_SECTION_LABELS: Record<HomeSectionKey, string> = {
   status_badges: '状态徽章',

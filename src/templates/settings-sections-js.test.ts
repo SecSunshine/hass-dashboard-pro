@@ -22,7 +22,7 @@ function createMockSettingElement(attrs: Record<string, string>, value = '') {
     attrs: { ...attrs },
     classList: {
       toggle: (className: string, force?: boolean) => {
-        if (className === 'st-chip--active' || className === 'st-toggle--on' || className === 'st-layout-choice--active') {
+      if (className === 'st-chip--active' || className === 'st-toggle--on') {
           element.active = force == null ? !element.active : force;
         }
         if (className === 'st-toggle--off') {
@@ -30,7 +30,7 @@ function createMockSettingElement(attrs: Record<string, string>, value = '') {
         }
       },
       contains: (className: string) => {
-        if (className === 'st-chip--active' || className === 'st-toggle--on' || className === 'st-layout-choice--active') return element.active;
+        if (className === 'st-chip--active' || className === 'st-toggle--on') return element.active;
         if (className === 'st-toggle--off') return !element.active;
         return false;
       },
@@ -51,7 +51,6 @@ function createRuntime(
   if (pendingSync) store.set('hdp_config_pending_sync', 'true');
   const chips: MockChip[] = [];
   const settingControls: Array<ReturnType<typeof createMockSettingElement>> = [];
-  const layoutChoices: Array<ReturnType<typeof createMockSettingElement>> = [];
   const timers: Array<{ delay: number; fn: () => void }> = [];
   const listeners: Record<string, Array<(event: any) => void>> = {};
   let reloadCount = 0;
@@ -72,7 +71,6 @@ function createRuntime(
     },
     querySelectorAll: (selector: string) => {
       if (selector === '[data-setting]') return settingControls;
-      if (selector === '[data-layout-preset]') return layoutChoices;
       return [];
     },
   };
@@ -119,7 +117,7 @@ function createRuntime(
     return { target: { closest: () => chip } };
   };
 
-  return { runtime, store, eventForChip, chips, settingControls, layoutChoices, saveBar, saveText, timers, listeners, getReloadCount: () => reloadCount };
+  return { runtime, store, eventForChip, chips, settingControls, saveBar, saveText, timers, listeners, getReloadCount: () => reloadCount };
 }
 
 function encodeShareCode(bundle: unknown): string {
@@ -177,7 +175,7 @@ describe('settings sections client script', () => {
     const { runtime, listeners, store, timers } = createRuntime();
     const sectionCalls: string[] = [];
     runtime.hdpToggleSection = (id: string) => sectionCalls.push(id);
-    const createControl = (attrs: Record<string, string>, classNames: string[] = [], value = '', type = '') => {
+  const createControl = (attrs: Record<string, string>, classNames: string[] = [], value = '', type = '') => {
       const classes = new Set(classNames);
       const control: any = {
         value,
@@ -208,7 +206,6 @@ describe('settings sections client script', () => {
       'data-setting': 'areas.hidden_areas',
       'data-value': 'kitchen',
     }, ['st-chip']));
-    click(createControl({ 'data-action': 'select-home-layout', 'data-layout-preset': 'l_shape' }, ['st-layout-choice']));
 
     const urlInput = createControl({ 'data-setting': 'dashboard.avatar_url' }, [], '  /local/avatar.png  ', 'url');
     listeners.change[0]({ target: { closest: () => urlInput } });
@@ -220,7 +217,6 @@ describe('settings sections client script', () => {
 
     expect(sectionCalls).toEqual(['st-devices']);
     expect(runtime.hdpSettingsDraft.areas).toEqual({ hide_unavailable: true, hidden_areas: ['kitchen'] });
-    expect(runtime.hdpSettingsDraft.home.layout_preset).toBe('l_shape');
     expect(runtime.hdpSettingsDraft.dashboard.avatar_url).toBe('/local/avatar.png');
     expect(runtime.hdpSettingsDraft.devices.hidden_keywords).toEqual(['test', '客厅']);
     expect(store.get('hdp_config')).toBeUndefined();
@@ -434,6 +430,65 @@ describe('settings sections client script', () => {
     expect(saved.areas.hidden_areas).toEqual([]);
   });
 
+  it('updates chip highlight through a retargeted Shadow DOM click', () => {
+    const { runtime, store, listeners } = createRuntime();
+    const classes = new Set(['st-chip']);
+    const attrs: Record<string, string> = {
+      'data-action': 'toggle-hidden-domain',
+      'data-setting': 'devices.hidden_domains',
+      'data-value': 'media_player',
+      'data-array-mode': 'exclude',
+      'aria-pressed': 'true',
+    };
+    const chip: any = {
+      classList: {
+        contains: (name: string) => classes.has(name),
+        toggle: (name: string, force?: boolean) => {
+          if (force == null ? !classes.has(name) : force) classes.add(name);
+          else classes.delete(name);
+        },
+      },
+      getAttribute: (name: string) => attrs[name] ?? null,
+      setAttribute: (name: string, value: string) => { attrs[name] = value; },
+      matches: (selector: string) => selector === '.st-chip' || selector === '[data-action]',
+    };
+    const click = () => listeners.click[0]({
+      target: { closest: () => null },
+      composedPath: () => [chip],
+      preventDefault: () => {},
+      stopPropagation: () => {},
+    });
+
+    click();
+    expect(runtime.hdpSettingsDraft.devices.hidden_domains).toEqual(['media_player']);
+    expect(classes.has('st-chip--active')).toBe(false);
+    expect(attrs['aria-pressed']).toBe('false');
+    expect(store.get('hdp_config')).toBeUndefined();
+
+    click();
+    expect(runtime.hdpSettingsDraft.devices.hidden_domains).toEqual([]);
+    expect(classes.has('st-chip--active')).toBe(true);
+    expect(attrs['aria-pressed']).toBe('true');
+    expect(store.get('hdp_config')).toBeUndefined();
+  });
+
+  it('removes legacy home layout presets when saving a draft', () => {
+    const { runtime, store } = createRuntime({
+      home: {
+        layout_preset: 'l_shape',
+        section_order: ['summary'],
+        hidden_sections: [],
+        hidden_info_cards: [],
+      },
+    });
+
+    runtime.hdpCommitSettings();
+
+    const saved = JSON.parse(store.get('hdp_config') || '{}');
+    expect(saved.home.layout_preset).toBeUndefined();
+    expect(saved.home.section_order).toEqual(['summary']);
+  });
+
   it('normalizes keyword lists in the draft config', () => {
     const { runtime, store } = createRuntime();
 
@@ -468,62 +523,18 @@ Old `);
     expect(store.get('hdp_config_pending_sync')).toBe('true');
   });
 
-  it('stages home layout preset changes until commit', () => {
-    const { runtime, store } = createRuntime();
-    const buttons = [
-      {
-        active: false,
-        attrs: {} as Record<string, string>,
-        classList: {
-          toggle: (_className: string, value: boolean) => { buttons[0].active = value; },
-        },
-        setAttribute: (name: string, value: string) => { buttons[0].attrs[name] = value; },
-      },
-      {
-        active: false,
-        attrs: {} as Record<string, string>,
-        classList: {
-          toggle: (_className: string, value: boolean) => { buttons[1].active = value; },
-        },
-        setAttribute: (name: string, value: string) => { buttons[1].attrs[name] = value; },
-      },
-    ];
-    const event = {
-      currentTarget: buttons[1],
-    } as any;
-    event.currentTarget.closest = () => ({ querySelectorAll: () => buttons });
-
-    runtime.hdpSelectHomeLayout('l_mirror', event);
-
-    expect(runtime.hdpSettingsDraft.home.layout_preset).toBe('l_mirror');
-    expect(store.get('hdp_config')).toBeUndefined();
-    expect(buttons[0].active).toBe(false);
-    expect(buttons[1].active).toBe(true);
-    expect(buttons[1].attrs['aria-pressed']).toBe('true');
-
-    runtime.hdpCommitSettings();
-
-    const saved = JSON.parse(store.get('hdp_config') || '{}');
-    expect(saved.home.layout_preset).toBe('l_mirror');
-  });
-
   it('restores the save bar state when cancelling staged settings', () => {
-    const { runtime, store, settingControls, layoutChoices, saveBar, saveText, timers, getReloadCount } = createRuntime();
+    const { runtime, store, settingControls, saveBar, saveText, timers, getReloadCount } = createRuntime();
     const nameInput = createMockSettingElement({ 'data-setting': 'dashboard.name' }, 'Draft Home');
     const hiddenDomainChip = createMockSettingElement({ 'data-setting': 'devices.hidden_domains', 'data-value': 'sensor', 'data-array-mode': 'exclude' });
     const unavailableToggle = createMockSettingElement({ 'data-setting': 'areas.hide_unavailable', role: 'switch' });
-    const gridLayout = createMockSettingElement({ 'data-layout-preset': 'grid' });
-    const mirrorLayout = createMockSettingElement({ 'data-layout-preset': 'l_mirror' });
     hiddenDomainChip.active = true;
     unavailableToggle.active = true;
-    mirrorLayout.active = true;
     settingControls.push(nameInput, hiddenDomainChip, unavailableToggle);
-    layoutChoices.push(gridLayout, mirrorLayout);
 
     runtime.hdpSaveSetting('areas.hide_unavailable', true);
     runtime.hdpSaveSetting('dashboard.name', 'Draft Home');
     runtime.hdpToggleArrayItem('devices.hidden_domains', 'sensor');
-    runtime.hdpSelectHomeLayout('l_mirror');
 
     expect(runtime.hdpSettingsDirty).toBe(true);
     expect(saveBar.attrs['data-dirty']).toBe('true');
@@ -541,10 +552,6 @@ Old `);
     expect(hiddenDomainChip.attrs['aria-pressed']).toBe('true');
     expect(unavailableToggle.active).toBe(false);
     expect(unavailableToggle.attrs['aria-checked']).toBe('false');
-    expect(gridLayout.active).toBe(true);
-    expect(gridLayout.attrs['aria-pressed']).toBe('true');
-    expect(mirrorLayout.active).toBe(false);
-    expect(mirrorLayout.attrs['aria-pressed']).toBe('false');
     expect(timers.map(timer => timer.delay)).not.toContain(120);
     expect(getReloadCount()).toBe(0);
     expect(store.get('hdp_config')).toBeUndefined();

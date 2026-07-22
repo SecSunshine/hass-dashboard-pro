@@ -19,7 +19,7 @@
  * Settings are staged in hdpSettingsDraft and saved only from hdpCommitSettings().
  */
 
-import type { Hass, StrategyConfig, BlueprintInstance, HomeLayoutPreset, HomeSectionKey } from '../types';
+import type { Hass, StrategyConfig, BlueprintInstance, HomeSectionKey } from '../types';
 import { DOMAIN_GROUPS, HIDDEN_DOMAINS, HOME_SECTION_LABELS } from '../types';
 import { buildBlueprintGalleryHTML } from '../blueprints/blueprint-gallery';
 import { buildDashboardDesignPlan, buildPlanAlternatives, type DashboardDesignPlan } from '../utils/design-plan';
@@ -278,30 +278,26 @@ export function getSettingsSectionsCSS(): string {
     text-align: left;
     appearance: none;
   }
-  .st-chip--active {
-    background: var(--hdp-primary);
-    border-color: var(--hdp-primary);
-    color: var(--hdp-text-inverse, #fff);
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--hdp-primary) 28%, transparent);
+  .st-chip:hover {
+    background: var(--hdp-surface-raised, var(--hdp-card-bg));
+    transform: translateY(-1px);
+  }
+  .st-chip--active,
+  .st-chip--active:hover {
+    background: color-mix(in srgb, var(--hdp-primary) 86%, #111827 14%);
+    border-color: color-mix(in srgb, var(--hdp-primary) 82%, #111827 18%);
+    color: #fff;
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--hdp-primary) 32%, transparent);
   }
   .st-chip--active::before {
     content: '✓';
     flex: 0 0 auto;
     font-weight: 900;
   }
-  .st-chip--active:hover {
-    background: var(--hdp-primary);
-    color: var(--hdp-text-inverse, #fff);
-  }
-  .st-chip:hover {
-    background: var(--hdp-surface-raised, var(--hdp-card-bg));
-    transform: translateY(-1px);
-  }
   .st-chip:focus-visible,
   .st-btn:focus-visible,
   .st-toggle:focus-visible,
   .st-section-hdr:focus-visible,
-  .st-layout-choice:focus-visible,
   .st-plan-choice:focus-visible {
     outline: 2px solid var(--hdp-primary);
     outline-offset: 2px;
@@ -420,50 +416,6 @@ export function getSettingsSectionsCSS(): string {
     width: 100%;
     max-width: none;
     margin-top: 8px;
-  }
-  .st-layout-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 8px;
-    margin-top: 10px;
-    min-width: 0;
-  }
-  .st-layout-choice {
-    appearance: none;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 0;
-    min-height: 84px;
-    padding: 12px;
-    border-radius: var(--hdp-radius-sm, 8px);
-    border: 1px solid var(--hdp-border);
-    background: var(--hdp-surface-card, var(--hdp-card-bg));
-    color: var(--hdp-text);
-    text-align: left;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  .st-layout-choice:hover {
-    transform: translateY(-1px);
-    border-color: var(--hdp-primary);
-    background: var(--hdp-surface-raised, var(--hdp-card-bg));
-  }
-  .st-layout-choice--active {
-    border-color: var(--hdp-primary);
-    box-shadow: 0 0 0 3px var(--hdp-primary-glow, rgba(79,110,247,0.12));
-  }
-  .st-layout-choice-name {
-    font: inherit;
-    font-size: 13px;
-    font-weight: 800;
-    color: var(--hdp-text);
-  }
-  .st-layout-choice-desc {
-    font: inherit;
-    font-size: 11px;
-    color: var(--hdp-text-muted);
-    line-height: 1.35;
   }
   .st-btn--primary {
     background: var(--hdp-primary);
@@ -799,15 +751,6 @@ function hdpSyncSettingsControlsFromDraft() {
       control.value = Array.isArray(value) ? value.join(', ') : (value == null ? '' : String(value));
     }
   }
-  var layoutPreset = hdpGetDraftPathValue('home.layout_preset') || 'grid';
-  var layoutButtons = document.querySelectorAll('[data-layout-preset]');
-  for (var j = 0; j < layoutButtons.length; j++) {
-    var button = layoutButtons[j];
-    if (!button || !button.getAttribute || !button.classList) continue;
-    var selected = button.getAttribute('data-layout-preset') === layoutPreset;
-    button.classList.toggle('st-layout-choice--active', selected);
-    button.setAttribute('aria-pressed', selected ? 'true' : 'false');
-  }
 }
 
 function hdpMarkSettingsDirty() {
@@ -832,7 +775,7 @@ window.hdpPersistSettingsAndReload = function(successDelay, fallbackDelay, confi
   successDelay = successDelay || 800;
   fallbackDelay = fallbackDelay || 1200;
   var showToast = typeof hdpShowToast === 'function' ? hdpShowToast : function() {};
-  var config = configOverride || window.hdpGetSettingsDraft();
+  var config = hdpNormalizeHDPConfig(configOverride || window.hdpGetSettingsDraft()) || {};
   var savedConfig = hdpCloneConfig(config);
   try {
     localStorage.setItem('hdp_config', JSON.stringify(savedConfig));
@@ -880,26 +823,11 @@ window.hdpSaveSetting = function(path, value) {
   }
 };
 
-window.hdpSelectHomeLayout = function(preset, evt) {
-  var allowed = ['grid', 'rows', 'l_shape', 'l_mirror', 'u_shape', 'custom'];
-  var safePreset = allowed.indexOf(preset) >= 0 ? preset : 'grid';
-  hdpSetDraftPath('home.layout_preset', safePreset);
-  if (evt && evt.currentTarget && evt.currentTarget.closest) {
-    var root = evt.currentTarget.closest('.st-layout-grid');
-    if (root && root.querySelectorAll) {
-      var buttons = root.querySelectorAll('.st-layout-choice');
-      for (var i = 0; i < buttons.length; i++) {
-        var active = buttons[i] === evt.currentTarget;
-        buttons[i].classList.toggle('st-layout-choice--active', active);
-        buttons[i].setAttribute('aria-pressed', active ? 'true' : 'false');
-      }
-    }
-  }
-};
-
 window.hdpToggleArrayItem = function(path, item) {
-  var evt = arguments.length > 2 ? arguments[2] : window.event;
-  var chip = evt && evt.target && evt.target.closest ? evt.target.closest('.st-chip') : null;
+  var source = arguments.length > 2 ? arguments[2] : window.event;
+  var chip = source && source.classList && source.classList.contains('st-chip')
+    ? source
+    : hdpClosestSettingsControl(source, '.st-chip');
   var arr = hdpGetDraftArray(path);
   var idx = arr.indexOf(item);
   if (idx >= 0) arr.splice(idx, 1);
@@ -1021,11 +949,6 @@ if (!window.hdpSettingsCommandHandlerReady) {
       control.setAttribute('aria-checked', !isOn ? 'true' : 'false');
       return;
     }
-    if (action === 'select-home-layout') {
-      e.preventDefault();
-      window.hdpSelectHomeLayout(control.getAttribute('data-layout-preset') || 'grid', { currentTarget: control });
-      return;
-    }
     if (action === 'apply-design-plan' || action === 'apply-recommended-design') {
       e.preventDefault();
       try {
@@ -1049,7 +972,7 @@ if (!window.hdpSettingsCommandHandlerReady) {
       var value = control.getAttribute('data-value');
       if (!settingPath || value == null) return;
       e.preventDefault();
-      window.hdpToggleArrayItem(settingPath, value, e);
+      window.hdpToggleArrayItem(settingPath, value, control);
     }
   }, true);
   document.addEventListener('keydown', function(e) {
@@ -1319,11 +1242,6 @@ function hdpSanitizeLayoutDensity(value) {
   return allowed.indexOf(value) >= 0 ? value : 'standard';
 }
 
-function hdpSanitizeHomeLayoutPreset(value) {
-  var allowed = ['grid', 'rows', 'l_shape', 'l_mirror', 'u_shape', 'custom'];
-  return allowed.indexOf(value) >= 0 ? value : 'grid';
-}
-
 function hdpNormalizeStringArray(value) {
   if (!Array.isArray(value)) return [];
   return value.filter(function(item) { return typeof item === 'string' && item.length > 0; });
@@ -1509,9 +1427,9 @@ function hdpNormalizeHDPConfig(config) {
     normalized.home = Object.assign({}, normalized.home, {
       section_order: hdpNormalizeStringArray(normalized.home.section_order),
       hidden_sections: hdpNormalizeStringArray(normalized.home.hidden_sections),
-      hidden_info_cards: hdpNormalizeStringArray(normalized.home.hidden_info_cards),
-      layout_preset: hdpSanitizeHomeLayoutPreset(normalized.home.layout_preset)
+      hidden_info_cards: hdpNormalizeStringArray(normalized.home.hidden_info_cards)
     });
+    delete normalized.home.layout_preset;
   }
   if (normalized.blueprints && typeof normalized.blueprints === 'object' && !Array.isArray(normalized.blueprints)) {
     normalized.blueprints = Object.assign({}, normalized.blueprints, {
@@ -1735,21 +1653,21 @@ export function buildDashboardSection(config: StrategyConfig): string {
         <div class="st-row-label">名称</div>
         <div class="st-row-desc">仪表盘显示名称</div>
       </div>
-      <input class="st-input" data-setting="dashboard.name" value="${escapeAttribute(name)}" />
+      <input class="st-input" name="dashboard.name" data-setting="dashboard.name" value="${escapeAttribute(name)}" />
     </div>
     <div class="st-row">
       <div>
         <div class="st-row-label">用户头像</div>
         <div class="st-row-desc">支持 /local/...、https://... 或 data:image/...；留空使用用户名首字母</div>
       </div>
-      <input class="st-input st-input--wide" data-setting="dashboard.avatar_url" type="url" value="${escapeAttribute(avatarUrl)}" placeholder="/local/hass-dashboard-pro/avatar.png" />
+      <input class="st-input st-input--wide" name="dashboard.avatar_url" data-setting="dashboard.avatar_url" type="url" value="${escapeAttribute(avatarUrl)}" placeholder="/local/hass-dashboard-pro/avatar.png" />
     </div>
     <div class="st-row">
       <div>
         <div class="st-row-label">背景图片</div>
         <div class="st-row-desc">支持 /local/...、https://... 或 data:image/...；用于整个仪表盘背景</div>
       </div>
-      <input class="st-input st-input--wide" data-setting="dashboard.background_image_url" type="url" value="${escapeAttribute(backgroundUrl)}" placeholder="/local/hass-dashboard-pro/background.jpg" />
+      <input class="st-input st-input--wide" name="dashboard.background_image_url" data-setting="dashboard.background_image_url" type="url" value="${escapeAttribute(backgroundUrl)}" placeholder="/local/hass-dashboard-pro/background.jpg" />
     </div>
   `);
 }
@@ -1799,7 +1717,6 @@ export function buildHomeSection(config: StrategyConfig): string {
   const homeConfig = getEffectiveHDPConfig(config)?.home;
   const hiddenSections: string[] = homeConfig?.hidden_sections || [];
   const hiddenInfoCards: string[] = homeConfig?.hidden_info_cards || [];
-  const layoutPreset = sanitizeHomeLayoutPreset(homeConfig?.layout_preset);
   const sectionKeys: HomeSectionKey[] = ['status_badges', 'people', 'environment', 'power_usage', 'favorites', 'summary'];
   const infoCardLabels: Record<string, string> = {
     updates: '可用更新',
@@ -1810,15 +1727,6 @@ export function buildHomeSection(config: StrategyConfig): string {
     active: '运行中',
     automations: '自动化',
   };
-  const layoutLabels: Record<HomeLayoutPreset, { label: string; desc: string }> = {
-    grid: { label: '行列式布局', desc: '均衡网格，适合通用家庭总览。' },
-    rows: { label: '纵向行布局', desc: '大卡片逐行展开，适合窄屏和信息阅读。' },
-    l_shape: { label: 'L 型布局', desc: '欢迎卡通栏，环境与功率沿左侧排列，其余卡片位于底部一行。' },
-    l_mirror: { label: '镜像 L 型', desc: '欢迎卡通栏，环境与功率沿右侧排列，其余卡片位于底部一行。' },
-    u_shape: { label: 'U 型布局', desc: '上下横向信息包围核心卡片，适合大屏展示。' },
-    custom: { label: '自定义顺序', desc: '使用手动区块顺序和卡片尺寸。' },
-  };
-
   const chips = sectionKeys.map(key => {
     const active = !hiddenSections.includes(key);
     const label = HOME_SECTION_LABELS[key] || key;
@@ -1829,20 +1737,7 @@ export function buildHomeSection(config: StrategyConfig): string {
     const hidden = hiddenInfoCards.includes(key);
     return chipHTML('toggle-home-info-card', 'home.hidden_info_cards', key, label, !hidden);
   }).join('');
-  const layoutChoices = (Object.keys(layoutLabels) as HomeLayoutPreset[]).map(preset => {
-    const active = preset === layoutPreset;
-    const meta = layoutLabels[preset];
-    return `<button type="button" class="st-layout-choice ${active ? 'st-layout-choice--active' : ''}" data-action="select-home-layout" data-layout-preset="${escapeAttribute(preset)}" aria-pressed="${active ? 'true' : 'false'}">
-      <span class="st-layout-choice-name">${escapeHTML(meta.label)}</span>
-      <span class="st-layout-choice-desc">${escapeHTML(meta.desc)}</span>
-    </button>`;
-  }).join('');
-
   return sectionCard('home', '首页', iconHome(), `
-    <div class="st-row-label">首页版式</div>
-    <div class="st-row-desc">从美学构图选择首页行列关系，保存后生效</div>
-    <div class="st-layout-grid">${layoutChoices}</div>
-    <div class="st-section-subtitle">显示区块</div>
     <div class="st-row-label">显示区块</div>
     <div class="st-row-desc">选择首页要显示的内容区块</div>
     <div class="st-chip-list">${chips}</div>
@@ -1850,12 +1745,6 @@ export function buildHomeSection(config: StrategyConfig): string {
     <div class="st-row-desc">带勾且高亮的项目会显示在系统概览</div>
     <div class="st-chip-list">${infoChips}</div>
   `);
-}
-
-function sanitizeHomeLayoutPreset(value: unknown): HomeLayoutPreset {
-  return typeof value === 'string' && ['grid', 'rows', 'l_shape', 'l_mirror', 'u_shape', 'custom'].includes(value)
-    ? value as HomeLayoutPreset
-    : 'grid';
 }
 
 // ─── 3. Header ──────────────────────────────────────────────────────────────
@@ -1895,14 +1784,14 @@ export function buildHeaderSection(config: StrategyConfig): string {
         <div class="st-row-label">天气实体</div>
         <div class="st-row-desc">weather.* 实体 ID（留空自动检测）</div>
       </div>
-      <input class="st-input" data-setting="header.weather_entity" value="${escapeAttribute(weatherEntity)}" placeholder="自动检测" />
+      <input class="st-input" name="header.weather_entity" data-setting="header.weather_entity" value="${escapeAttribute(weatherEntity)}" placeholder="自动检测" />
     </div>
     <div class="st-row">
       <div>
         <div class="st-row-label">报警实体</div>
         <div class="st-row-desc">alarm_control_panel.* 实体 ID</div>
       </div>
-      <input class="st-input" data-setting="header.alarm_entity" value="${escapeAttribute(alarmEntity)}" placeholder="自动检测" />
+      <input class="st-input" name="header.alarm_entity" data-setting="header.alarm_entity" value="${escapeAttribute(alarmEntity)}" placeholder="自动检测" />
     </div>
   `);
 }
@@ -2050,12 +1939,12 @@ export function buildDevicesSection(config: StrategyConfig, hass?: Hass): string
       <label class="st-keyword-field">
         <div class="st-row-label">隐藏关键词</div>
         <div class="st-row-desc">匹配到这些关键词的设备会从仪表盘隐藏。</div>
-        <textarea class="st-input st-textarea" placeholder="例如：测试, 临时, old" data-setting="devices.hidden_keywords" data-value-type="keyword-list">${escapeHTML(hiddenKeywordValue)}</textarea>
+        <textarea class="st-input st-textarea" name="devices.hidden_keywords" placeholder="例如：测试, 临时, old" data-setting="devices.hidden_keywords" data-value-type="keyword-list">${escapeHTML(hiddenKeywordValue)}</textarea>
       </label>
       <label class="st-keyword-field">
         <div class="st-row-label">仅显示关键词</div>
         <div class="st-row-desc">填写后只显示匹配这些关键词的设备；留空则显示所有未隐藏设备。</div>
-        <textarea class="st-input st-textarea" placeholder="例如：客厅, 灯, living" data-setting="devices.visible_keywords" data-value-type="keyword-list">${escapeHTML(visibleKeywordValue)}</textarea>
+        <textarea class="st-input st-textarea" name="devices.visible_keywords" placeholder="例如：客厅, 灯, living" data-setting="devices.visible_keywords" data-value-type="keyword-list">${escapeHTML(visibleKeywordValue)}</textarea>
       </label>
     </div>
   `);

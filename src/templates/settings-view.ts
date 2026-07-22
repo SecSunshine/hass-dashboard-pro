@@ -1726,7 +1726,7 @@ function buildAutoMoodCard(stored: StoredVisualConfig, tokens?: ResolvedTokens):
           <span class="am-period-time">${escapeHTML(p.time)}</span>
         </div>
       </div>
-      <select class="am-mood-select" data-period="${escapeAttribute(p.key)}" ${autoMood ? '' : 'disabled'}>
+      <select name="hdp_mood_${escapeAttribute(p.key)}" class="am-mood-select" data-period="${escapeAttribute(p.key)}" ${autoMood ? '' : 'disabled'}>
         ${options}
       </select>
     </div>`;
@@ -2072,10 +2072,10 @@ function buildLayoutConfigCard(stored: StoredVisualConfig, config: StrategyConfi
     { id: 'home_welcome', label: '欢迎横幅', default: 'lg' },
     { id: 'home_status_badges', label: '状态徽章', default: 'wide' },
     { id: 'home_people', label: '家庭成员', default: 'md' },
-    { id: 'home_environment', label: '家居环境', default: 'md' },
+    { id: 'home_environment', label: '家居环境', default: 'lg' },
     { id: 'home_power', label: '全屋功率', default: 'md' },
     { id: 'home_favorites', label: '收藏设备', default: 'wide' },
-    { id: 'home_summary', label: '系统概览', default: 'md' },
+    { id: 'home_summary', label: '系统概览', default: 'lg' },
   ];
 
   const sizeOptions = [
@@ -2093,7 +2093,7 @@ function buildLayoutConfigCard(stored: StoredVisualConfig, config: StrategyConfi
     ).join('');
     return `<div class="lc-size-row">
       <span class="lc-size-label">${escapeHTML(c.label)}</span>
-      <select class="lc-size-select" data-card-id="${escapeAttribute(c.id)}" data-default="${escapeAttribute(c.default)}">
+        <select class="lc-size-select" name="hdp_card_size_${escapeAttribute(c.id)}" data-card-id="${escapeAttribute(c.id)}" data-default="${escapeAttribute(c.default)}">
         ${options}
       </select>
     </div>`;
@@ -2144,7 +2144,7 @@ function buildLayoutConfigCard(stored: StoredVisualConfig, config: StrategyConfi
       ).join('');
       return `<div class="lc-skin-row">
         <span class="lc-skin-label">${escapeHTML(area.name)}</span>
-        <select class="lc-skin-select" data-area-id="${escapeAttribute(areaId)}">
+          <select class="lc-skin-select" name="hdp_area_skin_${escapeAttribute(areaId)}" data-area-id="${escapeAttribute(areaId)}">
           ${opts}
         </select>
       </div>`;
@@ -2360,7 +2360,7 @@ function buildColorPickerCard(stored: StoredVisualConfig, tokens?: ResolvedToken
         </div>
         <div class="color-input-group">
           <div class="color-swatch-wrap">
-            <input type="color" class="color-picker" data-key="${escapeAttribute(f.id)}" value="${escapeAttribute(val)}" aria-label="${escapeAttribute(`${f.label}颜色选择`)}" />
+          <input type="color" name="hdp_color_${escapeAttribute(f.id)}" class="color-picker" data-key="${escapeAttribute(f.id)}" value="${escapeAttribute(val)}" aria-label="${escapeAttribute(`${f.label}颜色选择`)}" />
             <div class="color-swatch" style="background: ${safeValStyle};"></div>
           </div>
           <span class="color-hex">${escapeHTML(val)}</span>

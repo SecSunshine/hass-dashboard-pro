@@ -223,8 +223,11 @@ describe('settings view', () => {
     expect(html).toContain('background: var(--hdp-surface-card, var(--hdp-card-bg));');
     expect(html).toContain('.st-input::placeholder');
     expect(html).toContain('color: var(--hdp-text-muted);\n    opacity: 0.82;');
-    expect(html).toContain('.st-chip:focus-visible,\n  .st-btn:focus-visible,\n  .st-toggle:focus-visible,\n  .st-section-hdr:focus-visible,\n  .st-layout-choice:focus-visible,\n  .st-plan-choice:focus-visible');
+    expect(html).toContain('.st-chip:focus-visible,\n  .st-btn:focus-visible,\n  .st-toggle:focus-visible,\n  .st-section-hdr:focus-visible,\n  .st-plan-choice:focus-visible');
     expect(html).toContain('background: var(--hdp-surface-raised, var(--hdp-card-bg));');
+    expect(html).toContain('.st-chip--active,\n  .st-chip--active:hover');
+    expect(html).toContain('background: color-mix(in srgb, var(--hdp-primary) 86%, #111827 14%);');
+    expect(html).toContain('color: #fff;');
     expect(html).toContain('background: color-mix(in srgb, var(--hdp-card-bg) 88%, transparent);');
     expect(html).toContain('backdrop-filter: blur(14px) saturate(140%);');
     expect(html).toContain('color: var(--hdp-text-inverse, #fff);');
@@ -366,12 +369,8 @@ describe('settings view', () => {
     };
     const html = buildSettingsHTML(config, undefined, hass);
 
-    expect(html).toContain('首页版式');
-    expect(html).toContain('行列式布局');
-    expect(html).toContain('L 型布局');
-    expect(html).toContain('镜像 L 型');
-    expect(html).toContain('U 型布局');
-    expect(html).toContain('data-action="select-home-layout" data-layout-preset="l_shape"');
+    expect(html).not.toContain('首页版式');
+    expect(html).not.toContain('data-layout-preset');
     expect(html).toContain('系统概览项目');
     expect(html).toContain('data-action="toggle-home-info-card" data-setting="home.hidden_info_cards" data-value="entities" data-array-mode="exclude" aria-pressed="false"');
     expect(html).toContain('data-setting="home.hidden_info_cards" data-value="areas"');
@@ -514,7 +513,7 @@ describe('settings view', () => {
     expect(js).toContain('function hdpSetDraftPath(path, value)');
     expect(js).toContain('function hdpSyncSettingsControlsFromDraft()');
     expect(js).toContain("document.querySelectorAll('[data-setting]')");
-    expect(js).toContain("document.querySelectorAll('[data-layout-preset]')");
+    expect(js).not.toContain("document.querySelectorAll('[data-layout-preset]')");
     expect(js).toContain('hdpSyncSettingsControlsFromDraft();');
     expect(js).toContain('hdpSetDraftPath(path, value);');
     expect(js).toContain('window.hdpCommitSettings = function');
@@ -576,6 +575,13 @@ describe('settings view', () => {
     expect(js).toContain("action !== 'toggle-auto-dark'");
     expect(js).toContain("action !== 'toggle-auto-mood'");
     expect(js).toContain("action !== 'toggle-card-shadow'");
+  });
+
+  it('keeps environment and summary size defaults aligned with the editable grid', () => {
+    const html = buildSettingsHTML({ type: 'custom:hass-dashboard-pro' }, undefined, hass);
+
+    expect(html).toMatch(/data-card-id="home_environment" data-default="lg"/);
+    expect(html).toMatch(/data-card-id="home_summary" data-default="lg"/);
   });
 
   it('marks persisted theme presets as active', () => {

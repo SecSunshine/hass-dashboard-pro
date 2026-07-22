@@ -19,7 +19,7 @@
  *   - Min touch target: 44px
  */
 
-import type { CardSlotConfig, EntityInfo, Hass, HomeLayoutPreset, HomeSectionKey, LovelaceCardConfig, StrategyConfig } from '../types';
+import type { CardSlotConfig, EntityInfo, Hass, HomeSectionKey, LovelaceCardConfig, StrategyConfig } from '../types';
 import { generateDesignTokenCSS } from '../styles/design-tokens';
 import type { ResolvedTokens } from '../utils/visual-config';
 import { bentoWrap, resolveCardSize } from '../utils/bento-layout';
@@ -45,72 +45,16 @@ import { buildDomainCard, getDomainCardCSS } from './entity-cards';
 const DEFAULT_HOME_SECTION_ORDER: HomeSectionKey[] = ['status_badges', 'people', 'environment', 'power_usage', 'favorites', 'summary'];
 
 type HomeCardId = 'home_welcome' | 'home_status_badges' | 'home_people' | 'home_environment' | 'home_power' | 'home_favorites' | 'home_summary';
-type HomeLayoutSizeMap = Record<HomeCardId, 'sm' | 'md' | 'lg' | 'wide' | 'tall'>;
+type HomeCardSizeMap = Record<HomeCardId, 'sm' | 'md' | 'lg' | 'wide' | 'tall'>;
 
-const HOME_LAYOUT_PRESETS: Record<Exclude<HomeLayoutPreset, 'custom'>, {
-  order: HomeSectionKey[];
-  sizes: HomeLayoutSizeMap;
-}> = {
-  grid: {
-    order: ['status_badges', 'people', 'environment', 'power_usage', 'favorites', 'summary'],
-    sizes: {
-      home_welcome: 'lg',
-      home_status_badges: 'wide',
-      home_people: 'md',
-      home_environment: 'lg',
-      home_power: 'lg',
-      home_favorites: 'wide',
-      home_summary: 'md',
-    },
-  },
-  rows: {
-    order: ['status_badges', 'environment', 'summary', 'people', 'power_usage', 'favorites'],
-    sizes: {
-      home_welcome: 'wide',
-      home_status_badges: 'wide',
-      home_people: 'wide',
-      home_environment: 'wide',
-      home_power: 'wide',
-      home_favorites: 'wide',
-      home_summary: 'wide',
-    },
-  },
-  l_shape: {
-    order: ['environment', 'power_usage', 'status_badges', 'people', 'favorites', 'summary'],
-    sizes: {
-      home_welcome: 'lg',
-      home_status_badges: 'md',
-      home_people: 'md',
-      home_environment: 'md',
-      home_power: 'lg',
-      home_favorites: 'md',
-      home_summary: 'md',
-    },
-  },
-  l_mirror: {
-    order: ['environment', 'power_usage', 'status_badges', 'people', 'favorites', 'summary'],
-    sizes: {
-      home_welcome: 'lg',
-      home_status_badges: 'md',
-      home_people: 'md',
-      home_environment: 'md',
-      home_power: 'lg',
-      home_favorites: 'md',
-      home_summary: 'md',
-    },
-  },
-  u_shape: {
-    order: ['status_badges', 'environment', 'summary', 'people', 'power_usage', 'favorites'],
-    sizes: {
-      home_welcome: 'wide',
-      home_status_badges: 'md',
-      home_people: 'md',
-      home_environment: 'md',
-      home_power: 'lg',
-      home_favorites: 'md',
-      home_summary: 'md',
-    },
-  },
+const DEFAULT_HOME_CARD_SIZES: HomeCardSizeMap = {
+  home_welcome: 'lg',
+  home_status_badges: 'wide',
+  home_people: 'md',
+  home_environment: 'lg',
+  home_power: 'lg',
+  home_favorites: 'wide',
+  home_summary: 'lg',
 };
 
 export function buildHomeView(hass: Hass, config: StrategyConfig, tokens?: ResolvedTokens): LovelaceCardConfig[] {
@@ -162,18 +106,18 @@ export function buildHomeView(hass: Hass, config: StrategyConfig, tokens?: Resol
 export function buildHomeHTML(hass: Hass, config: StrategyConfig, tokens?: ResolvedTokens): string {
   const sections: SlottedCard[] = [];
   const cs = tokens?.card_sizes;
-  const layout = getHomeLayout(config);
+  const order = getOrderedHomeSections(config);
 
   sections.push(resolveSlottedCard(
     config,
     'home.welcome',
     extractCardHTML(buildWelcomeCard(hass, config, tokens)),
-    resolveCardSize('home_welcome', layout.sizes.home_welcome, cs),
+    resolveCardSize('home_welcome', DEFAULT_HOME_CARD_SIZES.home_welcome, cs),
     0,
   ));
 
-  for (let index = 0; index < layout.order.length; index++) {
-    const section = layout.order[index];
+  for (let index = 0; index < order.length; index++) {
+    const section = order[index];
     const defaultOrder = index + 1;
     if (!isHomeSectionVisible(config, section)) continue;
     switch (section) {
@@ -184,7 +128,7 @@ export function buildHomeHTML(hass: Hass, config: StrategyConfig, tokens?: Resol
             config,
             'home.status_badges',
             extractCardHTML(buildStatusBadges(domains, tokens, config)),
-            resolveCardSize('home_status_badges', layout.sizes.home_status_badges, cs),
+          resolveCardSize('home_status_badges', DEFAULT_HOME_CARD_SIZES.home_status_badges, cs),
             defaultOrder,
           ));
         }
@@ -197,7 +141,7 @@ export function buildHomeHTML(hass: Hass, config: StrategyConfig, tokens?: Resol
             config,
             'home.people',
             extractCardHTML(buildPeopleCard(persons, tokens, config)),
-            resolveCardSize('home_people', layout.sizes.home_people, cs),
+          resolveCardSize('home_people', DEFAULT_HOME_CARD_SIZES.home_people, cs),
             defaultOrder,
           ));
         }
@@ -208,7 +152,7 @@ export function buildHomeHTML(hass: Hass, config: StrategyConfig, tokens?: Resol
           config,
           'home.environment',
           extractCardHTML(buildEnvironmentCard(hass, config, tokens)),
-          resolveCardSize('home_environment', layout.sizes.home_environment, cs),
+        resolveCardSize('home_environment', DEFAULT_HOME_CARD_SIZES.home_environment, cs),
           defaultOrder,
         ));
         break;
@@ -219,7 +163,7 @@ export function buildHomeHTML(hass: Hass, config: StrategyConfig, tokens?: Resol
             config,
             'home.power_usage',
             extractCardHTML(buildPowerCard(power, tokens, config)),
-            resolveCardSize('home_power', layout.sizes.home_power, cs),
+          resolveCardSize('home_power', DEFAULT_HOME_CARD_SIZES.home_power, cs),
             defaultOrder,
           ));
         }
@@ -232,20 +176,24 @@ export function buildHomeHTML(hass: Hass, config: StrategyConfig, tokens?: Resol
             config,
             'home.favorites',
             extractCardHTML(buildFavoritesCard(favorites, tokens, config)),
-            resolveCardSize('home_favorites', layout.sizes.home_favorites, cs),
+          resolveCardSize('home_favorites', DEFAULT_HOME_CARD_SIZES.home_favorites, cs),
             defaultOrder,
           ));
         }
         break;
       }
       case 'summary':
-        sections.push(resolveSlottedCard(
+        {
+          const summary = resolveSlottedCard(
           config,
           'home.summary',
           extractCardHTML(buildSummaryCard(hass, tokens, config)),
-          resolveCardSize('home_summary', layout.sizes.home_summary, cs),
+          resolveCardSize('home_summary', DEFAULT_HOME_CARD_SIZES.home_summary, cs),
           defaultOrder,
-        ));
+          );
+          if (!summary.gridSpan) summary.gridSpan = { columns: 2, rows: 3 };
+          sections.push(summary);
+        }
         break;
     }
   }
@@ -394,17 +342,6 @@ function extractCardHTML(card: LovelaceCardConfig): string {
 
 function isHomeSectionVisible(config: StrategyConfig, key: HomeSectionKey): boolean {
   return !getHiddenHomeSections(config).includes(key);
-}
-
-function getHomeLayout(config: StrategyConfig): { order: HomeSectionKey[]; sizes: HomeLayoutSizeMap } {
-  const preset = getEffectiveHDPConfig(config)?.home?.layout_preset;
-  if (preset && preset !== 'custom' && HOME_LAYOUT_PRESETS[preset]) {
-    return HOME_LAYOUT_PRESETS[preset];
-  }
-  return {
-    order: getOrderedHomeSections(config),
-    sizes: HOME_LAYOUT_PRESETS.grid.sizes,
-  };
 }
 
 function getHiddenHomeSections(config: StrategyConfig): HomeSectionKey[] {
@@ -991,7 +928,7 @@ ${generateDesignTokenCSS(tokens)}
     z-index: 2;
     display: flex;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
   .env-title {
     font: inherit;
@@ -1003,11 +940,11 @@ ${generateDesignTokenCSS(tokens)}
     flex: 1;
     min-height: 0;
     display: grid;
-    grid-template-columns: repeat(2, minmax(150px, 220px));
-    grid-auto-rows: minmax(64px, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 180px));
+    grid-auto-rows: minmax(68px, 1fr);
     justify-content: start;
     align-content: start;
-    gap: 12px;
+    gap: 10px;
   }
   .env-grid > .hdp-card-slot {
     min-width: 0;
@@ -1018,9 +955,6 @@ ${generateDesignTokenCSS(tokens)}
   .env-grid > .hdp-card-slot[data-card-slot-size="lg"],
   .env-grid > .hdp-card-slot[data-card-slot-size="tall"] { grid-column: span 2; }
   .env-grid > .hdp-card-slot[data-card-slot-size="wide"] { grid-column: 1 / -1; }
-  .hdp-card-slot[data-card-slot="home.environment"][data-card-slot-size="wide"] .env-grid {
-    grid-template-columns: repeat(4, minmax(150px, 220px));
-  }
   .env-item {
     appearance: none;
     font: inherit;
@@ -1033,7 +967,7 @@ ${generateDesignTokenCSS(tokens)}
     background: var(--hdp-surface-card, var(--hdp-card-bg));
     color: inherit;
     border-radius: var(--hdp-radius);
-    padding: 14px;
+    padding: 12px;
     border: 1px solid var(--hdp-border);
     transition: all 0.2s ease;
     cursor: default;
@@ -1049,12 +983,12 @@ ${generateDesignTokenCSS(tokens)}
     outline-offset: 2px;
   }
   .env-icon {
-    width: 36px; height: 36px;
+    width: 42px; height: 42px;
     border-radius: var(--hdp-radius-sm);
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
   }
-  .env-icon svg { width: 18px; height: 18px; }
+  .env-icon svg { width: 21px; height: 21px; }
   .env-icon--temp { background: var(--hdp-danger-light); color: var(--hdp-danger); }
   .env-icon--hum { background: var(--hdp-info-light); color: var(--hdp-info); }
   .env-icon--sec { background: var(--hdp-success-light); color: var(--hdp-success); }
@@ -1066,7 +1000,7 @@ ${generateDesignTokenCSS(tokens)}
   }
   .env-val {
     font: inherit;
-    font-size: 18px;
+    font-size: 19px;
     font-weight: 700;
     color: var(--hdp-text);
     line-height: 1.2;
@@ -1554,8 +1488,7 @@ ${generateDesignTokenCSS(tokens)}
     min-height: 0;
     padding: 12px;
     box-sizing: border-box;
-    overflow: auto;
-    overscroll-behavior: contain;
+    overflow: visible;
   }
   .sum-hdr {
     display: flex;
@@ -1570,7 +1503,8 @@ ${generateDesignTokenCSS(tokens)}
   }
   .sum-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-rows: minmax(82px, 1fr);
     gap: 10px;
   }
   .sum-grid > .hdp-card-slot {
@@ -1592,8 +1526,8 @@ ${generateDesignTokenCSS(tokens)}
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: 14px 8px;
+    gap: 4px;
+    padding: 10px 8px;
     border-radius: var(--hdp-radius);
     background: var(--hdp-surface-card, var(--hdp-card-bg));
     border: 1px solid var(--hdp-border);
@@ -1613,14 +1547,14 @@ ${generateDesignTokenCSS(tokens)}
     outline-offset: 2px;
   }
   .sum-icon {
-    width: 32px; height: 32px;
+    width: 28px; height: 28px;
     display: flex; align-items: center; justify-content: center;
     color: var(--hdp-text-muted);
   }
-  .sum-icon svg { width: 20px; height: 20px; }
+  .sum-icon svg { width: 19px; height: 19px; }
   .sum-val {
     font: inherit;
-    font-size: 20px;
+    font-size: 19px;
     font-weight: 700;
     color: var(--hdp-text);
     line-height: 1;
@@ -1653,6 +1587,9 @@ ${generateDesignTokenCSS(tokens)}
     font: inherit;
     font-size: 12px;
     color: var(--hdp-text-muted);
+  }
+  @media (max-width: 420px) {
+    .sum-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 </style>
 <div class="sum-card">

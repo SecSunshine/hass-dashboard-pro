@@ -116,12 +116,12 @@ describe('layout card', () => {
 
     expect(card.content).toContain('data-area="kitchen&#39;bad" data-view="kitchen&#39;bad" data-action="show-view"');
     expect(card.content).not.toContain("hdpShowView('kitchen'bad')");
-    expect(card.content).toContain('function findView(viewId)');
-    expect(card.content).toContain('hdpShowView(initialView, true);');
-    expect(card.content).toContain('window.hdpShowView = function(viewId, skipHistory)');
+    expect(card.content).toContain('function findView(viewRoot, viewId)');
+    expect(card.content).toContain('hdpShowView(initialView, true, root);');
+    expect(card.content).toContain('window.hdpShowView = function(viewId, skipHistory, preferredRoot)');
   });
 
-  it('applies the selected home layout preset to the home content grid', () => {
+  it('uses one editable home grid and ignores legacy layout presets', () => {
     const card = buildLayoutCard({
       hass,
       config: {
@@ -138,8 +138,9 @@ describe('layout card', () => {
       blueprintPages: [],
     });
 
-    expect(card.content).toContain('class="hdp-home-content hdp-home-content--l_shape"');
-    expect(card.content).toContain('data-layout-preset="l_shape"');
+    expect(card.content).toContain('<div class="hdp-home-content">');
+    expect(card.content).not.toContain('hdp-home-content--l_shape');
+    expect(card.content).not.toContain('data-layout-preset');
   });
 
   it('exports dashboard filters for runtime popups', () => {

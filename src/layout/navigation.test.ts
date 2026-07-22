@@ -7,7 +7,7 @@ describe('dashboard navigation script', () => {
 
     expect(js).toContain('var initialView = params.get(\'hdp_area\') || "devices";');
     expect(js).toContain('if (viewId === "devices")');
-    expect(js).toContain('window.hdpShowView(initialView, true);');
+    expect(js).toContain('window.hdpShowView(initialView, true, root);');
     expect(js).toContain('window.history.pushState');
   });
 
@@ -83,6 +83,69 @@ describe('dashboard navigation script', () => {
     click({ 'data-action': 'toggle-dashboard-fullscreen' });
 
     expect(calls).toEqual(['view:living', 'close-sheet', 'toggle-sheet', 'ha-menu', 'fullscreen']);
+  });
+
+  it('routes global view changes to the visible dashboard instance', () => {
+    const makeView = (view: string) => ({
+      view,
+      style: { display: '' },
+      getAttribute: (name: string) => name === 'data-view' ? view : null,
+    });
+    const hiddenHome = makeView('home');
+    const hiddenLiving = makeView('living');
+    const visibleHome = makeView('home');
+    const visibleLiving = makeView('living');
+    const makeRoot = (visible: boolean, views: any[]) => ({
+      classList: { contains: () => false, toggle: () => {} },
+      style: { setProperty: () => {} },
+      setAttribute: () => {},
+      getBoundingClientRect: () => ({ top: 0, width: visible ? 900 : 0, height: visible ? 700 : 0 }),
+      contains: () => true,
+      querySelectorAll: (selector: string) => selector === '.hdp-view' ? views : [],
+      querySelector: (selector: string) => {
+        const match = selector.match(/data-view="([^"]+)"/);
+        return match ? views.find(item => item.view === match[1]) || null : null;
+      },
+      addEventListener: () => {},
+    });
+    const hiddenRoot = makeRoot(false, [hiddenHome, hiddenLiving]);
+    const visibleRoot = makeRoot(true, [visibleHome, visibleLiving]);
+    const documentStub = {
+      fullscreenElement: null,
+      getElementById: (id: string) => id === 'hdp-root' ? hiddenRoot : null,
+      querySelectorAll: (selector: string) => selector === '[id="hdp-root"]' ? [hiddenRoot, visibleRoot] : [],
+      addEventListener: () => {},
+    };
+    const windowStub: Record<string, any> = {
+      innerHeight: 900,
+      innerWidth: 1400,
+      location: { search: '', href: 'http://localhost/dashboard' },
+      history: { pushState: () => {} },
+      addEventListener: () => {},
+      dispatchEvent: () => {},
+    };
+
+    new Function(
+      'window',
+      'document',
+      'localStorage',
+      'URL',
+      'URLSearchParams',
+      'CustomEvent',
+      buildNavigationScript(),
+    )(
+      windowStub,
+      documentStub,
+      { getItem: () => null, setItem: () => {} },
+      URL,
+      URLSearchParams,
+      function CustomEventStub() {},
+    );
+
+    windowStub.hdpShowView('living', true);
+
+    expect(visibleHome.style.display).toBe('none');
+    expect(visibleLiving.style.display).toBe('');
   });
 
   it('enters dashboard fullscreen before browser fullscreen and exits both', async () => {

@@ -1485,7 +1485,8 @@ function hdpInitEntityClickHandlers() {
       e.stopPropagation();
       return;
     }
-    if (domainControl && hdpIsNativeInteractiveControl(domainControl)) {
+    if (domainControl && hdpIsNativeInteractiveControl(domainControl) &&
+        (hdpClosestFromEvent(e, '[data-entity]') || hdpClosestFromEvent(e, '[data-no-toggle]'))) {
       e.stopPropagation();
       return;
     }

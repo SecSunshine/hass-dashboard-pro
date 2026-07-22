@@ -607,7 +607,7 @@ function buildSlotEditPanel(slotId: string, slot?: CardSlotConfig, defaultSize: 
     ? `<button type="button" title="删除新增卡片" aria-label="删除新增卡片" data-card-edit-action="reset" data-slot-id="${slotAttr}">删</button>`
     : `<button type="button" title="恢复默认" aria-label="恢复默认卡片" data-card-edit-action="reset" data-slot-id="${slotAttr}">↺</button>`;
   return `<div class="hdp-slot-edit-panel" data-slot-edit-panel="${escapeAttribute(slotId)}">
-    <select aria-label="卡片大小" title="预设尺寸" data-card-edit-action="size" data-slot-id="${slotAttr}">
+    <select name="hdp_card_size_${slotAttr}" aria-label="卡片大小" title="预设尺寸" data-card-edit-action="size" data-slot-id="${slotAttr}">
       ${sizeOptions}
     </select>
     <button type="button" title="拖动调整位置" aria-label="拖动调整位置" data-card-edit-action="drag" data-slot-id="${slotAttr}">拖</button>
@@ -983,7 +983,6 @@ function hdpInitCardSlotDragging(root) {
       var resize = pointerResize;
       if (!resize.live && (e.clientX !== resize.startX || e.clientY !== resize.startY)) {
         resize.live = true;
-        hdpEnableCustomHomeLayout();
       }
       var columns = Math.max(1, Math.min(4, Math.round((resize.startWidth + (e.clientX - resize.startX) + resize.gap) / (resize.columnWidth + resize.gap))));
       var rows = Math.max(1, Math.min(6, Math.round((resize.startHeight + (e.clientY - resize.startY) + resize.gap) / (resize.rowHeight + resize.gap))));
@@ -1051,19 +1050,6 @@ window.hdpSetCardSlotSize = function(slotId, size) {
   }
 };
 
-function hdpEnableCustomHomeLayout() {
-  var draft = hdpGetCardEditDraft();
-  if (!draft.home || typeof draft.home !== 'object' || Array.isArray(draft.home)) draft.home = {};
-  draft.home.layout_preset = 'custom';
-  var home = document.querySelector('.hdp-home-content');
-  if (!home || !home.classList) return;
-  ['grid', 'rows', 'l_shape', 'l_mirror', 'u_shape'].forEach(function(preset) {
-    home.classList.remove('hdp-home-content--' + preset);
-  });
-  home.classList.add('hdp-home-content--custom');
-  home.setAttribute('data-layout-preset', 'custom');
-}
-
 window.hdpSetCardSlotGridSpan = function(slotId, columns, rows) {
   var slot = hdpEnsureCardSlot(slotId);
   var currentColumns = parseInt(slot.grid_columns, 10);
@@ -1074,7 +1060,6 @@ window.hdpSetCardSlotGridSpan = function(slotId, columns, rows) {
   if (rows != null) currentRows = Math.max(1, Math.min(6, Math.round(Number(rows) || 1)));
   slot.grid_columns = currentColumns;
   slot.grid_rows = currentRows;
-  hdpEnableCustomHomeLayout();
   hdpMarkCardDraftDirty();
   var wrapper = hdpGetSlotWrapper(slotId);
   if (!wrapper || !wrapper.style) return;
@@ -1150,6 +1135,19 @@ function hdpDismissExistingCardSlotModals() {
   ['hdp-hidden-slots-modal', 'hdp-slot-editor-modal', 'hdp-add-card-modal'].forEach(function(id) {
     hdpDismissCardSlotModal(document.getElementById(id));
   });
+}
+
+function hdpClosestCardSlotModalAction(e, modal) {
+  if (e && e.target && e.target.closest) {
+    var direct = e.target.closest('[data-action]');
+    if (direct && (!modal.contains || modal.contains(direct))) return direct;
+  }
+  var path = e && typeof e.composedPath === 'function' ? e.composedPath() : [];
+  for (var i = 0; i < path.length; i++) {
+    if (path[i] === modal) break;
+    if (path[i] && path[i].matches && path[i].matches('[data-action]')) return path[i];
+  }
+  return null;
 }
 
 function hdpBindCardSlotModal(modal, focusTarget, cleanup) {
@@ -1316,11 +1314,11 @@ window.hdpOpenAddCard = function() {
   modal.innerHTML =
     '<div class="hdp-slot-editor-dialog hdp-add-card-dialog" role="dialog" aria-modal="true">' +
       '<div class="hdp-slot-editor-head"><div class="hdp-slot-editor-title">新增或替换卡片</div><button type="button" data-action="close">×</button></div>' +
-      '<label class="hdp-add-card-field">卡片类型<select id="hdp-add-card-kind"><option value="custom">独立自定义卡片</option><option value="domain">设备类别卡片</option><option value="entity">单个设备卡片</option></select></label>' +
-      '<label class="hdp-add-card-field">标题（可选）<input id="hdp-add-card-title" placeholder="使用默认名称" maxlength="80" /></label>' +
-      '<label class="hdp-add-card-field" id="hdp-add-card-domain-field">设备类别<select id="hdp-add-card-domain">' + domains + '</select></label>' +
-      '<label class="hdp-add-card-field" id="hdp-add-card-entity-field" hidden>设备<input id="hdp-add-card-entity" list="hdp-add-card-entities" placeholder="搜索或输入实体 ID" /><datalist id="hdp-add-card-entities">' + entities + '</datalist></label>' +
-      '<div class="hdp-add-card-grid"><label class="hdp-add-card-field">宽度（1-4）<input id="hdp-add-card-columns" type="number" min="1" max="4" value="2" /></label><label class="hdp-add-card-field">高度（1-6）<input id="hdp-add-card-rows" type="number" min="1" max="6" value="2" /></label></div>' +
+      '<label class="hdp-add-card-field">卡片类型<select id="hdp-add-card-kind" name="hdp_add_card_kind"><option value="custom">独立自定义卡片</option><option value="domain">设备类别卡片</option><option value="entity">单个设备卡片</option></select></label>' +
+      '<label class="hdp-add-card-field">标题（可选）<input id="hdp-add-card-title" name="hdp_add_card_title" placeholder="使用默认名称" maxlength="80" /></label>' +
+      '<label class="hdp-add-card-field" id="hdp-add-card-domain-field">设备类别<select id="hdp-add-card-domain" name="hdp_add_card_domain">' + domains + '</select></label>' +
+      '<label class="hdp-add-card-field" id="hdp-add-card-entity-field" hidden>设备<input id="hdp-add-card-entity" name="hdp_add_card_entity" list="hdp-add-card-entities" placeholder="搜索或输入实体 ID" /><datalist id="hdp-add-card-entities">' + entities + '</datalist></label>' +
+      '<div class="hdp-add-card-grid"><label class="hdp-add-card-field">宽度（1-4）<input id="hdp-add-card-columns" name="hdp_add_card_columns" type="number" min="1" max="4" value="2" /></label><label class="hdp-add-card-field">高度（1-6）<input id="hdp-add-card-rows" name="hdp_add_card_rows" type="number" min="1" max="6" value="2" /></label></div>' +
       '<div class="hdp-add-card-help" id="hdp-add-card-help">创建一张独立的 HTML Pro Card，可自由设置大小、位置、背景图和 YAML。</div>' +
       '<div class="hdp-slot-editor-actions"><button type="button" data-action="close">取消</button><button type="button" class="hdp-primary" data-action="create">创建卡片</button></div>' +
     '</div>';
@@ -1346,8 +1344,10 @@ window.hdpOpenAddCard = function() {
   updateFields();
   var close = hdpBindCardSlotModal(modal, kind);
   modal.addEventListener('click', function(e) {
-    var action = e.target && e.target.getAttribute && e.target.getAttribute('data-action');
-    if (e.target === modal || action === 'close') { close(); return; }
+    var control = hdpClosestCardSlotModalAction(e, modal);
+    var action = control && control.getAttribute('data-action');
+    var eventPath = e && typeof e.composedPath === 'function' ? e.composedPath() : [];
+    if (e.target === modal || eventPath[0] === modal || action === 'close') { close(); return; }
     if (action !== 'create') return;
     var slotId = hdpNextCustomHomeSlotId();
     var slot = hdpEnsureCardSlot(slotId);
@@ -1378,7 +1378,6 @@ window.hdpOpenAddCard = function() {
       }
       slot.entity_id = entityId;
     }
-    hdpEnableCustomHomeLayout();
     hdpMarkCardDraftDirty();
     hdpAppendDraftAddedHomeCard(slotId, slot);
     close();
@@ -1476,7 +1475,7 @@ function hdpOpenSlotEditor(slotId, yaml) {
         '<button type="button" data-template="status-list">状态列表</button>' +
         '<button type="button" data-template="blank">空白</button>' +
       '</div>' +
-      '<div class="hdp-slot-editor-body"><textarea id="hdp-slot-yaml" spellcheck="false"></textarea><div class="hdp-slot-editor-preview" id="hdp-slot-preview"></div></div>' +
+      '<div class="hdp-slot-editor-body"><textarea id="hdp-slot-yaml" name="hdp_slot_yaml" spellcheck="false"></textarea><div class="hdp-slot-editor-preview" id="hdp-slot-preview"></div></div>' +
       '<div class="hdp-slot-editor-actions"><button type="button" data-action="clear">清除自定义</button><span></span><button type="button" data-action="preview">预览</button><button type="button" class="hdp-primary" data-action="save">保存到草稿</button></div>' +
     '</div>';
   hdpPrepareCardSlotModal(modal);
@@ -1740,7 +1739,7 @@ function hdpSanitizeSlotAttributes(rawAttrs) {
   var attrs = [];
   var seenAttrs = {};
   var allowedAttrs = {
-    alt:1, class:1, cx:1, cy:1, d:1, disabled:1, fill:1, height:1, href:1, icon:1, id:1,
+    alt:1, class:1, cx:1, cy:1, d:1, disabled:1, fill:1, height:1, href:1, icon:1, id:1, name:1,
     max:1, min:1, r:1, role:1, rx:1, ry:1, src:1, step:1, stroke:1, 'stroke-linecap':1,
     'stroke-linejoin':1, 'stroke-width':1, style:1, tabindex:1, title:1, type:1, value:1, viewbox:1,
     width:1, x:1, x1:1, x2:1, y:1, y1:1, y2:1, selected:1

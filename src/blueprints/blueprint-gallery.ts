@@ -601,7 +601,7 @@ export function generateBlueprintModalJS(): string {
       fieldsHTML += '<div class="bp-input-row">' +
         '<label class="bp-input-label">' + hdpEscapeHTML(inp.name || key) + '</label>' +
         (inp.description ? '<span class="bp-input-desc">' + hdpEscapeHTML(inp.description) + '</span>' : '') +
-        '<input class="bp-modal-input" data-input-key="' + safeKey + '" value="' + hdpEscapeAttribute(val) + '" placeholder="' + safeKey + '" />' +
+        '<input name="hdp_blueprint_' + safeKey + '" class="bp-modal-input" data-input-key="' + safeKey + '" value="' + hdpEscapeAttribute(val) + '" placeholder="' + safeKey + '" />' +
         '</div>';
     }
 

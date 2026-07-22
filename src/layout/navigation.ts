@@ -24,11 +24,22 @@ export function buildNavigationScript(defaultView = 'home'): string {
   var hdpFallbackFullscreen = false;
   var hdpBrowserFullscreenFailed = false;
 
-  function hdpSyncViewportHeight() {
-    var rect = root.getBoundingClientRect ? root.getBoundingClientRect() : { top: 0 };
-    var fullscreen = root.classList.contains('hdp-root--fullscreen');
+  function hdpGetActiveRoot(preferredRoot) {
+    if (preferredRoot) return preferredRoot;
+    var roots = document.querySelectorAll ? document.querySelectorAll('[id="hdp-root"]') : [];
+    for (var i = 0; i < roots.length; i++) {
+      var rect = roots[i].getBoundingClientRect ? roots[i].getBoundingClientRect() : null;
+      if (rect && rect.width > 0 && rect.height > 0) return roots[i];
+    }
+    return root;
+  }
+
+  function hdpSyncViewportHeight(viewRoot) {
+    viewRoot = viewRoot || root;
+    var rect = viewRoot.getBoundingClientRect ? viewRoot.getBoundingClientRect() : { top: 0 };
+    var fullscreen = viewRoot.classList.contains('hdp-root--fullscreen');
     var available = fullscreen ? window.innerHeight : Math.max(320, window.innerHeight - Math.max(0, rect.top));
-    root.style.setProperty('--hdp-available-height', available + 'px');
+    viewRoot.style.setProperty('--hdp-available-height', available + 'px');
   }
 
   function hdpClampSidebarWidth(width) {
@@ -40,8 +51,8 @@ export function buildNavigationScript(defaultView = 'home'): string {
   var params = new URLSearchParams(window.location.search);
   var initialView = params.get('hdp_area') || ${defaultViewJSON};
 
-  function findView(viewId) {
-    var views = root.querySelectorAll('.hdp-view');
+  function findView(viewRoot, viewId) {
+    var views = viewRoot.querySelectorAll('.hdp-view');
     for (var i = 0; i < views.length; i++) {
       if (views[i].getAttribute('data-view') === viewId) return views[i];
     }
@@ -49,20 +60,21 @@ export function buildNavigationScript(defaultView = 'home'): string {
   }
 
   // Show a view by ID
-  window.hdpShowView = function(viewId, skipHistory) {
+  window.hdpShowView = function(viewId, skipHistory, preferredRoot) {
+    var viewRoot = hdpGetActiveRoot(preferredRoot);
     viewId = typeof viewId === 'string' && viewId ? viewId : 'home';
     // Hide all views
-    var views = root.querySelectorAll('.hdp-view');
+    var views = viewRoot.querySelectorAll('.hdp-view');
     for (var i = 0; i < views.length; i++) {
       views[i].style.display = 'none';
     }
     // Show target view
-    var target = findView(viewId);
+    var target = findView(viewRoot, viewId);
     if (target) {
       target.style.display = '';
     } else {
       // Fallback to home
-      var home = root.querySelector('.hdp-view[data-view="home"]');
+      var home = viewRoot.querySelector('.hdp-view[data-view="home"]');
       if (home) home.style.display = '';
     }
 
@@ -78,14 +90,14 @@ export function buildNavigationScript(defaultView = 'home'): string {
     }
 
     // Update sidebar active states
-    updateActiveStates(viewId);
-    hdpSyncViewportHeight();
+    updateActiveStates(viewRoot, viewId);
+    hdpSyncViewportHeight(viewRoot);
   };
 
   // Update active button highlighting
-  function updateActiveStates(viewId) {
+  function updateActiveStates(viewRoot, viewId) {
     // Sidebar nav buttons
-    var navBtns = root.querySelectorAll('.sb-nav-btn');
+    var navBtns = viewRoot.querySelectorAll('.sb-nav-btn');
     for (var i = 0; i < navBtns.length; i++) {
       var btn = navBtns[i];
       var btnView = btn.getAttribute('data-view');
@@ -96,7 +108,7 @@ export function buildNavigationScript(defaultView = 'home'): string {
       }
     }
     // Area buttons
-    var areaBtns = root.querySelectorAll('.sb-area-btn');
+    var areaBtns = viewRoot.querySelectorAll('.sb-area-btn');
     for (var i = 0; i < areaBtns.length; i++) {
       var btn = areaBtns[i];
       if (btn.getAttribute('data-area') === viewId) {
@@ -106,7 +118,7 @@ export function buildNavigationScript(defaultView = 'home'): string {
       }
     }
     // Bottom nav buttons
-    var bnBtns = root.querySelectorAll('.bn-btn');
+    var bnBtns = viewRoot.querySelectorAll('.bn-btn');
     for (var i = 0; i < bnBtns.length; i++) {
       var btn = bnBtns[i];
       var btnView = btn.getAttribute('data-view');
@@ -120,20 +132,21 @@ export function buildNavigationScript(defaultView = 'home'): string {
 
   // Handle browser back/forward
   window.addEventListener('popstate', function() {
+    var viewRoot = hdpGetActiveRoot();
     var params = new URLSearchParams(window.location.search);
     var viewId = params.get('hdp_area') || ${defaultViewJSON};
     // Direct show without pushState
-    var views = root.querySelectorAll('.hdp-view');
+    var views = viewRoot.querySelectorAll('.hdp-view');
     for (var i = 0; i < views.length; i++) {
       views[i].style.display = 'none';
     }
-    var target = findView(viewId);
+    var target = findView(viewRoot, viewId);
     if (target) target.style.display = '';
     else {
-      var home = root.querySelector('.hdp-view[data-view="home"]');
+      var home = viewRoot.querySelector('.hdp-view[data-view="home"]');
       if (home) home.style.display = '';
     }
-    updateActiveStates(viewId);
+    updateActiveStates(viewRoot, viewId);
   });
 
   // Sidebar Resize
@@ -240,7 +253,7 @@ export function buildNavigationScript(defaultView = 'home'): string {
       var viewId = control.getAttribute('data-view') || control.getAttribute('data-area');
       if (!viewId) return;
       e.preventDefault();
-      window.hdpShowView(viewId);
+      window.hdpShowView(viewId, false, root);
       if (control.getAttribute('data-close-sheet') === 'true') window.hdpCloseSheet();
     } else if (action === 'toggle-bottom-sheet') {
       e.preventDefault();
@@ -344,9 +357,9 @@ export function buildNavigationScript(defaultView = 'home'): string {
 
   // Initialize
   hdpSyncViewportHeight();
-  window.addEventListener('resize', hdpSyncViewportHeight);
-  window.addEventListener('orientationchange', hdpSyncViewportHeight);
-  window.hdpShowView(initialView, true);
+  window.addEventListener('resize', function() { hdpSyncViewportHeight(root); });
+  window.addEventListener('orientationchange', function() { hdpSyncViewportHeight(root); });
+  window.hdpShowView(initialView, true, root);
 
   // Initialize entity click handlers (toggle entities by clicking cards)
   if (typeof hdpInitEntityClickHandlers === 'function') {

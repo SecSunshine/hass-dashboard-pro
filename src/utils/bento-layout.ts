@@ -94,67 +94,10 @@ export function generateBentoCSS(): string {
     height: 100%;
   }
 
-  /* ── Home Layout Presets ── */
-  .hdp-home-content--custom .hdp-bento[data-hdp-bento-custom="true"] {
+  /* Explicit card spans are the only home layout override. */
+  .hdp-home-content .hdp-bento[data-hdp-bento-custom="true"] {
     grid-column: span var(--hdp-bento-column-span) !important;
     grid-row: span var(--hdp-bento-row-span) !important;
-  }
-
-  .hdp-home-content--rows .hdp-bento {
-    grid-column: 1 / -1;
-    grid-row: span 1;
-  }
-
-  /* L: welcome banner, environment/power feature column, then one bottom row. */
-  .hdp-home-content--l_shape > .hdp-bento[data-hdp-slot="home.welcome"],
-  .hdp-home-content--l_mirror > .hdp-bento[data-hdp-slot="home.welcome"] {
-    grid-column: 1 / -1;
-    grid-row: 1 / span 2;
-  }
-  .hdp-home-content--l_shape > .hdp-bento[data-hdp-slot="home.environment"] {
-    grid-column: 1 / span 2;
-    grid-row: 3 / span 2;
-  }
-  .hdp-home-content--l_shape > .hdp-bento[data-hdp-slot="home.power_usage"] {
-    grid-column: 1 / span 2;
-    grid-row: 5 / span 2;
-  }
-  .hdp-home-content--l_mirror > .hdp-bento[data-hdp-slot="home.environment"] {
-    grid-column: 3 / span 2;
-    grid-row: 3 / span 2;
-  }
-  .hdp-home-content--l_mirror > .hdp-bento[data-hdp-slot="home.power_usage"] {
-    grid-column: 3 / span 2;
-    grid-row: 5 / span 2;
-  }
-  .hdp-home-content--l_shape > .hdp-bento:is(
-    [data-hdp-slot="home.status_badges"],
-    [data-hdp-slot="home.people"],
-    [data-hdp-slot="home.favorites"],
-    [data-hdp-slot="home.summary"]
-  ),
-  .hdp-home-content--l_mirror > .hdp-bento:is(
-    [data-hdp-slot="home.status_badges"],
-    [data-hdp-slot="home.people"],
-    [data-hdp-slot="home.favorites"],
-    [data-hdp-slot="home.summary"]
-  ) {
-    grid-column: span 1;
-    grid-row: 7 / span 2;
-  }
-
-  .hdp-home-content--u_shape .hdp-bento:nth-child(1),
-  .hdp-home-content--u_shape .hdp-bento:nth-child(6) {
-    grid-column: 1 / -1;
-  }
-  .hdp-home-content--u_shape .hdp-bento:nth-child(2),
-  .hdp-home-content--u_shape .hdp-bento:nth-child(5) {
-    grid-column: span 1;
-    grid-row: span 2;
-  }
-  .hdp-home-content--u_shape .hdp-bento:nth-child(3),
-  .hdp-home-content--u_shape .hdp-bento:nth-child(4) {
-    grid-column: span 2;
   }
 
   /* ── Non-bento children span full width (settings, blueprints, etc.) ── */
@@ -172,20 +115,9 @@ export function generateBentoCSS(): string {
     .hdp-bento--lg   { grid-column: span 2; grid-row: span 2; }
     .hdp-bento--wide { grid-column: span 2; grid-row: span 1; }
     .hdp-bento--tall { grid-column: span 1; grid-row: span 2; }
-    .hdp-home-content--l_shape > .hdp-bento[data-hdp-slot],
-    .hdp-home-content--l_mirror > .hdp-bento[data-hdp-slot],
-    .hdp-home-content--u_shape .hdp-bento {
-      grid-column: span 2;
-      grid-row: span 1;
-    }
-    .hdp-home-content--custom .hdp-bento[data-hdp-bento-custom="true"] {
+    .hdp-home-content .hdp-bento[data-hdp-bento-custom="true"] {
       grid-column: span var(--hdp-bento-tablet-column-span) !important;
       grid-row: span var(--hdp-bento-row-span) !important;
-    }
-    .hdp-home-content--l_shape > .hdp-bento[data-hdp-slot="home.welcome"],
-    .hdp-home-content--l_mirror > .hdp-bento[data-hdp-slot="home.welcome"] {
-      grid-column: span 2;
-      grid-row: span 2;
     }
   }
 
@@ -193,6 +125,7 @@ export function generateBentoCSS(): string {
   @media (max-width: 639px) {
     .hdp-home-content {
       grid-template-columns: minmax(0, 1fr);
+      grid-auto-rows: auto;
     }
     .hdp-area-content {
       grid-template-columns: minmax(0, 1fr);
@@ -205,16 +138,9 @@ export function generateBentoCSS(): string {
       grid-column: span 1;
       grid-row: span 1;
     }
-    .hdp-home-content--custom .hdp-bento[data-hdp-bento-custom="true"] {
+    .hdp-home-content .hdp-bento[data-hdp-bento-custom="true"] {
       grid-column: span 1 !important;
       grid-row: span 1 !important;
-    }
-    .hdp-home-content--l_shape > .hdp-bento[data-hdp-slot],
-    .hdp-home-content--l_mirror > .hdp-bento[data-hdp-slot],
-    .hdp-home-content--u_shape .hdp-bento,
-    .hdp-home-content--rows .hdp-bento {
-      grid-column: span 1;
-      grid-row: span 1;
     }
   }
   `;

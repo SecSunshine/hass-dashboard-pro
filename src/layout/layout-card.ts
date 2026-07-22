@@ -54,7 +54,6 @@ export function buildLayoutCard(opts: LayoutCardOptions): LovelaceCardConfig {
 
   const title = config.hdp_config?.dashboard?.name || config.sidebar_title || config.title || '智能家居';
   const hiddenAreas = getConfiguredHiddenAreas(config);
-  const homeLayoutPreset = sanitizeHomeLayoutPreset(getEffectiveHDPConfig(config)?.home?.layout_preset);
   const dashboardBackground = escapeURLAttribute(config.hdp_config?.dashboard?.background_image_url || '');
   const dashboardStyle = dashboardBackground
     ? ` style="--hdp-dashboard-bg-image: url(${escapeInlineStyleValue(dashboardBackground)});"`
@@ -234,7 +233,7 @@ ${generateDesignTokenCSS(tokens)}
   <main class="hdp-main">
     <div class="hdp-view" data-view="home">
       ${homeEditBarHTML}
-      <div class="hdp-home-content hdp-home-content--${escapeAttribute(homeLayoutPreset)}" data-layout-preset="${escapeAttribute(homeLayoutPreset)}">${homeHTML}</div>
+      <div class="hdp-home-content">${homeHTML}</div>
     </div>
     <div class="hdp-view" data-view="devices" style="display:none">
       <div class="hdp-area-header-bar">
@@ -268,10 +267,4 @@ ${buildNavigationScript(opts.initialView || 'home')}
     do_not_parse: true,
     content,
   };
-}
-
-function sanitizeHomeLayoutPreset(value: unknown): string {
-  return typeof value === 'string' && ['grid', 'rows', 'l_shape', 'l_mirror', 'u_shape', 'custom'].includes(value)
-    ? value
-    : 'grid';
 }

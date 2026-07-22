@@ -123,6 +123,7 @@ describe('devices view', () => {
     expect(html).toContain('.dv-grid');
     expect(html).toContain('padding: 8px;');
     expect(html).toContain('.dv-grid > .hdp-card-slot');
+    expect(html).toContain('.dv-grid > .hdp-card-slot[data-card-slot^="entity.media_player."]');
     expect(html).toContain('overflow: visible;');
     expect(html).toContain('min-width: 0');
     expect(html).toContain('flex: 0 1 45%');
@@ -156,6 +157,38 @@ describe('devices view', () => {
     expect(html).toContain('dv-section-chevron');
     expect(html).toContain('aria-hidden="true">⌄</span>');
     expect(html).not.toMatch(/<details class="dv-section"[^>]* open/);
+  });
+
+  it('gives media player sections and controls enough space', () => {
+    const mediaHass: Hass = {
+      ...hass,
+      states: {
+        ...hass.states,
+        'media_player.living_room': {
+          entity_id: 'media_player.living_room',
+          state: 'playing',
+          attributes: { friendly_name: 'Living Room Player', volume_level: 0.4 },
+          last_changed: '',
+          last_updated: '',
+        },
+      },
+      entities: {
+        ...hass.entities,
+        'media_player.living_room': {
+          entity_id: 'media_player.living_room',
+          device_id: null,
+          area_id: 'kitchen',
+          platform: 'demo',
+          disabled_by: null,
+          hidden_by: null,
+        },
+      },
+    };
+    const html = buildDevicesHTML(mediaHass, { type: 'custom:hass-dashboard-pro' });
+
+    expect(html).toMatch(/hdp-bento hdp-bento--wide[^>]*>[\s\S]*data-card-slot="device\.domain\.media_player"/);
+    expect(html).toContain('dvc dc-media dc-control-card');
+    expect(html).toContain('data-card-slot="entity.media_player.living_room"');
   });
 
   it('generates status-badge navigation helpers for device domains', () => {

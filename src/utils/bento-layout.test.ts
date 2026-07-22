@@ -8,6 +8,7 @@ describe('bento layout css', () => {
     expect(css).toContain('grid-template-columns: repeat(4, minmax(0, 1fr))');
     expect(css).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))');
     expect(css).toContain('grid-template-columns: minmax(0, 1fr)');
+    expect(css).toMatch(/@media \(max-width: 639px\)[\s\S]*\.hdp-home-content \{[\s\S]*grid-auto-rows: auto;/);
     expect(css).toContain('min-width: 0');
     expect(css).toContain('box-sizing: border-box');
     expect(css).toContain('grid-auto-rows: var(--hdp-density-row-height, 120px)');
@@ -19,22 +20,17 @@ describe('bento layout css', () => {
     grid-row: auto;`);
     expect(css).not.toContain('grid-template-columns: repeat(4, 1fr)');
     expect(css).not.toContain('grid-template-columns: repeat(2, 1fr)');
-    expect(css).toContain('.hdp-home-content--custom .hdp-bento[data-hdp-bento-custom="true"]');
+    expect(css).toContain('.hdp-home-content .hdp-bento[data-hdp-bento-custom="true"]');
   });
 
-  it('defines L layouts as a top banner, vertical feature column, and bottom row', () => {
+  it('does not include topology preset branches', () => {
     const css = generateBentoCSS();
 
-    expect(css).toContain('.hdp-home-content--l_shape > .hdp-bento[data-hdp-slot="home.welcome"]');
-    expect(css).toContain('grid-column: 1 / -1;');
-    expect(css).toContain('.hdp-home-content--l_shape > .hdp-bento[data-hdp-slot="home.environment"]');
-    expect(css).toContain('.hdp-home-content--l_shape > .hdp-bento[data-hdp-slot="home.power_usage"]');
-    expect(css).toContain('grid-row: 3 / span 2;');
-    expect(css).toContain('grid-row: 5 / span 2;');
-    expect(css).toContain('[data-hdp-slot="home.summary"]');
-    expect(css).toContain('grid-row: 7 / span 2;');
-    expect(css).not.toContain('.hdp-home-content--l_shape .hdp-bento:nth-child');
-    expect(css).toContain('.hdp-home-content--l_shape > .hdp-bento[data-hdp-slot],');
+    expect(css).not.toContain('hdp-home-content--rows');
+    expect(css).not.toContain('hdp-home-content--l_shape');
+    expect(css).not.toContain('hdp-home-content--l_mirror');
+    expect(css).not.toContain('hdp-home-content--u_shape');
+    expect(css).not.toContain('hdp-home-content--custom');
   });
 
   it('uses compact fixed home tracks without applying them to content-driven pages', () => {

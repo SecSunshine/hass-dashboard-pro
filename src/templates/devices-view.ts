@@ -69,7 +69,7 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
   const cs = tokens?.card_sizes;
   const slottedSections: SlottedCard[] = sorted.map(([domain, entities], index) => {
     const sectionHTML = buildDomainSection(domain, entities, skin, hass, config, false);
-    const defaultSize = entities.length <= 4 ? 'md' : 'wide';
+    const defaultSize = domain === 'media_player' || entities.length > 4 ? 'wide' : 'md';
     return resolveSlottedCard(
       config,
       `device.domain.${domain}`,
@@ -224,6 +224,10 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
     overflow: visible;
     padding: 2px;
   }
+  .dv-grid > .hdp-card-slot[data-card-slot^="entity.media_player."] {
+    grid-column: span 2;
+    min-width: 0;
+  }
   @media (max-width: 1100px) {
     .dv-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
@@ -232,6 +236,7 @@ export function buildDevicesHTML(hass: Hass, config: StrategyConfig, tokens?: Re
   }
   @media (max-width: 480px) {
     .dv-grid { grid-template-columns: minmax(0, 1fr); }
+    .dv-grid > .hdp-card-slot[data-card-slot^="entity.media_player."] { grid-column: span 1; }
   }
   .dv-empty {
     text-align: center;
