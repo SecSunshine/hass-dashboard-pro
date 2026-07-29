@@ -554,6 +554,10 @@ describe('settings view', () => {
     expect(js).toContain('function hdpNormalizeBlueprints(value)');
     expect(js).toContain('function hdpSanitizeLayoutDensity(value)');
     expect(js).toContain('function hdpNormalizeCardSizes(value)');
+    expect(js).toContain('function hdpNormalizeFreeformRect(value)');
+    expect(js).toContain('function hdpNormalizeCardLayout(value)');
+    expect(js).toContain('if (desktopRect) normalized.freeform.desktop = desktopRect;');
+    expect(js).toContain('layout: hdpNormalizeCardLayout(normalized.cards.layout)');
     expect(js).toContain('function hdpNormalizeSkinMap(value)');
     expect(js).toContain('function hdpNormalizeTimeMoods(value)');
     expect(js).toContain('var config = hdpNormalizeHDPConfig(hdpApplyEntityMapping(bundle.hdp_config || {}, mapping.mapping)) || {};');

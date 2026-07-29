@@ -138,9 +138,41 @@ describe('layout card', () => {
       blueprintPages: [],
     });
 
-    expect(card.content).toContain('<div class="hdp-home-content">');
+    expect(card.content).toContain('<div class="hdp-home-content" data-hdp-layout-mode="grid">');
     expect(card.content).not.toContain('hdp-home-content--l_shape');
     expect(card.content).not.toContain('data-layout-preset');
+  });
+
+  it('renders persisted freeform canvas heights before runtime initialization', () => {
+    const card = buildLayoutCard({
+      hass,
+      config: {
+        type: 'custom:hass-dashboard-pro',
+        hdp_config: {
+          cards: {
+            layout: { mode: 'freeform' },
+            slots: {
+              'home.welcome': {
+                freeform: {
+                  desktop: { x: 20, y: 40, width: 500, height: 240 },
+                  tablet: { x: 10, y: 300, width: 420, height: 180 },
+                },
+              },
+            },
+          },
+        } as any,
+      },
+      homeHTML: '',
+      areaSections: [],
+      devicesHTML: '',
+      settingsHTML: '',
+      areaSummaries: [],
+      blueprintPages: [],
+    });
+
+    expect(card.content).toContain('data-hdp-layout-mode="freeform"');
+    expect(card.content).toContain('--hdp-freeform-canvas-height:320px');
+    expect(card.content).toContain('--hdp-freeform-tablet-canvas-height:492px');
   });
 
   it('exports dashboard filters for runtime popups', () => {

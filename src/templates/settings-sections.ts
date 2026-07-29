@@ -1324,6 +1324,32 @@ function hdpNormalizeBlueprints(value) {
   });
 }
 
+function hdpNormalizeFreeformRect(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  var x = Number(value.x);
+  var y = Number(value.y);
+  var width = Number(value.width);
+  var height = Number(value.height);
+  if (!isFinite(x) || !isFinite(y) || !isFinite(width) || !isFinite(height)) return undefined;
+  return {
+    x: Math.max(0, Math.min(8192, Math.round(x))),
+    y: Math.max(0, Math.min(32768, Math.round(y))),
+    width: Math.max(150, Math.min(8192, Math.round(width))),
+    height: Math.max(96, Math.min(32768, Math.round(height)))
+  };
+}
+
+function hdpNormalizeCardLayout(value) {
+  var source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  var snapDistance = Number(source.snap_distance);
+  return {
+    mode: source.mode === 'freeform' ? 'freeform' : 'grid',
+    snap_enabled: source.snap_enabled !== false,
+    snap_distance: isFinite(snapDistance) ? Math.max(0, Math.min(40, Math.round(snapDistance))) : 10,
+    collision_push: source.collision_push !== false
+  };
+}
+
 function hdpNormalizeCardSlots(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
   var allowedSizes = ['sm', 'md', 'lg', 'wide', 'tall'];
@@ -1340,6 +1366,15 @@ function hdpNormalizeCardSlots(value) {
     }
     if (typeof slot.grid_rows === 'number' && isFinite(slot.grid_rows)) {
       normalized.grid_rows = Math.max(1, Math.min(6, Math.round(slot.grid_rows)));
+    }
+    if (slot.freeform && typeof slot.freeform === 'object' && !Array.isArray(slot.freeform)) {
+      var desktopRect = hdpNormalizeFreeformRect(slot.freeform.desktop);
+      var tabletRect = hdpNormalizeFreeformRect(slot.freeform.tablet);
+      if (desktopRect || tabletRect) {
+        normalized.freeform = {};
+        if (desktopRect) normalized.freeform.desktop = desktopRect;
+        if (tabletRect) normalized.freeform.tablet = tabletRect;
+      }
     }
     if (['custom', 'domain', 'entity'].indexOf(slot.kind) >= 0) normalized.kind = slot.kind;
     if (typeof slot.domain === 'string' && /^[a-z_][a-z0-9_]*$/.test(slot.domain)) {
@@ -1441,7 +1476,8 @@ function hdpNormalizeHDPConfig(config) {
   }
   if (normalized.cards && typeof normalized.cards === 'object' && !Array.isArray(normalized.cards)) {
     normalized.cards = Object.assign({}, normalized.cards, {
-      slots: hdpNormalizeCardSlots(normalized.cards.slots)
+      slots: hdpNormalizeCardSlots(normalized.cards.slots),
+      layout: hdpNormalizeCardLayout(normalized.cards.layout)
     });
   }
   return normalized;

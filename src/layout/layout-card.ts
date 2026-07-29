@@ -45,6 +45,19 @@ export interface LayoutCardOptions {
   initialView?: string;
 }
 
+function getInitialFreeformCanvasHeight(config: StrategyConfig, breakpoint: 'desktop' | 'tablet'): number {
+  const slots = Object.values(config.hdp_config?.cards?.slots || {});
+  const bottom = slots.reduce((maximum, slot) => {
+    if (slot.enabled === false) return maximum;
+    const rect = slot.freeform?.[breakpoint];
+    if (!rect) return maximum;
+    const y = Number.isFinite(Number(rect.y)) ? Math.max(0, Number(rect.y)) : 0;
+    const height = Number.isFinite(Number(rect.height)) ? Math.max(96, Number(rect.height)) : 192;
+    return Math.max(maximum, y + height);
+  }, 0);
+  return Math.max(320, Math.ceil(bottom + 12));
+}
+
 /**
  * Build the monolithic layout card.
  */
@@ -71,11 +84,16 @@ export function buildLayoutCard(opts: LayoutCardOptions): LovelaceCardConfig {
     : '';
   const settingsScript = showSettings ? settingsJS || '' : '';
   const cardSlotEditorScript = showSettings ? generateCardSlotEditorJS() : '';
+  const cardLayoutMode = config.hdp_config?.cards?.layout?.mode || 'grid';
+  const homeCanvasStyle = cardLayoutMode === 'freeform'
+    ? ` style="--hdp-freeform-canvas-height:${getInitialFreeformCanvasHeight(config, 'desktop')}px;--hdp-freeform-tablet-canvas-height:${getInitialFreeformCanvasHeight(config, 'tablet')}px;"`
+    : '';
   const buildCardEditBar = (label: string, includeHiddenManagement = false, allowAddCard = false) => showSettings
     ? `<div class="${includeHiddenManagement ? 'hdp-home-edit-bar hdp-card-edit-bar' : 'hdp-card-edit-bar'}" data-editing="false">
       <button type="button" data-action="enter-card-edit">${escapeHTML(label)}</button>
       ${allowAddCard ? '<button type="button" data-action="add-card">新增卡片</button>' : ''}
       ${includeHiddenManagement ? '<button type="button" data-action="manage-hidden-cards">管理隐藏</button>' : ''}
+      ${allowAddCard ? '<button type="button" data-action="toggle-freeform-layout" aria-pressed="false">自由布局</button><button type="button" data-action="toggle-card-snap" aria-pressed="true">磁吸：开</button><button type="button" data-action="align-card-grid">对齐网格</button><button type="button" data-action="auto-arrange-cards">自动整理</button>' : ''}
       <button type="button" class="hdp-primary" data-action="save-card-edits">保存并应用</button>
       <button type="button" data-action="cancel-card-edits">取消</button>
     </div>`
@@ -201,7 +219,11 @@ ${generateDesignTokenCSS(tokens)}
   }
   .hdp-card-edit-bar[data-editing="false"] [data-action="save-card-edits"],
   .hdp-card-edit-bar[data-editing="false"] [data-action="cancel-card-edits"],
-  .hdp-card-edit-bar[data-editing="false"] [data-action="manage-hidden-cards"] {
+  .hdp-card-edit-bar[data-editing="false"] [data-action="manage-hidden-cards"],
+  .hdp-card-edit-bar[data-editing="false"] [data-action="toggle-freeform-layout"],
+  .hdp-card-edit-bar[data-editing="false"] [data-action="toggle-card-snap"],
+  .hdp-card-edit-bar[data-editing="false"] [data-action="align-card-grid"],
+  .hdp-card-edit-bar[data-editing="false"] [data-action="auto-arrange-cards"] {
     display: none;
   }
   .hdp-card-edit-bar[data-editing="true"] [data-action="enter-card-edit"] {
@@ -233,7 +255,7 @@ ${generateDesignTokenCSS(tokens)}
   <main class="hdp-main">
     <div class="hdp-view" data-view="home">
       ${homeEditBarHTML}
-      <div class="hdp-home-content">${homeHTML}</div>
+      <div class="hdp-home-content" data-hdp-layout-mode="${escapeAttribute(cardLayoutMode)}"${homeCanvasStyle}>${homeHTML}<div class="hdp-snap-guide hdp-snap-guide--x" aria-hidden="true"></div><div class="hdp-snap-guide hdp-snap-guide--y" aria-hidden="true"></div></div>
     </div>
     <div class="hdp-view" data-view="devices" style="display:none">
       <div class="hdp-area-header-bar">

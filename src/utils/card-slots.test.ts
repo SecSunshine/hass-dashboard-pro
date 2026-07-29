@@ -456,6 +456,215 @@ describe('card slots', () => {
     expect(windowStub.hdpCardSlotDragReady).toBe(true);
   });
 
+  it('migrates a legacy home grid into desktop and tablet freeform drafts', () => {
+    const draft: any = { cards: { slots: {}, layout: { mode: 'grid' } } };
+    const createStyle = () => {
+      const values: Record<string, string> = {};
+      return {
+        values,
+        setProperty: (name: string, value: string) => { values[name] = value; },
+        removeProperty: (name: string) => { delete values[name]; },
+      };
+    };
+    const homeAttrs: Record<string, string> = { 'data-hdp-layout-mode': 'grid' };
+    const home: any = {
+      children: [] as any[],
+      clientWidth: 1200,
+      style: createStyle(),
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 1200, height: 500 }),
+      getAttribute: (name: string) => homeAttrs[name] || null,
+      setAttribute: (name: string, value: string) => { homeAttrs[name] = value; },
+      querySelector: () => null,
+    };
+    const createWrapper = (slotId: string, left: number, top: number, width: number, height: number) => {
+      const attrs: Record<string, string> = {};
+      const card = { getAttribute: (name: string) => name === 'data-card-slot' ? slotId : null };
+      return {
+        parentNode: home,
+        classList: { contains: (name: string) => name === 'hdp-bento' },
+        style: createStyle(),
+        getBoundingClientRect: () => ({ left, top, width, height }),
+        getAttribute: (name: string) => attrs[name] || null,
+        setAttribute: (name: string, value: string) => { attrs[name] = value; },
+        querySelector: (selector: string) => selector === '[data-card-slot]' ? card : null,
+      };
+    };
+    home.children = [
+      createWrapper('home.welcome', 0, 0, 580, 220),
+      createWrapper('home.summary', 592, 0, 580, 220),
+    ];
+    const documentStub: any = {
+      readyState: 'loading',
+      addEventListener: () => {},
+      querySelector: (selector: string) => selector === '.hdp-home-content' ? home : null,
+      querySelectorAll: () => [],
+      getElementById: () => null,
+    };
+    const windowStub: Record<string, any> = {
+      innerWidth: 1280,
+      hdpGetSettingsDraft: () => draft,
+    };
+    new Function(
+      'window',
+      'document',
+      'localStorage',
+      'Image',
+      'prompt',
+      'confirm',
+      'location',
+      'setTimeout',
+      'clearTimeout',
+      `${generateCardSlotEditorJS()}
+window.testMigrateHomeToFreeform = hdpMigrateHomeToFreeform;
+window.testResizeFreeformRect = hdpResizeFreeformRect;`,
+    )(
+      windowStub,
+      documentStub,
+      { getItem: () => null, setItem: () => {} },
+      function ImageStub() {},
+      () => null,
+      () => false,
+      { reload: () => {} },
+      setTimeout,
+      clearTimeout,
+    );
+
+    windowStub.testMigrateHomeToFreeform(home);
+
+    expect(draft.cards.layout.mode).toBe('freeform');
+    expect(draft.cards.slots['home.welcome'].freeform.desktop).toEqual({ x: 0, y: 0, width: 580, height: 220 });
+    expect(draft.cards.slots['home.welcome'].freeform.tablet).toBeDefined();
+    expect(draft.cards.slots['home.summary'].freeform.tablet.width).toBeLessThanOrEqual(864);
+    expect(homeAttrs['data-hdp-layout-mode']).toBe('freeform');
+    expect(windowStub.testResizeFreeformRect(
+      { x: 100, y: 80, width: 300, height: 200 },
+      50,
+      40,
+      'nw',
+      1000,
+    )).toEqual({ x: 150, y: 120, width: 250, height: 160 });
+  });
+
+  it('persists arbitrary pixel movement and southeast resizing in the draft', () => {
+    const draft: any = {
+      cards: {
+        slots: {
+          'home.summary': {
+            freeform: {
+              desktop: { x: 20, y: 30, width: 300, height: 180 },
+            },
+          },
+        },
+        layout: { mode: 'freeform', snap_enabled: false, collision_push: false },
+      },
+    };
+    const rect = { x: 20, y: 30, width: 300, height: 180 };
+    const style = {
+      setProperty(name: string, value: string) {
+        const numeric = Number.parseFloat(value);
+        if (name === '--hdp-ff-x') rect.x = numeric;
+        if (name === '--hdp-ff-y') rect.y = numeric;
+        if (name === '--hdp-ff-width') rect.width = numeric;
+        if (name === '--hdp-ff-height') rect.height = numeric;
+      },
+      removeProperty: () => {},
+    };
+    const card: any = {
+      parentNode: null,
+      getAttribute: (name: string) => name === 'data-card-slot' ? 'home.summary' : null,
+    };
+    const wrapper: any = {
+      parentNode: null,
+      style,
+      classList: { contains: (name: string) => name === 'hdp-bento', add: () => {}, remove: () => {} },
+      getAttribute: () => null,
+      setAttribute: () => {},
+      removeAttribute: () => {},
+      querySelector: (selector: string) => selector === '[data-card-slot]' ? card : null,
+      getBoundingClientRect: () => ({ left: rect.x, top: rect.y, width: rect.width, height: rect.height }),
+    };
+    card.parentNode = wrapper;
+    const homeAttrs: Record<string, string> = { 'data-hdp-layout-mode': 'freeform' };
+    const home: any = {
+      children: [wrapper],
+      clientWidth: 1000,
+      classList: { contains: (name: string) => name === 'hdp-home-content' },
+      style: { setProperty: () => {}, removeProperty: () => {} },
+      getAttribute: (name: string) => homeAttrs[name] || null,
+      setAttribute: (name: string, value: string) => { homeAttrs[name] = value; },
+      querySelector: () => null,
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 1000, height: 600 }),
+    };
+    wrapper.parentNode = home;
+    const listeners: Record<string, Array<(event: any) => void>> = {};
+    const root: any = {
+      classList: { contains: (name: string) => name === 'hdp-root--card-edit' },
+      addEventListener: (type: string, listener: (event: any) => void) => { (listeners[type] ||= []).push(listener); },
+    };
+    const createHandle = (action: 'drag' | 'resize') => {
+      const handle: any = {
+        getAttribute: (name: string) => name === 'data-card-edit-action'
+          ? action
+          : name === 'data-slot-id'
+            ? 'home.summary'
+            : name === 'data-resize-edge' && action === 'resize' ? 'se' : null,
+        setPointerCapture: () => {},
+        releasePointerCapture: () => {},
+      };
+      handle.closest = (selector: string) => selector === '[data-card-edit-action]'
+        ? handle
+        : selector === '[data-card-slot]' ? card : null;
+      return handle;
+    };
+    const documentStub: any = {
+      readyState: 'loading',
+      addEventListener: () => {},
+      querySelector: (selector: string) => selector === '.hdp-home-content' ? home : null,
+      querySelectorAll: () => [],
+      getElementById: () => null,
+    };
+    const windowStub: Record<string, any> = {
+      innerWidth: 1280,
+      hdpGetSettingsDraft: () => draft,
+    };
+    new Function(
+      'window', 'document', 'localStorage', 'Image', 'prompt', 'confirm', 'location', 'setTimeout', 'clearTimeout',
+      `${generateCardSlotEditorJS()}
+window.testInitCardSlotDragging = hdpInitCardSlotDragging;`,
+    )(
+      windowStub,
+      documentStub,
+      { getItem: () => null, setItem: () => {} },
+      function ImageStub() {},
+      () => null,
+      () => false,
+      { reload: () => {} },
+      setTimeout,
+      clearTimeout,
+    );
+    windowStub.testInitCardSlotDragging(root);
+    const event = (target: any, clientX: number, clientY: number) => ({
+      target,
+      clientX,
+      clientY,
+      pointerId: 1,
+      preventDefault: () => {},
+      stopPropagation: () => {},
+    });
+
+    const dragHandle = createHandle('drag');
+    listeners.pointerdown[0](event(dragHandle, 100, 100));
+    listeners.pointermove[0](event(dragHandle, 157, 143));
+    listeners.pointerup[0](event(dragHandle, 157, 143));
+    expect(draft.cards.slots['home.summary'].freeform.desktop).toEqual({ x: 77, y: 73, width: 300, height: 180 });
+
+    const resizeHandle = createHandle('resize');
+    listeners.pointerdown[0](event(resizeHandle, 377, 253));
+    listeners.pointermove[0](event(resizeHandle, 450, 294));
+    listeners.pointerup[0](event(resizeHandle, 450, 294));
+    expect(draft.cards.slots['home.summary'].freeform.desktop).toEqual({ x: 77, y: 73, width: 373, height: 221 });
+  });
+
   it('moves and resizes a nested environment slot without touching its parent section', () => {
     const slots = ['temperature', 'humidity', 'security'].map(name => ({
       attrs: { 'data-card-slot': `home.environment.${name}`, 'data-card-slot-size': 'sm' } as Record<string, string>,

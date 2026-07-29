@@ -222,7 +222,7 @@ export function buildHomeHTML(hass: Hass, config: StrategyConfig, tokens?: Resol
   }
 
   return sortSlottedCards(sections)
-    .map(card => bentoWrap(card.html, card.size, card.gridSpan, card.slotId))
+    .map(card => bentoWrap(card.html, card.size, card.gridSpan, card.slotId, card.freeform))
     .join('\n');
 }
 

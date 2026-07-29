@@ -1,4 +1,4 @@
-import type { CardSlotConfig, StrategyConfig } from '../types';
+import type { CardFreeformRect, CardSlotConfig, StrategyConfig } from '../types';
 import { cardConfigToHTML, parseCardYAML } from '../blueprints/blueprint-parser';
 import { resolveBentoGridSpan, sanitizeBentoSize, type BentoGridSpan, type BentoSize } from './bento-layout';
 import { escapeAttribute, escapeHTML, escapeInlineStyleValue, escapeURLAttribute } from './html';
@@ -11,6 +11,7 @@ export interface SlottedCard {
   hidden: boolean;
   custom: boolean;
   gridSpan?: BentoGridSpan;
+  freeform?: { desktop?: CardFreeformRect; tablet?: CardFreeformRect };
 }
 
 interface CustomSlotRenderResult {
@@ -40,7 +41,8 @@ export function resolveSlottedCard(
   const hasGridSpan = slot?.grid_columns != null || slot?.grid_rows != null;
   const gridSpan = hasGridSpan ? resolveBentoGridSpan(slot?.grid_columns, slot?.grid_rows, size) : undefined;
   const order = typeof slot?.order === 'number' && Number.isFinite(slot.order) ? slot.order : defaultOrder;
-  if (hidden) return { slotId, html: '', size, order, hidden: true, custom: false, gridSpan };
+  const freeform = slot?.freeform;
+  if (hidden) return { slotId, html: '', size, order, hidden: true, custom: false, gridSpan, freeform };
 
   const custom = renderCustomSlotHTML(slotId, slot, context);
   const content = custom.html || defaultHTML;
@@ -53,6 +55,7 @@ export function resolveSlottedCard(
     hidden: false,
     custom: Boolean(custom.html),
     gridSpan,
+    freeform,
   };
 }
 
@@ -224,25 +227,51 @@ export function getCardSlotCSS(): string {
   }
   .hdp-slot-resize-handle {
     position: absolute;
-    right: 8px;
-    bottom: 8px;
     z-index: 21;
     display: none;
-    width: 30px;
-    height: 30px;
+    width: 20px;
+    height: 20px;
     padding: 0;
-    border: 1px solid var(--hdp-border);
-    border-radius: 8px;
-    background: var(--hdp-control-bg, var(--hdp-card-bg));
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
     color: var(--hdp-primary);
-    font: 800 18px/1 sans-serif;
-    cursor: nwse-resize;
+    font: 0/1 sans-serif;
     touch-action: none;
     user-select: none;
-    box-shadow: var(--hdp-shadow-card);
   }
-  .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-card-slot:hover > .hdp-slot-resize-handle,
-  .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-card-slot:focus-within > .hdp-slot-resize-handle {
+  .hdp-slot-resize-handle::after {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border-color: currentColor;
+    opacity: 0.82;
+  }
+  .hdp-slot-resize-handle[data-resize-edge="n"] { top: 0; left: calc(50% - 24px); width: 48px; height: 12px; cursor: ns-resize; }
+  .hdp-slot-resize-handle[data-resize-edge="s"] { bottom: 0; left: calc(50% - 24px); width: 48px; height: 12px; cursor: ns-resize; }
+  .hdp-slot-resize-handle[data-resize-edge="e"] { right: 0; top: calc(50% - 24px); width: 12px; height: 48px; cursor: ew-resize; }
+  .hdp-slot-resize-handle[data-resize-edge="w"] { left: 0; top: calc(50% - 24px); width: 12px; height: 48px; cursor: ew-resize; }
+  .hdp-slot-resize-handle[data-resize-edge="nw"] { left: 1px; top: 1px; cursor: nwse-resize; }
+  .hdp-slot-resize-handle[data-resize-edge="ne"] { right: 1px; top: 1px; cursor: nesw-resize; }
+  .hdp-slot-resize-handle[data-resize-edge="sw"] { left: 1px; bottom: 1px; cursor: nesw-resize; }
+  .hdp-slot-resize-handle[data-resize-edge="se"] { right: 1px; bottom: 1px; cursor: nwse-resize; }
+  .hdp-slot-resize-handle[data-resize-edge="nw"]::after { border-left: 2px solid; border-top: 2px solid; }
+  .hdp-slot-resize-handle[data-resize-edge="ne"]::after { border-right: 2px solid; border-top: 2px solid; }
+  .hdp-slot-resize-handle[data-resize-edge="sw"]::after { border-left: 2px solid; border-bottom: 2px solid; }
+  .hdp-slot-resize-handle[data-resize-edge="se"]::after { border-right: 2px solid; border-bottom: 2px solid; }
+  .hdp-slot-resize-handle[data-resize-edge="n"]::after,
+  .hdp-slot-resize-handle[data-resize-edge="s"]::after { inset: 5px 8px; border-top: 2px solid; }
+  .hdp-slot-resize-handle[data-resize-edge="e"]::after,
+  .hdp-slot-resize-handle[data-resize-edge="w"]::after { inset: 8px 5px; border-left: 2px solid; }
+  .hdp-slot-resize-handle:focus-visible {
+    outline: 2px solid var(--hdp-primary);
+    outline-offset: 2px;
+    background: var(--hdp-control-bg, var(--hdp-card-bg));
+  }
+  .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-home-content[data-hdp-layout-mode="freeform"] .hdp-card-slot:hover > .hdp-slot-resize-handle,
+  .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-home-content[data-hdp-layout-mode="freeform"] .hdp-card-slot:focus-within > .hdp-slot-resize-handle,
+  .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-home-content:not([data-hdp-layout-mode="freeform"]) .hdp-card-slot:hover > .hdp-slot-resize-handle[data-resize-edge="se"],
+  .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-home-content:not([data-hdp-layout-mode="freeform"]) .hdp-card-slot:focus-within > .hdp-slot-resize-handle[data-resize-edge="se"] {
     display: block;
   }
   .hdp-card-slot--draft-hidden > :not(.hdp-slot-edit-panel):not(.hdp-slot-hidden-note) {
@@ -615,7 +644,13 @@ function buildSlotEditPanel(slotId: string, slot?: CardSlotConfig, defaultSize: 
     <button type="button" title="背景图" aria-label="设置卡片背景图" data-card-edit-action="background" data-slot-id="${slotAttr}">图</button>
     <button type="button" title="隐藏" aria-label="隐藏卡片" data-card-edit-action="hide" data-slot-id="${slotAttr}">藏</button>
     ${resetButton}
-  </div><button type="button" class="hdp-slot-resize-handle" title="拖动调整卡片大小" aria-label="拖动调整卡片大小" data-card-edit-action="resize" data-slot-id="${slotAttr}">↘</button>`;
+  </div>${buildSlotResizeHandles(slotAttr)}`;
+}
+
+function buildSlotResizeHandles(slotAttr: string): string {
+  return ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw']
+    .map(edge => `<button type="button" class="hdp-slot-resize-handle" title="拖动调整卡片大小" aria-label="从${edge}方向调整卡片大小" data-card-edit-action="resize" data-resize-edge="${edge}" data-slot-id="${slotAttr}"></button>`)
+    .join('');
 }
 
 export function generateCardSlotEditorJS(): string {
@@ -676,6 +711,20 @@ function hdpEnsureCardSlot(slotId) {
   return draft.cards.slots[slotId];
 }
 
+function hdpEnsureCardLayout() {
+  var draft = hdpGetCardEditDraft();
+  if (!draft.cards || typeof draft.cards !== 'object' || Array.isArray(draft.cards)) draft.cards = {};
+  if (!draft.cards.layout || typeof draft.cards.layout !== 'object' || Array.isArray(draft.cards.layout)) {
+    draft.cards.layout = {};
+  }
+  var layout = draft.cards.layout;
+  if (layout.mode !== 'freeform' && layout.mode !== 'grid') layout.mode = 'grid';
+  if (typeof layout.snap_enabled !== 'boolean') layout.snap_enabled = true;
+  if (!isFinite(Number(layout.snap_distance))) layout.snap_distance = 10;
+  if (typeof layout.collision_push !== 'boolean') layout.collision_push = true;
+  return layout;
+}
+
 function hdpMarkCardDraftDirty() {
   if (typeof hdpMarkSettingsDirty === 'function') hdpMarkSettingsDirty();
   var root = document.getElementById('hdp-root');
@@ -713,12 +762,17 @@ function hdpInitCardSlotEditorActions() {
     var toolbarControl = hdpClosestHomeEditControl(e);
     var toolbarAction = toolbarControl && toolbarControl.getAttribute('data-action');
     if (toolbarAction === 'enter-card-edit' || toolbarAction === 'add-card' || toolbarAction === 'manage-hidden-cards' ||
+        toolbarAction === 'toggle-freeform-layout' || toolbarAction === 'toggle-card-snap' || toolbarAction === 'align-card-grid' || toolbarAction === 'auto-arrange-cards' ||
         toolbarAction === 'save-card-edits' || toolbarAction === 'cancel-card-edits') {
       e.preventDefault();
       e.stopPropagation();
       if (toolbarAction === 'enter-card-edit') window.hdpToggleCardEditMode(true);
       else if (toolbarAction === 'add-card') window.hdpOpenAddCard();
       else if (toolbarAction === 'manage-hidden-cards') window.hdpOpenHiddenCardSlots();
+      else if (toolbarAction === 'toggle-freeform-layout') window.hdpToggleFreeformLayout();
+      else if (toolbarAction === 'toggle-card-snap') window.hdpToggleCardSnap();
+      else if (toolbarAction === 'align-card-grid') window.hdpAlignCardsToGrid();
+      else if (toolbarAction === 'auto-arrange-cards') window.hdpAutoArrangeCards();
       else if (toolbarAction === 'save-card-edits') window.hdpSaveCardEdits();
       else window.hdpCancelCardEdits();
       return;
@@ -756,6 +810,12 @@ window.hdpToggleCardEditMode = function(force) {
   root.classList.toggle('hdp-root--card-edit', editing);
   var bars = document.querySelectorAll('.hdp-card-edit-bar');
   for (var i = 0; i < bars.length; i++) bars[i].setAttribute('data-editing', editing ? 'true' : 'false');
+  if (editing) {
+    var home = root.querySelector('.hdp-home-content');
+    if (window.innerWidth > 639 && hdpEnsureCardLayout().mode !== 'freeform') hdpMigrateHomeToFreeform(home);
+    else hdpActivateFreeformLayout(home);
+  }
+  hdpSyncCardLayoutToolbar(root);
   hdpSetHomeCardDraggable(editing);
   hdpInitCardSlotDragging(root);
 };
@@ -846,7 +906,10 @@ function hdpSetHomeCardDraggable(enabled) {
     if (wrapper && wrappers.indexOf(wrapper) < 0) wrappers.push(wrapper);
   }
   wrappers.forEach(function(wrapper) {
-    if (enabled) wrapper.setAttribute('draggable', 'true');
+    var isFreeformTopLevel = wrapper.parentNode && wrapper.parentNode.classList &&
+      wrapper.parentNode.classList.contains('hdp-home-content') &&
+      wrapper.parentNode.getAttribute('data-hdp-layout-mode') === 'freeform';
+    if (enabled && !isFreeformTopLevel) wrapper.setAttribute('draggable', 'true');
     else wrapper.removeAttribute('draggable');
   });
 }
@@ -854,6 +917,439 @@ function hdpSetHomeCardDraggable(enabled) {
 function hdpPersistHomeSlotDomOrder(markDirty) {
   hdpPersistSlotGroupOrder(hdpGetHomeSlotWrappers(), markDirty);
 }
+
+function hdpGetFreeformBreakpoint() {
+  return window.innerWidth <= 1023 ? 'tablet' : 'desktop';
+}
+
+function hdpGetWrapperSlotId(wrapper) {
+  var card = wrapper && wrapper.getAttribute && wrapper.getAttribute('data-card-slot')
+    ? wrapper
+    : wrapper && wrapper.querySelector ? wrapper.querySelector('[data-card-slot]') : null;
+  return card && card.getAttribute ? card.getAttribute('data-card-slot') : '';
+}
+
+function hdpRectFromWrapper(wrapper, home) {
+  var rect = wrapper.getBoundingClientRect();
+  var homeRect = home.getBoundingClientRect();
+  return {
+    x: Math.max(0, Math.round(rect.left - homeRect.left)),
+    y: Math.max(0, Math.round(rect.top - homeRect.top)),
+    width: Math.max(150, Math.round(rect.width)),
+    height: Math.max(96, Math.round(rect.height))
+  };
+}
+
+function hdpSanitizeFreeformRect(rect, width) {
+  width = Math.max(150, Math.round(Number(width) || 1200));
+  var safeWidth = Math.max(150, Math.min(width, Math.round(Number(rect && rect.width) || 300)));
+  var safeHeight = Math.max(96, Math.round(Number(rect && rect.height) || 192));
+  return {
+    x: Math.max(0, Math.min(width - safeWidth, Math.round(Number(rect && rect.x) || 0))),
+    y: Math.max(0, Math.round(Number(rect && rect.y) || 0)),
+    width: safeWidth,
+    height: safeHeight
+  };
+}
+
+function hdpApplyFreeformRect(wrapper, rect, breakpoint) {
+  if (!wrapper || !rect) return;
+  var prefix = breakpoint === 'tablet' ? '--hdp-ff-tablet-' : '--hdp-ff-';
+  wrapper.style.setProperty(prefix + 'x', rect.x + 'px');
+  wrapper.style.setProperty(prefix + 'y', rect.y + 'px');
+  wrapper.style.setProperty(prefix + 'width', rect.width + 'px');
+  wrapper.style.setProperty(prefix + 'height', rect.height + 'px');
+  wrapper.setAttribute('data-hdp-freeform-' + breakpoint, 'true');
+}
+
+function hdpSetFreeformRect(slotId, wrapper, rect, breakpoint, markDirty, containerWidth) {
+  if (!slotId || !wrapper || !rect) return;
+  breakpoint = breakpoint === 'tablet' ? 'tablet' : 'desktop';
+  var slot = hdpEnsureCardSlot(slotId);
+  if (!slot.freeform || typeof slot.freeform !== 'object' || Array.isArray(slot.freeform)) slot.freeform = {};
+  var safe = hdpSanitizeFreeformRect(rect, containerWidth || 1200);
+  slot.freeform[breakpoint] = safe;
+  hdpApplyFreeformRect(wrapper, safe, breakpoint);
+  if (markDirty !== false) hdpMarkCardDraftDirty();
+  return safe;
+}
+
+function hdpGetSavedFreeformRect(slotId, breakpoint) {
+  var draft = hdpGetCardEditDraft();
+  var slot = draft.cards && draft.cards.slots && draft.cards.slots[slotId];
+  return slot && slot.freeform && slot.freeform[breakpoint] ? slot.freeform[breakpoint] : null;
+}
+
+
+function hdpGetAlternateCanvasWidth(width, breakpoint) {
+  width = Math.max(150, Number(width) || 1200);
+  return breakpoint === 'desktop'
+    ? Math.max(640, Math.min(960, Math.round(width * 0.72)))
+    : Math.max(1024, Math.round(width * 1.5));
+}
+
+function hdpFindFreeformPlacement(size, peers, width, gap) {
+  width = Math.max(150, Number(width) || 1200);
+  gap = Math.max(0, Number(gap) || 12);
+  var safeSize = hdpSanitizeFreeformRect({ x: 0, y: 0, width: size.width, height: size.height }, width);
+  var anchors = [0];
+  peers.forEach(function(peer) {
+    var candidate = Math.round(peer.x + peer.width + gap);
+    if (candidate + safeSize.width <= width && anchors.indexOf(candidate) < 0) anchors.push(candidate);
+  });
+  anchors.sort(function(a, b) { return a - b; });
+  var best = null;
+  anchors.forEach(function(x) {
+    var y = peers.filter(function(peer) {
+      return x < peer.x + peer.width && x + safeSize.width > peer.x;
+    }).reduce(function(bottom, peer) {
+      return Math.max(bottom, peer.y + peer.height + gap);
+    }, 0);
+    if (!best || y < best.y || (y === best.y && x < best.x)) best = { x: x, y: y };
+  });
+  return hdpSanitizeFreeformRect({
+    x: best ? best.x : 0,
+    y: best ? best.y : 0,
+    width: safeSize.width,
+    height: safeSize.height
+  }, width);
+}
+
+function hdpPackFreeformItems(items, targetWidth, sourceWidth) {
+  var placed = [];
+  var output = {};
+  var scale = Math.max(0.35, Math.min(2, targetWidth / Math.max(150, sourceWidth || targetWidth)));
+  items.forEach(function(item) {
+    var rect = hdpFindFreeformPlacement({
+      width: Math.max(150, Math.min(targetWidth, Math.round(item.rect.width * scale))),
+      height: item.rect.height
+    }, placed, targetWidth, 12);
+    output[item.slotId] = rect;
+    placed.push(rect);
+  });
+  return output;
+}
+
+function hdpUpdateFreeformCanvasHeight(home) {
+  if (!home || home.getAttribute('data-hdp-layout-mode') !== 'freeform') return;
+  var bottom = 0;
+  hdpGetHomeSlotWrappers().forEach(function(wrapper) {
+    var rect = hdpRectFromWrapper(wrapper, home);
+    bottom = Math.max(bottom, rect.y + rect.height);
+  });
+  var property = hdpGetFreeformBreakpoint() === 'tablet'
+    ? '--hdp-freeform-tablet-canvas-height'
+    : '--hdp-freeform-canvas-height';
+  home.style.setProperty(property, Math.max(320, Math.ceil(bottom + 12)) + 'px');
+}
+
+var hdpActiveFreeformBreakpoint = null;
+
+function hdpActivateFreeformLayout(home) {
+  if (!home || window.innerWidth <= 639) return;
+  var layout = hdpEnsureCardLayout();
+  if (layout.mode !== 'freeform') return;
+  var breakpoint = hdpGetFreeformBreakpoint();
+  var alternate = breakpoint === 'desktop' ? 'tablet' : 'desktop';
+  var width = Math.max(150, Math.round(home.clientWidth || home.getBoundingClientRect().width || 1200));
+  var wrappers = hdpGetHomeSlotWrappers();
+  var measured = wrappers.map(function(wrapper) {
+    return { wrapper: wrapper, slotId: hdpGetWrapperSlotId(wrapper), rect: hdpRectFromWrapper(wrapper, home) };
+  });
+  home.setAttribute('data-hdp-layout-mode', 'freeform');
+  var placed = [];
+  measured.forEach(function(item) {
+    var saved = hdpGetSavedFreeformRect(item.slotId, breakpoint);
+    var safe;
+    if (saved) {
+      safe = hdpSanitizeFreeformRect(saved, width);
+    } else {
+      var alternateRect = hdpGetSavedFreeformRect(item.slotId, alternate);
+      var alternateWidth = hdpGetAlternateCanvasWidth(width, breakpoint);
+      var source = alternateRect || item.rect;
+      safe = hdpFindFreeformPlacement({
+        width: Math.round(source.width * width / alternateWidth),
+        height: source.height
+      }, placed, width, 12);
+      hdpSetFreeformRect(item.slotId, item.wrapper, safe, breakpoint, false, width);
+    }
+    hdpApplyFreeformRect(item.wrapper, safe, breakpoint);
+    placed.push(safe);
+  });
+  hdpActiveFreeformBreakpoint = breakpoint;
+  hdpUpdateFreeformCanvasHeight(home);
+}
+
+function hdpMigrateHomeToFreeform(home) {
+  if (!home || window.innerWidth <= 639) return;
+  var breakpoint = hdpGetFreeformBreakpoint();
+  var alternate = breakpoint === 'desktop' ? 'tablet' : 'desktop';
+  var width = Math.max(150, Math.round(home.clientWidth || home.getBoundingClientRect().width || 1200));
+  var items = hdpGetHomeSlotWrappers().map(function(wrapper) {
+    return {
+      wrapper: wrapper,
+      slotId: hdpGetWrapperSlotId(wrapper),
+      rect: hdpSanitizeFreeformRect(hdpRectFromWrapper(wrapper, home), width)
+    };
+  });
+  var alternateWidth = hdpGetAlternateCanvasWidth(width, breakpoint);
+  var alternateRects = hdpPackFreeformItems(items, alternateWidth, width);
+  hdpEnsureCardLayout().mode = 'freeform';
+  home.setAttribute('data-hdp-layout-mode', 'freeform');
+  items.forEach(function(item) {
+    hdpSetFreeformRect(item.slotId, item.wrapper, item.rect, breakpoint, false, width);
+    hdpSetFreeformRect(item.slotId, item.wrapper, alternateRects[item.slotId], alternate, false, alternateWidth);
+  });
+  hdpActiveFreeformBreakpoint = breakpoint;
+  hdpMarkCardDraftDirty();
+  hdpUpdateFreeformCanvasHeight(home);
+}
+
+function hdpGetPeerRects(home, activeWrapper) {
+  return hdpGetHomeSlotWrappers().filter(function(wrapper) { return wrapper !== activeWrapper; }).map(function(wrapper) {
+    return hdpRectFromWrapper(wrapper, home);
+  });
+}
+
+function hdpClosestSnap(edges, anchors, threshold) {
+  var best = null;
+  edges.forEach(function(edge) {
+    anchors.forEach(function(anchor) {
+      var distance = Math.abs(edge.value - anchor);
+      if (distance <= threshold && (!best || distance < best.distance)) best = { anchor: anchor, offset: edge.offset, distance: distance };
+    });
+  });
+  return best;
+}
+
+function hdpSnapFreeformRect(rect, peers, width, enabled, threshold) {
+  if (!enabled) return { rect: rect };
+  var xAnchors = [0, width / 2, width];
+  var yAnchors = [0];
+  peers.forEach(function(peer) {
+    xAnchors.push(peer.x, peer.x + peer.width / 2, peer.x + peer.width);
+    yAnchors.push(peer.y, peer.y + peer.height / 2, peer.y + peer.height);
+  });
+  var xSnap = hdpClosestSnap([
+    { value: rect.x, offset: 0 },
+    { value: rect.x + rect.width / 2, offset: rect.width / 2 },
+    { value: rect.x + rect.width, offset: rect.width }
+  ], xAnchors, threshold);
+  var ySnap = hdpClosestSnap([
+    { value: rect.y, offset: 0 },
+    { value: rect.y + rect.height / 2, offset: rect.height / 2 },
+    { value: rect.y + rect.height, offset: rect.height }
+  ], yAnchors, threshold);
+  return {
+    rect: {
+      x: Math.max(0, Math.min(width - rect.width, Math.round(xSnap ? xSnap.anchor - xSnap.offset : rect.x))),
+      y: Math.max(0, Math.round(ySnap ? ySnap.anchor - ySnap.offset : rect.y)),
+      width: rect.width,
+      height: rect.height
+    },
+    guideX: xSnap ? xSnap.anchor : null,
+    guideY: ySnap ? ySnap.anchor : null
+  };
+}
+
+function hdpSnapFreeformResizeRect(rect, peers, width, enabled, threshold, edge) {
+  if (!enabled) return { rect: rect };
+  edge = String(edge || 'se');
+  var xAnchors = [0, width];
+  var yAnchors = [0];
+  peers.forEach(function(peer) {
+    xAnchors.push(peer.x, peer.x + peer.width / 2, peer.x + peer.width);
+    yAnchors.push(peer.y, peer.y + peer.height / 2, peer.y + peer.height);
+  });
+  var snapWest = edge.indexOf('w') >= 0;
+  var snapEast = edge.indexOf('e') >= 0;
+  var snapNorth = edge.indexOf('n') >= 0;
+  var snapSouth = edge.indexOf('s') >= 0;
+  var xSnap = hdpClosestSnap(snapWest
+    ? [{ value: rect.x, offset: 0 }]
+    : snapEast ? [{ value: rect.x + rect.width, offset: rect.x }] : [], xAnchors, threshold);
+  var ySnap = hdpClosestSnap(snapNorth
+    ? [{ value: rect.y, offset: 0 }]
+    : snapSouth ? [{ value: rect.y + rect.height, offset: rect.y }] : [], yAnchors, threshold);
+  var snapped = { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+  if (xSnap && snapWest) {
+    var right = rect.x + rect.width;
+    if (right - xSnap.anchor >= 150) {
+      snapped.x = xSnap.anchor;
+      snapped.width = right - xSnap.anchor;
+    } else xSnap = null;
+  } else if (xSnap && snapEast) {
+    if (xSnap.anchor - rect.x >= 150) snapped.width = xSnap.anchor - rect.x;
+    else xSnap = null;
+  }
+  if (ySnap && snapNorth) {
+    var bottom = rect.y + rect.height;
+    if (bottom - ySnap.anchor >= 96) {
+      snapped.y = ySnap.anchor;
+      snapped.height = bottom - ySnap.anchor;
+    } else ySnap = null;
+  } else if (ySnap && snapSouth) {
+    if (ySnap.anchor - rect.y >= 96) snapped.height = ySnap.anchor - rect.y;
+    else ySnap = null;
+  }
+  return {
+    rect: hdpSanitizeFreeformRect(snapped, width),
+    guideX: xSnap ? xSnap.anchor : null,
+    guideY: ySnap ? ySnap.anchor : null
+  };
+}
+
+function hdpResizeFreeformRect(startRect, deltaX, deltaY, edge, width) {
+  edge = String(edge || 'se');
+  var right = startRect.x + startRect.width;
+  var bottom = startRect.y + startRect.height;
+  var rect = { x: startRect.x, y: startRect.y, width: startRect.width, height: startRect.height };
+  if (edge.indexOf('w') >= 0) {
+    rect.x = Math.max(0, Math.min(right - 150, startRect.x + deltaX));
+    rect.width = right - rect.x;
+  } else if (edge.indexOf('e') >= 0) {
+    rect.width = Math.max(150, Math.min(width - startRect.x, startRect.width + deltaX));
+  }
+  if (edge.indexOf('n') >= 0) {
+    rect.y = Math.max(0, Math.min(bottom - 96, startRect.y + deltaY));
+    rect.height = bottom - rect.y;
+  } else if (edge.indexOf('s') >= 0) {
+    rect.height = Math.max(96, startRect.height + deltaY);
+  }
+  return hdpSanitizeFreeformRect(rect, width);
+}
+
+function hdpShowSnapGuides(home, guideX, guideY) {
+  var x = home.querySelector('.hdp-snap-guide--x');
+  var y = home.querySelector('.hdp-snap-guide--y');
+  if (x) {
+    x.setAttribute('data-visible', guideX == null ? 'false' : 'true');
+    if (guideX != null) x.style.left = Math.round(guideX) + 'px';
+  }
+  if (y) {
+    y.setAttribute('data-visible', guideY == null ? 'false' : 'true');
+    if (guideY != null) y.style.top = Math.round(guideY) + 'px';
+  }
+}
+
+function hdpRectOverlaps(left, right, gap) {
+  return left.x < right.x + right.width + gap && left.x + left.width + gap > right.x &&
+    left.y < right.y + right.height + gap && left.y + left.height + gap > right.y;
+}
+
+function hdpResolveFreeformCollision(rect, peers, width, gap) {
+  var result = rect;
+  for (var i = 0; i < peers.length + 2; i++) {
+    var collision = peers.find(function(peer) { return hdpRectOverlaps(result, peer, gap); });
+    if (!collision) break;
+    result = { x: result.x, y: collision.y + collision.height + gap, width: result.width, height: result.height };
+  }
+  result.x = Math.max(0, Math.min(width - result.width, result.x));
+  return result;
+}
+
+function hdpPushCollidingPeers(home, activeWrapper, activeRect, breakpoint, width, gap) {
+  var wrappers = hdpGetHomeSlotWrappers();
+  var rects = wrappers.map(function(wrapper) {
+    return { wrapper: wrapper, rect: wrapper === activeWrapper ? activeRect : hdpRectFromWrapper(wrapper, home) };
+  });
+  var queue = rects.filter(function(item) { return item.wrapper === activeWrapper; });
+  var iterations = 0;
+  while (queue.length && iterations < wrappers.length * wrappers.length + 1) {
+    var source = queue.shift();
+    rects.forEach(function(peer) {
+      if (peer.wrapper === source.wrapper || !hdpRectOverlaps(source.rect, peer.rect, gap)) return;
+      peer.rect = hdpSanitizeFreeformRect({
+        x: peer.rect.x,
+        y: source.rect.y + source.rect.height + gap,
+        width: peer.rect.width,
+        height: peer.rect.height
+      }, width);
+      hdpSetFreeformRect(hdpGetWrapperSlotId(peer.wrapper), peer.wrapper, peer.rect, breakpoint, false, width);
+      queue.push(peer);
+    });
+    iterations += 1;
+  }
+}
+
+function hdpSyncCardLayoutToolbar(root) {
+  var layout = hdpEnsureCardLayout();
+  var freeform = root.querySelector('[data-action="toggle-freeform-layout"]');
+  var snap = root.querySelector('[data-action="toggle-card-snap"]');
+  if (freeform) {
+    freeform.setAttribute('aria-pressed', layout.mode === 'freeform' ? 'true' : 'false');
+    freeform.textContent = layout.mode === 'freeform' ? '自由布局：开' : '自由布局';
+  }
+  if (snap) {
+    snap.setAttribute('aria-pressed', layout.snap_enabled ? 'true' : 'false');
+    snap.textContent = layout.snap_enabled ? '磁吸：开' : '磁吸：关';
+  }
+}
+
+window.hdpToggleFreeformLayout = function() {
+  var root = document.getElementById('hdp-root');
+  var home = root && root.querySelector('.hdp-home-content');
+  if (!root || !home || window.innerWidth <= 639) return;
+  var layout = hdpEnsureCardLayout();
+  if (layout.mode === 'freeform') {
+    layout.mode = 'grid';
+    home.setAttribute('data-hdp-layout-mode', 'grid');
+    home.style.removeProperty('--hdp-freeform-canvas-height');
+    home.style.removeProperty('--hdp-freeform-tablet-canvas-height');
+    hdpActiveFreeformBreakpoint = null;
+    hdpMarkCardDraftDirty();
+  } else {
+    hdpMigrateHomeToFreeform(home);
+  }
+  hdpSyncCardLayoutToolbar(root);
+  hdpSetHomeCardDraggable(root.classList.contains('hdp-root--card-edit'));
+};
+
+window.hdpToggleCardSnap = function() {
+  var root = document.getElementById('hdp-root');
+  var layout = hdpEnsureCardLayout();
+  layout.snap_enabled = !layout.snap_enabled;
+  hdpMarkCardDraftDirty();
+  if (root) hdpSyncCardLayoutToolbar(root);
+};
+
+window.hdpAlignCardsToGrid = function() {
+  var root = document.getElementById('hdp-root');
+  var home = root && root.querySelector('.hdp-home-content');
+  if (!home || hdpEnsureCardLayout().mode !== 'freeform') return;
+  var breakpoint = hdpGetFreeformBreakpoint();
+  var width = home.clientWidth || home.getBoundingClientRect().width || 1200;
+  hdpGetHomeSlotWrappers().forEach(function(wrapper) {
+    var slotId = hdpGetWrapperSlotId(wrapper);
+    var rect = hdpRectFromWrapper(wrapper, home);
+    rect.x = Math.round(rect.x / 12) * 12;
+    rect.y = Math.round(rect.y / 12) * 12;
+    rect.width = Math.max(150, Math.round(rect.width / 12) * 12);
+    rect.height = Math.max(96, Math.round(rect.height / 12) * 12);
+    hdpSetFreeformRect(slotId, wrapper, rect, breakpoint, false, width);
+  });
+  hdpMarkCardDraftDirty();
+  hdpUpdateFreeformCanvasHeight(home);
+};
+
+window.hdpAutoArrangeCards = function() {
+  var root = document.getElementById('hdp-root');
+  var home = root && root.querySelector('.hdp-home-content');
+  if (!home || window.innerWidth <= 639) return;
+  if (hdpEnsureCardLayout().mode !== 'freeform') hdpMigrateHomeToFreeform(home);
+  var width = home.clientWidth || home.getBoundingClientRect().width;
+  var breakpoint = hdpGetFreeformBreakpoint();
+  var items = hdpGetHomeSlotWrappers().map(function(wrapper) {
+    return { wrapper: wrapper, slotId: hdpGetWrapperSlotId(wrapper), rect: hdpRectFromWrapper(wrapper, home) };
+  });
+  var packed = hdpPackFreeformItems(items, width, width);
+  items.forEach(function(item) {
+    hdpSetFreeformRect(item.slotId, item.wrapper, packed[item.slotId], breakpoint, false, width);
+  });
+  hdpMarkCardDraftDirty();
+  hdpUpdateFreeformCanvasHeight(home);
+  hdpSyncCardLayoutToolbar(root);
+};
 
 function hdpInitCardSlotDragging(root) {
   if (!root || root.__hdpCardSlotDragReady) return;
@@ -923,6 +1419,7 @@ function hdpInitCardSlotDragging(root) {
   var pointerHandle = null;
   var pointerMoved = false;
   var pointerResize = null;
+  var pointerFreeform = null;
   root.addEventListener('pointerdown', function(e) {
     if (!root.classList.contains('hdp-root--card-edit')) return;
     var handle = hdpClosestCardEditControl(e);
@@ -931,6 +1428,38 @@ function hdpInitCardSlotDragging(root) {
     if (action !== 'drag' && action !== 'resize') return;
     var wrapper = hdpFindSlotWrapperFromTarget(handle);
     if (!wrapper) return;
+    var freeformHome = null;
+    if (wrapper.parentNode && wrapper.parentNode.classList &&
+        wrapper.parentNode.classList.contains('hdp-home-content') &&
+        wrapper.parentNode.getAttribute('data-hdp-layout-mode') === 'freeform') {
+      freeformHome = wrapper.parentNode;
+    }
+    if (freeformHome && window.innerWidth > 639) {
+      var freeformSlotId = handle.getAttribute('data-slot-id') || hdpGetWrapperSlotId(wrapper);
+      var freeformRect = hdpRectFromWrapper(wrapper, freeformHome);
+      pointerFreeform = {
+        action: action,
+        edge: handle.getAttribute('data-resize-edge') || 'se',
+        slotId: freeformSlotId,
+        wrapper: wrapper,
+        handle: handle,
+        home: freeformHome,
+        breakpoint: hdpGetFreeformBreakpoint(),
+        startX: e.clientX,
+        startY: e.clientY,
+        startRect: freeformRect,
+        currentRect: freeformRect,
+        peers: hdpGetPeerRects(freeformHome, wrapper),
+        width: freeformHome.clientWidth || freeformHome.getBoundingClientRect().width,
+        moved: false
+      };
+      if (action === 'resize') wrapper.classList.add('hdp-bento--resizing');
+      else wrapper.classList.add('hdp-bento--dragging');
+      if (handle.setPointerCapture) handle.setPointerCapture(e.pointerId);
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
     if (action === 'resize') {
       var slotId = handle.getAttribute('data-slot-id');
       var home = wrapper.parentNode && wrapper.parentNode.classList && wrapper.parentNode.classList.contains('hdp-home-content')
@@ -979,6 +1508,36 @@ function hdpInitCardSlotDragging(root) {
     e.preventDefault();
   });
   root.addEventListener('pointermove', function(e) {
+    if (pointerFreeform) {
+      var freeform = pointerFreeform;
+      var deltaX = e.clientX - freeform.startX;
+      var deltaY = e.clientY - freeform.startY;
+      var layout = hdpEnsureCardLayout();
+      var candidate;
+      if (freeform.action === 'resize') {
+        candidate = hdpResizeFreeformRect(freeform.startRect, deltaX, deltaY, freeform.edge, freeform.width);
+      } else {
+        candidate = {
+          x: Math.max(0, Math.min(freeform.width - freeform.startRect.width, freeform.startRect.x + deltaX)),
+          y: Math.max(0, freeform.startRect.y + deltaY),
+          width: freeform.startRect.width,
+          height: freeform.startRect.height
+        };
+      }
+      var snapped;
+      if (freeform.action === 'resize') {
+        snapped = hdpSnapFreeformResizeRect(candidate, freeform.peers, freeform.width, layout.snap_enabled, Number(layout.snap_distance) || 10, freeform.edge);
+      } else {
+        snapped = hdpSnapFreeformRect(candidate, freeform.peers, freeform.width, layout.snap_enabled, Number(layout.snap_distance) || 10);
+      }
+      freeform.currentRect = snapped.rect;
+      freeform.moved = freeform.moved || Math.abs(deltaX) > 1 || Math.abs(deltaY) > 1;
+      hdpSetFreeformRect(freeform.slotId, freeform.wrapper, snapped.rect, freeform.breakpoint, false, freeform.width);
+      hdpShowSnapGuides(freeform.home, snapped.guideX, snapped.guideY);
+      hdpUpdateFreeformCanvasHeight(freeform.home);
+      e.preventDefault();
+      return;
+    }
     if (pointerResize) {
       var resize = pointerResize;
       if (!resize.live && (e.clientX !== resize.startX || e.clientY !== resize.startY)) {
@@ -1008,13 +1567,36 @@ function hdpInitCardSlotDragging(root) {
     e.preventDefault();
   });
   function finishPointerDrag(e) {
+    if (pointerFreeform) {
+      var freeform = pointerFreeform;
+      if (freeform.handle && freeform.handle.releasePointerCapture) {
+        try { freeform.handle.releasePointerCapture(e.pointerId); } catch(err) {}
+      }
+      var finalRect = hdpSetFreeformRect(
+        freeform.slotId,
+        freeform.wrapper,
+        freeform.currentRect,
+        freeform.breakpoint,
+        false,
+        freeform.width
+      );
+      if (freeform.moved && hdpEnsureCardLayout().collision_push) {
+        hdpPushCollidingPeers(freeform.home, freeform.wrapper, finalRect, freeform.breakpoint, freeform.width, 12);
+      }
+      freeform.wrapper.classList.remove('hdp-bento--dragging');
+      freeform.wrapper.classList.remove('hdp-bento--resizing');
+      hdpShowSnapGuides(freeform.home, null, null);
+      hdpUpdateFreeformCanvasHeight(freeform.home);
+      if (freeform.moved) hdpMarkCardDraftDirty();
+      pointerFreeform = null;
+      return;
+    }
     if (pointerResize) {
       var resize = pointerResize;
       if (resize.handle && resize.handle.releasePointerCapture) {
         try { resize.handle.releasePointerCapture(e.pointerId); } catch(err) {}
       }
       resize.wrapper.classList.remove('hdp-bento--resizing');
-      if (resize.handle) resize.handle.textContent = '↘';
       if (resize.live) window.hdpSetCardSlotGridSpan(resize.slotId, resize.columns, resize.rows);
       pointerResize = null;
       return;
@@ -1276,6 +1858,12 @@ function hdpBuildDraftAddedCardPreview(slot) {
   return '<div class="hdp-add-card-draft"><strong>' + hdpEscapeSlotText(slot.title || '自定义卡片') + '</strong><span>点击 YAML 编辑内容</span></div>';
 }
 
+function hdpBuildResizeHandles(id) {
+  return ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'].map(function(edge) {
+    return '<button type="button" class="hdp-slot-resize-handle" title="Resize card" aria-label="Resize card from ' + edge + '" data-card-edit-action="resize" data-resize-edge="' + edge + '" data-slot-id="' + id + '"></button>';
+  }).join('');
+}
+
 function hdpBuildDraftAddedCardControls(slotId) {
   var id = hdpEscapeSlotText(slotId);
   return '<div class="hdp-slot-edit-panel" data-slot-edit-panel="' + id + '">' +
@@ -1284,7 +1872,7 @@ function hdpBuildDraftAddedCardControls(slotId) {
     '<button type="button" data-card-edit-action="background" data-slot-id="' + id + '">图片</button>' +
     '<button type="button" data-card-edit-action="hide" data-slot-id="' + id + '">隐藏</button>' +
     '<button type="button" data-card-edit-action="reset" data-slot-id="' + id + '">删除</button>' +
-  '</div><button type="button" class="hdp-slot-resize-handle" data-card-edit-action="resize" data-slot-id="' + id + '">↘</button>';
+  '</div>' + hdpBuildResizeHandles(id);
 }
 
 function hdpAppendDraftAddedHomeCard(slotId, slot) {
@@ -1298,9 +1886,39 @@ function hdpAppendDraftAddedHomeCard(slotId, slot) {
   wrapper.style.setProperty('--hdp-bento-row-span', slot.grid_rows || 2);
   wrapper.innerHTML = '<div class="hdp-card-slot hdp-card-slot--default hdp-card-slot--draft-added" data-card-slot="' + hdpEscapeSlotText(slotId) + '" data-card-custom="false" data-card-slot-size="lg">' +
     hdpBuildDraftAddedCardControls(slotId) + hdpBuildDraftAddedCardPreview(slot) + '</div>';
-  wrapper.draggable = true;
   home.appendChild(wrapper);
   hdpPersistHomeSlotDomOrder();
+  if (home.getAttribute('data-hdp-layout-mode') !== 'freeform' || window.innerWidth <= 639) {
+    wrapper.draggable = true;
+    return;
+  }
+  var width = Math.max(150, home.clientWidth || home.getBoundingClientRect().width || 1200);
+  var breakpoint = hdpGetFreeformBreakpoint();
+  var alternate = breakpoint === 'desktop' ? 'tablet' : 'desktop';
+  var columns = Math.max(1, Math.min(4, Number(slot.grid_columns) || 2));
+  var rows = Math.max(1, Math.min(6, Number(slot.grid_rows) || 2));
+  var columnWidth = Math.max(150, (width - 36) / 4);
+  var size = {
+    width: Math.min(width, columns * columnWidth + Math.max(0, columns - 1) * 12),
+    height: rows * 120 + Math.max(0, rows - 1) * 12
+  };
+  var peers = hdpGetHomeSlotWrappers().filter(function(item) { return item !== wrapper; }).map(function(item) {
+    return hdpRectFromWrapper(item, home);
+  });
+  var rect = hdpFindFreeformPlacement(size, peers, width, 12);
+  var alternateWidth = hdpGetAlternateCanvasWidth(width, breakpoint);
+  var alternatePeers = hdpGetHomeSlotWrappers().filter(function(item) { return item !== wrapper; }).map(function(item) {
+    var saved = hdpGetSavedFreeformRect(hdpGetWrapperSlotId(item), alternate);
+    return saved ? hdpSanitizeFreeformRect(saved, alternateWidth) : null;
+  }).filter(Boolean);
+  var alternateRect = hdpFindFreeformPlacement({
+    width: rect.width * alternateWidth / width,
+    height: rect.height
+  }, alternatePeers, alternateWidth, 12);
+  hdpSetFreeformRect(slotId, wrapper, rect, breakpoint, false, width);
+  hdpSetFreeformRect(slotId, wrapper, alternateRect, alternate, false, alternateWidth);
+  wrapper.removeAttribute('draggable');
+  hdpUpdateFreeformCanvasHeight(home);
 }
 
 window.hdpOpenAddCard = function() {
@@ -1991,10 +2609,42 @@ window.hdpCancelCardEdits = function() {
   location.reload();
 };
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', function() { hdpApplyCardSlotImageThemes(); });
-} else {
+function hdpInitCardSlotRuntime() {
   hdpApplyCardSlotImageThemes();
+  if (typeof document.getElementById !== 'function') return;
+  var root = document.getElementById('hdp-root');
+  var home = root && root.querySelector ? root.querySelector('.hdp-home-content') : null;
+  if (home) hdpActivateFreeformLayout(home);
+  if (root) hdpSyncCardLayoutToolbar(root);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', hdpInitCardSlotRuntime);
+} else {
+  hdpInitCardSlotRuntime();
+}
+if (window.addEventListener) {
+  var hdpFreeformResizeTimer = null;
+  window.addEventListener('resize', function() {
+    clearTimeout(hdpFreeformResizeTimer);
+    hdpFreeformResizeTimer = setTimeout(function() {
+      if (typeof document.getElementById !== 'function') return;
+      var root = document.getElementById('hdp-root');
+      var home = root && root.querySelector ? root.querySelector('.hdp-home-content') : null;
+      if (!home) return;
+      if (window.innerWidth <= 639) {
+        hdpActiveFreeformBreakpoint = null;
+        home.style.removeProperty('--hdp-freeform-canvas-height');
+        home.style.removeProperty('--hdp-freeform-tablet-canvas-height');
+        return;
+      }
+      if (hdpEnsureCardLayout().mode === 'freeform' && hdpActiveFreeformBreakpoint !== hdpGetFreeformBreakpoint()) {
+        hdpActivateFreeformLayout(home);
+      } else if (hdpEnsureCardLayout().mode === 'freeform') {
+        hdpActivateFreeformLayout(home);
+      }
+    }, 80);
+  });
 }
 hdpInitCardSlotEditorActions();
 `;

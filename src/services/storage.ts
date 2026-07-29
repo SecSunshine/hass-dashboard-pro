@@ -56,6 +56,12 @@ export function getDefaultConfig(): HDPConfig {
     },
     cards: {
       slots: {},
+      layout: {
+        mode: 'grid',
+        snap_enabled: true,
+        snap_distance: 10,
+        collision_push: true,
+      },
     },
     visual: {
       theme_id: 'light',

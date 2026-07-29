@@ -49,4 +49,19 @@ describe('bento layout css', () => {
     expect(html).toContain('--hdp-bento-row-span: 4');
     expect(resolveBentoGridSpan(9, 0, 'md')).toEqual({ columns: 4, rows: 1 });
   });
+
+  it('emits independent desktop and tablet freeform rectangles', () => {
+    const html = bentoWrap('<div>Card</div>', 'md', undefined, 'home.summary', {
+      desktop: { x: 24, y: 36, width: 420, height: 210 },
+      tablet: { x: 12, y: 260, width: 360, height: 190 },
+    });
+
+    expect(html).toContain('data-hdp-freeform-desktop="true"');
+    expect(html).toContain('data-hdp-freeform-tablet="true"');
+    expect(html).toContain('--hdp-ff-x: 24px');
+    expect(html).toContain('--hdp-ff-width: 420px');
+    expect(html).toContain('--hdp-ff-tablet-y: 260px');
+    expect(html).toContain('--hdp-ff-tablet-height: 190px');
+    expect(generateBentoCSS()).toContain('--hdp-freeform-tablet-canvas-height');
+  });
 });

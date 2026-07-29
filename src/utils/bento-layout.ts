@@ -100,6 +100,35 @@ export function generateBentoCSS(): string {
     grid-row: span var(--hdp-bento-row-span) !important;
   }
 
+  .hdp-home-content[data-hdp-layout-mode="freeform"] {
+    display: block;
+    position: relative;
+    min-height: var(--hdp-freeform-canvas-height, 320px);
+  }
+  .hdp-home-content[data-hdp-layout-mode="freeform"] > .hdp-bento {
+    position: absolute;
+    left: var(--hdp-ff-x, 0px);
+    top: var(--hdp-ff-y, 0px);
+    width: var(--hdp-ff-width, min(100%, 300px));
+    height: var(--hdp-ff-height, 192px);
+    grid-column: auto !important;
+    grid-row: auto !important;
+    transition: box-shadow 150ms ease;
+  }
+  .hdp-snap-guide {
+    display: none;
+    position: absolute;
+    z-index: 40;
+    pointer-events: none;
+    background: var(--hdp-primary);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--hdp-primary) 25%, transparent);
+  }
+  .hdp-root--card-edit .hdp-home-content[data-hdp-layout-mode="freeform"] .hdp-snap-guide[data-visible="true"] {
+    display: block;
+  }
+  .hdp-snap-guide--x { top: 0; bottom: 0; width: 1px; }
+  .hdp-snap-guide--y { left: 0; right: 0; height: 1px; }
+
   /* ── Non-bento children span full width (settings, blueprints, etc.) ── */
   .hdp-area-content > :not(.hdp-bento) {
     grid-column: 1 / -1;
@@ -118,6 +147,15 @@ export function generateBentoCSS(): string {
     .hdp-home-content .hdp-bento[data-hdp-bento-custom="true"] {
       grid-column: span var(--hdp-bento-tablet-column-span) !important;
       grid-row: span var(--hdp-bento-row-span) !important;
+    }
+    .hdp-home-content[data-hdp-layout-mode="freeform"] > .hdp-bento {
+      left: var(--hdp-ff-tablet-x, var(--hdp-ff-x, 0px));
+      top: var(--hdp-ff-tablet-y, var(--hdp-ff-y, 0px));
+      width: var(--hdp-ff-tablet-width, var(--hdp-ff-width, min(100%, 300px)));
+      height: var(--hdp-ff-tablet-height, var(--hdp-ff-height, 192px));
+    }
+    .hdp-home-content[data-hdp-layout-mode="freeform"] {
+      min-height: var(--hdp-freeform-tablet-canvas-height, var(--hdp-freeform-canvas-height, 320px));
     }
   }
 
@@ -142,6 +180,17 @@ export function generateBentoCSS(): string {
       grid-column: span 1 !important;
       grid-row: span 1 !important;
     }
+    .hdp-home-content[data-hdp-layout-mode="freeform"] {
+      display: grid;
+      min-height: 0;
+    }
+    .hdp-home-content[data-hdp-layout-mode="freeform"] > .hdp-bento {
+      position: relative;
+      left: auto;
+      top: auto;
+      width: auto;
+      height: auto;
+    }
   }
   `;
 }
@@ -149,6 +198,11 @@ export function generateBentoCSS(): string {
 export interface BentoGridSpan {
   columns: number;
   rows: number;
+}
+
+export interface BentoFreeformLayout {
+  desktop?: { x: number; y: number; width: number; height: number };
+  tablet?: { x: number; y: number; width: number; height: number };
 }
 
 // ─── HTML Wrapper ──────────────────────────────────────────────────────────
@@ -160,12 +214,43 @@ export interface BentoGridSpan {
  * @param size   Bento size class (sm/md/lg/wide/tall)
  * @returns      Wrapped HTML: `<div class="hdp-bento hdp-bento--{size}">{html}</div>`
  */
-export function bentoWrap(html: string, size: BentoSize, span?: BentoGridSpan, slotId?: string): string {
+export function bentoWrap(
+  html: string,
+  size: BentoSize,
+  span?: BentoGridSpan,
+  slotId?: string,
+  freeform?: BentoFreeformLayout,
+): string {
   const slotAttribute = slotId ? ` data-hdp-slot="${escapeBentoAttribute(slotId)}"` : '';
-  if (!span) return `<div class="hdp-bento hdp-bento--${size}"${slotAttribute}>${html}</div>`;
-  const columns = sanitizeGridSpan(span.columns, 1, 4);
-  const rows = sanitizeGridSpan(span.rows, 1, 6);
-  return `<div class="hdp-bento hdp-bento--${size}"${slotAttribute} data-hdp-bento-custom="true" style="--hdp-bento-column-span: ${columns}; --hdp-bento-tablet-column-span: ${Math.min(columns, 2)}; --hdp-bento-row-span: ${rows};">${html}</div>`;
+  const styles: string[] = [];
+  const attributes: string[] = [];
+  if (span) {
+    const columns = sanitizeGridSpan(span.columns, 1, 4);
+    const rows = sanitizeGridSpan(span.rows, 1, 6);
+    attributes.push('data-hdp-bento-custom="true"');
+    styles.push(`--hdp-bento-column-span: ${columns}`, `--hdp-bento-tablet-column-span: ${Math.min(columns, 2)}`, `--hdp-bento-row-span: ${rows}`);
+  }
+  if (freeform?.desktop) appendFreeformStyle(styles, attributes, 'desktop', freeform.desktop);
+  if (freeform?.tablet) appendFreeformStyle(styles, attributes, 'tablet', freeform.tablet);
+  const extraAttributes = attributes.length ? ` ${attributes.join(' ')}` : '';
+  const styleAttribute = styles.length ? ` style="${styles.join('; ')};"` : '';
+  return `<div class="hdp-bento hdp-bento--${size}"${slotAttribute}${extraAttributes}${styleAttribute}>${html}</div>`;
+}
+
+function appendFreeformStyle(
+  styles: string[],
+  attributes: string[],
+  breakpoint: 'desktop' | 'tablet',
+  rect: { x: number; y: number; width: number; height: number },
+): void {
+  const prefix = breakpoint === 'desktop' ? 'ff' : 'ff-tablet';
+  attributes.push(`data-hdp-freeform-${breakpoint}="true"`);
+  styles.push(
+    `--hdp-${prefix}-x: ${Math.max(0, Math.round(Number(rect.x) || 0))}px`,
+    `--hdp-${prefix}-y: ${Math.max(0, Math.round(Number(rect.y) || 0))}px`,
+    `--hdp-${prefix}-width: ${Math.max(150, Math.round(Number(rect.width) || 300))}px`,
+    `--hdp-${prefix}-height: ${Math.max(96, Math.round(Number(rect.height) || 192))}px`,
+  );
 }
 
 function escapeBentoAttribute(value: string): string {

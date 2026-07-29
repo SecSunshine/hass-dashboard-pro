@@ -438,6 +438,7 @@ export interface HDPConfig {
   };
   cards: {
     slots: Record<string, CardSlotConfig>;
+    layout?: CardLayoutConfig;
   };
   visual: StoredVisualConfig;
   permissions: {
@@ -473,6 +474,11 @@ export interface CardSlotConfig {
   size?: string;
   grid_columns?: number;
   grid_rows?: number;
+  /** Freeform position and dimensions for desktop and tablet canvases. */
+  freeform?: {
+    desktop?: CardFreeformRect;
+    tablet?: CardFreeformRect;
+  };
   /** Source for a user-created home card. */
   kind?: 'custom' | 'domain' | 'entity';
   domain?: string;
@@ -481,6 +487,20 @@ export interface CardSlotConfig {
   background_image_url?: string;
   theme_from_image?: boolean;
   yaml?: string;
+}
+
+export interface CardLayoutConfig {
+  mode?: 'grid' | 'freeform';
+  snap_enabled?: boolean;
+  snap_distance?: number;
+  collision_push?: boolean;
+}
+
+export interface CardFreeformRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 // ─── v4.0: Blueprint Types ────────────────────────────────────────────────
