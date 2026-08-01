@@ -175,6 +175,11 @@ export function getCardSlotCSS(): string {
     opacity: 0;
     pointer-events: none;
   }
+  .hdp-bento--selected > .hdp-card-slot {
+    outline-style: solid !important;
+    outline-color: var(--hdp-primary) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--hdp-primary) 18%, transparent);
+  }
   .hdp-root--card-edit .hdp-view .hdp-card-slot:hover > .hdp-slot-edit-panel,
   .hdp-root--card-edit .hdp-view .hdp-card-slot:focus-within > .hdp-slot-edit-panel {
     display: flex;
@@ -704,6 +709,7 @@ var HDP_HOME_CARD_SLOTS = [
   { id: 'home.summary.active', label: '运行中统计' },
   { id: 'home.summary.automations', label: '自动化统计' }
 ];
+var hdpSelectedCardSlotId = null;
 
 function hdpGetCardEditDraft() {
   if (typeof window.hdpGetSettingsDraft === 'function') return window.hdpGetSettingsDraft();
@@ -811,6 +817,16 @@ function hdpInitCardSlotEditorActions() {
     else if (action === 'reset') window.hdpResetCardSlot(slotId);
   }, true);
   document.addEventListener('change', function(e) {
+    var layoutInput = e.target && e.target.closest && e.target.closest('[data-card-layout-input]');
+    if (layoutInput && layoutInput.getAttribute('data-card-layout-input') === 'snap-distance') {
+      window.hdpSetCardSnapDistance(layoutInput.value);
+      return;
+    }
+    var geometryInput = e.target && e.target.closest && e.target.closest('[data-card-geometry-field]');
+    if (geometryInput) {
+      window.hdpUpdateSelectedCardGeometry();
+      return;
+    }
     var control = hdpClosestCardEditControl(e);
     if (!control) return;
     var action = control.getAttribute('data-card-edit-action');
@@ -833,6 +849,8 @@ window.hdpToggleCardEditMode = function(force) {
     var home = root.querySelector('.hdp-home-content');
     if (window.innerWidth > 639 && hdpEnsureCardLayout().mode !== 'freeform') hdpMigrateHomeToFreeform(home);
     else hdpActivateFreeformLayout(home);
+  } else {
+    hdpSelectCardSlot(null, root);
   }
   hdpSyncCardLayoutToolbar(root);
   hdpSetHomeCardDraggable(editing);
@@ -1261,6 +1279,78 @@ function hdpAnnounceCardLayout(root, text) {
   for (var i = 0; i < statuses.length; i++) statuses[i].textContent = text;
 }
 
+function hdpSelectCardSlot(slotId, root) {
+  root = root || document.getElementById('hdp-root');
+  hdpSelectedCardSlotId = slotId ? String(slotId) : null;
+  hdpGetHomeSlotWrappers().forEach(function(wrapper) {
+    wrapper.classList.remove('hdp-bento--selected');
+  });
+  var selected = hdpSelectedCardSlotId && hdpGetSlotWrapper(hdpSelectedCardSlotId);
+  if (selected && selected.parentNode && selected.parentNode.classList && selected.parentNode.classList.contains('hdp-home-content')) {
+    selected.classList.add('hdp-bento--selected');
+  } else if (hdpSelectedCardSlotId) {
+    hdpSelectedCardSlotId = null;
+  }
+  if (root) hdpSyncCardGeometryEditor(root);
+}
+
+function hdpSyncCardGeometryEditor(root) {
+  if (!root || !root.querySelector) return;
+  var editor = root.querySelector('[data-card-geometry-editor]');
+  if (!editor) return;
+  var home = root.querySelector('.hdp-home-content');
+  var wrapper = hdpSelectedCardSlotId && hdpGetSlotWrapper(hdpSelectedCardSlotId);
+  var visible = Boolean(
+    hdpSelectedCardSlotId && wrapper && home && wrapper.parentNode === home &&
+    root.classList.contains('hdp-root--card-edit') &&
+    home.getAttribute('data-hdp-layout-mode') === 'freeform' && window.innerWidth > 639
+  );
+  editor.hidden = !visible;
+  editor.setAttribute('aria-hidden', visible ? 'false' : 'true');
+  if (!visible) return;
+  var rect = hdpRectFromWrapper(wrapper, home);
+  var label = editor.querySelector('[data-card-geometry-label]');
+  if (label) label.textContent = hdpSelectedCardSlotId + ' · ' + (hdpGetFreeformBreakpoint() === 'tablet' ? '平板' : '桌面');
+  ['x', 'y', 'width', 'height'].forEach(function(field) {
+    var input = editor.querySelector('[data-card-geometry-field="' + field + '"]');
+    if (input && document.activeElement !== input) input.value = String(rect[field]);
+  });
+}
+
+window.hdpSetCardSnapDistance = function(value) {
+  var root = document.getElementById('hdp-root');
+  var layout = hdpEnsureCardLayout();
+  layout.snap_distance = hdpNormalizeSnapDistance(value);
+  hdpMarkCardDraftDirty();
+  if (root) hdpSyncCardLayoutToolbar(root);
+};
+
+window.hdpUpdateSelectedCardGeometry = function() {
+  var root = document.getElementById('hdp-root');
+  var home = root && root.querySelector('.hdp-home-content');
+  var editor = root && root.querySelector('[data-card-geometry-editor]');
+  var wrapper = hdpSelectedCardSlotId && hdpGetSlotWrapper(hdpSelectedCardSlotId);
+  if (!root || !home || !editor || !wrapper || wrapper.parentNode !== home || window.innerWidth <= 639) return;
+  var width = home.clientWidth || home.getBoundingClientRect().width || 1200;
+  var current = hdpRectFromWrapper(wrapper, home);
+  var candidate = { x: current.x, y: current.y, width: current.width, height: current.height };
+  ['x', 'y', 'width', 'height'].forEach(function(field) {
+    var input = editor.querySelector('[data-card-geometry-field="' + field + '"]');
+    var value = input ? Number(input.value) : NaN;
+    if (isFinite(value)) candidate[field] = Math.round(value);
+  });
+  var layout = hdpEnsureCardLayout();
+  var peers = hdpGetPeerRects(home, wrapper);
+  var resolved = hdpResolveFreeformDrop(candidate, peers, width, 12, layout.collision_push);
+  var breakpoint = hdpGetFreeformBreakpoint();
+  var finalRect = hdpSetFreeformRect(hdpSelectedCardSlotId, wrapper, resolved, breakpoint, false, width);
+  if (layout.collision_push) hdpPushCollidingPeers(home, wrapper, finalRect, breakpoint, width, 12);
+  hdpUpdateFreeformCanvasHeight(home);
+  hdpMarkCardDraftDirty();
+  hdpSyncCardGeometryEditor(root);
+  hdpAnnounceCardLayout(root, '卡片位置 ' + finalRect.x + ', ' + finalRect.y + '，尺寸 ' + finalRect.width + ' × ' + finalRect.height + ' 像素');
+};
+
 function hdpRectOverlaps(left, right, gap) {
   return left.x < right.x + right.width + gap && left.x + left.width + gap > right.x &&
     left.y < right.y + right.height + gap && left.y + left.height + gap > right.y;
@@ -1311,6 +1401,7 @@ function hdpSyncCardLayoutToolbar(root) {
   var freeform = root.querySelector('[data-action="toggle-freeform-layout"]');
   var snap = root.querySelector('[data-action="toggle-card-snap"]');
   var collisionPush = root.querySelector('[data-action="toggle-card-collision-push"]');
+  var snapDistance = root.querySelector('[data-card-layout-input="snap-distance"]');
   if (freeform) {
     freeform.setAttribute('aria-pressed', layout.mode === 'freeform' ? 'true' : 'false');
     freeform.textContent = layout.mode === 'freeform' ? '自由布局：开' : '自由布局';
@@ -1323,6 +1414,8 @@ function hdpSyncCardLayoutToolbar(root) {
     collisionPush.setAttribute('aria-pressed', layout.collision_push ? 'true' : 'false');
     collisionPush.textContent = layout.collision_push ? '推开卡片：开' : '推开卡片：关';
   }
+  if (snapDistance && document.activeElement !== snapDistance) snapDistance.value = String(layout.snap_distance);
+  hdpSyncCardGeometryEditor(root);
 }
 
 window.hdpToggleFreeformLayout = function() {
@@ -1496,6 +1589,10 @@ function hdpInitCardSlotDragging(root) {
   var pointerFreeform = null;
   root.addEventListener('pointerdown', function(e) {
     if (!root.classList.contains('hdp-root--card-edit')) return;
+    var selectedWrapper = hdpFindSlotWrapperFromTarget(e.target);
+    if (selectedWrapper && selectedWrapper.parentNode && selectedWrapper.parentNode.classList && selectedWrapper.parentNode.classList.contains('hdp-home-content')) {
+      hdpSelectCardSlot(hdpGetWrapperSlotId(selectedWrapper), root);
+    }
     var handle = hdpClosestCardEditControl(e);
     if (!handle) return;
     var action = handle.getAttribute('data-card-edit-action');
@@ -1608,6 +1705,7 @@ function hdpInitCardSlotDragging(root) {
       freeform.currentRect = snapped.rect;
       freeform.moved = freeform.moved || Math.abs(deltaX) > 1 || Math.abs(deltaY) > 1;
       hdpSetFreeformRect(freeform.slotId, freeform.wrapper, snapped.rect, freeform.breakpoint, false, freeform.width);
+      hdpSyncCardGeometryEditor(root);
       hdpShowSnapGuides(freeform.home, snapped.guideX, snapped.guideY);
       hdpUpdateFreeformCanvasHeight(freeform.home);
       e.preventDefault();
@@ -1667,6 +1765,7 @@ function hdpInitCardSlotDragging(root) {
       hdpShowSnapGuides(freeform.home, null, null);
       hdpUpdateFreeformCanvasHeight(freeform.home);
       if (freeform.moved) hdpMarkCardDraftDirty();
+      hdpSyncCardGeometryEditor(root);
       pointerFreeform = null;
       return;
     }
@@ -1739,6 +1838,7 @@ function hdpInitCardSlotDragging(root) {
       home.__hdpKeyboardGuideTimer = setTimeout(function() { hdpShowSnapGuides(home, null, null); }, 500);
       hdpUpdateFreeformCanvasHeight(home);
       hdpMarkCardDraftDirty();
+      hdpSelectCardSlot(slotId, root);
       hdpAnnounceCardLayout(root, '卡片位置 ' + finalRect.x + ', ' + finalRect.y + '，尺寸 ' + finalRect.width + ' × ' + finalRect.height + ' 像素');
     } else if (action === 'drag') {
       window.hdpMoveCardSlot(slotId, deltaX < 0 || deltaY < 0 ? -1 : 1);
@@ -1754,6 +1854,17 @@ function hdpInitCardSlotDragging(root) {
     }
     if (e.preventDefault) e.preventDefault();
     if (e.stopPropagation) e.stopPropagation();
+  });
+  root.addEventListener('focusin', function(e) {
+    if (!root.classList.contains('hdp-root--card-edit')) return;
+    var handle = hdpClosestCardEditControl(e);
+    if (!handle) return;
+    var action = handle.getAttribute('data-card-edit-action');
+    if (action !== 'drag' && action !== 'resize') return;
+    var wrapper = hdpFindSlotWrapperFromTarget(handle);
+    if (wrapper && wrapper.parentNode && wrapper.parentNode.classList && wrapper.parentNode.classList.contains('hdp-home-content')) {
+      hdpSelectCardSlot(hdpGetWrapperSlotId(wrapper), root);
+    }
   });
 }
 

@@ -328,6 +328,10 @@ describe('layout card', () => {
     expect(card.content).toContain('data-action="toggle-card-collision-push"');
     expect(card.content).toContain('data-action="align-card-grid"');
     expect(card.content).toContain('data-action="auto-arrange-cards"');
+    expect(card.content).toContain('data-card-layout-input="snap-distance"');
+    expect(card.content).toContain('data-card-geometry-editor');
+    expect(card.content).toContain('data-card-geometry-field="x"');
+    expect(card.content).toContain('data-card-geometry-field="height"');
     expect(card.content).toContain('data-action="save-card-edits"');
     expect(card.content).toContain('data-action="cancel-card-edits"');
     expect(card.content).toContain('class="hdp-card-layout-status" aria-live="polite"');

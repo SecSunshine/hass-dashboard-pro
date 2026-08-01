@@ -94,6 +94,14 @@ export function buildLayoutCard(opts: LayoutCardOptions): LovelaceCardConfig {
       ${allowAddCard ? '<button type="button" data-action="add-card">新增卡片</button>' : ''}
       ${includeHiddenManagement ? '<button type="button" data-action="manage-hidden-cards">管理隐藏</button>' : ''}
       ${allowAddCard ? '<button type="button" data-action="toggle-freeform-layout" aria-pressed="false">自由布局</button><button type="button" data-action="toggle-card-snap" aria-pressed="true">磁吸：开</button><button type="button" data-action="toggle-card-collision-push" aria-pressed="true">推开卡片：开</button><button type="button" data-action="align-card-grid">对齐网格</button><button type="button" data-action="auto-arrange-cards">自动整理</button>' : ''}
+      ${allowAddCard ? `<label class="hdp-card-layout-input" title="设置磁吸距离"><span>吸附</span><input type="number" min="0" max="40" step="1" value="10" inputmode="numeric" aria-label="吸附距离（像素）" data-card-layout-input="snap-distance"><span>px</span></label>
+      <div class="hdp-card-geometry-editor" data-card-geometry-editor hidden>
+        <span class="hdp-card-geometry-label" data-card-geometry-label>未选择卡片</span>
+        <label><span>X</span><input type="number" min="0" step="1" inputmode="numeric" aria-label="卡片 X 坐标" data-card-geometry-field="x"></label>
+        <label><span>Y</span><input type="number" min="0" step="1" inputmode="numeric" aria-label="卡片 Y 坐标" data-card-geometry-field="y"></label>
+        <label><span>宽</span><input type="number" min="156" step="1" inputmode="numeric" aria-label="卡片宽度" data-card-geometry-field="width"></label>
+        <label><span>高</span><input type="number" min="96" step="1" inputmode="numeric" aria-label="卡片高度" data-card-geometry-field="height"></label>
+      </div>` : ''}
       <button type="button" class="hdp-primary" data-action="save-card-edits">保存并应用</button>
       <button type="button" data-action="cancel-card-edits">取消</button>
       <span class="hdp-card-layout-status" aria-live="polite" aria-atomic="true"></span>
@@ -230,6 +238,45 @@ ${generateDesignTokenCSS(tokens)}
     white-space: nowrap;
     border: 0;
   }
+  .hdp-card-layout-input,
+  .hdp-card-geometry-editor,
+  .hdp-card-geometry-editor label {
+    display: inline-flex;
+    align-items: center;
+  }
+  .hdp-card-layout-input,
+  .hdp-card-geometry-editor {
+    gap: 6px;
+    min-height: 38px;
+    padding: 5px 8px;
+    border: 1px solid var(--hdp-border);
+    border-radius: 8px;
+    background: var(--hdp-control-bg, var(--hdp-card-bg));
+    color: var(--hdp-text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .hdp-card-layout-input input,
+  .hdp-card-geometry-editor input {
+    width: 58px;
+    height: 28px;
+    min-width: 0;
+    padding: 3px 5px;
+    border: 1px solid var(--hdp-border);
+    border-radius: 6px;
+    background: var(--hdp-card-bg);
+    color: var(--hdp-text);
+    font: inherit;
+  }
+  .hdp-card-geometry-editor label { gap: 3px; }
+  .hdp-card-geometry-label {
+    max-width: 160px;
+    overflow: hidden;
+    color: var(--hdp-text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .hdp-card-geometry-editor[hidden] { display: none; }
   .hdp-card-edit-bar[data-editing="false"] [data-action="save-card-edits"],
   .hdp-card-edit-bar[data-editing="false"] [data-action="cancel-card-edits"],
   .hdp-card-edit-bar[data-editing="false"] [data-action="manage-hidden-cards"],
@@ -237,7 +284,9 @@ ${generateDesignTokenCSS(tokens)}
   .hdp-card-edit-bar[data-editing="false"] [data-action="toggle-card-snap"],
   .hdp-card-edit-bar[data-editing="false"] [data-action="toggle-card-collision-push"],
   .hdp-card-edit-bar[data-editing="false"] [data-action="align-card-grid"],
-  .hdp-card-edit-bar[data-editing="false"] [data-action="auto-arrange-cards"] {
+  .hdp-card-edit-bar[data-editing="false"] [data-action="auto-arrange-cards"],
+  .hdp-card-edit-bar[data-editing="false"] .hdp-card-layout-input,
+  .hdp-card-edit-bar[data-editing="false"] .hdp-card-geometry-editor {
     display: none;
   }
   .hdp-card-edit-bar[data-editing="true"] [data-action="enter-card-edit"] {
@@ -248,7 +297,9 @@ ${generateDesignTokenCSS(tokens)}
     .hdp-home-edit-bar [data-action="toggle-card-snap"],
     .hdp-home-edit-bar [data-action="toggle-card-collision-push"],
     .hdp-home-edit-bar [data-action="align-card-grid"],
-    .hdp-home-edit-bar [data-action="auto-arrange-cards"] {
+    .hdp-home-edit-bar [data-action="auto-arrange-cards"],
+    .hdp-home-edit-bar .hdp-card-layout-input,
+    .hdp-home-edit-bar .hdp-card-geometry-editor {
       display: none;
     }
   }

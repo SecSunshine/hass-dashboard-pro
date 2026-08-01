@@ -82,6 +82,14 @@ async function mountLayout(page: Page, width: number) {
             <button type="button" data-action="toggle-card-collision-push" aria-pressed="true">推开卡片：开</button>
             <button type="button" data-action="align-card-grid">对齐网格</button>
             <button type="button" data-action="auto-arrange-cards">自动整理</button>
+            <label>吸附 <input type="number" min="0" max="40" step="1" data-card-layout-input="snap-distance"></label>
+            <div data-card-geometry-editor hidden>
+              <span data-card-geometry-label></span>
+              <label>X <input type="number" data-card-geometry-field="x"></label>
+              <label>Y <input type="number" data-card-geometry-field="y"></label>
+              <label>宽 <input type="number" data-card-geometry-field="width"></label>
+              <label>高 <input type="number" data-card-geometry-field="height"></label>
+            </div>
           </div>
           <section class="hdp-view" data-view="home">
             <div class="hdp-home-content" data-hdp-layout-mode="freeform">
@@ -169,6 +177,33 @@ test('persists tablet edits without overwriting the desktop rectangle', async ({
   const saved = await page.evaluate(() => (window as any).__draft.cards.slots.first.freeform);
   expect(saved.desktop).toEqual(DESKTOP_RECTS.first);
   expect(saved.tablet).toEqual({ x: 22, y: 12, width: 240, height: 161 });
+  expect(browserErrors).toEqual([]);
+});
+
+test('edits the selected card geometry and snap distance precisely', async ({ page }) => {
+  const browserErrors = await mountLayout(page, 1440);
+  const dragHandle = page.locator('[data-card-edit-action="drag"][data-slot-id="first"]');
+  await dragHandle.focus();
+
+  const editor = page.locator('[data-card-geometry-editor]');
+  await expect(editor).toBeVisible();
+  await expect(page.locator('[data-card-geometry-label]')).toContainText('first');
+  await expect(page.locator('[data-card-geometry-field="x"]')).toHaveValue('24');
+  await expect(page.locator('[data-card-geometry-field="height"]')).toHaveValue('180');
+
+  for (const [field, value] of Object.entries({ x: '72', y: '80', width: '324', height: '196' })) {
+    const input = page.locator(`[data-card-geometry-field="${field}"]`);
+    await input.fill(value);
+    await input.dispatchEvent('change');
+  }
+  const snapDistance = page.locator('[data-card-layout-input="snap-distance"]');
+  await snapDistance.fill('6');
+  await snapDistance.dispatchEvent('change');
+
+  const draft = await page.evaluate(() => (window as any).__draft.cards);
+  expect(draft.slots.first.freeform.desktop).toEqual({ x: 72, y: 80, width: 324, height: 196 });
+  expect(draft.layout.snap_distance).toBe(6);
+  await expect(page.locator('.hdp-card-layout-status')).toContainText('72');
   expect(browserErrors).toEqual([]);
 });
 
