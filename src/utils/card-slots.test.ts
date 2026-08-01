@@ -15,6 +15,7 @@ describe('card slots', () => {
     expect(card.html).toContain('data-card-slot-size="md"');
     expect(card.html).toContain('data-card-edit-action="yaml"');
     expect(card.html).toContain('data-slot-id="home.summary"');
+    expect(card.html).toContain('aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight"');
     expect(card.html).not.toContain('onclick=');
     expect(card.html).not.toContain('onchange=');
     expect(card.html).toContain('<div>Default</div>');
@@ -350,11 +351,28 @@ describe('card slots', () => {
 
     const calls: string[] = [];
     windowStub.hdpToggleCardEditMode = (force: boolean) => calls.push(`edit:${force}`);
+    windowStub.hdpOpenAddCard = () => calls.push('add');
     windowStub.hdpOpenHiddenCardSlots = () => calls.push('hidden');
+    windowStub.hdpToggleFreeformLayout = () => calls.push('freeform');
+    windowStub.hdpToggleCardSnap = () => calls.push('snap');
+    windowStub.hdpToggleCardCollisionPush = () => calls.push('collision-push');
+    windowStub.hdpAlignCardsToGrid = () => calls.push('align');
+    windowStub.hdpAutoArrangeCards = () => calls.push('arrange');
     windowStub.hdpSaveCardEdits = () => calls.push('save');
     windowStub.hdpCancelCardEdits = () => calls.push('cancel');
 
-    ['enter-card-edit', 'manage-hidden-cards', 'save-card-edits', 'cancel-card-edits'].forEach(action => {
+    [
+      'enter-card-edit',
+      'add-card',
+      'manage-hidden-cards',
+      'toggle-freeform-layout',
+      'toggle-card-snap',
+      'toggle-card-collision-push',
+      'align-card-grid',
+      'auto-arrange-cards',
+      'save-card-edits',
+      'cancel-card-edits',
+    ].forEach(action => {
       const control = { getAttribute: (name: string) => name === 'data-action' ? action : null };
       listeners.click[0]({
         target: { closest: (selector: string) => selector.includes('hdp-home-edit-bar') ? control : null },
@@ -363,7 +381,18 @@ describe('card slots', () => {
       });
     });
 
-    expect(calls).toEqual(['edit:true', 'hidden', 'save', 'cancel']);
+    expect(calls).toEqual([
+      'edit:true',
+      'add',
+      'hidden',
+      'freeform',
+      'snap',
+      'collision-push',
+      'align',
+      'arrange',
+      'save',
+      'cancel',
+    ]);
   });
 
   it('reloads the dashboard after canceling card edit drafts', () => {
@@ -449,15 +478,23 @@ describe('card slots', () => {
     windowStub.testInitCardSlotDragging(firstRoot);
     windowStub.testInitCardSlotDragging(rebuiltRoot);
 
-    ['dragstart', 'dragover', 'drop', 'dragend', 'pointerdown', 'pointermove', 'pointerup', 'pointercancel'].forEach(type => {
+    ['dragstart', 'dragover', 'drop', 'dragend', 'pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'keydown'].forEach(type => {
       expect(firstRoot.listeners[type]).toHaveLength(1);
       expect(rebuiltRoot.listeners[type]).toHaveLength(1);
     });
     expect(windowStub.hdpCardSlotDragReady).toBe(true);
   });
 
-  it('migrates a legacy home grid into desktop and tablet freeform drafts', () => {
-    const draft: any = { cards: { slots: {}, layout: { mode: 'grid' } } };
+  it('migrates a legacy home grid into desktop and tablet freeform drafts without discarding spans', () => {
+    const draft: any = {
+      cards: {
+        slots: {
+          'home.welcome': { grid_columns: 2, grid_rows: 2 },
+          'home.summary': { grid_columns: 2, grid_rows: 2 },
+        },
+        layout: { mode: 'grid' },
+      },
+    };
     const createStyle = () => {
       const values: Record<string, string> = {};
       return {
@@ -516,7 +553,9 @@ describe('card slots', () => {
       'clearTimeout',
       `${generateCardSlotEditorJS()}
 window.testMigrateHomeToFreeform = hdpMigrateHomeToFreeform;
-window.testResizeFreeformRect = hdpResizeFreeformRect;`,
+window.testResizeFreeformRect = hdpResizeFreeformRect;
+window.testSanitizeFreeformRect = hdpSanitizeFreeformRect;
+window.testPackFreeformItems = hdpPackFreeformItems;`,
     )(
       windowStub,
       documentStub,
@@ -535,14 +574,208 @@ window.testResizeFreeformRect = hdpResizeFreeformRect;`,
     expect(draft.cards.slots['home.welcome'].freeform.desktop).toEqual({ x: 0, y: 0, width: 580, height: 220 });
     expect(draft.cards.slots['home.welcome'].freeform.tablet).toBeDefined();
     expect(draft.cards.slots['home.summary'].freeform.tablet.width).toBeLessThanOrEqual(864);
+    expect(draft.cards.slots['home.welcome'].grid_columns).toBe(2);
+    expect(draft.cards.slots['home.welcome'].grid_rows).toBe(2);
     expect(homeAttrs['data-hdp-layout-mode']).toBe('freeform');
-    expect(windowStub.testResizeFreeformRect(
-      { x: 100, y: 80, width: 300, height: 200 },
-      50,
-      40,
-      'nw',
+    expect(home.style.values['--hdp-freeform-canvas-height']).toBe('320px');
+    const tabletRects = Object.values(draft.cards.slots).map((slot: any) => slot.freeform.tablet);
+    expect(tabletRects[0].x + tabletRects[0].width + 12).toBeLessThanOrEqual(tabletRects[1].x);
+    expect(windowStub.testSanitizeFreeformRect(
+      { x: 1100, y: -20, width: 360.4, height: 70 },
+      1200,
+    )).toEqual({ x: 840, y: 0, width: 360, height: 96 });
+    const packed = windowStub.testPackFreeformItems([
+      { slotId: 'welcome', rect: { width: 580, height: 220 } },
+      { slotId: 'environment', rect: { width: 280, height: 180 } },
+      { slotId: 'summary', rect: { width: 280, height: 180 } },
+    ], 1200, 1200);
+    expect(packed).toEqual({
+      welcome: { x: 0, y: 0, width: 580, height: 220 },
+      environment: { x: 592, y: 0, width: 280, height: 180 },
+      summary: { x: 884, y: 0, width: 280, height: 180 },
+    });
+    const startRect = { x: 100, y: 80, width: 300, height: 200 };
+    const expectedByEdge = {
+      n: { x: 100, y: 120, width: 300, height: 160 },
+      ne: { x: 100, y: 120, width: 350, height: 160 },
+      e: { x: 100, y: 80, width: 350, height: 200 },
+      se: { x: 100, y: 80, width: 350, height: 240 },
+      s: { x: 100, y: 80, width: 300, height: 240 },
+      sw: { x: 150, y: 80, width: 250, height: 240 },
+      w: { x: 150, y: 80, width: 250, height: 200 },
+      nw: { x: 150, y: 120, width: 250, height: 160 },
+    };
+    Object.entries(expectedByEdge).forEach(([edge, expected]) => {
+      expect(windowStub.testResizeFreeformRect(startRect, 50, 40, edge, 1000)).toEqual(expected);
+    });
+  });
+
+  it('moves the active card out of overlap when pushing peers is disabled', () => {
+    const windowStub: Record<string, any> = {};
+    new Function(
+      'window',
+      'document',
+      'localStorage',
+      'Image',
+      'prompt',
+      'confirm',
+      'location',
+      'setTimeout',
+      'clearTimeout',
+      `${generateCardSlotEditorJS()}\nwindow.testResolveFreeformDrop = hdpResolveFreeformDrop;`,
+    )(
+      windowStub,
+      { readyState: 'loading', addEventListener: () => {} },
+      { getItem: () => null, setItem: () => {} },
+      function ImageStub() {},
+      () => null,
+      () => false,
+      { reload: () => {} },
+      setTimeout,
+      clearTimeout,
+    );
+
+    const active = { x: 100, y: 80, width: 300, height: 180 };
+    const peers = [
+      { x: 280, y: 40, width: 320, height: 200 },
+      { x: 100, y: 252, width: 280, height: 160 },
+    ];
+
+    expect(windowStub.testResolveFreeformDrop(active, peers, 1000, 12, false))
+      .toEqual({ x: 100, y: 424, width: 300, height: 180 });
+    expect(windowStub.testResolveFreeformDrop(active, peers, 1000, 12, true)).toEqual(active);
+  });
+
+  it('snaps movement and resizing to the vertical canvas center and bottom edge', () => {
+    const windowStub: Record<string, any> = {};
+    new Function(
+      'window',
+      'document',
+      'localStorage',
+      'Image',
+      'prompt',
+      'confirm',
+      'location',
+      'setTimeout',
+      'clearTimeout',
+      `${generateCardSlotEditorJS()}
+window.testSnapFreeformRect = hdpSnapFreeformRect;
+window.testSnapFreeformResizeRect = hdpSnapFreeformResizeRect;`,
+    )(
+      windowStub,
+      { readyState: 'loading', addEventListener: () => {} },
+      { getItem: () => null, setItem: () => {} },
+      function ImageStub() {},
+      () => null,
+      () => false,
+      { reload: () => {} },
+      setTimeout,
+      clearTimeout,
+    );
+
+    expect(windowStub.testSnapFreeformRect(
+      { x: 100, y: 242, width: 200, height: 100 },
+      [],
       1000,
-    )).toEqual({ x: 150, y: 120, width: 250, height: 160 });
+      true,
+      10,
+      600,
+    )).toMatchObject({
+      rect: { x: 100, y: 244, width: 200, height: 100 },
+      guideY: 294,
+    });
+    expect(windowStub.testSnapFreeformResizeRect(
+      { x: 100, y: 300, width: 200, height: 285 },
+      [],
+      1000,
+      true,
+      10,
+      's',
+      600,
+    )).toMatchObject({
+      rect: { x: 100, y: 300, width: 200, height: 288 },
+      guideY: 588,
+    });
+    expect(windowStub.testSnapFreeformRect(
+      { x: 305, y: 195, width: 290, height: 180 },
+      [{ x: 0, y: 0, width: 300, height: 190 }],
+      1200,
+      true,
+      10,
+      600,
+    )).toMatchObject({
+      rect: { x: 300, y: 190, width: 290, height: 180 },
+      guideX: 300,
+      guideY: 190,
+    });
+  });
+
+  it('keeps zero snap distance and clamps invalid runtime values', () => {
+    const windowStub: Record<string, any> = {};
+    new Function(
+      'window',
+      'document',
+      'localStorage',
+      'Image',
+      'prompt',
+      'confirm',
+      'location',
+      'setTimeout',
+      'clearTimeout',
+      `${generateCardSlotEditorJS()}\nwindow.testNormalizeSnapDistance = hdpNormalizeSnapDistance;`,
+    )(
+      windowStub,
+      { readyState: 'loading', addEventListener: () => {} },
+      { getItem: () => null, setItem: () => {} },
+      function ImageStub() {},
+      () => null,
+      () => false,
+      { reload: () => {} },
+      setTimeout,
+      clearTimeout,
+    );
+
+    expect(windowStub.testNormalizeSnapDistance(0)).toBe(0);
+    expect(windowStub.testNormalizeSnapDistance(-4)).toBe(0);
+    expect(windowStub.testNormalizeSnapDistance(100)).toBe(40);
+    expect(windowStub.testNormalizeSnapDistance('invalid')).toBe(10);
+  });
+
+  it('aligns cards to a 12px grid without introducing overlap', () => {
+    const windowStub: Record<string, any> = {};
+    new Function(
+      'window',
+      'document',
+      'localStorage',
+      'Image',
+      'prompt',
+      'confirm',
+      'location',
+      'setTimeout',
+      'clearTimeout',
+      `${generateCardSlotEditorJS()}\nwindow.testAlignFreeformRectsToGrid = hdpAlignFreeformRectsToGrid;`,
+    )(
+      windowStub,
+      { readyState: 'loading', addEventListener: () => {} },
+      { getItem: () => null, setItem: () => {} },
+      function ImageStub() {},
+      () => null,
+      () => false,
+      { reload: () => {} },
+      setTimeout,
+      clearTimeout,
+    );
+
+    const aligned = windowStub.testAlignFreeformRectsToGrid([
+      { slotId: 'first', rect: { x: 7, y: 0, width: 151, height: 100 } },
+      { slotId: 'second', rect: { x: 159, y: 0, width: 150, height: 100 } },
+    ], 1000, 12);
+
+    expect(aligned.first).toEqual({ x: 12, y: 0, width: 156, height: 96 });
+    expect(aligned.second).toEqual({ x: 156, y: 108, width: 156, height: 96 });
+    Object.values(aligned).forEach((rect: any) => {
+      expect([rect.x, rect.y, rect.width, rect.height].every(value => value % 12 === 0)).toBe(true);
+    });
   });
 
   it('persists arbitrary pixel movement and southeast resizing in the draft', () => {
@@ -663,12 +896,30 @@ window.testInitCardSlotDragging = hdpInitCardSlotDragging;`,
     listeners.pointermove[0](event(resizeHandle, 450, 294));
     listeners.pointerup[0](event(resizeHandle, 450, 294));
     expect(draft.cards.slots['home.summary'].freeform.desktop).toEqual({ x: 77, y: 73, width: 373, height: 221 });
+
+    listeners.keydown[0]({
+      ...event(dragHandle, 0, 0),
+      key: 'ArrowRight',
+      shiftKey: true,
+    });
+    expect(draft.cards.slots['home.summary'].freeform.desktop).toEqual({ x: 87, y: 73, width: 373, height: 221 });
+
+    listeners.keydown[0]({
+      ...event(resizeHandle, 0, 0),
+      key: 'ArrowDown',
+      shiftKey: false,
+    });
+    expect(draft.cards.slots['home.summary'].freeform.desktop).toEqual({ x: 87, y: 73, width: 373, height: 222 });
   });
 
   it('moves and resizes a nested environment slot without touching its parent section', () => {
     const slots = ['temperature', 'humidity', 'security'].map(name => ({
       attrs: { 'data-card-slot': `home.environment.${name}`, 'data-card-slot-size': 'sm' } as Record<string, string>,
-      style: { order: undefined as number | undefined },
+      style: {
+        order: undefined as number | undefined,
+        values: {} as Record<string, number>,
+        setProperty(property: string, value: number) { this.values[property] = value; },
+      },
       parentNode: null as any,
       classList: { contains: (value: string) => value === 'hdp-card-slot' },
       getAttribute(name: string) { return this.attrs[name] || null; },
@@ -693,7 +944,13 @@ window.testInitCardSlotDragging = hdpInitCardSlotDragging;`,
       querySelectorAll: (selector: string) => selector === '[data-card-slot]' ? slots : [],
       getElementById: () => null,
     };
-    const windowStub: Record<string, any> = {};
+    const listeners: Record<string, Array<(event: any) => void>> = {};
+    const root: any = {
+      classList: { contains: (name: string) => name === 'hdp-root--card-edit' },
+      addEventListener: (type: string, listener: (event: any) => void) => { (listeners[type] ||= []).push(listener); },
+      querySelectorAll: () => [],
+    };
+    const windowStub: Record<string, any> = { innerWidth: 1280 };
     new Function(
       'window',
       'document',
@@ -704,7 +961,8 @@ window.testInitCardSlotDragging = hdpInitCardSlotDragging;`,
       'location',
       'setTimeout',
       'clearTimeout',
-      generateCardSlotEditorJS(),
+      `${generateCardSlotEditorJS()}
+window.testInitCardSlotDragging = hdpInitCardSlotDragging;`,
     )(
       windowStub,
       documentStub,
@@ -728,6 +986,50 @@ window.testInitCardSlotDragging = hdpInitCardSlotDragging;`,
     expect(slots[2].getAttribute('data-card-slot-size')).toBe('wide');
     expect(slots[0].getAttribute('data-card-slot-size')).toBe('sm');
     expect(windowStub.hdpCardEditDraft.cards.slots['home.environment.humidity'].order).toBe(2);
+
+    windowStub.testInitCardSlotDragging(root);
+    const createHandle = (action: 'drag' | 'resize') => {
+      const handle: any = {
+        getAttribute: (name: string) => name === 'data-card-edit-action'
+          ? action
+          : name === 'data-slot-id'
+            ? 'home.environment.humidity'
+            : name === 'data-resize-edge' && action === 'resize' ? 'se' : null,
+      };
+      handle.closest = (selector: string) => selector === '[data-card-edit-action]'
+        ? handle
+        : selector === '[data-card-slot]' ? slots[2] : null;
+      return handle;
+    };
+    const keyboardEvent = (target: any, key: string) => ({
+      target,
+      key,
+      shiftKey: false,
+      preventDefault: () => {},
+      stopPropagation: () => {},
+    });
+
+    listeners.keydown[0](keyboardEvent(createHandle('drag'), 'ArrowLeft'));
+    expect(slots.map(slot => slot.getAttribute('data-card-slot'))).toEqual([
+      'home.environment.temperature',
+      'home.environment.humidity',
+      'home.environment.security',
+    ]);
+
+    const resizeHandle = createHandle('resize');
+    resizeHandle.closest = (selector: string) => selector === '[data-card-edit-action]'
+      ? resizeHandle
+      : selector === '[data-card-slot]' ? slots[1] : null;
+    listeners.keydown[0](keyboardEvent(resizeHandle, 'ArrowRight'));
+    listeners.keydown[0](keyboardEvent(resizeHandle, 'ArrowDown'));
+    expect(windowStub.hdpCardEditDraft.cards.slots['home.environment.humidity']).toMatchObject({
+      grid_columns: 3,
+      grid_rows: 2,
+    });
+    expect(slots[1].style.values).toMatchObject({
+      '--hdp-bento-column-span': 3,
+      '--hdp-bento-row-span': 2,
+    });
   });
 
   it('lists dynamically hidden favorite slots for restoration', () => {
@@ -1253,6 +1555,8 @@ window.testClearCardSlotImageTheme = hdpClearCardSlotImageTheme;`,
     expect(css).toContain('.hdp-root--card-edit .hdp-view .hdp-slot-edit-panel');
     expect(css).toContain('.hdp-bento--dragging');
     expect(css).toContain('.hdp-card-slot--draft-hidden');
+    expect(css).toContain('opacity: 0;\n    pointer-events: none;');
+    expect(css).toContain('opacity: 1;\n    pointer-events: auto;');
     expect(css).toContain('.hdp-card-slot--theme-ready');
     expect(css).toContain('.hdp-card-slot--custom > .bp-html-card');
     expect(css).toContain('overscroll-behavior: contain;');

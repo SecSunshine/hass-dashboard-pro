@@ -2125,7 +2125,7 @@ export function buildAboutSection(): string {
   return sectionCard('about', '关于', iconInfo(), `
     <div class="st-about-row">
       <span>版本</span>
-      <span class="st-about-val">v4.0.0</span>
+      <span class="st-about-val">v4.7.0</span>
     </div>
     <div class="st-about-row">
       <span>架构</span>

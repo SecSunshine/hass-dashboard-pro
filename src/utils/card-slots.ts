@@ -170,12 +170,17 @@ export function getCardSlotCSS(): string {
   }
   .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-slot-edit-panel,
   .hdp-root--card-edit .hdp-view .hdp-slot-edit-panel {
-    display: none;
+    display: flex;
+    flex-wrap: nowrap;
+    opacity: 0;
+    pointer-events: none;
   }
   .hdp-root--card-edit .hdp-view .hdp-card-slot:hover > .hdp-slot-edit-panel,
   .hdp-root--card-edit .hdp-view .hdp-card-slot:focus-within > .hdp-slot-edit-panel {
     display: flex;
     flex-wrap: nowrap;
+    opacity: 1;
+    pointer-events: auto;
   }
   .hdp-slot-edit-panel button,
   .hdp-slot-edit-panel select {
@@ -268,11 +273,19 @@ export function getCardSlotCSS(): string {
     outline-offset: 2px;
     background: var(--hdp-control-bg, var(--hdp-card-bg));
   }
+  .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-home-content[data-hdp-layout-mode="freeform"] .hdp-card-slot > .hdp-slot-resize-handle,
+  .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-home-content:not([data-hdp-layout-mode="freeform"]) .hdp-card-slot > .hdp-slot-resize-handle[data-resize-edge="se"] {
+    display: block;
+    opacity: 0;
+    pointer-events: none;
+  }
   .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-home-content[data-hdp-layout-mode="freeform"] .hdp-card-slot:hover > .hdp-slot-resize-handle,
   .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-home-content[data-hdp-layout-mode="freeform"] .hdp-card-slot:focus-within > .hdp-slot-resize-handle,
   .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-home-content:not([data-hdp-layout-mode="freeform"]) .hdp-card-slot:hover > .hdp-slot-resize-handle[data-resize-edge="se"],
   .hdp-root--card-edit .hdp-view[data-view="home"] .hdp-home-content:not([data-hdp-layout-mode="freeform"]) .hdp-card-slot:focus-within > .hdp-slot-resize-handle[data-resize-edge="se"] {
     display: block;
+    opacity: 1;
+    pointer-events: auto;
   }
   .hdp-card-slot--draft-hidden > :not(.hdp-slot-edit-panel):not(.hdp-slot-hidden-note) {
     opacity: 0.28;
@@ -639,7 +652,7 @@ function buildSlotEditPanel(slotId: string, slot?: CardSlotConfig, defaultSize: 
     <select name="hdp_card_size_${slotAttr}" aria-label="卡片大小" title="预设尺寸" data-card-edit-action="size" data-slot-id="${slotAttr}">
       ${sizeOptions}
     </select>
-    <button type="button" title="拖动调整位置" aria-label="拖动调整位置" data-card-edit-action="drag" data-slot-id="${slotAttr}">拖</button>
+    <button type="button" title="拖动调整位置" aria-label="拖动调整位置" aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight" data-card-edit-action="drag" data-slot-id="${slotAttr}">拖</button>
     <button type="button" title="编辑 YAML" data-card-edit-action="yaml" data-slot-id="${slotAttr}">YAML</button>
     <button type="button" title="背景图" aria-label="设置卡片背景图" data-card-edit-action="background" data-slot-id="${slotAttr}">图</button>
     <button type="button" title="隐藏" aria-label="隐藏卡片" data-card-edit-action="hide" data-slot-id="${slotAttr}">藏</button>
@@ -649,7 +662,7 @@ function buildSlotEditPanel(slotId: string, slot?: CardSlotConfig, defaultSize: 
 
 function buildSlotResizeHandles(slotAttr: string): string {
   return ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw']
-    .map(edge => `<button type="button" class="hdp-slot-resize-handle" title="拖动调整卡片大小" aria-label="从${edge}方向调整卡片大小" data-card-edit-action="resize" data-resize-edge="${edge}" data-slot-id="${slotAttr}"></button>`)
+    .map(edge => `<button type="button" class="hdp-slot-resize-handle" title="拖动调整卡片大小" aria-label="从${edge}方向调整卡片大小" aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight" data-card-edit-action="resize" data-resize-edge="${edge}" data-slot-id="${slotAttr}"></button>`)
     .join('');
 }
 
@@ -720,9 +733,14 @@ function hdpEnsureCardLayout() {
   var layout = draft.cards.layout;
   if (layout.mode !== 'freeform' && layout.mode !== 'grid') layout.mode = 'grid';
   if (typeof layout.snap_enabled !== 'boolean') layout.snap_enabled = true;
-  if (!isFinite(Number(layout.snap_distance))) layout.snap_distance = 10;
+  layout.snap_distance = hdpNormalizeSnapDistance(layout.snap_distance);
   if (typeof layout.collision_push !== 'boolean') layout.collision_push = true;
   return layout;
+}
+
+function hdpNormalizeSnapDistance(value) {
+  var distance = Number(value);
+  return isFinite(distance) ? Math.max(0, Math.min(40, Math.round(distance))) : 10;
 }
 
 function hdpMarkCardDraftDirty() {
@@ -762,7 +780,7 @@ function hdpInitCardSlotEditorActions() {
     var toolbarControl = hdpClosestHomeEditControl(e);
     var toolbarAction = toolbarControl && toolbarControl.getAttribute('data-action');
     if (toolbarAction === 'enter-card-edit' || toolbarAction === 'add-card' || toolbarAction === 'manage-hidden-cards' ||
-        toolbarAction === 'toggle-freeform-layout' || toolbarAction === 'toggle-card-snap' || toolbarAction === 'align-card-grid' || toolbarAction === 'auto-arrange-cards' ||
+        toolbarAction === 'toggle-freeform-layout' || toolbarAction === 'toggle-card-snap' || toolbarAction === 'toggle-card-collision-push' || toolbarAction === 'align-card-grid' || toolbarAction === 'auto-arrange-cards' ||
         toolbarAction === 'save-card-edits' || toolbarAction === 'cancel-card-edits') {
       e.preventDefault();
       e.stopPropagation();
@@ -771,6 +789,7 @@ function hdpInitCardSlotEditorActions() {
       else if (toolbarAction === 'manage-hidden-cards') window.hdpOpenHiddenCardSlots();
       else if (toolbarAction === 'toggle-freeform-layout') window.hdpToggleFreeformLayout();
       else if (toolbarAction === 'toggle-card-snap') window.hdpToggleCardSnap();
+      else if (toolbarAction === 'toggle-card-collision-push') window.hdpToggleCardCollisionPush();
       else if (toolbarAction === 'align-card-grid') window.hdpAlignCardsToGrid();
       else if (toolbarAction === 'auto-arrange-cards') window.hdpAutoArrangeCards();
       else if (toolbarAction === 'save-card-edits') window.hdpSaveCardEdits();
@@ -1122,10 +1141,12 @@ function hdpClosestSnap(edges, anchors, threshold) {
   return best;
 }
 
-function hdpSnapFreeformRect(rect, peers, width, enabled, threshold) {
+function hdpSnapFreeformRect(rect, peers, width, enabled, threshold, height) {
   if (!enabled) return { rect: rect };
   var xAnchors = [0, width / 2, width];
   var yAnchors = [0];
+  var canvasBottom = Math.max(0, Math.round(Number(height) || 0) - 12);
+  if (canvasBottom > 0) yAnchors.push(canvasBottom / 2, canvasBottom);
   peers.forEach(function(peer) {
     xAnchors.push(peer.x, peer.x + peer.width / 2, peer.x + peer.width);
     yAnchors.push(peer.y, peer.y + peer.height / 2, peer.y + peer.height);
@@ -1152,11 +1173,13 @@ function hdpSnapFreeformRect(rect, peers, width, enabled, threshold) {
   };
 }
 
-function hdpSnapFreeformResizeRect(rect, peers, width, enabled, threshold, edge) {
+function hdpSnapFreeformResizeRect(rect, peers, width, enabled, threshold, edge, height) {
   if (!enabled) return { rect: rect };
   edge = String(edge || 'se');
   var xAnchors = [0, width];
   var yAnchors = [0];
+  var canvasBottom = Math.max(0, Math.round(Number(height) || 0) - 12);
+  if (canvasBottom > 0) yAnchors.push(canvasBottom / 2, canvasBottom);
   peers.forEach(function(peer) {
     xAnchors.push(peer.x, peer.x + peer.width / 2, peer.x + peer.width);
     yAnchors.push(peer.y, peer.y + peer.height / 2, peer.y + peer.height);
@@ -1232,6 +1255,12 @@ function hdpShowSnapGuides(home, guideX, guideY) {
   }
 }
 
+function hdpAnnounceCardLayout(root, text) {
+  if (!root || !root.querySelectorAll) return;
+  var statuses = root.querySelectorAll('.hdp-card-layout-status');
+  for (var i = 0; i < statuses.length; i++) statuses[i].textContent = text;
+}
+
 function hdpRectOverlaps(left, right, gap) {
   return left.x < right.x + right.width + gap && left.x + left.width + gap > right.x &&
     left.y < right.y + right.height + gap && left.y + left.height + gap > right.y;
@@ -1246,6 +1275,11 @@ function hdpResolveFreeformCollision(rect, peers, width, gap) {
   }
   result.x = Math.max(0, Math.min(width - result.width, result.x));
   return result;
+}
+
+function hdpResolveFreeformDrop(rect, peers, width, gap, pushPeers) {
+  var safe = hdpSanitizeFreeformRect(rect, width);
+  return pushPeers ? safe : hdpResolveFreeformCollision(safe, peers, width, gap);
 }
 
 function hdpPushCollidingPeers(home, activeWrapper, activeRect, breakpoint, width, gap) {
@@ -1276,6 +1310,7 @@ function hdpSyncCardLayoutToolbar(root) {
   var layout = hdpEnsureCardLayout();
   var freeform = root.querySelector('[data-action="toggle-freeform-layout"]');
   var snap = root.querySelector('[data-action="toggle-card-snap"]');
+  var collisionPush = root.querySelector('[data-action="toggle-card-collision-push"]');
   if (freeform) {
     freeform.setAttribute('aria-pressed', layout.mode === 'freeform' ? 'true' : 'false');
     freeform.textContent = layout.mode === 'freeform' ? '自由布局：开' : '自由布局';
@@ -1283,6 +1318,10 @@ function hdpSyncCardLayoutToolbar(root) {
   if (snap) {
     snap.setAttribute('aria-pressed', layout.snap_enabled ? 'true' : 'false');
     snap.textContent = layout.snap_enabled ? '磁吸：开' : '磁吸：关';
+  }
+  if (collisionPush) {
+    collisionPush.setAttribute('aria-pressed', layout.collision_push ? 'true' : 'false');
+    collisionPush.textContent = layout.collision_push ? '推开卡片：开' : '推开卡片：关';
   }
 }
 
@@ -1313,20 +1352,55 @@ window.hdpToggleCardSnap = function() {
   if (root) hdpSyncCardLayoutToolbar(root);
 };
 
+window.hdpToggleCardCollisionPush = function() {
+  var root = document.getElementById('hdp-root');
+  var layout = hdpEnsureCardLayout();
+  layout.collision_push = !layout.collision_push;
+  hdpMarkCardDraftDirty();
+  if (root) hdpSyncCardLayoutToolbar(root);
+};
+
+function hdpAlignFreeformRectsToGrid(items, width, gap) {
+  var grid = 12;
+  var safeWidth = Math.max(156, Math.floor((Number(width) || 1200) / grid) * grid);
+  var safeGap = Math.max(0, Number(gap) || grid);
+  var placed = [];
+  var output = {};
+  items.map(function(item, index) {
+    return { slotId: item.slotId, rect: item.rect, index: index };
+  }).sort(function(left, right) {
+    return left.rect.y - right.rect.y || left.rect.x - right.rect.x || left.index - right.index;
+  }).forEach(function(item) {
+    var alignedWidth = Math.max(156, Math.round(item.rect.width / grid) * grid);
+    alignedWidth = Math.min(safeWidth, alignedWidth);
+    var aligned = {
+      x: Math.max(0, Math.round(item.rect.x / grid) * grid),
+      y: Math.max(0, Math.round(item.rect.y / grid) * grid),
+      width: alignedWidth,
+      height: Math.max(96, Math.round(item.rect.height / grid) * grid)
+    };
+    if (aligned.x + aligned.width > safeWidth) {
+      aligned.x = Math.max(0, Math.floor((safeWidth - aligned.width) / grid) * grid);
+    }
+    aligned = hdpResolveFreeformCollision(aligned, placed, safeWidth, safeGap);
+    output[item.slotId] = aligned;
+    placed.push(aligned);
+  });
+  return output;
+}
+
 window.hdpAlignCardsToGrid = function() {
   var root = document.getElementById('hdp-root');
   var home = root && root.querySelector('.hdp-home-content');
   if (!home || hdpEnsureCardLayout().mode !== 'freeform') return;
   var breakpoint = hdpGetFreeformBreakpoint();
   var width = home.clientWidth || home.getBoundingClientRect().width || 1200;
-  hdpGetHomeSlotWrappers().forEach(function(wrapper) {
-    var slotId = hdpGetWrapperSlotId(wrapper);
-    var rect = hdpRectFromWrapper(wrapper, home);
-    rect.x = Math.round(rect.x / 12) * 12;
-    rect.y = Math.round(rect.y / 12) * 12;
-    rect.width = Math.max(150, Math.round(rect.width / 12) * 12);
-    rect.height = Math.max(96, Math.round(rect.height / 12) * 12);
-    hdpSetFreeformRect(slotId, wrapper, rect, breakpoint, false, width);
+  var items = hdpGetHomeSlotWrappers().map(function(wrapper) {
+    return { wrapper: wrapper, slotId: hdpGetWrapperSlotId(wrapper), rect: hdpRectFromWrapper(wrapper, home) };
+  });
+  var aligned = hdpAlignFreeformRectsToGrid(items, width, 12);
+  items.forEach(function(item) {
+    hdpSetFreeformRect(item.slotId, item.wrapper, aligned[item.slotId], breakpoint, false, width);
   });
   hdpMarkCardDraftDirty();
   hdpUpdateFreeformCanvasHeight(home);
@@ -1451,6 +1525,7 @@ function hdpInitCardSlotDragging(root) {
         currentRect: freeformRect,
         peers: hdpGetPeerRects(freeformHome, wrapper),
         width: freeformHome.clientWidth || freeformHome.getBoundingClientRect().width,
+        height: freeformHome.clientHeight || freeformHome.getBoundingClientRect().height || 320,
         moved: false
       };
       if (action === 'resize') wrapper.classList.add('hdp-bento--resizing');
@@ -1526,9 +1601,9 @@ function hdpInitCardSlotDragging(root) {
       }
       var snapped;
       if (freeform.action === 'resize') {
-        snapped = hdpSnapFreeformResizeRect(candidate, freeform.peers, freeform.width, layout.snap_enabled, Number(layout.snap_distance) || 10, freeform.edge);
+        snapped = hdpSnapFreeformResizeRect(candidate, freeform.peers, freeform.width, layout.snap_enabled, layout.snap_distance, freeform.edge, freeform.height);
       } else {
-        snapped = hdpSnapFreeformRect(candidate, freeform.peers, freeform.width, layout.snap_enabled, Number(layout.snap_distance) || 10);
+        snapped = hdpSnapFreeformRect(candidate, freeform.peers, freeform.width, layout.snap_enabled, layout.snap_distance, freeform.height);
       }
       freeform.currentRect = snapped.rect;
       freeform.moved = freeform.moved || Math.abs(deltaX) > 1 || Math.abs(deltaY) > 1;
@@ -1572,15 +1647,19 @@ function hdpInitCardSlotDragging(root) {
       if (freeform.handle && freeform.handle.releasePointerCapture) {
         try { freeform.handle.releasePointerCapture(e.pointerId); } catch(err) {}
       }
+      var layout = hdpEnsureCardLayout();
+      var resolvedRect = freeform.moved
+        ? hdpResolveFreeformDrop(freeform.currentRect, freeform.peers, freeform.width, 12, layout.collision_push)
+        : freeform.currentRect;
       var finalRect = hdpSetFreeformRect(
         freeform.slotId,
         freeform.wrapper,
-        freeform.currentRect,
+        resolvedRect,
         freeform.breakpoint,
         false,
         freeform.width
       );
-      if (freeform.moved && hdpEnsureCardLayout().collision_push) {
+      if (freeform.moved && layout.collision_push) {
         hdpPushCollidingPeers(freeform.home, freeform.wrapper, finalRect, freeform.breakpoint, freeform.width, 12);
       }
       freeform.wrapper.classList.remove('hdp-bento--dragging');
@@ -1614,6 +1693,68 @@ function hdpInitCardSlotDragging(root) {
   }
   root.addEventListener('pointerup', finishPointerDrag);
   root.addEventListener('pointercancel', finishPointerDrag);
+  root.addEventListener('keydown', function(e) {
+    if (!root.classList.contains('hdp-root--card-edit')) return;
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].indexOf(e.key) < 0) return;
+    var handle = hdpClosestCardEditControl(e);
+    if (!handle) return;
+    var action = handle.getAttribute('data-card-edit-action');
+    if (action !== 'drag' && action !== 'resize') return;
+    var wrapper = hdpFindSlotWrapperFromTarget(handle);
+    if (!wrapper) return;
+    var slotId = handle.getAttribute('data-slot-id') || hdpGetWrapperSlotId(wrapper);
+    if (!slotId) return;
+    var home = wrapper.parentNode && wrapper.parentNode.classList && wrapper.parentNode.classList.contains('hdp-home-content')
+      ? wrapper.parentNode
+      : null;
+    var step = e.shiftKey ? 10 : 1;
+    var deltaX = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
+    var deltaY = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
+
+    if (home && home.getAttribute('data-hdp-layout-mode') === 'freeform' && window.innerWidth > 639) {
+      var width = home.clientWidth || home.getBoundingClientRect().width || 1200;
+      var height = home.clientHeight || home.getBoundingClientRect().height || 320;
+      var current = hdpRectFromWrapper(wrapper, home);
+      var edge = handle.getAttribute('data-resize-edge') || 'se';
+      var candidate = action === 'resize'
+        ? hdpResizeFreeformRect(current, deltaX, deltaY, edge, width)
+        : hdpSanitizeFreeformRect({
+          x: current.x + deltaX,
+          y: current.y + deltaY,
+          width: current.width,
+          height: current.height
+        }, width);
+      if (candidate.x === current.x && candidate.y === current.y && candidate.width === current.width && candidate.height === current.height) return;
+      var layout = hdpEnsureCardLayout();
+      var peers = hdpGetPeerRects(home, wrapper);
+      var snapped = action === 'resize'
+        ? hdpSnapFreeformResizeRect(candidate, peers, width, layout.snap_enabled, layout.snap_distance, edge, height)
+        : hdpSnapFreeformRect(candidate, peers, width, layout.snap_enabled, layout.snap_distance, height);
+      var resolved = hdpResolveFreeformDrop(snapped.rect, peers, width, 12, layout.collision_push);
+      var breakpoint = hdpGetFreeformBreakpoint();
+      var finalRect = hdpSetFreeformRect(slotId, wrapper, resolved, breakpoint, false, width);
+      if (layout.collision_push) hdpPushCollidingPeers(home, wrapper, finalRect, breakpoint, width, 12);
+      hdpShowSnapGuides(home, snapped.guideX, snapped.guideY);
+      clearTimeout(home.__hdpKeyboardGuideTimer);
+      home.__hdpKeyboardGuideTimer = setTimeout(function() { hdpShowSnapGuides(home, null, null); }, 500);
+      hdpUpdateFreeformCanvasHeight(home);
+      hdpMarkCardDraftDirty();
+      hdpAnnounceCardLayout(root, '卡片位置 ' + finalRect.x + ', ' + finalRect.y + '，尺寸 ' + finalRect.width + ' × ' + finalRect.height + ' 像素');
+    } else if (action === 'drag') {
+      window.hdpMoveCardSlot(slotId, deltaX < 0 || deltaY < 0 ? -1 : 1);
+      hdpAnnounceCardLayout(root, '卡片顺序已调整');
+    } else {
+      var slot = hdpEnsureCardSlot(slotId);
+      var columns = Math.max(1, Math.min(4, parseInt(slot.grid_columns, 10) || 2));
+      var rows = Math.max(1, Math.min(6, parseInt(slot.grid_rows, 10) || 1));
+      if (deltaX) columns = Math.max(1, Math.min(4, columns + (deltaX < 0 ? -1 : 1)));
+      if (deltaY) rows = Math.max(1, Math.min(6, rows + (deltaY < 0 ? -1 : 1)));
+      window.hdpSetCardSlotGridSpan(slotId, columns, rows);
+      hdpAnnounceCardLayout(root, '卡片跨度 ' + columns + ' 列，' + rows + ' 行');
+    }
+    if (e.preventDefault) e.preventDefault();
+    if (e.stopPropagation) e.stopPropagation();
+  });
 }
 
 window.hdpSetCardSlotSize = function(slotId, size) {
@@ -1860,14 +2001,14 @@ function hdpBuildDraftAddedCardPreview(slot) {
 
 function hdpBuildResizeHandles(id) {
   return ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'].map(function(edge) {
-    return '<button type="button" class="hdp-slot-resize-handle" title="Resize card" aria-label="Resize card from ' + edge + '" data-card-edit-action="resize" data-resize-edge="' + edge + '" data-slot-id="' + id + '"></button>';
+    return '<button type="button" class="hdp-slot-resize-handle" title="Resize card" aria-label="Resize card from ' + edge + '" aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight" data-card-edit-action="resize" data-resize-edge="' + edge + '" data-slot-id="' + id + '"></button>';
   }).join('');
 }
 
 function hdpBuildDraftAddedCardControls(slotId) {
   var id = hdpEscapeSlotText(slotId);
   return '<div class="hdp-slot-edit-panel" data-slot-edit-panel="' + id + '">' +
-    '<button type="button" data-card-edit-action="drag" data-slot-id="' + id + '">拖</button>' +
+    '<button type="button" aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight" data-card-edit-action="drag" data-slot-id="' + id + '">拖</button>' +
     '<button type="button" data-card-edit-action="yaml" data-slot-id="' + id + '">YAML</button>' +
     '<button type="button" data-card-edit-action="background" data-slot-id="' + id + '">图片</button>' +
     '<button type="button" data-card-edit-action="hide" data-slot-id="' + id + '">隐藏</button>' +

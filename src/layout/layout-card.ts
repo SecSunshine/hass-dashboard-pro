@@ -93,9 +93,10 @@ export function buildLayoutCard(opts: LayoutCardOptions): LovelaceCardConfig {
       <button type="button" data-action="enter-card-edit">${escapeHTML(label)}</button>
       ${allowAddCard ? '<button type="button" data-action="add-card">新增卡片</button>' : ''}
       ${includeHiddenManagement ? '<button type="button" data-action="manage-hidden-cards">管理隐藏</button>' : ''}
-      ${allowAddCard ? '<button type="button" data-action="toggle-freeform-layout" aria-pressed="false">自由布局</button><button type="button" data-action="toggle-card-snap" aria-pressed="true">磁吸：开</button><button type="button" data-action="align-card-grid">对齐网格</button><button type="button" data-action="auto-arrange-cards">自动整理</button>' : ''}
+      ${allowAddCard ? '<button type="button" data-action="toggle-freeform-layout" aria-pressed="false">自由布局</button><button type="button" data-action="toggle-card-snap" aria-pressed="true">磁吸：开</button><button type="button" data-action="toggle-card-collision-push" aria-pressed="true">推开卡片：开</button><button type="button" data-action="align-card-grid">对齐网格</button><button type="button" data-action="auto-arrange-cards">自动整理</button>' : ''}
       <button type="button" class="hdp-primary" data-action="save-card-edits">保存并应用</button>
       <button type="button" data-action="cancel-card-edits">取消</button>
+      <span class="hdp-card-layout-status" aria-live="polite" aria-atomic="true"></span>
     </div>`
     : '';
   const homeEditBarHTML = buildCardEditBar('编辑首页', true, true);
@@ -211,23 +212,45 @@ ${generateDesignTokenCSS(tokens)}
   }
   .hdp-card-edit-bar {
     display: flex;
+    flex-wrap: wrap;
     justify-content: flex-end;
     align-items: center;
     gap: 8px;
     margin-bottom: 12px;
     min-width: 0;
   }
+  .hdp-card-layout-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
   .hdp-card-edit-bar[data-editing="false"] [data-action="save-card-edits"],
   .hdp-card-edit-bar[data-editing="false"] [data-action="cancel-card-edits"],
   .hdp-card-edit-bar[data-editing="false"] [data-action="manage-hidden-cards"],
   .hdp-card-edit-bar[data-editing="false"] [data-action="toggle-freeform-layout"],
   .hdp-card-edit-bar[data-editing="false"] [data-action="toggle-card-snap"],
+  .hdp-card-edit-bar[data-editing="false"] [data-action="toggle-card-collision-push"],
   .hdp-card-edit-bar[data-editing="false"] [data-action="align-card-grid"],
   .hdp-card-edit-bar[data-editing="false"] [data-action="auto-arrange-cards"] {
     display: none;
   }
   .hdp-card-edit-bar[data-editing="true"] [data-action="enter-card-edit"] {
     display: none;
+  }
+  @media (max-width: 639px) {
+    .hdp-home-edit-bar [data-action="toggle-freeform-layout"],
+    .hdp-home-edit-bar [data-action="toggle-card-snap"],
+    .hdp-home-edit-bar [data-action="toggle-card-collision-push"],
+    .hdp-home-edit-bar [data-action="align-card-grid"],
+    .hdp-home-edit-bar [data-action="auto-arrange-cards"] {
+      display: none;
+    }
   }
   @keyframes hdpFadeIn {
     from { opacity: 0; transform: translateY(4px); }

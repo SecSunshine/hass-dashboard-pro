@@ -122,6 +122,21 @@ Administrators can choose **Edit Home** or **Edit This Page** to customize gener
 - Area and device pages use stable per-entity slots: `entity.<entity_id>`, for example `entity.light.kitchen_counter`.
 - Existing domain-wide overrides remain supported as a fallback: `entity.domain.light` applies when that entity has no individual override.
 
+#### Freeform Home Layout
+
+In **Edit Home**, enable **Freeform Layout** to position top-level home cards with pixel precision.
+
+- Drag a card to change its `x`/`y` position. Drag any edge or corner handle to change its `width`/`height`.
+- Card edges and centers snap to nearby cards and canvas boundaries. The default snap distance is `10px`; **Magnet** can disable snapping temporarily.
+- Alignment guides appear while a card is moving or resizing.
+- Drops never leave cards overlapped. **Push Cards** chooses whether the active card is moved to a free position or overlapping peers are pushed down.
+- **Align Grid** rounds all positions and dimensions to a collision-free `12px` grid. **Auto Arrange** packs the current cards into available space.
+- Drag and resize handles support arrow keys (`1px`) and `Shift` + arrow keys (`10px`). In grid mode, the same controls reorder cards or adjust row/column spans.
+
+Desktop (`>=1024px`) and tablet (`640-1023px`) rectangles are saved independently. Mobile (`<640px`) always renders a single-column document flow and does not overwrite either saved layout. When freeform mode is enabled for an existing dashboard, legacy `grid_columns` and `grid_rows` values are converted into initial desktop/tablet rectangles and remain in the configuration for backward compatibility.
+
+When **Save and Apply** is selected, layout settings are written to the local `hdp_config` cache first, then persisted into the dashboard's Lovelace strategy through the Home Assistant WebSocket API. If Home Assistant is temporarily unavailable, the local copy is retained and marked for a later sync.
+
 Custom card YAML is limited to the safe `custom:html-pro-card` subset. Declarative bindings such as `data-entity`, `data-action`, and `$entity$` / `$name$` / `$state$` placeholders are supported; scripts and inline event handlers are rejected.
 
 ## Development
@@ -130,7 +145,10 @@ Custom card YAML is limited to the safe `custom:html-pro-card` subset. Declarati
 git clone https://github.com/SecSunshine/hass-dashboard-pro.git
 cd hass-dashboard-pro
 npm install
-npm run build   # → dist/hass-dashboard-pro.js
+npm run lint       # TypeScript checks
+npm test           # Vitest unit tests
+npm run test:e2e   # Playwright Chromium interaction tests
+npm run build      # -> dist/hass-dashboard-pro.js
 ```
 
 ```

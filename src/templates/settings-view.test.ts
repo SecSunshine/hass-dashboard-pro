@@ -241,6 +241,7 @@ describe('settings view', () => {
     expect(html).toContain('.st-plan-hero > div');
     expect(html).toContain('.st-plan-hero > .st-btn');
     expect(html).toContain('.st-about-val {\n    font-weight: 600;\n    color: var(--hdp-text);\n    text-align: right;\n    min-width: 0;\n    overflow-wrap: anywhere;');
+    expect(html).toContain('<span class="st-about-val">v4.7.0</span>');
     expect(html).toContain('.st-plan-choice {\n    appearance: none;');
     expect(html).toContain('<button type="button" class="st-plan-choice');
     expect(html).toContain('data-design-plan="{&quot;pack_id&quot;:');
