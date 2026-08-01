@@ -131,6 +131,8 @@ In **Edit Home**, enable **Freeform Layout** to position top-level home cards wi
 - Alignment guides appear while a card is moving or resizing.
 - Drops never leave cards overlapped. **Push Cards** chooses whether the active card is moved to a free position or overlapping peers are pushed down.
 - **Align Grid** rounds all positions and dimensions to a collision-free `12px` grid. **Auto Arrange** packs the current cards into available space.
+- Select a card to edit its exact `x`, `y`, width, and height values for the active desktop or tablet layout. The snap distance can be adjusted from `0-40px`.
+- Layout edits support **Undo** and **Redo**, including cards moved by collision pushing. Use `Ctrl`/`Cmd` + `Z` to undo and `Ctrl`/`Cmd` + `Shift` + `Z` to redo.
 - Drag and resize handles support arrow keys (`1px`) and `Shift` + arrow keys (`10px`). In grid mode, the same controls reorder cards or adjust row/column spans.
 
 Desktop (`>=1024px`) and tablet (`640-1023px`) rectangles are saved independently. Mobile (`<640px`) always renders a single-column document flow and does not overwrite either saved layout. When freeform mode is enabled for an existing dashboard, legacy `grid_columns` and `grid_rows` values are converted into initial desktop/tablet rectangles and remain in the configuration for backward compatibility.

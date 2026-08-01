@@ -710,6 +710,7 @@ var HDP_HOME_CARD_SLOTS = [
   { id: 'home.summary.automations', label: '自动化统计' }
 ];
 var hdpSelectedCardSlotId = null;
+var hdpCardLayoutHistory = { undo: [], redo: [] };
 
 function hdpGetCardEditDraft() {
   if (typeof window.hdpGetSettingsDraft === 'function') return window.hdpGetSettingsDraft();
@@ -749,6 +750,111 @@ function hdpNormalizeSnapDistance(value) {
   return isFinite(distance) ? Math.max(0, Math.min(40, Math.round(distance))) : 10;
 }
 
+function hdpCloneCardLayoutValue(value) {
+  return JSON.parse(JSON.stringify(value || {}));
+}
+
+function hdpSnapshotCardLayout() {
+  var draft = hdpGetCardEditDraft();
+  var cards = draft.cards && typeof draft.cards === 'object' && !Array.isArray(draft.cards) ? draft.cards : {};
+  var slots = cards.slots && typeof cards.slots === 'object' && !Array.isArray(cards.slots) ? cards.slots : {};
+  var freeform = {};
+  Object.keys(slots).forEach(function(slotId) {
+    if (slots[slotId] && slots[slotId].freeform && typeof slots[slotId].freeform === 'object') {
+      freeform[slotId] = hdpCloneCardLayoutValue(slots[slotId].freeform);
+    }
+  });
+  return { layout: hdpCloneCardLayoutValue(cards.layout), freeform: freeform };
+}
+
+function hdpResetCardLayoutHistory(root) {
+  hdpCardLayoutHistory.undo = [];
+  hdpCardLayoutHistory.redo = [];
+  if (root) hdpSyncCardLayoutHistoryControls(root);
+}
+
+function hdpPushCardLayoutHistory(snapshot) {
+  if (!snapshot) return;
+  var undo = hdpCardLayoutHistory.undo;
+  var latest = undo.length ? undo[undo.length - 1] : null;
+  if (!latest || JSON.stringify(latest) !== JSON.stringify(snapshot)) undo.push(snapshot);
+  if (undo.length > 50) undo.shift();
+  hdpCardLayoutHistory.redo = [];
+  var root = document.getElementById('hdp-root');
+  if (root) hdpSyncCardLayoutHistoryControls(root);
+}
+
+function hdpSyncCardLayoutHistoryControls(root) {
+  if (!root || !root.querySelector) return;
+  var undo = root.querySelector('[data-action="undo-card-layout"]');
+  var redo = root.querySelector('[data-action="redo-card-layout"]');
+  if (undo) {
+    undo.disabled = hdpCardLayoutHistory.undo.length === 0;
+    undo.setAttribute('aria-disabled', undo.disabled ? 'true' : 'false');
+  }
+  if (redo) {
+    redo.disabled = hdpCardLayoutHistory.redo.length === 0;
+    redo.setAttribute('aria-disabled', redo.disabled ? 'true' : 'false');
+  }
+}
+
+function hdpApplyCardLayoutSnapshot(snapshot) {
+  var draft = hdpGetCardEditDraft();
+  if (!draft.cards || typeof draft.cards !== 'object' || Array.isArray(draft.cards)) draft.cards = {};
+  if (!draft.cards.slots || typeof draft.cards.slots !== 'object' || Array.isArray(draft.cards.slots)) draft.cards.slots = {};
+  draft.cards.layout = hdpCloneCardLayoutValue(snapshot.layout);
+  Object.keys(draft.cards.slots).forEach(function(slotId) {
+    if (draft.cards.slots[slotId] && typeof draft.cards.slots[slotId] === 'object') delete draft.cards.slots[slotId].freeform;
+  });
+  Object.keys(snapshot.freeform || {}).forEach(function(slotId) {
+    hdpEnsureCardSlot(slotId).freeform = hdpCloneCardLayoutValue(snapshot.freeform[slotId]);
+  });
+  var root = document.getElementById('hdp-root');
+  var home = root && root.querySelector('.hdp-home-content');
+  var layout = hdpEnsureCardLayout();
+  if (home && layout.mode === 'freeform' && window.innerWidth > 639) {
+    hdpActivateFreeformLayout(home);
+  } else if (home) {
+    home.setAttribute('data-hdp-layout-mode', 'grid');
+    home.style.removeProperty('--hdp-freeform-canvas-height');
+    home.style.removeProperty('--hdp-freeform-tablet-canvas-height');
+    hdpActiveFreeformBreakpoint = null;
+  }
+  if (root) {
+    hdpSyncCardLayoutToolbar(root);
+    hdpSetHomeCardDraggable(root.classList.contains('hdp-root--card-edit'));
+  }
+}
+
+window.hdpUndoCardLayout = function() {
+  if (!hdpCardLayoutHistory.undo.length) return;
+  var current = hdpSnapshotCardLayout();
+  var previous = hdpCardLayoutHistory.undo.pop();
+  hdpCardLayoutHistory.redo.push(current);
+  hdpApplyCardLayoutSnapshot(previous);
+  hdpMarkCardDraftDirty();
+  var root = document.getElementById('hdp-root');
+  if (root) {
+    hdpSyncCardLayoutHistoryControls(root);
+    hdpAnnounceCardLayout(root, '已撤销上一步布局编辑');
+  }
+};
+
+window.hdpRedoCardLayout = function() {
+  if (!hdpCardLayoutHistory.redo.length) return;
+  var current = hdpSnapshotCardLayout();
+  var next = hdpCardLayoutHistory.redo.pop();
+  hdpCardLayoutHistory.undo.push(current);
+  if (hdpCardLayoutHistory.undo.length > 50) hdpCardLayoutHistory.undo.shift();
+  hdpApplyCardLayoutSnapshot(next);
+  hdpMarkCardDraftDirty();
+  var root = document.getElementById('hdp-root');
+  if (root) {
+    hdpSyncCardLayoutHistoryControls(root);
+    hdpAnnounceCardLayout(root, '已重做布局编辑');
+  }
+};
+
 function hdpMarkCardDraftDirty() {
   if (typeof hdpMarkSettingsDirty === 'function') hdpMarkSettingsDirty();
   var root = document.getElementById('hdp-root');
@@ -786,7 +892,7 @@ function hdpInitCardSlotEditorActions() {
     var toolbarControl = hdpClosestHomeEditControl(e);
     var toolbarAction = toolbarControl && toolbarControl.getAttribute('data-action');
     if (toolbarAction === 'enter-card-edit' || toolbarAction === 'add-card' || toolbarAction === 'manage-hidden-cards' ||
-        toolbarAction === 'toggle-freeform-layout' || toolbarAction === 'toggle-card-snap' || toolbarAction === 'toggle-card-collision-push' || toolbarAction === 'align-card-grid' || toolbarAction === 'auto-arrange-cards' ||
+        toolbarAction === 'toggle-freeform-layout' || toolbarAction === 'toggle-card-snap' || toolbarAction === 'toggle-card-collision-push' || toolbarAction === 'align-card-grid' || toolbarAction === 'auto-arrange-cards' || toolbarAction === 'undo-card-layout' || toolbarAction === 'redo-card-layout' ||
         toolbarAction === 'save-card-edits' || toolbarAction === 'cancel-card-edits') {
       e.preventDefault();
       e.stopPropagation();
@@ -798,6 +904,8 @@ function hdpInitCardSlotEditorActions() {
       else if (toolbarAction === 'toggle-card-collision-push') window.hdpToggleCardCollisionPush();
       else if (toolbarAction === 'align-card-grid') window.hdpAlignCardsToGrid();
       else if (toolbarAction === 'auto-arrange-cards') window.hdpAutoArrangeCards();
+      else if (toolbarAction === 'undo-card-layout') window.hdpUndoCardLayout();
+      else if (toolbarAction === 'redo-card-layout') window.hdpRedoCardLayout();
       else if (toolbarAction === 'save-card-edits') window.hdpSaveCardEdits();
       else window.hdpCancelCardEdits();
       return;
@@ -838,14 +946,37 @@ function hdpInitCardSlotEditorActions() {
   }, true);
 }
 
+function hdpInitCardLayoutShortcuts() {
+  if (window.hdpCardLayoutShortcutsReady) return;
+  window.hdpCardLayoutShortcutsReady = true;
+  document.addEventListener('keydown', function(e) {
+    if ((!e.ctrlKey && !e.metaKey) || e.altKey) return;
+    var key = String(e.key || '').toLowerCase();
+    if (key !== 'z' && key !== 'y') return;
+    var root = document.getElementById('hdp-root');
+    if (!root || !root.classList.contains('hdp-root--card-edit')) return;
+    var target = e.target;
+    var tag = String(target && target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select' || (target && target.isContentEditable)) return;
+    if (target && target.closest && target.closest('.hdp-slot-editor-modal')) return;
+    if (key === 'y' || e.shiftKey) window.hdpRedoCardLayout();
+    else window.hdpUndoCardLayout();
+    if (e.preventDefault) e.preventDefault();
+    if (e.stopPropagation) e.stopPropagation();
+  }, true);
+}
+
 window.hdpToggleCardEditMode = function(force) {
   var root = document.getElementById('hdp-root');
   if (!root) return;
   var editing = typeof force === 'boolean' ? force : !root.classList.contains('hdp-root--card-edit');
+  var wasEditing = root.classList.contains('hdp-root--card-edit');
   root.classList.toggle('hdp-root--card-edit', editing);
   var bars = document.querySelectorAll('.hdp-card-edit-bar');
   for (var i = 0; i < bars.length; i++) bars[i].setAttribute('data-editing', editing ? 'true' : 'false');
   if (editing) {
+    hdpInitCardLayoutShortcuts();
+    if (!wasEditing) hdpResetCardLayoutHistory(root);
     var home = root.querySelector('.hdp-home-content');
     if (window.innerWidth > 639 && hdpEnsureCardLayout().mode !== 'freeform') hdpMigrateHomeToFreeform(home);
     else hdpActivateFreeformLayout(home);
@@ -1320,7 +1451,13 @@ function hdpSyncCardGeometryEditor(root) {
 window.hdpSetCardSnapDistance = function(value) {
   var root = document.getElementById('hdp-root');
   var layout = hdpEnsureCardLayout();
-  layout.snap_distance = hdpNormalizeSnapDistance(value);
+  var nextDistance = hdpNormalizeSnapDistance(value);
+  if (layout.snap_distance === nextDistance) {
+    if (root) hdpSyncCardLayoutToolbar(root);
+    return;
+  }
+  hdpPushCardLayoutHistory(hdpSnapshotCardLayout());
+  layout.snap_distance = nextDistance;
   hdpMarkCardDraftDirty();
   if (root) hdpSyncCardLayoutToolbar(root);
 };
@@ -1339,6 +1476,11 @@ window.hdpUpdateSelectedCardGeometry = function() {
     var value = input ? Number(input.value) : NaN;
     if (isFinite(value)) candidate[field] = Math.round(value);
   });
+  if (candidate.x === current.x && candidate.y === current.y && candidate.width === current.width && candidate.height === current.height) {
+    hdpSyncCardGeometryEditor(root);
+    return;
+  }
+  hdpPushCardLayoutHistory(hdpSnapshotCardLayout());
   var layout = hdpEnsureCardLayout();
   var peers = hdpGetPeerRects(home, wrapper);
   var resolved = hdpResolveFreeformDrop(candidate, peers, width, 12, layout.collision_push);
@@ -1415,6 +1557,7 @@ function hdpSyncCardLayoutToolbar(root) {
     collisionPush.textContent = layout.collision_push ? '推开卡片：开' : '推开卡片：关';
   }
   if (snapDistance && document.activeElement !== snapDistance) snapDistance.value = String(layout.snap_distance);
+  hdpSyncCardLayoutHistoryControls(root);
   hdpSyncCardGeometryEditor(root);
 }
 
@@ -1423,6 +1566,7 @@ window.hdpToggleFreeformLayout = function() {
   var home = root && root.querySelector('.hdp-home-content');
   if (!root || !home || window.innerWidth <= 639) return;
   var layout = hdpEnsureCardLayout();
+  hdpPushCardLayoutHistory(hdpSnapshotCardLayout());
   if (layout.mode === 'freeform') {
     layout.mode = 'grid';
     home.setAttribute('data-hdp-layout-mode', 'grid');
@@ -1440,6 +1584,7 @@ window.hdpToggleFreeformLayout = function() {
 window.hdpToggleCardSnap = function() {
   var root = document.getElementById('hdp-root');
   var layout = hdpEnsureCardLayout();
+  hdpPushCardLayoutHistory(hdpSnapshotCardLayout());
   layout.snap_enabled = !layout.snap_enabled;
   hdpMarkCardDraftDirty();
   if (root) hdpSyncCardLayoutToolbar(root);
@@ -1448,6 +1593,7 @@ window.hdpToggleCardSnap = function() {
 window.hdpToggleCardCollisionPush = function() {
   var root = document.getElementById('hdp-root');
   var layout = hdpEnsureCardLayout();
+  hdpPushCardLayoutHistory(hdpSnapshotCardLayout());
   layout.collision_push = !layout.collision_push;
   hdpMarkCardDraftDirty();
   if (root) hdpSyncCardLayoutToolbar(root);
@@ -1492,6 +1638,7 @@ window.hdpAlignCardsToGrid = function() {
     return { wrapper: wrapper, slotId: hdpGetWrapperSlotId(wrapper), rect: hdpRectFromWrapper(wrapper, home) };
   });
   var aligned = hdpAlignFreeformRectsToGrid(items, width, 12);
+  hdpPushCardLayoutHistory(hdpSnapshotCardLayout());
   items.forEach(function(item) {
     hdpSetFreeformRect(item.slotId, item.wrapper, aligned[item.slotId], breakpoint, false, width);
   });
@@ -1510,6 +1657,7 @@ window.hdpAutoArrangeCards = function() {
     return { wrapper: wrapper, slotId: hdpGetWrapperSlotId(wrapper), rect: hdpRectFromWrapper(wrapper, home) };
   });
   var packed = hdpPackFreeformItems(items, width, width);
+  hdpPushCardLayoutHistory(hdpSnapshotCardLayout());
   items.forEach(function(item) {
     hdpSetFreeformRect(item.slotId, item.wrapper, packed[item.slotId], breakpoint, false, width);
   });
@@ -1623,6 +1771,7 @@ function hdpInitCardSlotDragging(root) {
         peers: hdpGetPeerRects(freeformHome, wrapper),
         width: freeformHome.clientWidth || freeformHome.getBoundingClientRect().width,
         height: freeformHome.clientHeight || freeformHome.getBoundingClientRect().height || 320,
+        historySnapshot: hdpSnapshotCardLayout(),
         moved: false
       };
       if (action === 'resize') wrapper.classList.add('hdp-bento--resizing');
@@ -1764,7 +1913,10 @@ function hdpInitCardSlotDragging(root) {
       freeform.wrapper.classList.remove('hdp-bento--resizing');
       hdpShowSnapGuides(freeform.home, null, null);
       hdpUpdateFreeformCanvasHeight(freeform.home);
-      if (freeform.moved) hdpMarkCardDraftDirty();
+      if (freeform.moved) {
+        hdpPushCardLayoutHistory(freeform.historySnapshot);
+        hdpMarkCardDraftDirty();
+      }
       hdpSyncCardGeometryEditor(root);
       pointerFreeform = null;
       return;
@@ -1825,6 +1977,7 @@ function hdpInitCardSlotDragging(root) {
         }, width);
       if (candidate.x === current.x && candidate.y === current.y && candidate.width === current.width && candidate.height === current.height) return;
       var layout = hdpEnsureCardLayout();
+      hdpPushCardLayoutHistory(hdpSnapshotCardLayout());
       var peers = hdpGetPeerRects(home, wrapper);
       var snapped = action === 'resize'
         ? hdpSnapFreeformResizeRect(candidate, peers, width, layout.snap_enabled, layout.snap_distance, edge, height)

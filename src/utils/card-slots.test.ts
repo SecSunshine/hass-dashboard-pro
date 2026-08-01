@@ -358,6 +358,8 @@ describe('card slots', () => {
     windowStub.hdpToggleCardCollisionPush = () => calls.push('collision-push');
     windowStub.hdpAlignCardsToGrid = () => calls.push('align');
     windowStub.hdpAutoArrangeCards = () => calls.push('arrange');
+    windowStub.hdpUndoCardLayout = () => calls.push('undo');
+    windowStub.hdpRedoCardLayout = () => calls.push('redo');
     windowStub.hdpSaveCardEdits = () => calls.push('save');
     windowStub.hdpCancelCardEdits = () => calls.push('cancel');
 
@@ -370,6 +372,8 @@ describe('card slots', () => {
       'toggle-card-collision-push',
       'align-card-grid',
       'auto-arrange-cards',
+      'undo-card-layout',
+      'redo-card-layout',
       'save-card-edits',
       'cancel-card-edits',
     ].forEach(action => {
@@ -390,6 +394,8 @@ describe('card slots', () => {
       'collision-push',
       'align',
       'arrange',
+      'undo',
+      'redo',
       'save',
       'cancel',
     ]);

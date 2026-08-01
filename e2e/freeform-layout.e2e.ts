@@ -82,6 +82,8 @@ async function mountLayout(page: Page, width: number) {
             <button type="button" data-action="toggle-card-collision-push" aria-pressed="true">推开卡片：开</button>
             <button type="button" data-action="align-card-grid">对齐网格</button>
             <button type="button" data-action="auto-arrange-cards">自动整理</button>
+            <button type="button" data-action="undo-card-layout" aria-label="撤销布局" aria-keyshortcuts="Control+Z Meta+Z" disabled>↶</button>
+            <button type="button" data-action="redo-card-layout" aria-label="重做布局" aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z" disabled>↷</button>
             <label>吸附 <input type="number" min="0" max="40" step="1" data-card-layout-input="snap-distance"></label>
             <div data-card-geometry-editor hidden>
               <span data-card-geometry-label></span>
@@ -141,7 +143,7 @@ async function renderedRects(page: Page) {
   });
 }
 
-for (const width of [390, 768, 1024, 1440]) {
+for (const width of [320, 390, 768, 1024, 1440]) {
   test(`uses the expected responsive layout at ${width}px`, async ({ page }) => {
     const browserErrors = await mountLayout(page, width);
     const rects = await renderedRects(page);
@@ -207,6 +209,39 @@ test('edits the selected card geometry and snap distance precisely', async ({ pa
   expect(browserErrors).toEqual([]);
 });
 
+test('undoes and redoes completed layout edits from buttons and keyboard', async ({ page }) => {
+  const browserErrors = await mountLayout(page, 1440);
+  const dragHandle = page.locator('[data-card-edit-action="drag"][data-slot-id="first"]');
+  const xInput = page.locator('[data-card-geometry-field="x"]');
+  const undo = page.locator('[data-action="undo-card-layout"]');
+  const redo = page.locator('[data-action="redo-card-layout"]');
+
+  await expect(undo).toBeDisabled();
+  await expect(redo).toBeDisabled();
+  await dragHandle.focus();
+  await xInput.fill('72');
+  await xInput.dispatchEvent('change');
+  await expect(undo).toBeEnabled();
+
+  await undo.click();
+  await expect(xInput).toHaveValue('24');
+  expect(await page.evaluate(() => (window as any).__draft.cards.slots.first.freeform.desktop.x)).toBe(24);
+  await expect(undo).toBeDisabled();
+  await expect(redo).toBeEnabled();
+
+  await redo.click();
+  await expect(xInput).toHaveValue('72');
+  expect(await page.evaluate(() => (window as any).__draft.cards.slots.first.freeform.desktop.x)).toBe(72);
+
+  await page.locator('body').focus();
+  await page.keyboard.press('Control+Z');
+  expect(await page.evaluate(() => (window as any).__draft.cards.slots.first.freeform.desktop.x)).toBe(24);
+  await page.keyboard.press('Control+Shift+Z');
+  expect(await page.evaluate(() => (window as any).__draft.cards.slots.first.freeform.desktop.x)).toBe(72);
+  await expect(page.locator('.hdp-card-layout-status')).toContainText('重做');
+  expect(browserErrors).toEqual([]);
+});
+
 test('drags, snaps, pushes collisions, resizes and runs layout tools', async ({ page }) => {
   const browserErrors = await mountLayout(page, 1440);
   const dragHandle = page.locator('[data-card-edit-action="drag"][data-slot-id="first"]');
@@ -225,6 +260,16 @@ test('drags, snaps, pushes collisions, resizes and runs layout tools', async ({ 
   draft = await page.evaluate(() => (window as any).__draft.cards);
   expect(draft.slots.first.freeform.desktop.x).toBe(100);
   expect(draft.slots.second.freeform.desktop.y).toBeGreaterThanOrEqual(216);
+  const pushedSecondY = draft.slots.second.freeform.desktop.y;
+
+  await page.locator('[data-action="undo-card-layout"]').click();
+  draft = await page.evaluate(() => (window as any).__draft.cards);
+  expect(draft.slots.first.freeform.desktop).toEqual(DESKTOP_RECTS.first);
+  expect(draft.slots.second.freeform.desktop).toEqual(DESKTOP_RECTS.second);
+  await page.locator('[data-action="redo-card-layout"]').click();
+  draft = await page.evaluate(() => (window as any).__draft.cards);
+  expect(draft.slots.first.freeform.desktop.x).toBe(100);
+  expect(draft.slots.second.freeform.desktop.y).toBe(pushedSecondY);
 
   await page.getByRole('button', { name: '磁吸：开' }).click();
   await expect(page.locator('[data-action="toggle-card-snap"]')).toHaveAttribute('aria-pressed', 'false');

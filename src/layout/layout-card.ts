@@ -94,6 +94,7 @@ export function buildLayoutCard(opts: LayoutCardOptions): LovelaceCardConfig {
       ${allowAddCard ? '<button type="button" data-action="add-card">新增卡片</button>' : ''}
       ${includeHiddenManagement ? '<button type="button" data-action="manage-hidden-cards">管理隐藏</button>' : ''}
       ${allowAddCard ? '<button type="button" data-action="toggle-freeform-layout" aria-pressed="false">自由布局</button><button type="button" data-action="toggle-card-snap" aria-pressed="true">磁吸：开</button><button type="button" data-action="toggle-card-collision-push" aria-pressed="true">推开卡片：开</button><button type="button" data-action="align-card-grid">对齐网格</button><button type="button" data-action="auto-arrange-cards">自动整理</button>' : ''}
+      ${allowAddCard ? '<button type="button" class="hdp-card-history-button" title="撤销布局" aria-label="撤销布局" aria-keyshortcuts="Control+Z Meta+Z" data-action="undo-card-layout" disabled>↶</button><button type="button" class="hdp-card-history-button" title="重做布局" aria-label="重做布局" aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z" data-action="redo-card-layout" disabled>↷</button>' : ''}
       ${allowAddCard ? `<label class="hdp-card-layout-input" title="设置磁吸距离"><span>吸附</span><input type="number" min="0" max="40" step="1" value="10" inputmode="numeric" aria-label="吸附距离（像素）" data-card-layout-input="snap-distance"><span>px</span></label>
       <div class="hdp-card-geometry-editor" data-card-geometry-editor hidden>
         <span class="hdp-card-geometry-label" data-card-geometry-label>未选择卡片</span>
@@ -277,6 +278,17 @@ ${generateDesignTokenCSS(tokens)}
     white-space: nowrap;
   }
   .hdp-card-geometry-editor[hidden] { display: none; }
+  .hdp-home-edit-bar .hdp-card-history-button {
+    width: 38px;
+    min-width: 38px;
+    padding: 0;
+    font-size: 18px;
+  }
+  .hdp-home-edit-bar button:disabled {
+    cursor: not-allowed;
+    opacity: 0.42;
+    transform: none;
+  }
   .hdp-card-edit-bar[data-editing="false"] [data-action="save-card-edits"],
   .hdp-card-edit-bar[data-editing="false"] [data-action="cancel-card-edits"],
   .hdp-card-edit-bar[data-editing="false"] [data-action="manage-hidden-cards"],
@@ -285,6 +297,8 @@ ${generateDesignTokenCSS(tokens)}
   .hdp-card-edit-bar[data-editing="false"] [data-action="toggle-card-collision-push"],
   .hdp-card-edit-bar[data-editing="false"] [data-action="align-card-grid"],
   .hdp-card-edit-bar[data-editing="false"] [data-action="auto-arrange-cards"],
+  .hdp-card-edit-bar[data-editing="false"] [data-action="undo-card-layout"],
+  .hdp-card-edit-bar[data-editing="false"] [data-action="redo-card-layout"],
   .hdp-card-edit-bar[data-editing="false"] .hdp-card-layout-input,
   .hdp-card-edit-bar[data-editing="false"] .hdp-card-geometry-editor {
     display: none;
@@ -298,6 +312,8 @@ ${generateDesignTokenCSS(tokens)}
     .hdp-home-edit-bar [data-action="toggle-card-collision-push"],
     .hdp-home-edit-bar [data-action="align-card-grid"],
     .hdp-home-edit-bar [data-action="auto-arrange-cards"],
+    .hdp-home-edit-bar [data-action="undo-card-layout"],
+    .hdp-home-edit-bar [data-action="redo-card-layout"],
     .hdp-home-edit-bar .hdp-card-layout-input,
     .hdp-home-edit-bar .hdp-card-geometry-editor {
       display: none;

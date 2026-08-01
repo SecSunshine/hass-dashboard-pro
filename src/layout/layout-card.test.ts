@@ -328,6 +328,9 @@ describe('layout card', () => {
     expect(card.content).toContain('data-action="toggle-card-collision-push"');
     expect(card.content).toContain('data-action="align-card-grid"');
     expect(card.content).toContain('data-action="auto-arrange-cards"');
+    expect(card.content).toContain('data-action="undo-card-layout"');
+    expect(card.content).toContain('data-action="redo-card-layout"');
+    expect(card.content).toContain('aria-keyshortcuts="Control+Z Meta+Z"');
     expect(card.content).toContain('data-card-layout-input="snap-distance"');
     expect(card.content).toContain('data-card-geometry-editor');
     expect(card.content).toContain('data-card-geometry-field="x"');
