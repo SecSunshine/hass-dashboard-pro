@@ -2263,9 +2263,9 @@ function hdpBuildDraftAddedCardPreview(slot) {
   return '<div class="hdp-add-card-draft"><strong>' + hdpEscapeSlotText(slot.title || '自定义卡片') + '</strong><span>点击 YAML 编辑内容</span></div>';
 }
 
-function hdpBuildResizeHandles(id) {
-  return ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'].map(function(edge) {
-    return '<button type="button" class="hdp-slot-resize-handle" title="Resize card" aria-label="Resize card from ' + edge + '" aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight" data-card-edit-action="resize" data-resize-edge="' + edge + '" data-slot-id="' + id + '"></button>';
+  function hdpBuildResizeHandles(id) {
+    return ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'].map(function(edge) {
+    return '<button type="button" class="hdp-slot-resize-handle" title="拖动调整卡片大小" aria-label="从' + edge + '方向调整卡片大小" aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight" data-card-edit-action="resize" data-resize-edge="' + edge + '" data-slot-id="' + id + '"></button>';
   }).join('');
 }
 
